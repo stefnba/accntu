@@ -6,25 +6,25 @@ import * as authRoutes from '@/lib/auth/routes';
 
 import { AUTH_COOKIE_NAME } from './lib/auth/config';
 
+const { isUrlPatternMatch } = authRoutes;
+
 export const middleware = async (request: NextRequest) => {
     const { nextUrl } = request;
 
-    const isApiAuthRoute = nextUrl.pathname.startsWith(
-        authRoutes.apiAuthPrefix
+    const isPublicRoute = isUrlPatternMatch(
+        nextUrl.pathname,
+        authRoutes.publicRoutes
     );
-    const isPublicRoute = authRoutes.publicRoutes.includes(nextUrl.pathname);
-    const isAuthRoute = authRoutes.authRoutes.includes(nextUrl.pathname);
+    const isAuthRoute = isUrlPatternMatch(
+        nextUrl.pathname,
+        authRoutes.authRoutes
+    );
 
     // Get sessionId from cookies. It's an indication if a user is logged in
     // validateSession is not possible to be called here because next.js middleware runs on edge environment
     //
     const sessionId = cookies().get(AUTH_COOKIE_NAME)?.value ?? false;
     const isLoggedIn = sessionId ? true : false;
-
-    // If the route is an API route for authentication, don't redirect
-    if (isApiAuthRoute) {
-        return NextResponse.next();
-    }
 
     if (isAuthRoute) {
         // If user is logged in and tries to access an auth route, redirect to default login redirect
