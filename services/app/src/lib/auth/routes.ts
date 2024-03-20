@@ -8,22 +8,24 @@ export const publicRoutes: string[] = ['/landing', '/terms', '/privacy'];
  * An array of routes that are used for authentication
  * These routes will redirect logged in users to /
  */
-export const authRoutes: string[] = [
-    '/login',
-    '/register',
-    '/auth/error',
-    '/auth/verify'
-];
-
-/**
- * The prefix for API authentication routes
- * Routes that start with this prefix are used for API authentication purposes
- */
-export const apiAuthPrefix: string = '/api/auth';
+export const authRoutes: string[] = ['/login*', '/register*', '/auth/*'];
 
 /**
  * The default redirect path after logging in
  */
 export const DEFAULT_LOGIN_REDIRECT = '/';
 
+/**
+ * The URL to the login page
+ */
 export const LOGIN_URL = '/login';
+
+/**
+ * The URL to the logout page
+ */
+export const LOGOUT_URL = '/logout';
+
+export const isUrlPatternMatch = (url: string, patterns: string[]) =>
+    patterns.some((p, i) =>
+        RegExp('^' + patterns[i].replace('*', '.*') + '$').test(url)
+    );
