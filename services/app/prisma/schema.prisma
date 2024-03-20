@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum Provider {
+    GITHUB
+}
+
+enum LoginMethod {
+    EMAIL
+    GITHUB
+}
+
+enum UserRole {
+    ADMIN
+    USER
+}
+
+enum Apparance {
+    LIGHT
+    DARK
+    SYSTEM
+}
+
+enum Language {
+    EN
+}
+
+model User {
+    id              String    @id @default(uuid())
+    firstName       String?
+    lastName        String?
+    email           String    @unique
+    emailVerifiedAt DateTime?
+    image           String?
+    role            UserRole  @default(USER)
+    createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
+    lastLoginAt     DateTime?
+    loginAttempts   Int       @default(0)
+
+    sessions     Session[]
+    OAuthAccount OAuthAccount[]
+    Login        Login[]
+    UserSetting  UserSetting?
+
+    @@map("user")
+}
+
+model Login {
+    id          String       @id @default(uuid())
+    method      LoginMethod?
+    userId      String?
+    sessionId   String?
+    device      String?
+    ip          String?
+    location    String?
+    userAgent   String?
+    successAt   DateTime
+    attemptedAt DateTime
+
+    user    User?    @relation(fields: [userId], references: [id])
+    session Session? @relation(fields: [sessionId], references: [id])
+
+    @@map("login")
+}
+
+model OAuthAccount {
+    id             String   @id @default(uuid())
+    userId         String
+    provider       Provider
+    providerUserId String
+    user           User     @relation(fields: [userId], references: [id])
+
+    @@map("oauth_account")
+}
+
+model Session {
+    id        String   @id
+    userId    String
+    expiresAt DateTime
+    user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+    logins    Login[]
+
+    @@map("session")
+}
+
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expiresAt  DateTime
+
+    @@unique([identifier, token])
+    @@map("verification_token")
+}
+
+model UserSetting {
+    userId    String     @unique
+    timezone  String?
+    language  Language?  @default(EN)
+    apparance Apparance? @default(LIGHT)
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("user_setting")
+}

@@ -1,0 +1,24 @@
+##
+# Run production container on webserver
+# Extends docker-compose.prod.yml and uses image from Docker Hub instead of building it locally.
+# Set up networks to sit behind reverse proxy
+##
+
+version: '3.8'
+
+services:
+    app:
+        image: ${DOCKER_USER}/${DOCKER_IMAGE_NAME}
+        networks:
+            - reverse-proxy
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.http.routers.${TRAEFIK_ID}.rule=Host(`${HOST}`)'
+            - 'traefik.http.routers.${TRAEFIK_ID}.entrypoints=web, websecure'
+            - 'traefik.http.services.${TRAEFIK_ID}.loadbalancer.server.port=3000'
+            - 'traefik.http.routers.${TRAEFIK_ID}.tls=true'
+            - 'traefik.http.routers.${TRAEFIK_ID}.tls.certresolver=production' # production or staging
+
+networks:
+    reverse-proxy:
+        external: true

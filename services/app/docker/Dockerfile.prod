@@ -1,0 +1,40 @@
+# stage base
+FROM node:21-alpine3.17 as base
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY tsconfig.json ./
+
+RUN npm install
+
+COPY . .
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN npx prisma generate
+
+RUN npm run build
+
+# stage prod
+FROM node:21-alpine3.17 as prod
+
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/package*.json ./
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/public ./public
+
+RUN npm install --only=production
+
+RUN npx prisma generate
+
+# RUN addgroup --system --gid 1001 nodejs
+# RUN adduser --system --uid 1001 nextjs
+
+CMD ["npm", "start"]
