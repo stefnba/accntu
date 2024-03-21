@@ -1,7 +1,5 @@
-import { NextResponse } from 'next/server';
+import { github } from '@/auth/actions/oauth';
 
-import { loginGitHub } from '@/actions/auth/login/oauth';
-
-export async function GET(request: Request): Promise<Response> {
-    return await loginGitHub();
+export async function GET(): Promise<Response> {
+    return await github.login();
 }

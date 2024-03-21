@@ -13,7 +13,11 @@ interface OAuthProviderProps {
 
 const OAuthProvider = ({ title, url, icon: Icon }: OAuthProviderProps) => (
     <Link href={url}>
-        <Button className="mt-2 w-full text-center" variant="outline">
+        <Button
+            className="mt-2 w-full text-center"
+            variant="outline"
+            type="button"
+        >
             <Icon className="mr-2 h-6 w-6" />
             {title}
         </Button>

@@ -1,9 +1,14 @@
 'use server';
 
 import db from '@/db';
+import { UserRole } from '@prisma/client';
 
 interface ICreateUserInput {
     email: string;
+    firstName?: string;
+    lastName?: string;
+    image?: string;
+    role?: UserRole;
 }
 
 interface ICreateUserReturn {
@@ -15,9 +20,7 @@ export default async function createUser(
 ): Promise<ICreateUserReturn> {
     // create user record
     const newUser = await db.user.create({
-        data: {
-            email: user.email
-        }
+        data: user
     });
 
     // create user settings record

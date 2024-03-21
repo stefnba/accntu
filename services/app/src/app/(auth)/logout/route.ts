@@ -1,4 +1,4 @@
-import logout from '@/actions/auth/logout';
+import { logout } from '@/auth/actions/logout';
 import { authRoutes } from '@/lib/auth';
 
 export async function GET(): Promise<Response> {

@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 
-import { LoginEmailSchema, sendToken } from '@/actions/auth/login/email/send';
 import { Form, FormInput, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useMutation } from '@/hooks/mutation';
+import { SendTokenSchema, sendToken } from '@/lib/auth/actions/mail';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import OAuthProviders from './oauth-provider';
@@ -21,7 +21,7 @@ interface Props {
 const LoginForm: React.FC<Props> = ({ type = 'login' }) => {
     const router = useRouter();
 
-    const form = useForm(LoginEmailSchema, {
+    const form = useForm(SendTokenSchema, {
         defaultValues: {
             email: 'stefan@com.com'
         },

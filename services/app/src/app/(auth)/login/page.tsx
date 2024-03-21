@@ -18,13 +18,12 @@
 //     );
 // }
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 import LoginForm from '../_components/form';
 
 const Login = async () => {
     return (
-        <>
+        <div className="w-[340px]">
             <div className="flex flex-col space-y-2 text-center">
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Welcome back!
@@ -46,7 +45,7 @@ const Login = async () => {
                 </Link>
                 .
             </p>
-        </>
+        </div>
     );
 };
 

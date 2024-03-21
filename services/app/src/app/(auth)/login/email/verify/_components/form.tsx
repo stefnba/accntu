@@ -2,13 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 
-import {
-    VerifyTokenSchema,
-    verifyToken
-} from '@/actions/auth/login/email/verify';
+import { VerifyTokenSchema, verifyToken } from '@/auth/actions/mail';
 import { Form, FormInputOTP, FormSubmit, useForm } from '@/components/form';
 import { useMutation } from '@/hooks/mutation';
-import { use } from 'react';
 
 export default function VerifyEmailForm() {
     const router = useRouter();
@@ -30,7 +26,11 @@ export default function VerifyEmailForm() {
 
     return (
         <Form form={form} onSubmit={execute}>
-            <FormInputOTP name="code" form={form} />
+            <FormInputOTP
+                description="Enter your one-time code thas been sent to your email."
+                name="code"
+                form={form}
+            />
             <FormSubmit className="mt-6" form={form} />
         </Form>
     );

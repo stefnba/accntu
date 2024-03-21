@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { authRoutes, getSessionIdFromCookie, lucia } from '@/auth';
 
-export default async function logout() {
+export async function logout() {
     const sessionId = getSessionIdFromCookie();
 
     if (!sessionId) {

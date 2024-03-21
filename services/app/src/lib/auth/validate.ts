@@ -7,7 +7,7 @@ import lucia from './authenticate';
 import { AUTH_COOKIE_NAME } from './config';
 import type { TValiDateRequest } from './types';
 
-export const validateRequest = cache(async (): Promise<TValiDateRequest> => {
+export const validateRequest = cache(async () => {
     const sessionId = getSessionIdFromCookie();
     if (!sessionId) {
         return {
@@ -31,8 +31,10 @@ export const validateRequest = cache(async (): Promise<TValiDateRequest> => {
                 sessionCookie.attributes
             );
         }
+        return result;
     } catch (e) {
         console.error('Error validating session', e);
+        redirect('/logout');
     }
     return result;
 });
