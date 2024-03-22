@@ -1,5 +1,5 @@
-import createMutation from './create-mutation';
-import type { ActionState, FieldErrors } from './create-mutation';
+import { createMutation } from './create-mutation';
+import type { TActionState, TFieldErrors } from './create-mutation';
 
 export { createMutation };
-export type { ActionState, FieldErrors };
+export type { TActionState, TFieldErrors };

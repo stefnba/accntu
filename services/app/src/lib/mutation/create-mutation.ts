@@ -1,14 +1,135 @@
+import { getUser } from '@/auth';
+import { User } from 'lucia';
 import { z } from 'zod';
 
-export type FieldErrors<TInput> = {
+export type TFieldErrors<TInput> = {
     [K in keyof TInput]?: string[];
 };
 
-export type ActionState<TInput, TOutput> = {
-    fieldErrors?: FieldErrors<TInput>;
+export type TActionState<TInput, TOutput> = {
+    fieldErrors?: TFieldErrors<TInput>;
     error?: string | null;
     data?: TOutput;
 };
+
+type TAction<TInput, TOutput> = (
+    validatedData: TInput,
+    user: User
+) => Promise<TOutput>;
+type TActionOptionalUser<TInput, TOutput> = (
+    validatedData: TInput,
+    user?: User
+) => Promise<TOutput>;
+type TActionPublic<TInput, TOutput> = (
+    validatedData: TInput
+) => Promise<TOutput>;
+
+type TMutationReturn<TInput, TOutput> = (
+    inputData: TInput
+) => Promise<TActionState<TInput, TOutput>>;
+
+const validateInputData = <TInput>(
+    inputData: TInput | FormData,
+    schema: z.Schema<TInput>
+): { fieldErrors: TFieldErrors<TInput> } | { data: TInput } => {
+    let data = inputData;
+    // Convert FormData to object which is then passed to zod
+    if (inputData instanceof FormData) {
+        for (const [key, value] of inputData.entries()) {
+            data = {
+                ...data,
+                [key]: value
+            };
+        }
+    }
+
+    const validatedData = schema.safeParse(inputData);
+
+    if (!validatedData.success) {
+        return {
+            fieldErrors: validatedData.error.flatten()
+                .fieldErrors as TFieldErrors<TInput>
+        };
+    }
+
+    return {
+        data: validatedData.data
+    };
+};
+
+async function executeMutation<TInput, TOutput>(
+    action: TActionOptionalUser<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    inputData: TInput | FormData,
+    user?: User
+): Promise<TActionState<TInput, TOutput>> {
+    const validationResult = validateInputData(inputData, schema);
+
+    if ('fieldErrors' in validationResult) {
+        return validationResult.fieldErrors;
+    }
+
+    return {
+        data: await action(validationResult.data, user)
+    };
+}
+
+/**
+ *
+ * @param action
+ * @param schema
+ * @returns
+ */
+export function createMutation11<TInput, TOutput>(
+    action: TAction<TInput, TOutput>,
+    schema: z.Schema<TInput>
+): TMutationReturn<TInput, TOutput> {
+    return async (inputData: TInput) => {
+        const user = await getUser();
+        return executeMutation(
+            action as TActionOptionalUser<TInput, TOutput>,
+            schema,
+            inputData,
+            user
+        );
+    };
+}
+
+export function createMutationPublic<TInput, TOutput>(
+    action: TActionPublic<TInput, TOutput>,
+    schema: z.Schema<TInput>
+): TMutationReturn<TInput, TOutput> {
+    return async (inputData: TInput) => {
+        return executeMutation(action, schema, inputData);
+    };
+}
+
+export function test<TInput, TOutput>(
+    action: TAction<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    type?: 'protected'
+): TMutationReturn<TInput, TOutput>;
+export function test<TInput, TOutput>(
+    action: TActionPublic<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    type: 'public'
+): TMutationReturn<TInput, TOutput>;
+export function test<TInput, TOutput>(
+    action: TActionPublic<TInput, TOutput> | TAction<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    type: 'public' | 'protected' = 'protected'
+): TMutationReturn<TInput, TOutput> {
+    return async (inputData: TInput) => {
+        if (type === 'protected') {
+            const user = await getUser();
+            return executeMutation(action as any, schema, inputData, user);
+        }
+
+        return executeMutation(action as any, schema, inputData);
+    };
+}
+
+test(async (data) => {}, z.object({}), 'public');
 
 /**
  * Wrapper for mutations that handles parsing of input with zod and executes
@@ -17,11 +138,13 @@ export type ActionState<TInput, TOutput> = {
  * @param schema Validation schema.
  * @returns
  */
-const createMutation = <TInput, TOutput>(
-    action: (validatedData: TInput) => Promise<TOutput>,
+function createMutationCurrent<TInput, TOutput>(
+    action: TAction<TInput, TOutput>,
     schema: z.Schema<TInput>
-) => {
-    return async (inputData: TInput): Promise<ActionState<TInput, TOutput>> => {
+): TMutationReturn<TInput, TOutput> {
+    return async (
+        inputData: TInput
+    ): Promise<TActionState<TInput, TOutput>> => {
         let data = inputData;
 
         // Convert FormData to object which is then passed to zod
@@ -38,14 +161,50 @@ const createMutation = <TInput, TOutput>(
         if (!validationResult.success) {
             return {
                 fieldErrors: validationResult.error.flatten()
-                    .fieldErrors as FieldErrors<TInput>
+                    .fieldErrors as TFieldErrors<TInput>
             };
         }
 
+        const user = await getUser();
+
         return {
-            data: await action(validationResult.data)
+            data: await action(validationResult.data, user)
         };
     };
-};
+}
 
-export default createMutation;
+export function createMutation<TInput, TOutput>(
+    action: TAction<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    options?: { auth: 'protected' }
+): TMutationReturn<TInput, TOutput>;
+export function createMutation<TInput, TOutput>(
+    action: TActionPublic<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    options: { auth: 'public' }
+): TMutationReturn<TInput, TOutput>;
+export function createMutation<TInput, TOutput>(
+    action: TAction<TInput, TOutput> | TActionPublic<TInput, TOutput>,
+    schema: z.Schema<TInput>,
+    options: { auth: 'public' | 'protected' } = { auth: 'protected' }
+): TMutationReturn<TInput, TOutput> {
+    return async (inputData: TInput) => {
+        if (options?.auth === 'public') {
+            return executeMutation(action as any, schema, inputData);
+        }
+
+        const user = await getUser();
+        return executeMutation(action as any, schema, inputData, user);
+    };
+}
+
+// testNew(
+//     async (data, user) => {
+//         user.firstName;
+//         data.name;
+//     },
+//     z.object({
+//         name: z.string()
+//     }),
+//     { auth: 'protected' }
+// );

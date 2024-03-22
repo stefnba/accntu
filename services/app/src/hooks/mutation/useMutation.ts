@@ -1,10 +1,10 @@
-import { ActionState, FieldErrors } from '@/lib/mutation';
+import { TActionState, TFieldErrors } from '@/lib/mutation';
 import { useCallback, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
 type Action<TInput, TOutput> = (
     data: TInput
-) => Promise<ActionState<TInput, TOutput>>;
+) => Promise<TActionState<TInput, TOutput>>;
 
 interface UseMutationOptions<TInput, TOutput> {
     /* Callback to execute before action is triggered */
@@ -12,7 +12,7 @@ interface UseMutationOptions<TInput, TOutput> {
     /* Callback to execute on success */
     onSuccess?: (data: TOutput) => void;
     onError?: (error: Error) => void;
-    onFieldError?: (error: FieldErrors<TInput>) => void;
+    onFieldError?: (error: TFieldErrors<TInput>) => void;
     onComplete?: () => void;
     resetOnSuccess?: boolean;
     useFormData?: boolean;
@@ -34,7 +34,7 @@ const useMutation = <TInput extends Record<string, any>, TOutput>(
     const [data, setData] = useState<TOutput | undefined>(undefined);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [fieldErrors, setFieldErrors] = useState<
-        FieldErrors<TInput> | undefined
+        TFieldErrors<TInput> | undefined
     >(undefined);
 
     const execute = useCallback(
