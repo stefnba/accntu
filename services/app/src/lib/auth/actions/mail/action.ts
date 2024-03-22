@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 
-import createUser from '@/actions/user/create';
+import { userActions } from '@/actions';
 import db from '@/db';
 import { createMutation } from '@/lib/mutation';
 import crypto from 'crypto';
@@ -96,7 +96,8 @@ export const sendToken = createMutation(
             );
         }
     },
-    SendTokenSchema
+    SendTokenSchema,
+    { auth: 'public' }
 );
 
 /**
@@ -159,7 +160,7 @@ export const verifyToken = createMutation(
             }
 
             // create new user
-            const user = await createUser({ email });
+            const user = await userActions.create({ email });
             await createSession(user.id);
 
             return {
@@ -173,5 +174,6 @@ export const verifyToken = createMutation(
             );
         }
     },
-    VerifyTokenSchema
+    VerifyTokenSchema,
+    { auth: 'public' }
 );

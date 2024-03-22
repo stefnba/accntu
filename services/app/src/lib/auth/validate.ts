@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 
 import { cache } from 'react';
 
-import lucia from './authenticate';
 import { AUTH_COOKIE_NAME } from './config';
+import { lucia } from './lucia';
 import type { TValiDateRequest } from './types';
 
 export const validateRequest = cache(async () => {

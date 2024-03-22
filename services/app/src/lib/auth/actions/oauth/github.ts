@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import createUser from '@/actions/user/create';
+import { userActions } from '@/actions';
 import { createSessionAndRedirect, oauth } from '@/auth';
 import db from '@/db';
 import { generateState } from 'arctic';
@@ -83,7 +83,7 @@ export async function verify(code?: string | null, state?: string | null) {
         return await createSessionAndRedirect(existingUser.userId);
     }
 
-    const user = await createUser({
+    const user = await userActions.create({
         email: primaryEmail,
         firstName: githubUser.name,
         image: githubUser.image

@@ -1,4 +1,5 @@
-import lucia, { createSession, createSessionAndRedirect } from './authenticate';
+import { createSession, createSessionAndRedirect } from './authenticate';
+import { lucia } from './lucia';
 import * as oauth from './oauth';
 import * as authRoutes from './routes';
 import {
