@@ -25,6 +25,7 @@
         ],
         "paths": {
             "@/*": ["./src/*"],
+            "@/actions": ["./src/actions"],
             "@/components/*": ["./src/components/*"],
             "@/lib/*": ["./src/lib/*"],
             "@/utils": ["./src/lib/utils"],
