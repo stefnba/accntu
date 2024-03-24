@@ -1,27 +1,40 @@
 'use client';
 
 import {
-    LuLayoutDashboard,
-    LuUser,
+    LuCreditCard,
     LuDownload,
-    LuBookmark
+    LuImport,
+    LuLayoutDashboard,
+    LuPiggyBank,
+    LuSettings,
+    LuWallet
 } from 'react-icons/lu';
 
 const routes = [
     {
         icon: LuLayoutDashboard,
-        label: 'Home',
+        label: 'Dashboard',
         href: '/'
     },
     {
-        icon: LuBookmark,
-        label: 'Bookmarks',
-        href: '/bookmark'
+        icon: LuImport,
+        label: 'Imports',
+        href: '/import'
     },
     {
-        icon: LuDownload,
-        label: 'Downloads',
-        href: '/download'
+        icon: LuWallet,
+        label: 'Budget',
+        href: '/budget'
+    },
+    {
+        icon: LuCreditCard,
+        label: 'Transactions',
+        href: '/transaction'
+    },
+    {
+        icon: LuSettings,
+        label: 'Settings',
+        href: '/settings'
     }
 ];
 
