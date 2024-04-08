@@ -58,7 +58,6 @@ def parse(body: ParseBody):
         files = body.file
         file_ids = [file.id for file in files]
 
-        print(file_ids)
         user_id = body.user_id
         parsed_dfs: list[pl.DataFrame] = []
 
