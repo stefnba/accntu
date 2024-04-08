@@ -32,11 +32,12 @@ class DuckDB:
         self.duck = duckdb.connect(database=":memory:")
 
     def collect_dataframes(self, bindings: t.Mapping[str, Bindings]) -> t.Mapping[str, Bindings]:
-        dataframes: t.Mapping[str, Bindings] = {}
+        dataframes: t.Dict[str, Bindings] = {}
 
         for value in bindings.values():
             if isinstance(value, (pd.DataFrame, pl.DataFrame)):
-                dataframes[self._get_dataframe_key(value)] = value
+                id = self._get_dataframe_key(value)
+                dataframes[id] = value
 
         return dataframes
 
