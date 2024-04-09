@@ -4,6 +4,7 @@ import polars as pl
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.duplicate import identify_duplicates
@@ -11,6 +12,16 @@ from app.parser.parse import parsers
 from app.type import ParseBody, ParseFile, ParserIds
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(RequestValidationError)
@@ -55,7 +66,7 @@ def parse(body: ParseBody):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parser not found")
 
     try:
-        files = body.file
+        files = body.files
         file_ids = [file.id for file in files]
 
         user_id = body.user_id
