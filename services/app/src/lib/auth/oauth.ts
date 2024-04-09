@@ -1,14 +1,14 @@
-import { Provider } from '@prisma/client';
+import { OAuthProvider } from '@prisma/client';
 import { GitHub } from 'arctic';
 
-interface OAuthProvider<P> {
-    providerId: Provider;
+interface IOAuthProvider<P> {
+    providerId: OAuthProvider;
     provider: P;
     cookieName: string;
 }
 
-export const github: OAuthProvider<GitHub> = {
-    providerId: Provider.GITHUB,
+export const github: IOAuthProvider<GitHub> = {
+    providerId: OAuthProvider.GITHUB,
     cookieName: 'github_oauth_state',
     provider: new GitHub(
         process.env.GITHUB_CLIENT_ID!,
