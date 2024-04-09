@@ -35,6 +35,7 @@ export default async function Page({ params: { importId } }: Props) {
                 </p>
             ))}
             <TransactionSelection
+                importId={importId}
                 files={files.map((file) => ({
                     id: file.id,
                     url: file.url,
