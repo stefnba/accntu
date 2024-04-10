@@ -5,8 +5,11 @@ from urllib.parse import urlparse
 
 import boto3
 import polars as pl
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.db.query.transaction import get_transactions
 from app.type import ParseFile
 from app.utils.duckdb import SQL, DuckDB
 
@@ -123,3 +126,17 @@ class BaseParser:
         response = s3_client.get_object(Bucket=bucket, Key=key)
 
         return t.cast(bytes, response["Body"].read())
+
+    @staticmethod
+    def identify_duplicates(transactions: pl.DataFrame, user_id: str, db: Session) -> pl.DataFrame:
+        """Identify duplicate transactions in a DataFrame."""
+
+        existing_transactions = pl.DataFrame(jsonable_encoder(get_transactions(user_id=user_id, db=db)))
+
+        data = DuckDB.query(
+            query=SQL_QUERY["duplicate"], data=transactions, existing_transactions=existing_transactions
+        )
+
+        print(data)
+
+        return data

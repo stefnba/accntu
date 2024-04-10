@@ -3,7 +3,7 @@ from io import BytesIO
 import pandas as pd
 import polars as pl
 
-from app.parser.base import BaseParser
+from app.services.parse_transactions.parsers.base import BaseParser
 
 
 class BarclasyDeCreditCardParser(BaseParser):
@@ -22,7 +22,7 @@ class BarclasyDeCreditCardParser(BaseParser):
         """Read file from S3 with boto3 and return a DataFrame."""
 
         # file = self.read_cloud_file(path)
-        file = self._read_local_file("app/parser/Umsätze-8.xlsx")
+        file = self._read_local_file("Umsätze-8.xlsx")
 
         return pl.from_pandas(pd.read_excel(BytesIO(file), skiprows=self.skiprows))
 
@@ -59,7 +59,7 @@ class BarclasyDeCreditCardParser(BaseParser):
                 .abs()
                 .name.keep(),
                 # pl.col('title').str.extract(r'^(.*?)\s{2,}').name.keep(),
-                pl.when(pl.col("type") == "Gutschrift").then(pl.lit("DEBIT")).otherwise(pl.lit("debit")).name.keep(),
+                pl.when(pl.col("type") == "Gutschrift").then(pl.lit("CREDIT")).otherwise(pl.lit("DEBIT")).name.keep(),
             ]
         )
 

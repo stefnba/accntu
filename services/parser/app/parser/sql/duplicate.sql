@@ -1,1 +1,0 @@
-SELECT *, IF(ROW_NUMBER() OVER (PARTITION BY key) > 1, 1, 0) AS is_duplicate FROM $data

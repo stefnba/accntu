@@ -1,3 +1,4 @@
+import traceback
 import typing as t
 from pathlib import Path
 from string import Template
@@ -8,8 +9,6 @@ import polars as pl
 
 Bindings: t.TypeAlias = pl.DataFrame | pd.DataFrame
 
-BASE_PATH = "app/parser"
-
 
 class SQL:
     sql: str
@@ -19,7 +18,10 @@ class SQL:
         self.bindings = bindings
 
         if sql.endswith(".sql"):
-            self.sql = Path(BASE_PATH, sql).read_text()
+            # Get the path of the file that called the SQL class
+            stack = traceback.extract_stack()
+            caller_path = stack[-2].filename
+            self.sql = Path(caller_path).parent.joinpath(sql).read_text()
         else:
             self.sql = sql
 
