@@ -129,14 +129,19 @@ class BaseParser:
 
     @staticmethod
     def identify_duplicates(transactions: pl.DataFrame, user_id: str, db: Session) -> pl.DataFrame:
-        """Identify duplicate transactions in a DataFrame."""
+        """Identify duplicate transactions."""
 
-        existing_transactions = pl.DataFrame(jsonable_encoder(get_transactions(user_id=user_id, db=db)))
+        existing_transactions = pl.DataFrame(
+            jsonable_encoder(get_transactions(user_id=user_id, db=db)),
+            schema={
+                "userId": pl.Utf8,
+                "key": pl.Utf8,
+                "id": pl.Utf8,
+            },
+        )
 
         data = DuckDB.query(
             query=SQL_QUERY["duplicate"], data=transactions, existing_transactions=existing_transactions
         )
-
-        print(data)
 
         return data
