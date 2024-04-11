@@ -1,6 +1,9 @@
 import Transaction from '@/app/(protected)/transaction/page';
+import { PageHeader } from '@/components/page/header';
 import db from '@/db';
+import dayjs from 'dayjs';
 
+import { ParsedFileSelection } from './_components/parsed-file-selection';
 import { TransactionSelection } from './_components/transaction-selection';
 
 interface Props {
@@ -29,12 +32,14 @@ export default async function Page({ params: { importId } }: Props) {
 
     return (
         <>
-            {files.map((f) => (
-                <p key={f.id}>
-                    {f.id} {f.filename} {f.url}
-                </p>
-            ))}
+            <PageHeader
+                title={dayjs(importRecord.createdAt).format('DD-MMM YY HH:mm')}
+            />
+            {files.length > 1 && <ParsedFileSelection files={files} />}
+
             <TransactionSelection
+                userId={importRecord.userId}
+                accountId={importRecord.accountId}
                 importId={importId}
                 files={files.map((file) => ({
                     id: file.id,

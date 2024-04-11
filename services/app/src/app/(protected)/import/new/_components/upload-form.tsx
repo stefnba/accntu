@@ -32,7 +32,7 @@ export const ImportUploadForm: React.FC<Props> = ({ account }) => {
 
     const { execute: createImport } = useMutation(importActions.create, {
         onSuccess({ id }) {
-            router.push(`new?importId=${id}`);
+            router.push(`new/${id}`);
         }
     });
 

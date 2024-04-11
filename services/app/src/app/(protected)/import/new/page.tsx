@@ -29,7 +29,7 @@ export default async function NewImport({
 
     return (
         <div className="w-[60%]">
-            <PageHeader subTitle="Select your Acl" title="New Import" />
+            <PageHeader title="New Import" />
 
             {!accountId && !importId && (
                 <AccountSelection accounts={accounts} />
