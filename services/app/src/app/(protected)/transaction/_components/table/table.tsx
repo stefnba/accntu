@@ -8,13 +8,13 @@ import {
     useReactTable
 } from '@tanstack/react-table';
 
-import { columns } from './table-columns';
-import { TransactionTablePagination } from './table/pagination';
+import { columns } from './columns';
+import { TransactionTablePagination } from './pagination';
 import {
     useTransactionTableFilteringStore,
     useTransactionTablePaginationStore
-} from './table/store';
-import { DataTableToolbar } from './table/toolbar';
+} from './store';
+import { DataTableToolbar } from './toolbar';
 
 interface Props {
     transactionData: Transaction[];
