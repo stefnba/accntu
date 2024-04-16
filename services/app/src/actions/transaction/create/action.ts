@@ -42,7 +42,8 @@ export const createTransaction = createMutation(
         // update import record
         await db.import.update({
             data: {
-                successAt: new Date()
+                successAt: new Date(),
+                countTransactions: newTransactions.count
             },
             where: {
                 id: importId,
