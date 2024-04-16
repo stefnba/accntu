@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 import Transaction from '@/app/(protected)/transaction/page';
 import { PageHeader } from '@/components/page/header';
 import db from '@/db';
@@ -25,7 +27,7 @@ export default async function Page({ params: { importId } }: Props) {
     }
 
     if (importRecord.successAt) {
-        return <div>Import already completed</div>;
+        return redirect(`/import/${importId}`);
     }
 
     const files = importRecord.files;

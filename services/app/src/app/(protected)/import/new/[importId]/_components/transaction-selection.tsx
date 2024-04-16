@@ -16,6 +16,7 @@ import {
 import { use, useEffect, useMemo, useState } from 'react';
 
 import type { IFile, TParsedTransaction } from '../_types';
+import { ImportSuccess } from './success';
 import { columns } from './table-columns';
 
 interface Props {
@@ -103,20 +104,31 @@ export const TransactionSelection: React.FC<Props> = ({
         }
     });
 
-    const { execute: executeCreateTransactions } = useMutation(
-        transactionActions.create,
-        {
-            onSuccess(data) {
-                console.log('success', data);
-            },
-            onFieldError(error) {
-                console.log('error', error);
-            },
-            onError(error) {
-                console.log('error', error);
-            }
+    const {
+        execute: executeCreateTransactions,
+        status,
+        data: importedTransactionResponse
+    } = useMutation(transactionActions.create, {
+        onSuccess(data) {},
+        onFieldError(error) {
+            console.log('error', error);
+        },
+        onError(error) {
+            console.log('error', error);
         }
-    );
+    });
+
+    if (status === 'LOADING') {
+        return <div>Importing Transactions...</div>;
+    }
+
+    if (status === 'SUCCESS' && importedTransactionResponse) {
+        return (
+            <ImportSuccess
+                countTransactions={importedTransactionResponse?.count}
+            />
+        );
+    }
 
     if (isLoading) {
         return <div>Loading...</div>;
