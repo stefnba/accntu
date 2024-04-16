@@ -8,8 +8,8 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
     DropdownMenuSeparator,
     DropdownMenuShortcut,
     DropdownMenuSub,
@@ -20,7 +20,9 @@ import {
 import { Transaction } from '@prisma/client';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
-import { RxDotsHorizontal } from 'react-icons/rx';
+import { HiOutlineEye } from 'react-icons/hi';
+import { LuFileEdit, LuTags } from 'react-icons/lu';
+import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
 export const columns: ColumnDef<Transaction>[] = [
     {
@@ -169,13 +171,23 @@ export const columns: ColumnDef<Transaction>[] = [
                                 <span className="sr-only">Open menu</span>
                             </Button>
                         </DropdownMenuTrigger>
+
                         <DropdownMenuContent align="end" className="w-[160px]">
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>Make a copy</DropdownMenuItem>
-                            <DropdownMenuItem>Favorite</DropdownMenuItem>
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>
+                                <HiOutlineEye className="mr-2 h-4 w-4" />
+                                View
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem>
+                                <LuFileEdit className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Quick Update</DropdownMenuLabel>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>
+                                    <LuTags className="mr-2 h-4 w-4" />
                                     Labels
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent>
@@ -188,8 +200,10 @@ export const columns: ColumnDef<Transaction>[] = [
                                     </DropdownMenuRadioGroup>
                                 </DropdownMenuSubContent>
                             </DropdownMenuSub>
+
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                                <RxTrash className="mr-2 h-4 w-4" />
                                 Delete
                                 <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
                             </DropdownMenuItem>

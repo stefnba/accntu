@@ -1,8 +1,17 @@
+import { transactionActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
-import db from '@/db';
-import { getUser } from '@/lib/auth';
+import {
+    HydrationBoundary,
+    QueryClient,
+    dehydrate
+} from '@tanstack/react-query';
 
 import { TransactionTable } from './_components/table';
+import {
+    DEFAULT_FILTERS,
+    DEFAULT_PAGE,
+    DEFAULT_PAGE_SIZE
+} from './_components/table/store';
 
 interface Props {
     params: {
@@ -11,39 +20,23 @@ interface Props {
 }
 
 export default async function Transaction({}: Props) {
-    const user = await getUser();
-    const transactions = await db.transaction.findMany({
-        where: {
-            isDeleted: false,
-            userId: user.id
-        },
-        include: {
-            account: {
-                select: {
-                    name: true
-                }
-            },
-            label: {
-                select: {
-                    name: true
-                }
-            }
-        }
-    });
+    const queryClient = new QueryClient();
 
-    const transactionCount = await db.transaction.count({
-        where: {
-            isDeleted: false,
-            userId: user.id
-        }
-    });
+    const pageSize = DEFAULT_PAGE_SIZE;
+    const page = DEFAULT_PAGE;
+    const filters = DEFAULT_FILTERS;
 
-    console.log(transactions);
+    await queryClient.prefetchQuery({
+        queryKey: ['transactions', { pageSize, page }, { filters }],
+        queryFn: () => transactionActions.list({ pageSize, page, ...filters })
+    });
 
     return (
         <div>
             <PageHeader title="Transactions" />
-            <TransactionTable transactionData={transactions} />
+            <HydrationBoundary state={dehydrate(queryClient)}>
+                <TransactionTable />
+            </HydrationBoundary>
         </div>
     );
 }
