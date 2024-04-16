@@ -6,7 +6,7 @@ type Action<TInput, TOutput> = (
     data: TInput
 ) => Promise<TActionState<TInput, TOutput>>;
 
-interface UseMutationOptions<TInput, TOutput> {
+interface IUseMutationOptions<TInput, TOutput> {
     /* Callback to execute before action is triggered */
     onSubmit?: (data: TInput) => TInput;
     /* Callback to execute on success */
@@ -18,6 +18,8 @@ interface UseMutationOptions<TInput, TOutput> {
     useFormData?: boolean;
 }
 
+type TActionStatus = 'IDLE' | 'LOADING' | 'ERROR' | 'SUCCESS';
+
 /**
  * Hook to execute a mutation.
  * @param action
@@ -27,11 +29,12 @@ interface UseMutationOptions<TInput, TOutput> {
  */
 const useMutation = <TInput extends Record<string, any>, TOutput>(
     action: Action<TInput, TOutput>,
-    options: UseMutationOptions<TInput, TOutput> = {},
+    options: IUseMutationOptions<TInput, TOutput> = {},
     form?: UseFormReturn<any>
 ) => {
     const [error, setError] = useState<string | undefined>(undefined);
     const [data, setData] = useState<TOutput | undefined>(undefined);
+    const [status, setStatus] = useState<TActionStatus>('IDLE');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [fieldErrors, setFieldErrors] = useState<
         TFieldErrors<TInput> | undefined
@@ -40,6 +43,7 @@ const useMutation = <TInput extends Record<string, any>, TOutput>(
     const execute = useCallback(
         async (input: TInput) => {
             setIsLoading(true);
+            setStatus('LOADING');
 
             let formData = input;
 
@@ -68,6 +72,7 @@ const useMutation = <TInput extends Record<string, any>, TOutput>(
                     // return data
                     if (result.data) {
                         setData(result.data);
+                        setStatus('SUCCESS');
                         options.onSuccess?.(result.data);
 
                         // reset form
@@ -106,10 +111,12 @@ const useMutation = <TInput extends Record<string, any>, TOutput>(
                 .catch((err: Error) => {
                     // server error
                     setError(err.message);
+                    setStatus('ERROR');
                     options.onError?.(err);
                 })
                 .finally(() => {
                     setIsLoading(false);
+                    // setStatus('IDLE');
                     options.onComplete?.();
                 });
         },
@@ -121,7 +128,8 @@ const useMutation = <TInput extends Record<string, any>, TOutput>(
         fieldErrors,
         error,
         data,
-        isLoading
+        isLoading,
+        status
     };
 };
 
