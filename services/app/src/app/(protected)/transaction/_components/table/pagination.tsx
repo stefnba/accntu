@@ -113,7 +113,7 @@ export function TransactionTablePagination<TData>({
                     <Button
                         variant="outline"
                         className="hidden h-8 w-8 p-0 lg:flex"
-                        onClick={() => handlePageChange(0)}
+                        onClick={() => handlePageChange(1)}
                         disabled={page === 1}
                     >
                         <span className="sr-only">Go to first page</span>
