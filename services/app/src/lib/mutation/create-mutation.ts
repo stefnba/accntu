@@ -16,10 +16,12 @@ type TAction<TInput, TOutput> = (
     validatedData: TInput,
     user: User
 ) => Promise<TOutput>;
+
 type TActionOptionalUser<TInput, TOutput> = (
     validatedData: TInput,
     user?: User
 ) => Promise<TOutput>;
+
 type TActionPublic<TInput, TOutput> = (
     validatedData: TInput
 ) => Promise<TOutput>;
@@ -74,62 +76,60 @@ async function executeMutation<TInput, TOutput>(
     };
 }
 
-/**
- *
- * @param action
- * @param schema
- * @returns
- */
-export function createMutation11<TInput, TOutput>(
-    action: TAction<TInput, TOutput>,
-    schema: z.Schema<TInput>
-): TMutationReturn<TInput, TOutput> {
-    return async (inputData: TInput) => {
-        const user = await getUser();
-        return executeMutation(
-            action as TActionOptionalUser<TInput, TOutput>,
-            schema,
-            inputData,
-            user
-        );
-    };
-}
+// /**
+//  *
+//  * @param action
+//  * @param schema
+//  * @returns
+//  */
+// export function createMutation11<TInput, TOutput>(
+//     action: TAction<TInput, TOutput>,
+//     schema: z.Schema<TInput>
+// ): TMutationReturn<TInput, TOutput> {
+//     return async (inputData: TInput) => {
+//         const user = await getUser();
+//         return executeMutation(
+//             action as TActionOptionalUser<TInput, TOutput>,
+//             schema,
+//             inputData,
+//             user
+//         );
+//     };
+// }
 
-export function createMutationPublic<TInput, TOutput>(
-    action: TActionPublic<TInput, TOutput>,
-    schema: z.Schema<TInput>
-): TMutationReturn<TInput, TOutput> {
-    return async (inputData: TInput) => {
-        return executeMutation(action, schema, inputData);
-    };
-}
+// export function createMutationPublic<TInput, TOutput>(
+//     action: TActionPublic<TInput, TOutput>,
+//     schema: z.Schema<TInput>
+// ): TMutationReturn<TInput, TOutput> {
+//     return async (inputData: TInput) => {
+//         return executeMutation(action, schema, inputData);
+//     };
+// }
 
-export function test<TInput, TOutput>(
-    action: TAction<TInput, TOutput>,
-    schema: z.Schema<TInput>,
-    type?: 'protected'
-): TMutationReturn<TInput, TOutput>;
-export function test<TInput, TOutput>(
-    action: TActionPublic<TInput, TOutput>,
-    schema: z.Schema<TInput>,
-    type: 'public'
-): TMutationReturn<TInput, TOutput>;
-export function test<TInput, TOutput>(
-    action: TActionPublic<TInput, TOutput> | TAction<TInput, TOutput>,
-    schema: z.Schema<TInput>,
-    type: 'public' | 'protected' = 'protected'
-): TMutationReturn<TInput, TOutput> {
-    return async (inputData: TInput) => {
-        if (type === 'protected') {
-            const user = await getUser();
-            return executeMutation(action as any, schema, inputData, user);
-        }
+// export function test<TInput, TOutput>(
+//     action: TAction<TInput, TOutput>,
+//     schema: z.Schema<TInput>,
+//     type?: 'protected'
+// ): TMutationReturn<TInput, TOutput>;
+// export function test<TInput, TOutput>(
+//     action: TActionPublic<TInput, TOutput>,
+//     schema: z.Schema<TInput>,
+//     type: 'public'
+// ): TMutationReturn<TInput, TOutput>;
+// export function test<TInput, TOutput>(
+//     action: TActionPublic<TInput, TOutput> | TAction<TInput, TOutput>,
+//     schema: z.Schema<TInput>,
+//     type: 'public' | 'protected' = 'protected'
+// ): TMutationReturn<TInput, TOutput> {
+//     return async (inputData: TInput) => {
+//         if (type === 'protected') {
+//             const user = await getUser();
+//             return executeMutation(action as any, schema, inputData, user);
+//         }
 
-        return executeMutation(action as any, schema, inputData);
-    };
-}
-
-test(async (data) => {}, z.object({}), 'public');
+//         return executeMutation(action as any, schema, inputData);
+//     };
+// }
 
 /**
  * Wrapper for mutations that handles parsing of input with zod and executes
@@ -189,22 +189,13 @@ export function createMutation<TInput, TOutput>(
     options: { auth: 'public' | 'protected' } = { auth: 'protected' }
 ): TMutationReturn<TInput, TOutput> {
     return async (inputData: TInput) => {
+        // execute public mutations, e.g. login
         if (options?.auth === 'public') {
             return executeMutation(action as any, schema, inputData);
         }
 
+        // add user object for private mutations
         const user = await getUser();
         return executeMutation(action as any, schema, inputData, user);
     };
 }
-
-// testNew(
-//     async (data, user) => {
-//         user.firstName;
-//         data.name;
-//     },
-//     z.object({
-//         name: z.string()
-//     }),
-//     { auth: 'protected' }
-// );
