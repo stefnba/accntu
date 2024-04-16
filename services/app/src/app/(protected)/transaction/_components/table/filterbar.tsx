@@ -1,77 +1,36 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table } from '@tanstack/react-table';
-import { RxCross2, RxQuestionMarkCircled } from 'react-icons/rx';
+'use client';
 
-import { DataTableFacetedFilter } from './filters/filter';
+import {
+    FilterResetButton,
+    SearchFilter
+} from '@/components/data-table/filters';
 
-interface Props<TData> {
-    table: Table<TData>;
-}
+import { TransactionTableSelectFilter } from './filters/select';
+import { useTransactionTableFilteringStore } from './store';
 
-export const statuses = [
-    {
-        value: 'backlog',
-        label: 'Backlog',
-        icon: RxQuestionMarkCircled
-    },
-    {
-        value: 'todo',
-        label: 'Todo',
-        icon: RxQuestionMarkCircled
-    },
-    {
-        value: 'in progress',
-        label: 'In Progress',
-        icon: RxQuestionMarkCircled
-    },
-    {
-        value: 'done',
-        label: 'Done',
-        icon: RxQuestionMarkCircled
-    },
-    {
-        value: 'canceled',
-        label: 'Canceled',
-        icon: RxQuestionMarkCircled
-    }
-];
+interface Props {}
 
-export function TransactionTableFilterBar<TData>({ table }: Props<TData>) {
-    const isFiltered = table.getState().columnFilters.length > 0;
+export function TransactionTableFilterBar({}: Props) {
+    /* Filtering */
+    const filters = useTransactionTableFilteringStore((state) => state.filters);
+    const resetFilters = useTransactionTableFilteringStore(
+        (state) => state.resetFilters
+    );
+
     return (
         <div className="flex flex-1 items-center space-x-2">
-            <Input
-                placeholder="Search..."
-                value={
-                    (table.getColumn('title')?.getFilterValue() as string) ?? ''
-                }
-                onChange={(event) =>
-                    table.getColumn('title')?.setFilterValue(event.target.value)
-                }
-                className="h-8 w-[150px] lg:w-[250px]"
+            <TransactionTableSelectFilter
+                filterKey="label"
+                filterLabel="Label"
             />
-
-            <DataTableFacetedFilter
-                column={table.getColumn('accountId')}
-                title="Account"
-                options={statuses}
+            <TransactionTableSelectFilter
+                filterKey="account"
+                filterLabel="Account"
             />
-            <DataTableFacetedFilter
-                column={table.getColumn('type')}
-                title="type"
-                options={statuses}
+            <FilterResetButton
+                isFiltered={Object.keys(filters).length > 0}
+                resetFiltersFn={resetFilters}
             />
-            {isFiltered && (
-                <Button
-                    variant="ghost"
-                    onClick={() => table.resetColumnFilters()}
-                    className="h-8 px-2 lg:px-3"
-                >
-                    Reset
-                    <RxCross2 className="ml-2 h-4 w-4" />
-                </Button>
-            )}
         </div>
     );
 }

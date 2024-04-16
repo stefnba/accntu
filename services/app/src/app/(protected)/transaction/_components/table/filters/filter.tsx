@@ -1,7 +1,7 @@
 'use client';
 
 import { transactionActions } from '@/actions';
-import { FilterButton } from '@/components/filters/button';
+import { FilterButton } from '@/components/data-table/filters/button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
