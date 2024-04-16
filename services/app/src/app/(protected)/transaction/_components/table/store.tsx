@@ -1,10 +1,50 @@
 import { create } from 'zustand';
 
-interface ITransactionTableFilteringStore {
-    filters: number;
-    resetFilters: () => void;
-    setFilter: (page: number) => void;
+import type {
+    TTransactionFilter,
+    TTransactionFilterKeys
+} from './filters/types';
+
+interface ITransactionTableColumnVisibilityStore {
+    columns: string[];
+    setColumns: (columns: string[]) => void;
 }
+
+export const useTransactionTableColumnVisibilityStore =
+    create<ITransactionTableColumnVisibilityStore>((set) => ({
+        columns: [],
+        setColumns: (columns) => set({ columns })
+    }));
+
+type FilterValue = string | string[] | null;
+
+interface ITransactionTableFilteringStore {
+    filters: TTransactionFilter;
+    resetFilters: () => void;
+    setFilter: (key: TTransactionFilterKeys, value: FilterValue) => void;
+}
+
+export const DEFAULT_FILTERS: TTransactionFilter = {};
+
+export const useTransactionTableFilteringStore =
+    create<ITransactionTableFilteringStore>((set) => ({
+        filters: DEFAULT_FILTERS,
+        resetFilters: () => set({ filters: DEFAULT_FILTERS }),
+        setFilter: (key, value) =>
+            set((state) => {
+                if (
+                    (Array.isArray(value) && value.length === 0) ||
+                    value === undefined
+                ) {
+                    const { [key]: _, ...rest } = state.filters;
+                    return { filters: rest };
+                }
+
+                return {
+                    filters: { ...state.filters, [key]: value }
+                };
+            })
+    }));
 
 interface ITransactionTablePaginationStore {
     page: number;
@@ -13,28 +53,13 @@ interface ITransactionTablePaginationStore {
     setPage: (page: number) => void;
 }
 
-interface ITransactionTableColumnVisibilityStore {
-    columns: string[];
-    setColumns: (columns: string[]) => void;
-}
-
-export const useTransactionTableFilteringStore =
-    create<ITransactionTableFilteringStore>((set) => ({
-        filters: 0,
-        resetFilters: () => set({ filters: 0 }),
-        setFilter: (filters) => set({ filters })
-    }));
+export const DEFAULT_PAGE_SIZE = 10;
+export const DEFAULT_PAGE = 1;
 
 export const useTransactionTablePaginationStore =
     create<ITransactionTablePaginationStore>((set) => ({
-        page: 1,
-        pageSize: 25,
-        setPageSize: (pageSize) => set({ pageSize }),
+        page: DEFAULT_PAGE,
+        pageSize: DEFAULT_PAGE_SIZE,
+        setPageSize: (pageSize) => set({ pageSize, page: 1 }),
         setPage: (page) => set({ page })
-    }));
-
-export const useTransactionTableColumnVisibilityStore =
-    create<ITransactionTableColumnVisibilityStore>((set) => ({
-        columns: [],
-        setColumns: (columns) => set({ columns })
     }));
