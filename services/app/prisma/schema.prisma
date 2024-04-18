@@ -13,7 +13,7 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-enum Provider {
+enum OAuthProvider {
     GITHUB
 }
 
@@ -50,16 +50,21 @@ model User {
     lastLoginAt     DateTime?
     loginAttempts   Int       @default(0)
 
-    sessions     Session[]
-    OAuthAccount OAuthAccount[]
-    Login        Login[]
-    UserSetting  UserSetting?
+    sessions           Session[]
+    oAuthAccount       OAuthAccount[]
+    login              Login[]
+    userSetting        UserSetting?
+    transactionAccount TransactionAccount[]
+    import             Import[]
+    importFile         ImportFile[]
+    transaction        Transaction[]
+    label              Label[]
 
     @@map("user")
 }
 
 model Login {
-    id          String       @id @default(uuid())
+    id          String       @id
     method      LoginMethod?
     userId      String?
     sessionId   String?
@@ -67,8 +72,8 @@ model Login {
     ip          String?
     location    String?
     userAgent   String?
-    successAt   DateTime
-    attemptedAt DateTime
+    attemptedAt DateTime     @default(now())
+    successAt   DateTime?
 
     user    User?    @relation(fields: [userId], references: [id])
     session Session? @relation(fields: [sessionId], references: [id])
@@ -77,11 +82,11 @@ model Login {
 }
 
 model OAuthAccount {
-    id             String   @id @default(uuid())
+    id             String        @id @default(uuid())
     userId         String
-    provider       Provider
+    provider       OAuthProvider
     providerUserId String
-    user           User     @relation(fields: [userId], references: [id])
+    user           User          @relation(fields: [userId], references: [id])
 
     @@map("oauth_account")
 }
@@ -96,9 +101,10 @@ model Session {
     @@map("session")
 }
 
-model VerificationToken {
+model VerificationCode {
     identifier String
-    token      String   @unique
+    token      String
+    code       String
     expiresAt  DateTime
 
     @@unique([identifier, token])
@@ -113,4 +119,151 @@ model UserSetting {
     user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@map("user_setting")
+}
+
+model BankUploadAccounts {
+    id   String                 @id @default(uuid())
+    type TransactionAccountType
+
+    bankId String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    bank Bank @relation(fields: [bankId], references: [id])
+
+    @@map("bank_upload_accounts")
+}
+
+model Bank {
+    id             String  @id @default(cuid())
+    name           String
+    country        String  @db.Char(2)
+    bic            String?
+    color          String?
+    logo           String?
+    providerSource String?
+    providerId     String?
+
+    createdAt          DateTime             @default(now())
+    updatedAt          DateTime             @updatedAt
+    transactionAccount TransactionAccount[]
+    bankUploadAccounts BankUploadAccounts[]
+
+    @@map("bank")
+}
+
+enum TransactionAccountType {
+    CURRENT
+    SAVING
+    CREDIT_CARD
+}
+
+model TransactionAccount {
+    id              String                 @id @default(uuid())
+    accountParentId String?
+    userId          String
+    name            String
+    description     String?
+    isLeaf          Boolean                @default(true)
+    type            TransactionAccountType
+    bankId          String
+    createdAt       DateTime               @default(now())
+    updatedAt       DateTime               @updatedAt
+
+    user               User                 @relation(references: [id], fields: [userId], onDelete: Cascade)
+    accountParent      TransactionAccount?  @relation("TransactionAccountParent", fields: [accountParentId], references: [id])
+    transactionAccount TransactionAccount[] @relation("TransactionAccountParent")
+    bank               Bank                 @relation(fields: [bankId], references: [id])
+    imports            Import[]
+    transaction        Transaction[]
+
+    @@map("transaction_account")
+}
+
+model ImportFile {
+    id        String   @id @default(uuid())
+    userId    String
+    url       String
+    importId  String?
+    filename  String?
+    type      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user   User    @relation(fields: [userId], references: [id])
+    import Import? @relation(fields: [importId], references: [id])
+
+    @@map("import_file")
+}
+
+model Import {
+    id                String    @id @default(uuid())
+    userId            String
+    accountId         String
+    createdAt         DateTime  @default(now())
+    successAt         DateTime?
+    countTransactions Int?
+
+    account     TransactionAccount @relation(fields: [accountId], references: [id])
+    user        User               @relation(fields: [userId], references: [id])
+    files       ImportFile[]
+    transaction Transaction[]
+
+    @@map("import")
+}
+
+enum TransactionType {
+    DEBIT
+    CREDIT
+    TRANSFER
+}
+
+model Transaction {
+    id               String          @id @default(uuid())
+    userId           String
+    accountId        String
+    importId         String
+    date             DateTime        @db.Date
+    title            String
+    type             TransactionType
+    spendingAmount   Float
+    spendingCurrency String          @db.Char(3)
+    accountAmount    Float
+    accountCurrency  String          @db.Char(3)
+    createdAt        DateTime        @default(now())
+    updatedAt        DateTime?       @updatedAt
+    key              String
+    note             String?
+    country          String?         @db.Char(2)
+    city             String?
+    labelId          String?
+    isNew            Boolean         @default(true)
+    isDeleted        Boolean         @default(false)
+
+    account TransactionAccount @relation(fields: [accountId], references: [id])
+    user    User               @relation(fields: [userId], references: [id])
+    import  Import             @relation(fields: [importId], references: [id])
+    label   Label?             @relation(fields: [labelId], references: [id])
+
+    @@unique([userId, key, isDeleted])
+    @@map("transaction")
+}
+
+model Label {
+    id          String   @id @default(uuid())
+    name        String
+    userId      String
+    description String?
+    labelId     String?
+    isLeaf      Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    parent      Label?        @relation("LabelParent", fields: [labelId], references: [id])
+    children    Label[]       @relation("LabelParent")
+    user        User          @relation(fields: [userId], references: [id])
+    transaction Transaction[]
+
+    @@map("label")
 }
