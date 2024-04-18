@@ -16,7 +16,7 @@ export const useTransactionTableColumnVisibilityStore =
         setColumns: (columns) => set({ columns })
     }));
 
-type FilterValue = string | string[] | null;
+type FilterValue = string | Array<string | null> | null;
 
 interface ITransactionTableFilteringStore {
     filters: TTransactionFilter;

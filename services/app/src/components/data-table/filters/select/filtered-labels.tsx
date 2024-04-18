@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import type { SelectFilterOption } from './types';
 
 interface Props {
-    filteredValues: Set<string>;
+    filteredValues: Set<string | null>;
     options: SelectFilterOption[];
 }
 

@@ -14,10 +14,10 @@ import { RxCheck, RxPlusCircled } from 'react-icons/rx';
 import type { SelectFilterOption } from './types';
 
 interface Props {
-    filteredValues: Set<string>;
+    filteredValues: Set<string | null>;
     options: SelectFilterOption[];
     filterLabel: string;
-    selectFn: (value: Set<string>) => void;
+    selectFn: (value: Set<string | null>) => void;
 }
 
 /**

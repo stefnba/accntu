@@ -15,9 +15,11 @@ import type { SelectFilterOption } from './types';
 interface Props<T extends string> {
     filterLabel: string;
     filterKey: T;
-    filterFn: (key: T, value: string[]) => void;
+    filterFn: (key: T, value: Array<string | null>) => void;
     options: SelectFilterOption[];
-    selectedValues: string[];
+    selectedValues: Array<string | null>;
+    /** Function to fetch filter options */
+    filterFetchFn: () => void;
 }
 
 export function SelectFilter<T extends string>({
@@ -25,17 +27,29 @@ export function SelectFilter<T extends string>({
     filterLabel,
     options,
     selectedValues,
-    filterFn
+    filterFn,
+    filterFetchFn
 }: Props<T>) {
     const filteredValues = new Set(selectedValues);
 
-    const handleSelect = (value: Set<string>) => {
+    const handleSelect = (value: Set<string | null>) => {
         const values = Array.from(value);
         filterFn(filterKey, values);
     };
 
+    const handleFilterOptionsFetch = () => {
+        console.log('fetching filter options');
+        filterFetchFn();
+    };
+
+    const onOpen = (open: boolean) => {
+        if (open) {
+            handleFilterOptionsFetch();
+        }
+    };
+
     return (
-        <Popover>
+        <Popover onOpenChange={onOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
