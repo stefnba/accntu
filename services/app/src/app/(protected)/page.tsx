@@ -8,6 +8,7 @@ export default async function Home() {
         <div>
             <PageHeader title="Home" />
             Hi {user.email}
+            {JSON.stringify(user, null, 4)}
         </div>
     );
 }

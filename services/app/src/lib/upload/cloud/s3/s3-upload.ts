@@ -1,13 +1,13 @@
 'use server';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { createAction } from '@/lib/actions';
 import { s3Client } from '@/lib/cloud/s3';
 import { createMutation } from '@/lib/mutation';
 import { generateRandonFileName } from '@/lib/upload/utils';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Delete } from 'lucide-react';
+import { and, eq } from 'drizzle-orm';
 
 import { allowedFileTypes, maxFileSize } from './config';
 import { CreateUploadRecordSchema, DeleteUploadRecordSchema } from './schema';
@@ -28,14 +28,17 @@ type GetSignedS3UrlReturn = {
  * Create an upload record.
  */
 export const createUploadRecord = createMutation(async (data, user) => {
-    return await db.importFile.create({
-        data: {
+    const records = await db
+        .insert(dbSchema.transactionImportFile)
+        .values({
             userId: user.id,
             url: data.url,
             type: data.type,
             filename: data.filename
-        }
-    });
+        })
+        .returning();
+
+    return records[0];
 }, CreateUploadRecordSchema);
 
 /**
@@ -44,22 +47,28 @@ export const createUploadRecord = createMutation(async (data, user) => {
 export const deleteUploadRecord = createMutation(async (data, user) => {
     try {
         // delete from the database
-        await db.importFile
-            .delete({
-                where: { userId: user.id, id: data.id }
-            })
-            .then(async (deletedFile) => {
-                // delete from s3
-                const url = deletedFile.url;
-                const key = url.split('/').slice(-1)[0];
+        const deletedFiles = await db
+            .delete(dbSchema.transactionImportFile)
+            .where(
+                and(
+                    eq(dbSchema.transactionImportFile.userId, user.id),
+                    eq(dbSchema.transactionImportFile.id, data.id)
+                )
+            )
+            .returning();
 
-                await s3Client.send(
-                    new DeleteObjectCommand({
-                        Bucket: process.env.AWS_BUCKET_NAME!,
-                        Key: key
-                    })
-                );
-            });
+        const deletedFile = deletedFiles[0];
+
+        // delete from s3
+        const url = deletedFile.url;
+        const key = url.split('/').slice(-1)[0];
+
+        await s3Client.send(
+            new DeleteObjectCommand({
+                Bucket: process.env.AWS_BUCKET_NAME!,
+                Key: key
+            })
+        );
 
         return {
             success: true

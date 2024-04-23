@@ -1,29 +1,30 @@
+import { label, transaction } from '@/lib/db/schema';
+import { inArrayFilter, inArrayWithNullFilter } from '@/lib/db/utils';
 import { z } from 'zod';
 
-export const FilterTransactionSchema = z.object({
-    title: z
-        .string()
-        .optional()
-        .transform((val) => {
-            const mode: 'insensitive' | 'default' = 'insensitive';
+type Entries<T> = {
+    [K in keyof T]: [K, T[K]];
+}[keyof T][];
 
-            return {
-                contains: val,
-                mode
-            };
-        }),
-    account: z
-        .array(z.string())
-        .optional()
-        .transform((val) => ({ in: val })), // transform to IN filter
+// type Entries<T> = Array<[keyof T, T[keyof T]]>;
+
+function getEntries<T extends object>(object: T): Entries<T> {
+    return Object.entries(object) as Entries<T>;
+}
+
+export const FilterTransactionSchema = z.object({
     label: z
+        .array(z.string().nullable())
+        .optional()
+        .transform((val) => inArrayWithNullFilter(transaction.labelId, val)),
+    account: z
+        .array(z.string().nullable())
+        .optional()
+        .transform((val) => inArrayWithNullFilter(transaction.labelId, val)),
+    spendingCurrency: z
         .array(z.string())
         .optional()
-        .transform((val) => {
-            return {
-                in: val
-            };
-        }) // transform to IN filter
+        .transform((val) => inArrayFilter(transaction.spendingCurrency, val))
 });
 
 export type TTransactionFilter = z.input<typeof FilterTransactionSchema>;
@@ -35,11 +36,4 @@ export const PaginationTransactionSchema = z.object({
 
 export const ListTransactionSchema = FilterTransactionSchema.and(
     PaginationTransactionSchema
-).transform((val) => {
-    const { label, account, ...rest } = val;
-    return {
-        ...rest,
-        labelId: label,
-        accountId: account
-    };
-});
+);

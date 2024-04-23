@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { PageHeader } from '@/components/page/header';
 import { Button } from '@/components/ui/button';
-import db from '@/db';
+import { db } from '@/db';
 import { getUser } from '@/lib/auth';
 
 import { ImportCard } from './_components/import-card';
@@ -10,19 +10,9 @@ import { ImportCard } from './_components/import-card';
 export default async function Import() {
     const user = await getUser();
 
-    const imports = await db.import.findMany({
-        where: {
-            userId: user.id
-        },
-        include: {
-            files: {
-                select: {
-                    filename: true,
-                    id: true,
-                    url: true
-                }
-            }
-        }
+    const imports = await db.query.transactionImport.findMany({
+        where: (fields, { eq }) => eq(fields.userId, user.id),
+        with: {}
     });
 
     return (

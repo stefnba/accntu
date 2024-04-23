@@ -1,6 +1,6 @@
 'use server';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 
 import { ICreateUserInput, ICreateUserReturn } from './types';
 
@@ -11,15 +11,18 @@ export default async function createUser(
     user: ICreateUserInput
 ): Promise<ICreateUserReturn> {
     // create user record
-    const newUser = await db.user.create({
-        data: user
-    });
+    const newUser = (
+        await db
+            .insert(dbSchema.user)
+            .values({
+                ...user
+            })
+            .returning()
+    )[0];
 
     // create user settings record
-    await db.userSetting.create({
-        data: {
-            userId: newUser.id
-        }
+    await db.insert(dbSchema.userSetting).values({
+        userId: newUser.id
     });
 
     return {

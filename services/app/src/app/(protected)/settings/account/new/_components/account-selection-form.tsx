@@ -1,17 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { accountActions } from '@/actions';
-import { CreatAccountSchema } from '@/actions/account/create';
+import { CreateAccountSchema } from '@/actions/account/schema';
 import { Form, FormSubmit, useForm } from '@/components/form';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import db from '@/db';
+import { BankUploadAccounts } from '@/db/types';
 import { useMutation } from '@/hooks/mutation';
-import { BankUploadAccounts } from '@prisma/client';
-import { useEffect } from 'react';
 
 interface Props {
     bankId: string;
@@ -19,7 +15,7 @@ interface Props {
 }
 
 export const AccountSelectionForm = ({ bankId, accounts }: Props) => {
-    const form = useForm(CreatAccountSchema, {
+    const form = useForm(CreateAccountSchema, {
         defaultValues: {
             bankId,
             accounts: []

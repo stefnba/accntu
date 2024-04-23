@@ -1,8 +1,8 @@
 'use server';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { createMutation } from '@/lib/mutation';
-import { Transaction, TransactionType } from '@prisma/client';
+import { and, eq } from 'drizzle-orm';
 
 import { CreateTransactionSchema } from './schema';
 
@@ -23,7 +23,7 @@ export const createTransaction = createMutation(
 
             return {
                 ...rest,
-                date: new Date(date),
+                date,
                 spendingAmount: spending_amount,
                 spendingCurrency: spending_currency,
                 accountAmount: account_amount,
@@ -34,22 +34,25 @@ export const createTransaction = createMutation(
             };
         });
 
-        const newTransactions = await db.transaction.createMany({
-            data: importTransactions,
-            skipDuplicates: true
-        });
+        const newTransactions = await db
+            .insert(dbSchema.transaction)
+            .values(importTransactions)
+            .returning()
+            .onConflictDoNothing();
 
         // update import record
-        await db.import.update({
-            data: {
+        await db
+            .update(dbSchema.transactionImport)
+            .set({
                 successAt: new Date(),
-                countTransactions: newTransactions.count
-            },
-            where: {
-                id: importId,
-                userId: user.id
-            }
-        });
+                countTransactions: newTransactions.length
+            })
+            .where(
+                and(
+                    eq(dbSchema.transactionImport.id, importId),
+                    eq(dbSchema.transactionImport.userId, user.id)
+                )
+            );
 
         return {
             ...newTransactions,

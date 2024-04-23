@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
+import { bankActions } from '@/actions';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import db from '@/db';
 
 import { AccountSelectionForm } from './account-selection-form';
 
@@ -11,13 +11,17 @@ interface Props {
 }
 
 export const AccountSelection = async ({ bankId }: Props) => {
-    const bank = await db.bank.findUnique({ where: { id: bankId } });
-
-    const accounts = await db.bankUploadAccounts.findMany({
-        where: {
-            bankId
-        }
+    const { success: bank } = await bankActions.findById({
+        id: bankId
     });
+
+    const { success: accounts } = await bankActions.findUploadAccountsByBankId({
+        bankId
+    });
+
+    if (!bank || !accounts) {
+        return null;
+    }
 
     return (
         <div>

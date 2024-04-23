@@ -1,4 +1,5 @@
 import * as accountActions from './account';
+import * as bankActions from './bank';
 import * as importActions from './import';
 import * as labelActions from './label';
 import * as transactionActions from './transaction';
@@ -9,5 +10,6 @@ export {
     importActions,
     accountActions,
     transactionActions,
-    labelActions
+    labelActions,
+    bankActions
 };

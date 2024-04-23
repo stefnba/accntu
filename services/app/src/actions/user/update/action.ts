@@ -1,7 +1,8 @@
 'use server';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { createMutation } from '@/lib/mutation';
+import { eq } from 'drizzle-orm';
 
 import { UpdateUserSchema } from './schema';
 
@@ -24,14 +25,13 @@ export const updateUser = createMutation(async (data, user) => {
     );
 
     // update user record
-    const updateUser = await db.user.update({
-        data: updateData,
-        where: {
-            id: user.id
-        }
-    });
+    const updateUser = await db
+        .update(dbSchema.user)
+        .set(updateData)
+        .where(eq(dbSchema.user.id, user.id))
+        .returning();
 
     return {
-        id: updateUser.id
+        id: updateUser[0].id
     };
 }, UpdateUserSchema);

@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { userActions } from '@/actions';
 import { createSessionAndRedirect, oauth } from '@/auth';
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { generateState } from 'arctic';
 
 import { GitHubEmail, GitHubUser } from './types';
@@ -71,11 +71,12 @@ export async function verify(code?: string | null, state?: string | null) {
 
     const providerUserId = String(githubUser.id);
 
-    const existingUser = await db.oAuthAccount.findFirst({
-        where: {
-            providerUserId: providerUserId,
-            provider: GitHubOauth.providerId
-        }
+    const existingUser = await db.query.oauthAccount.findFirst({
+        where: (fields, { eq, and }) =>
+            and(
+                eq(fields.providerUserId, providerUserId),
+                eq(fields.provider, GitHubOauth.providerId)
+            )
     });
 
     // user already authenticated with github
@@ -89,12 +90,10 @@ export async function verify(code?: string | null, state?: string | null) {
         image: githubUser.image
     });
 
-    await db.oAuthAccount.create({
-        data: {
-            provider: GitHubOauth.providerId,
-            providerUserId: providerUserId,
-            userId: user.id
-        }
+    await db.insert(dbSchema.oauthAccount).values({
+        provider: GitHubOauth.providerId,
+        providerUserId: providerUserId,
+        userId: user.id
     });
 
     return await createSessionAndRedirect(user.id);

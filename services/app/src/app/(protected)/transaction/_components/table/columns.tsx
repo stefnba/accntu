@@ -1,5 +1,6 @@
 'use client';
 
+import { TTransactionListQueryReturn } from '@/actions/transaction/list/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,14 +18,13 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Transaction } from '@prisma/client';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import { HiOutlineEye } from 'react-icons/hi';
 import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
-export const columns: ColumnDef<Transaction>[] = [
+export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     {
         id: 'select',
         header: ({ table }) => (
@@ -81,6 +81,9 @@ export const columns: ColumnDef<Transaction>[] = [
         enableSorting: true
     },
     {
+        accessorFn: (row) => {
+            return row.label?.name ?? '';
+        },
         accessorKey: 'label.name',
         header: ({ column }) => (
             <DataTableColumnHeader title="Label" column={column} />

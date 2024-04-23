@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import { TransactionAccount } from '@prisma/client';
+import type { TransactionAccount } from '@/db/types';
 
 interface Props {
     accounts: TransactionAccount[];

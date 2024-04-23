@@ -30,6 +30,7 @@
             "@/lib/*": ["./src/lib/*"],
             "@/utils": ["./src/lib/utils"],
             "@/db": ["./src/lib/db/client.ts"],
+            "@/db/*": ["./src/lib/db/*"],
             "@/auth": ["./src/lib/auth"],
             "@/auth/*": ["./src/lib/auth/*"]
         }

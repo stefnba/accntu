@@ -7,7 +7,6 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import db from '@/db';
 import { getUser } from '@/lib/auth';
 
 import { AccountSelection } from './_components/account-selection';

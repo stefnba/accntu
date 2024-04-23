@@ -1,9 +1,6 @@
-import Link from 'next/link';
-
+import { accountActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import { Button } from '@/components/ui/button';
-import db from '@/db';
-import { getUser } from '@/lib/auth';
 
 import { ImportAccountSelected } from './_components/account-selected';
 import { AccountSelection } from './_components/account-selection';
@@ -16,16 +13,9 @@ interface Props {
 export default async function NewImport({
     searchParams: { accountId, importId }
 }: Props) {
-    const user = await getUser();
+    const { success: accounts = [] } = await accountActions.list();
 
-    const accounts = await db.transactionAccount.findMany({
-        where: {
-            userId: user.id,
-            isLeaf: false
-        }
-    });
-
-    const selectedAccount = accounts.find((a) => a.id === accountId);
+    const selectedAccount = accounts.find((a) => a.id === accountId)!;
 
     return (
         <div className="w-[60%]">

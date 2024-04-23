@@ -1,17 +1,15 @@
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import db from '@/db';
+import { db } from '@/db';
 
 interface Props {
     country: string;
 }
 
 export const BankSelection = async ({ country }: Props) => {
-    const banks = await db.bank.findMany({
-        where: {
-            country
-        }
+    const banks = await db.query.bank.findMany({
+        where: (fields, { eq }) => eq(fields.country, country)
     });
 
     return (

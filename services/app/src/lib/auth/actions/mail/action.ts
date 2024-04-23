@@ -3,9 +3,10 @@
 import { cookies } from 'next/headers';
 
 import { userActions } from '@/actions';
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { createMutation } from '@/lib/mutation';
 import crypto from 'crypto';
+import { eq } from 'drizzle-orm';
 import { TimeSpan, createDate } from 'oslo';
 import { alphabet, generateRandomString } from 'oslo/crypto';
 
@@ -33,17 +34,13 @@ export const sendToken = createMutation(
     async (data): Promise<TSendTokenReturn> => {
         // delete all existing tokens for this email
         try {
-            await db.verificationCode.deleteMany({
-                where: {
-                    identifier: data.email
-                }
-            });
+            await db
+                .delete(dbSchema.verificationToken)
+                .where(eq(dbSchema.verificationToken.identifier, data.email));
 
             // check if user exists
-            const user = await db.user.findFirst({
-                where: {
-                    email: data.email
-                }
+            const user = await db.query.user.findFirst({
+                where: (fields, { eq }) => eq(fields.email, data.email)
             });
             // record login attempt if user exists
             if (user) {
@@ -57,13 +54,11 @@ export const sendToken = createMutation(
             const token = crypto.randomBytes(128).toString('base64url');
 
             // generate token in db
-            await db.verificationCode.create({
-                data: {
-                    identifier: data.email,
-                    code,
-                    token,
-                    expiresAt: createDate(new TimeSpan(CODE_EXPIRATION, 'm'))
-                }
+            await db.insert(dbSchema.verificationToken).values({
+                identifier: data.email,
+                code,
+                token,
+                expiresAt: createDate(new TimeSpan(CODE_EXPIRATION, 'm'))
             });
 
             console.log({ code });
@@ -113,14 +108,13 @@ export const verifyToken = createMutation(
             cookies().delete(LOGIN_COOKIE_NAME);
             cookies().delete(EMAIL_COOKIE_NAME);
 
-            const codeDb = await db.verificationCode.findFirst({
-                where: {
-                    code,
-                    token: token || '',
-                    expiresAt: {
-                        gte: new Date()
-                    }
-                }
+            const codeDb = await db.query.verificationToken.findFirst({
+                where: (fields, { eq, and, gte }) =>
+                    and(
+                        eq(fields.code, code),
+                        eq(fields.token, token || ''),
+                        gte(fields.expiresAt, new Date())
+                    )
             });
 
             // if codeDb is not null, then the code is valid
@@ -132,11 +126,11 @@ export const verifyToken = createMutation(
             // code is now validated going forward
 
             // invalidate code for given identifier
-            await db.verificationCode.deleteMany({
-                where: {
-                    identifier: codeDb.identifier
-                }
-            });
+            await db
+                .delete(dbSchema.verificationToken)
+                .where(
+                    eq(dbSchema.verificationToken.identifier, codeDb.identifier)
+                );
 
             // update login attempt
             if (loginToken) {
@@ -144,10 +138,8 @@ export const verifyToken = createMutation(
             }
 
             // create session
-            const existingUser = await db.user.findFirst({
-                where: {
-                    email
-                }
+            const existingUser = await db.query.user.findFirst({
+                where: (fields, { eq }) => eq(fields.email, email)
             });
 
             // user already exists

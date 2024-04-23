@@ -1,6 +1,6 @@
 'use server';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { createMutation } from '@/lib/mutation';
 import { Transaction, TransactionType } from '@prisma/client';
 
@@ -11,16 +11,17 @@ import { CreateLabelSchema } from './schema';
  */
 export const createLabel = createMutation(
     async ({ name, parentLabelId }, user) => {
-        const newLabel = await db.label.create({
-            data: {
+        const newLabel = await db
+            .insert(dbSchema.label)
+            .values({
                 name,
-                labelId: parentLabelId,
+                parentId: parentLabelId,
                 userId: user.id
-            }
-        });
+            })
+            .returning();
 
         return {
-            ...newLabel,
+            ...newLabel[0],
             success: true
         };
     },

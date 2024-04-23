@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
+import { importActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import { Button } from '@/components/ui/button';
-import db from '@/db';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -12,8 +12,8 @@ interface Props {
 }
 
 export default async function OneImport({ params: { importId } }: Props) {
-    const importRecord = await db.import.findUnique({
-        where: { id: importId }
+    const { success: importRecord } = await importActions.findById({
+        id: importId
     });
 
     if (!importRecord) {

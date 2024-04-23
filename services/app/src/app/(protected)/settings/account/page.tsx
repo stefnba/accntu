@@ -1,27 +1,17 @@
 import Link from 'next/link';
 
+import { accountActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import {
-    Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
     NavCard
 } from '@/components/ui/card';
-import db from '@/db';
-import { getUser } from '@/lib/auth';
 
 export default async function AccountList() {
-    const user = await getUser();
-
-    const accounts = await db.transactionAccount.findMany({
-        where: {
-            userId: user.id,
-            isLeaf: true
-        }
-    });
+    const { success: accounts = [] } = await accountActions.list();
 
     const accountRender = accounts.map((account) => {
         return (

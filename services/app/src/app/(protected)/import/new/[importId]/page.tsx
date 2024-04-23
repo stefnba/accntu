@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
+import { importActions } from '@/actions';
 import Transaction from '@/app/(protected)/transaction/page';
 import { PageHeader } from '@/components/page/header';
-import db from '@/db';
 import dayjs from 'dayjs';
 
 import { ParsedFileSelection } from './_components/parsed-file-selection';
@@ -15,11 +15,8 @@ interface Props {
 }
 
 export default async function Page({ params: { importId } }: Props) {
-    const importRecord = await db.import.findUnique({
-        where: { id: importId },
-        include: {
-            files: true
-        }
+    const { success: importRecord } = await importActions.findById({
+        id: importId
     });
 
     if (!importRecord) {

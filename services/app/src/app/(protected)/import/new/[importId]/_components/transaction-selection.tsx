@@ -28,7 +28,7 @@ interface Props {
 
 type TQueryReturnData = Record<string, TParsedTransaction[]>;
 
-const PARSING_SERVER = 'http://localhost:8000';
+const PARSING_SERVER = 'http://127.0.0.1:8000';
 
 const getParsedTransactions = async (files: IFile[], userId: string) => {
     const res = await fetch(PARSING_SERVER + '/parse/new', {
@@ -125,7 +125,7 @@ export const TransactionSelection: React.FC<Props> = ({
     if (status === 'SUCCESS' && importedTransactionResponse) {
         return (
             <ImportSuccess
-                countTransactions={importedTransactionResponse?.count}
+                countTransactions={importedTransactionResponse.length}
             />
         );
     }

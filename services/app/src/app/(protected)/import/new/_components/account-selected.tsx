@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TransactionAccount } from '@prisma/client';
+import type { TransactionAccount } from '@/db/types';
 
 export const ImportAccountSelected: React.FC<{
     account: TransactionAccount;

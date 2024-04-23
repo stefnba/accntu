@@ -1,8 +1,9 @@
 import { cookies, headers } from 'next/headers';
 
-import db from '@/db';
+import { db, schema as dbSchema } from '@/db';
 import { LoginMethod } from '@prisma/client';
 import crypto from 'crypto';
+import { eq } from 'drizzle-orm';
 
 import { LOGIN_COOKIE_NAME } from './config';
 
@@ -12,6 +13,9 @@ interface IRecordLoginAttemptParams {
     method: LoginMethod;
 }
 
+/**
+ * Add a new record to the login table when a user tries to log in.
+ */
 export const recordLoginAttempt = async ({
     userId,
     method
@@ -20,14 +24,10 @@ export const recordLoginAttempt = async ({
 
     const headersList = headers();
 
-    console.log(headersList);
-
-    await db.login.create({
-        data: {
-            id: token,
-            userId,
-            method
-        }
+    await db.insert(dbSchema.login).values({
+        id: token,
+        userId,
+        method
     });
 
     cookies().set(LOGIN_COOKIE_NAME, token, {
@@ -40,13 +40,12 @@ export const recordLoginAttempt = async ({
     return token;
 };
 
+/**
+ * Update the login record when a user successfully logs in.
+ */
 export const updateLoginAttempt = async (id: string): Promise<void> => {
-    await db.login.update({
-        where: {
-            id
-        },
-        data: {
-            successAt: new Date()
-        }
-    });
+    await db
+        .update(dbSchema.login)
+        .set({ successAt: new Date() })
+        .where(eq(dbSchema.login.id, id));
 };

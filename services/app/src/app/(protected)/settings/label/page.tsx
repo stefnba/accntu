@@ -1,3 +1,4 @@
+import { labelActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import {
     Card,
@@ -7,19 +8,11 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import db from '@/db';
-import { getUser } from '@/lib/auth';
 
 export default async function LabelList() {
-    const user = await getUser();
+    const labels = await labelActions.list();
 
-    const labels = await db.label.findMany({
-        where: {
-            userId: user.id
-        }
-    });
-
-    const accountRender = labels.map((label) => {
+    const accountRender = labels.success?.map((label) => {
         return (
             <Card className="border border-primary" key={label.id}>
                 <CardHeader>

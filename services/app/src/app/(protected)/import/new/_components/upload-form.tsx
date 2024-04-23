@@ -6,10 +6,10 @@ import { importActions } from '@/actions';
 import { Button } from '@/components/ui/button';
 import Dropzone from '@/components/ui/dropzone';
 import { useToast } from '@/components/ui/use-toast';
+import type { TransactionAccount } from '@/db/types';
 import { useMutation } from '@/hooks/mutation';
 import { createUploadRecord, getSignedS3Url } from '@/lib/upload/cloud/s3';
 import { computeSHA256 } from '@/lib/upload/utils';
-import { TransactionAccount } from '@prisma/client';
 import { useState } from 'react';
 import { FileWithPath, useDropzone } from 'react-dropzone';
 
