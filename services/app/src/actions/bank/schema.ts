@@ -7,3 +7,7 @@ export const FindByIdSchema = z.object({
 export const FindByBankIdSchema = z.object({
     bankId: z.string()
 });
+
+export const ListByCountrySchema = z.object({
+    country: z.string().length(2)
+});

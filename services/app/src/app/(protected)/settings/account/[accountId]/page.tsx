@@ -20,7 +20,7 @@ export default async function OneAccount({ params }: Props) {
     const user = await getUser();
     const { accountId } = params;
 
-    const { success: account } = await accountActions.findAccountById({
+    const { data: account } = await accountActions.findAccountById({
         id: accountId
     });
 

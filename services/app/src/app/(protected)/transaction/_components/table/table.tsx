@@ -45,8 +45,8 @@ export const TransactionTable: React.FC<Props> = () => {
         queryFn: () => transactionActions.list({ pageSize, page, ...filters })
     });
 
-    const transactionData = transactionResponse?.success?.transactions;
-    const transactionCount = transactionResponse?.success?.count;
+    const transactionData = transactionResponse?.transactions;
+    const transactionCount = transactionResponse?.count;
 
     /* Table */
     const table = useReactTable({

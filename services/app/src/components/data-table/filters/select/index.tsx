@@ -16,7 +16,7 @@ interface Props<T extends string> {
     filterLabel: string;
     filterKey: T;
     filterFn: (key: T, value: Array<string | null>) => void;
-    options: SelectFilterOption[];
+    options?: SelectFilterOption[];
     selectedValues: Array<string | null>;
     /** Function to fetch filter options */
     filterFetchFn: () => void;

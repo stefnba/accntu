@@ -11,11 +11,11 @@ interface Props {
 }
 
 export const AccountSelection = async ({ bankId }: Props) => {
-    const { success: bank } = await bankActions.findById({
+    const { data: bank } = await bankActions.findById({
         id: bankId
     });
 
-    const { success: accounts } = await bankActions.findUploadAccountsByBankId({
+    const { data: accounts } = await bankActions.findUploadAccountsByBankId({
         bankId
     });
 

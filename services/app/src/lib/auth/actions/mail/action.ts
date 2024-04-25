@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 import { userActions } from '@/actions';
 import { db, schema as dbSchema } from '@/db';
-import { createMutation } from '@/lib/mutation';
+import { createMutation } from '@/lib/actions';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { TimeSpan, createDate } from 'oslo';
@@ -31,7 +31,7 @@ function generateVerificationCode(): string {
  * Send a verification code to the user's email.
  */
 export const sendToken = createMutation(
-    async (data): Promise<TSendTokenReturn> => {
+    async ({ data }): Promise<TSendTokenReturn> => {
         // delete all existing tokens for this email
         try {
             await db
@@ -99,7 +99,7 @@ export const sendToken = createMutation(
  * Verify the user's email with the given code.
  */
 export const verifyToken = createMutation(
-    async ({ code }): Promise<TVerifyTokenReturn> => {
+    async ({ data: { code } }): Promise<TVerifyTokenReturn> => {
         try {
             const token = cookies().get(VERIFY_COOKIE_NAME)?.value ?? null; //verifcation token
             const email = cookies().get(EMAIL_COOKIE_NAME)?.value ?? null;

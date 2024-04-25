@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { bankActions } from '@/actions';
 import { Button } from '@/components/ui/button';
 import { db } from '@/db';
 
@@ -8,9 +9,7 @@ interface Props {
 }
 
 export const BankSelection = async ({ country }: Props) => {
-    const banks = await db.query.bank.findMany({
-        where: (fields, { eq }) => eq(fields.country, country)
-    });
+    const { data: banks = [] } = await bankActions.listByCountry({ country });
 
     return (
         <div>

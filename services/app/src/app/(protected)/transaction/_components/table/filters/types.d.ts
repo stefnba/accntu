@@ -1,5 +1,3 @@
-import type { TTransactionFilter } from '@/actions/transaction/list/schema';
+import { TTransactionFilterOptions } from '@/actions/transaction/schema';
 
-export type TTransactionFilterKeys = keyof TTransactionFilter;
-
-export type { TTransactionFilter };
+export type TTransactionFilterKeys = TTransactionFilterOptions['filterKey'];

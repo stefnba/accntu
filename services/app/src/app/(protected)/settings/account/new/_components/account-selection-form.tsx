@@ -7,7 +7,7 @@ import { CreateAccountSchema } from '@/actions/account/schema';
 import { Form, FormSubmit, useForm } from '@/components/form';
 import { Switch } from '@/components/ui/switch';
 import { BankUploadAccounts } from '@/db/types';
-import { useMutation } from '@/hooks/mutation';
+import { useMutation } from '@/lib/hooks/actions';
 
 interface Props {
     bankId: string;

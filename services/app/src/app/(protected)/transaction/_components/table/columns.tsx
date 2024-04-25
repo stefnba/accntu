@@ -1,6 +1,6 @@
 'use client';
 
-import { TTransactionListQueryReturn } from '@/actions/transaction/list/types';
+import { TTransactionListQueryReturn } from '@/actions/transaction/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

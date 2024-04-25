@@ -15,7 +15,7 @@ import type { SelectFilterOption } from './types';
 
 interface Props {
     filteredValues: Set<string | null>;
-    options: SelectFilterOption[];
+    options?: SelectFilterOption[];
     filterLabel: string;
     selectFn: (value: Set<string | null>) => void;
 }
@@ -36,7 +36,7 @@ export const Content: React.FC<Props> = ({
                 <CommandList>
                     <CommandEmpty>No results found</CommandEmpty>
                     <CommandGroup>
-                        {options.map((option) => {
+                        {options?.map((option) => {
                             const isSelected = filteredValues.has(option.value);
                             return (
                                 <CommandItem

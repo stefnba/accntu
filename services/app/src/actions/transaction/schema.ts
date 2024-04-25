@@ -1,3 +1,5 @@
+import { transaction } from '@/lib/db/schema';
+import { inArrayFilter, inArrayWithNullFilter } from '@/lib/db/utils';
 import { z } from 'zod';
 
 export const UpdateTransactionSchema = z.object({
@@ -37,3 +39,31 @@ export const FilterOptionsSchema = z.object({
         z.literal('title')
     ])
 });
+
+export type TTransactionFilterOptions = z.input<typeof FilterOptionsSchema>;
+
+export const FilterTransactionSchema = z.object({
+    label: z
+        .array(z.string().nullable())
+        .optional()
+        .transform((val) => inArrayWithNullFilter(transaction.labelId, val)),
+    account: z
+        .array(z.string().nullable())
+        .optional()
+        .transform((val) => inArrayWithNullFilter(transaction.labelId, val)),
+    spendingCurrency: z
+        .array(z.string())
+        .optional()
+        .transform((val) => inArrayFilter(transaction.spendingCurrency, val))
+});
+
+export type TTransactionFilter = z.input<typeof FilterTransactionSchema>;
+
+export const PaginationTransactionSchema = z.object({
+    page: z.number().optional(),
+    pageSize: z.number().optional()
+});
+
+export const ListTransactionSchema = FilterTransactionSchema.and(
+    PaginationTransactionSchema
+);

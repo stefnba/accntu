@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 
 export default async function AccountList() {
-    const { success: accounts = [] } = await accountActions.list();
+    const { data: accounts = [] } = await accountActions.list();
 
     const accountRender = accounts.map((account) => {
         return (

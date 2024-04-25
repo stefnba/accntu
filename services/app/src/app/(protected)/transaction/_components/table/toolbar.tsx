@@ -14,7 +14,7 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
     return (
         <div className="flex items-center justify-between">
-            <TransactionTableFilterBar table={table} />
+            <TransactionTableFilterBar />
             <TransactionTableActionBar />
         </div>
     );

@@ -1,82 +1,31 @@
-import { Varela } from 'next/font/google';
-
-import { getUser } from '@/auth';
-import { PageHeader } from '@/components/page/header';
-import { db, schema } from '@/db';
-import { label, transaction } from '@/lib/db/schema';
-import { inArrayFilter, inArrayWithNullFilter } from '@/lib/db/utils';
 import {
-    type BinaryOperator,
-    SQL,
-    and,
-    eq,
-    ilike,
-    inArray,
-    is,
-    isNotNull,
-    isNull,
-    or,
-    sql
-} from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
-import { z } from 'zod';
+    testFetch,
+    testFetchFail,
+    testFetchParams,
+    testMutation
+} from '@/actions/test/actions';
 
-type FilterDict = Record<string, FilterDictValue | undefined>;
-
-const TransactionFilterSchema = z.object({
-    label: z
-        .array(z.string().nullable())
-        .optional()
-        .transform((val) =>
-            inArrayWithNullFilter(schema.transaction.labelId, val)
-        ),
-    account: z
-        .array(z.string().nullable())
-        .optional()
-        .transform((val) =>
-            inArrayWithNullFilter(schema.transaction.labelId, val)
-        ),
-    spendingCurrency: z
-        .array(z.string())
-        .optional()
-        .transform((val) =>
-            inArrayFilter(schema.transaction.spendingCurrency, val)
-        )
-});
-
-export type TTransactionFilterSchema = z.output<typeof TransactionFilterSchema>;
+import { Buttons } from './_components/Buttons';
 
 export default async function Home() {
-    const user = await getUser();
+    // const { data, status, error, isError, isSuccess } = await testFetch();
 
-    const filter = {
-        label: ['83dde3c5-b108-44a3-8a7d-7612e7450d6a']
-    };
+    await testMutation({ name: 'asdfklasdflk' });
 
-    const parsed = TransactionFilterSchema.safeParse(filter);
+    const { error, isError, status, data } = await testFetchParams({
+        name: 'd'
+    });
 
-    if (!parsed.success) {
-        console.log(parsed.error);
-        return;
+    if (status === 'VALIDATION_ERROR') {
+        console.log('Validation error:', error.name);
     }
 
-    const aaa = parsed.data;
-
-    const trans = await db
-        .select({
-            id: schema.transaction.id,
-
-            label
-        })
-        .from(schema.transaction)
-        .leftJoin(label, eq(label.id, schema.transaction.labelId))
-        .where(and(...Object.values(aaa).map((f) => f)));
-
-    console.log(JSON.stringify(trans, null, 4));
     return (
         <div>
-            <PageHeader title="Home" />
-            Hi {user.email}
+            <h1>Test page</h1>
+            <Buttons />
+
+            <div>{JSON.stringify(data)}</div>
         </div>
     );
 }

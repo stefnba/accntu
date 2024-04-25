@@ -5,7 +5,7 @@ import type { SelectFilterOption } from './types';
 
 interface Props {
     filteredValues: Set<string | null>;
-    options: SelectFilterOption[];
+    options?: SelectFilterOption[];
 }
 
 /**
@@ -15,6 +15,10 @@ export const FilteredLabels: React.FC<Props> = ({
     filteredValues,
     options
 }) => {
+    if (!options) {
+        return;
+    }
+
     if (filteredValues.size > 0) {
         return (
             <>

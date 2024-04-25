@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/card';
 
 export default async function LabelList() {
-    const labels = await labelActions.list();
+    const { data: labels } = await labelActions.list();
 
-    const accountRender = labels.success?.map((label) => {
+    const accountRender = labels?.map((label) => {
         return (
             <Card className="border border-primary" key={label.id}>
                 <CardHeader>

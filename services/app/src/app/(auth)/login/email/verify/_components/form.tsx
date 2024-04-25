@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 import { VerifyTokenSchema, verifyToken } from '@/auth/actions/mail';
 import { Form, FormInputOTP, FormSubmit, useForm } from '@/components/form';
-import { useMutation } from '@/hooks/mutation';
+import { useMutation } from '@/lib/hooks/actions';
 
 export default function VerifyEmailForm() {
     const router = useRouter();
@@ -20,7 +20,9 @@ export default function VerifyEmailForm() {
             router.push(redirectUrl);
         },
         onError(error) {
-            form.setError('code', { message: error.message });
+            if (error.type === 'SERVER') {
+                form.setError('code', { message: error.error });
+            }
         }
     });
 

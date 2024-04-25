@@ -13,19 +13,60 @@ import type {
 } from '../types';
 import type { TCreateFetchReturn } from './types';
 
-export const createQueryFetch = <
-    TDataInput extends z.ZodTypeAny,
-    TDataOutput extends z.ZodTypeAny = TDataInput,
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
+    TResult extends TActionResult = void
+>(
+    action: ActionEmpty<TResult>,
+    schema: void | undefined,
+    options: { auth: 'public' }
+): () => Promise<TResult>;
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
+    TResult extends TActionResult = void
+>(
+    action: ActionWithUser<TResult>,
+    schema: void | undefined,
+    options: { auth: 'protected' }
+): () => Promise<TResult>;
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
+    TResult = void
+>(action: ActionWithUser<TResult>): () => Promise<TResult>;
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
+    TResult extends TActionResult = void
+>(
+    action: ActionWithInputData<TDataOutput, TResult>,
+    schema: z.Schema<TDataOutput, z.ZodTypeDef, TDataInput>,
+    options: { auth: 'public' }
+): (params: TDataInput) => Promise<TResult>;
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
+    TResult extends TActionResult = void
+>(
+    action: ActionWithUserAndInputData<TDataOutput, TResult>,
+    schema: z.Schema<TDataOutput, z.ZodTypeDef, TDataInput>,
+    options?: { auth: 'protected' }
+): (params: TDataInput) => Promise<TResult>;
+export function createQueryFetch<
+    TDataInput,
+    TDataOutput = TDataInput,
     TResult extends TActionResult = void
 >(
     action: Action<TDataOutput, TResult>,
-    schema?: z.Schema<TDataOutput, z.ZodTypeDef, TDataInput>,
+    schema?: z.Schema<TDataOutput, z.ZodTypeDef, TDataInput> | void,
     options: TCreateActionOptions = { auth: 'protected' }
-) => {
-    return async (data?: TDataInput) => {
+): (params?: TDataInput) => Promise<TResult> {
+    return async (data?: TDataInput): Promise<TResult> => {
         return await executeAction(action, data, schema, options);
     };
-};
+}
 
 /**
  * Create fetch function for given action.

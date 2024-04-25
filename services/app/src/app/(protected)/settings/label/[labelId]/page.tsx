@@ -1,3 +1,4 @@
+import { labelActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import {
     Card,
@@ -7,8 +8,6 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import db from '@/db';
-import { getUser } from '@/lib/auth';
 
 interface Props {
     params: {
@@ -16,22 +15,14 @@ interface Props {
     };
 }
 
-export default async function OneAccount({ params }: Props) {
-    const user = await getUser();
-    const { labelId } = params;
-
-    const account = await db.label.findUnique({
-        where: {
-            id: labelId,
-            userId: user.id
-        }
-    });
+export default async function OneAccount({ params: { labelId } }: Props) {
+    const { data: label } = await labelActions.findById({ id: labelId });
 
     return (
         <div>
             <PageHeader title="Settings" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {account?.name}
+                {label?.name}
             </div>
         </div>
     );

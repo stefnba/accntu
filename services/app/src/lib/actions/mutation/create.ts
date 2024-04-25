@@ -33,7 +33,7 @@ export function createMutation<
     TDataInput,
     TDataOutput,
     TResult extends TActionResult = void
->(action: ActionWithUser<TResult>): (params?: TDataInput) => Promise<TResult>;
+>(action: ActionWithUser<TResult>): () => Promise<TResult>;
 export function createMutation<
     TDataInput,
     TDataOutput,

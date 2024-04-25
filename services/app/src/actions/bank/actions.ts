@@ -3,7 +3,20 @@
 import { db } from '@/db';
 import { createFetch } from '@/lib/actions';
 
-import { FindByBankIdSchema, FindByIdSchema } from './schema';
+import {
+    FindByBankIdSchema,
+    FindByIdSchema,
+    ListByCountrySchema
+} from './schema';
+
+/**
+ * List banks for given country
+ */
+export const listByCountry = createFetch(async ({ data: { country } }) => {
+    return db.query.bank.findMany({
+        where: (fields, { eq }) => eq(fields.country, country)
+    });
+}, ListByCountrySchema);
 
 /**
  * Find a bank by id

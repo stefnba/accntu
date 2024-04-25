@@ -1,22 +1,3 @@
-// 'use client';
-// import Link from 'next/link';
-// import { loginGitHub } from '@/actions/auth/login/oauth';
-// import { Button } from '@/components/ui/button';
-// export default function Login() {
-//     return (
-//         <>
-//             <h1>Sign in</h1>
-//             <p>
-//                 Login here:
-//                 <Link href="/login/github">
-//                     <Button onClick={() => loginGitHub()}>
-//                         Login with Github
-//                     </Button>
-//                 </Link>
-//             </p>
-//         </>
-//     );
-// }
 import Link from 'next/link';
 
 import LoginForm from '../_components/form';

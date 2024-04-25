@@ -1,4 +1,4 @@
-import { createFetch } from './fetch/create';
+import { createFetch, createQueryFetch } from './fetch/create';
 import { createMutation } from './mutation/create';
 
-export { createFetch, createMutation };
+export { createFetch, createMutation, createQueryFetch };
