@@ -1,16 +1,16 @@
 'use server';
 
 import { db, schema as dbSchema } from '@/db';
-import { createMutation } from '@/lib/mutation';
-import { Transaction, TransactionType } from '@prisma/client';
+import { createFetch, createMutation } from '@/lib/actions';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { CreateLabelSchema } from './schema';
 
 /**
- * Create import record.
+ * Create label record.
  */
-export const createLabel = createMutation(
-    async ({ name, parentLabelId }, user) => {
+export const create = createMutation(
+    async ({ user, data: { name, parentLabelId } }) => {
         const newLabel = await db
             .insert(dbSchema.label)
             .values({
@@ -27,3 +27,12 @@ export const createLabel = createMutation(
     },
     CreateLabelSchema
 );
+
+/**
+ * List label records for given user.
+ */
+export const list = createFetch(async ({ user }) => {
+    return db.query.label.findMany({
+        where: (fields, { eq }) => eq(fields.userId, user.id)
+    });
+});

@@ -1,15 +1,15 @@
 'use server';
 
 import { db, schema as dbSchema } from '@/db';
-import { createFetch } from '@/lib/actions/fetch';
-import { createMutation } from '@/lib/mutation';
+import { createFetch } from '@/lib/actions';
+import { createMutation } from '@/lib/actions';
 
 import { CreateAccountSchema, FindAccountByIdSchema } from './schema';
 
 /**
  * List account records for logged in user.
  */
-export const list = createFetch(async (user) => {
+export const list = createFetch(async ({ user }) => {
     return db.query.transactionAccount.findMany({
         where: (fields, { eq }) => eq(fields.userId, user.id)
     });
@@ -18,7 +18,7 @@ export const list = createFetch(async (user) => {
 /**
  * Retrieve one account by id.
  */
-export const findAccountById = createFetch(async (user, { id }) => {
+export const findAccountById = createFetch(async ({ user, data: { id } }) => {
     const record = await db.query.transactionAccount.findFirst({
         where: (fields, { eq, and }) =>
             and(eq(fields.userId, user.id), eq(fields.id, id))
@@ -34,7 +34,7 @@ export const findAccountById = createFetch(async (user, { id }) => {
 /**
  * Create account record.
  */
-export const create = createMutation(async (data, user) => {
+export const create = createMutation(async ({ user, data }) => {
     const { bankId, accounts } = data;
 
     // Create parent
