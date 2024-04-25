@@ -1,3 +1,4 @@
-import { createAction } from './fetch';
+import { createFetch } from './fetch/create';
+import { createMutation } from './mutation/create';
 
-export { createAction };
+export { createFetch, createMutation };
