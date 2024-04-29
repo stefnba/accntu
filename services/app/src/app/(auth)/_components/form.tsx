@@ -4,9 +4,8 @@ import { useRouter } from 'next/navigation';
 
 import { Form, FormInput, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { useMutation } from '@/hooks/mutation';
 import { SendTokenSchema, sendToken } from '@/lib/auth/actions/mail';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@/lib/hooks/actions';
 
 import OAuthProviders from './oauth-provider';
 
