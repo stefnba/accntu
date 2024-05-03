@@ -1,33 +1,20 @@
 import { labelActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card';
+
+import { LabelCard } from './_components/label-card';
+import { NewLabelCard } from './_components/new-label-card';
 
 export default async function LabelList() {
-    const { data: labels } = await labelActions.list();
-
-    const accountRender = labels?.map((label) => {
-        return (
-            <Card className="border border-primary" key={label.id}>
-                <CardHeader>
-                    <CardTitle>{label.name}</CardTitle>
-                </CardHeader>
-                <CardContent></CardContent>
-            </Card>
-        );
-    });
+    const labels = await labelActions.list({});
 
     return (
         <div>
-            <PageHeader title="Settings" />
+            <PageHeader title="Labels" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {accountRender}
+                <NewLabelCard />
+                {labels?.map((label) => (
+                    <LabelCard key={label.id} label={label} />
+                ))}
             </div>
         </div>
     );
