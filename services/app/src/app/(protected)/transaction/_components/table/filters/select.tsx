@@ -15,6 +15,9 @@ export const TransactionTableSelectFilter: React.FC<Props> = ({
     filterLabel
 }) => {
     const filters = useTransactionTableFilteringStore((state) => state.filters);
+    const resetFilterKey = useTransactionTableFilteringStore(
+        (state) => state.resetFilterKey
+    );
     const setFilter = useTransactionTableFilteringStore(
         (state) => state.setFilter
     );
@@ -22,7 +25,8 @@ export const TransactionTableSelectFilter: React.FC<Props> = ({
 
     const { data: filterOptions, refetch } = useQuery({
         queryKey: ['filterOptions', filterKey],
-        queryFn: () => transactionActions.listFilterOptions({ filterKey }),
+        queryFn: () =>
+            transactionActions.listFilterOptions({ filterKey, filters }),
         enabled: false
     });
 
@@ -39,6 +43,7 @@ export const TransactionTableSelectFilter: React.FC<Props> = ({
             selectedValues={selectedFilters}
             filterFn={setFilter}
             filterFetchFn={refetch}
+            resetFilterKeyFn={resetFilterKey}
         />
     );
 };

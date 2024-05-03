@@ -10,7 +10,8 @@ import { TransactionTable } from './_components/table';
 import {
     DEFAULT_FILTERS,
     DEFAULT_PAGE,
-    DEFAULT_PAGE_SIZE
+    DEFAULT_PAGE_SIZE,
+    DEFAULT_SORTING
 } from './_components/table/store';
 
 interface Props {
@@ -25,10 +26,22 @@ export default async function Transaction({}: Props) {
     const pageSize = DEFAULT_PAGE_SIZE;
     const page = DEFAULT_PAGE;
     const filters = DEFAULT_FILTERS;
+    const sorting = DEFAULT_SORTING;
 
     await queryClient.prefetchQuery({
-        queryKey: ['transactions', { pageSize, page }, { filters }],
-        queryFn: () => transactionActions.list({ pageSize, page, ...filters })
+        queryKey: [
+            'transactions',
+            { pageSize, page },
+            { filters },
+            { sorting }
+        ],
+        queryFn: () =>
+            transactionActions.list({
+                pageSize,
+                page,
+                ...filters,
+                orderBy: DEFAULT_SORTING
+            })
     });
 
     return (

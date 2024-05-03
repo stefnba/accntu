@@ -15,7 +15,8 @@ import { columns } from './columns';
 import { TransactionTablePagination } from './pagination';
 import {
     useTransactionTableFilteringStore,
-    useTransactionTablePaginationStore
+    useTransactionTablePaginationStore,
+    useTransactionTableSortingStore
 } from './store';
 import { DataTableToolbar } from './toolbar';
 
@@ -37,12 +38,24 @@ export const TransactionTable: React.FC<Props> = () => {
     /* Filtering */
     const filters = useTransactionTableFilteringStore((state) => state.filters);
 
-    console.log('filters', filters);
+    /* Filtering */
+    const sorting = useTransactionTableSortingStore((state) => state.sorting);
 
     /* Query */
-    const { data: transactionResponse } = useQuery({
-        queryKey: ['transactions', { pageSize, page }, { filters }],
-        queryFn: () => transactionActions.list({ pageSize, page, ...filters })
+    const { data: transactionResponse, isLoading } = useQuery({
+        queryKey: [
+            'transactions',
+            { pageSize, page },
+            { filters },
+            { sorting }
+        ],
+        queryFn: () =>
+            transactionActions.list({
+                pageSize,
+                page,
+                ...filters,
+                orderBy: sorting
+            })
     });
 
     const transactionData = transactionResponse?.transactions;
@@ -62,7 +75,7 @@ export const TransactionTable: React.FC<Props> = () => {
     return (
         <div>
             <DataTableToolbar table={table} />
-            <DataTable table={table} />
+            <DataTable isLoading={isLoading} table={table} />
             <TransactionTablePagination
                 table={table}
                 records={{

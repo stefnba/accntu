@@ -1,8 +1,10 @@
 'use server';
 
+import { getFilterOptions } from '@/components/data-table/filters/select/db-utils';
 import { createFetch, createMutation, createQueryFetch } from '@/lib/actions';
 import { db, schema as dbSchema } from '@/lib/db/client';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { queryBuilder } from '@/lib/db/utils';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 
 import {
     CreateTransactionsSchema,
@@ -14,7 +16,7 @@ import { TTransactionListActionReturn } from './types';
 
 export const list = createQueryFetch(
     async ({
-        data: { pageSize, page, ...filters },
+        data: { pageSize, page, orderBy, ...filters },
         user
     }): Promise<TTransactionListActionReturn> => {
         // build filter based on filter input validated by zod
@@ -32,7 +34,7 @@ export const list = createQueryFetch(
                 .where(filterClause)
         )[0].count;
 
-        const transactions = await db
+        const transactionsQuery = db
             .select({
                 id: dbSchema.transaction.id,
                 title: dbSchema.transaction.title,
@@ -51,9 +53,6 @@ export const list = createQueryFetch(
                 spendingAmount: dbSchema.transaction.spendingAmount,
                 spendingCurrency: dbSchema.transaction.spendingCurrency,
                 importId: dbSchema.transaction.importId,
-                // labelId: dbSchema.transaction.labelId,
-                // accountId: dbSchema.transaction.accountId,
-                // isDeleted: dbSchema.transaction.isDeleted,
                 label: {
                     id: dbSchema.label.id,
                     name: dbSchema.label.name
@@ -74,12 +73,18 @@ export const list = createQueryFetch(
                     dbSchema.transactionAccount.id,
                     dbSchema.transaction.accountId
                 )
-            )
-            .where(filterClause);
+            );
+
+        const transactions = queryBuilder(transactionsQuery.$dynamic(), {
+            orderBy,
+            filters: filterClause,
+            page,
+            pageSize
+        });
 
         return {
             count: countTransactions,
-            transactions: transactions
+            transactions: await transactions
         };
     },
     ListTransactionSchema
@@ -159,38 +164,54 @@ export const create = createMutation(
     CreateTransactionsSchema
 );
 
+/**
+ * Fetch filter options for transactions.
+ */
 export const listFilterOptions = createQueryFetch(
-    async ({ user, data: { filterKey } }) => {
-        const filterKeys = {
-            label: dbSchema.transaction.labelId,
-            account: dbSchema.transaction.accountId,
-            title: dbSchema.transaction.title
+    async ({ user, data: { filterKey, filters } }) => {
+        const filter = and(
+            eq(dbSchema.transaction.userId, user.id),
+            eq(dbSchema.transaction.isDeleted, false),
+            ...Object.values(filters || []).map((f) => f)
+        );
+
+        const filterQueries = {
+            label: getFilterOptions(
+                dbSchema.transaction,
+                dbSchema.transaction.labelId,
+                filter,
+                dbSchema.label,
+                dbSchema.label.name,
+                [dbSchema.transaction.labelId, dbSchema.label.id]
+            ),
+            account: getFilterOptions(
+                dbSchema.transaction,
+                dbSchema.transaction.accountId,
+                filter,
+                dbSchema.transactionAccount,
+                dbSchema.transactionAccount.name,
+                [dbSchema.transaction.accountId, dbSchema.transactionAccount.id]
+            ),
+            title: getFilterOptions(
+                dbSchema.transaction,
+                dbSchema.transaction.title,
+                filter
+            ),
+            spendingCurrency: getFilterOptions(
+                dbSchema.transaction,
+                dbSchema.transaction.spendingCurrency,
+                filter
+            ),
+            accountCurrency: getFilterOptions(
+                dbSchema.transaction,
+                dbSchema.transaction.accountCurrency,
+                filter
+            )
         };
 
-        const a = filterKeys[filterKey];
+        const query = await filterQueries[filterKey];
 
-        const test = await db
-            .select({
-                value: dbSchema.transaction.labelId,
-                label: sql<string>`COALESCE(${dbSchema.label.name}, 'None')`,
-                count: sql<number>`cast(count(*) as int)`
-            })
-            .from(dbSchema.transaction)
-            .where(
-                and(
-                    eq(dbSchema.transaction.userId, user.id),
-                    eq(dbSchema.transaction.isDeleted, false)
-                )
-            )
-            .leftJoin(
-                dbSchema.label,
-                eq(dbSchema.transaction.labelId, dbSchema.label.id)
-            )
-            .groupBy(dbSchema.transaction.labelId, dbSchema.label.name);
-
-        console.log('test', test);
-
-        return test;
+        return query;
     },
     FilterOptionsSchema
 );

@@ -27,6 +27,14 @@ export function TransactionTableFilterBar({}: Props) {
                 filterKey="account"
                 filterLabel="Account"
             />
+            <TransactionTableSelectFilter
+                filterKey="spendingCurrency"
+                filterLabel="Spending Currency"
+            />
+            <TransactionTableSelectFilter
+                filterKey="accountCurrency"
+                filterLabel="Account Currency"
+            />
             <FilterResetButton
                 isFiltered={Object.keys(filters).length > 0}
                 resetFiltersFn={resetFilters}

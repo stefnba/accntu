@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Table as ReactTable, flexRender } from '@tanstack/react-table';
 import { Column } from '@tanstack/react-table';
+import React from 'react';
 import {
     RxArrowDown as ArrowDownIcon,
     RxArrowUp as ArrowUpIcon,
@@ -37,22 +38,37 @@ import {
     RxDoubleArrowRight
 } from 'react-icons/rx';
 
-interface DataTableColumnHeaderProps<TData, TValue>
+import { Skeleton } from './skeleton';
+
+interface DataTableColumnHeaderProps<TColKey extends string>
     extends React.HTMLAttributes<HTMLDivElement> {
-    column: Column<TData, TValue>;
     title: string;
+    columnKey: TColKey;
     showVisibility?: boolean;
+    enableSorting?: boolean;
+    sorting?: {
+        sortingFn: (
+            column: TColKey,
+            direction?: 'asc' | 'desc',
+            appendFilter?: boolean
+        ) => void;
+        currentSorting: { column: string; direction?: 'asc' | 'desc' }[];
+    };
 }
 
-export function DataTableColumnHeader<TData, TValue>({
-    column,
+export function DataTableColumnHeader<TColKey extends string>({
+    columnKey,
     title,
     className,
-    showVisibility = false
-}: DataTableColumnHeaderProps<TData, TValue>) {
-    if (!column.getCanSort()) {
+    showVisibility = false,
+    sorting
+}: DataTableColumnHeaderProps<TColKey>) {
+    if (!sorting) {
         return <div className={cn(className)}>{title}</div>;
     }
+
+    const { currentSorting, sortingFn } = sorting;
+    const isSortedCol = currentSorting.find((s) => s.column === columnKey);
 
     return (
         <div className={cn('flex items-center space-x-2', className)}>
@@ -64,24 +80,28 @@ export function DataTableColumnHeader<TData, TValue>({
                         className="-ml-3 h-8 data-[state=open]:bg-accent focus-visible:ring-0 focus-visible:ring-offset-0"
                     >
                         <span>{title}</span>
-                        {column.getIsSorted() === 'desc' ? (
-                            <ArrowDownIcon className="ml-2 h-4 w-4" />
-                        ) : column.getIsSorted() === 'asc' ? (
-                            <ArrowUpIcon className="ml-2 h-4 w-4" />
-                        ) : (
+                        {!isSortedCol && (
                             <CaretSortIcon className="ml-2 h-4 w-4" />
+                        )}
+                        {isSortedCol?.direction === 'asc' && (
+                            <ArrowUpIcon className="ml-2 h-4 w-4" />
+                        )}
+                        {isSortedCol?.direction === 'desc' && (
+                            <ArrowDownIcon className="ml-2 h-4 w-4" />
                         )}
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                     <DropdownMenuItem
-                        onClick={() => column.toggleSorting(false)}
+                        onClick={(e) => sortingFn(columnKey, 'asc', e.shiftKey)}
                     >
                         <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                         Asc
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                        onClick={() => column.toggleSorting(true)}
+                        onClick={(e) =>
+                            sortingFn(columnKey, 'desc', e.shiftKey)
+                        }
                     >
                         <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                         Desc
@@ -90,7 +110,7 @@ export function DataTableColumnHeader<TData, TValue>({
                         <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                onClick={() => column.toggleVisibility(false)}
+                            // onClick={() => column.toggleVisibility(false)}
                             >
                                 <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
                                 Hide
@@ -103,12 +123,36 @@ export function DataTableColumnHeader<TData, TValue>({
     );
 }
 
+interface DataTableLoadingSkeletonProps<TData> {
+    table: ReactTable<TData>;
+}
+
+function DataTableLoadingSkeleton<TData>({
+    table
+}: DataTableLoadingSkeletonProps<TData>) {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+        <TableRow key={i}>
+            {table.getAllColumns().map((col) => (
+                // <div key={col.id}>d</div>
+                <TableCell key={col.id}>
+                    <Skeleton className="h-4 w-full" />
+                </TableCell>
+            ))}
+        </TableRow>
+    ));
+}
+
 interface DataTableProps<TData> {
     table: ReactTable<TData>;
     className?: string;
+    isLoading?: boolean;
 }
 
-export function DataTable<TData>({ table, className }: DataTableProps<TData>) {
+export function DataTable<TData>({
+    table,
+    className,
+    isLoading
+}: DataTableProps<TData>) {
     return (
         <Table className={className}>
             <TableHeader>
@@ -130,7 +174,9 @@ export function DataTable<TData>({ table, className }: DataTableProps<TData>) {
                 ))}
             </TableHeader>
             <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {isLoading ? (
+                    <DataTableLoadingSkeleton table={table} />
+                ) : table.getRowModel().rows?.length ? (
                     table.getRowModel().rows.map((row) => (
                         <TableRow
                             key={row.id}
@@ -148,13 +194,12 @@ export function DataTable<TData>({ table, className }: DataTableProps<TData>) {
                     ))
                 ) : (
                     <TableRow>
-                        No results
-                        {/* <TableCell
-                            colSpan={columns.length}
+                        <TableCell
+                            colSpan={table.getAllColumns().length}
                             className="h-24 text-center"
                         >
                             No results.
-                        </TableCell> */}
+                        </TableCell>
                     </TableRow>
                 )}
             </TableBody>

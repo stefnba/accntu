@@ -18,11 +18,15 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import { HiOutlineEye } from 'react-icons/hi';
 import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
+
+import { ViewTransactionSheetContent } from '../view/sheet';
+import { TransactionTableSortableColumnHeader } from './header';
 
 export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     {
@@ -54,9 +58,12 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     },
     {
         accessorKey: 'date',
-        // header: 'Date',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Date" />
+        header: () => (
+            <TransactionTableSortableColumnHeader
+                columnKey="date"
+                title="Date"
+                enableSorting
+            />
         ),
         enableSorting: true,
         cell: ({ row }) => {
@@ -68,16 +75,28 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     },
     {
         accessorKey: 'title',
-        header: ({ column }) => (
-            <DataTableColumnHeader title="Title" column={column} />
+        header: () => (
+            <TransactionTableSortableColumnHeader
+                title="Title"
+                columnKey="title"
+            />
         ),
+        cell: ({ row }) => {
+            return (
+                <Sheet>
+                    <SheetTrigger>{row.original.title}</SheetTrigger>
+                    <ViewTransactionSheetContent />
+                </Sheet>
+            );
+        },
         enableSorting: true
     },
     {
         accessorKey: 'account.name',
-        header: ({ column }) => (
-            <DataTableColumnHeader title="Account" column={column} />
-        ),
+        // header: ({ column }) => (
+        //     <TransactionTableColumnHeader title="Account" column={column} />
+        // ),
+        header: 'Account',
         enableSorting: true
     },
     {
@@ -85,16 +104,18 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
             return row.label?.name ?? '';
         },
         accessorKey: 'label.name',
-        header: ({ column }) => (
-            <DataTableColumnHeader title="Label" column={column} />
-        ),
+        // header: ({ column }) => (
+        //     <TransactionTableColumnHeader title="Label" key={column} />
+        // ),
+        header: 'Label',
         enableSorting: true
     },
     {
         accessorKey: 'type',
-        header: ({ column }) => (
-            <DataTableColumnHeader title="Type" column={column} />
-        ),
+        header: 'Type',
+        // header: ({ column }) => (
+        //     <TransactionTableColumnHeader title="Type" column={column} />
+        // ),
         cell: ({ row }) => {
             const { type } = row.original;
 
@@ -108,14 +129,14 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     {
         accessorKey: 'spending_amount',
         enableSorting: true,
-        header: ({ column }) => (
-            <DataTableColumnHeader
-                title="Spending Amount"
-                column={column}
-                className="justify-end"
-            />
-        ),
-        // header: () => <div className="text-right">Amount</div>,
+        // header: ({ column }) => (
+        //     <DataTableColumnHeader
+        //         title="Spending Amount"
+        //         column={column}
+        //         className="justify-end"
+        //     />
+        // ),
+        header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
             const { spendingAmount, spendingCurrency } = row.original;
 
@@ -134,14 +155,14 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
     {
         accessorKey: 'account_amount',
         enableSorting: true,
-        header: ({ column }) => (
-            <DataTableColumnHeader
-                title="Account Amount"
-                column={column}
-                className="justify-end"
-            />
-        ),
-        // header: () => <div className="text-right">Amount</div>,
+        // header: ({ column }) => (
+        //     <DataTableColumnHeader
+        //         title="Account Amount"
+        //         column={column}
+        //         className="justify-end"
+        //     />
+        // ),
+        header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
             const { accountAmount, accountCurrency } = row.original;
 

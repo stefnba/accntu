@@ -8,8 +8,6 @@ import {
     CommandList,
     CommandSeparator
 } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-import { RxCheck, RxPlusCircled } from 'react-icons/rx';
 
 import type { SelectFilterOption } from './types';
 
@@ -18,6 +16,7 @@ interface Props {
     options?: SelectFilterOption[];
     filterLabel: string;
     selectFn: (value: Set<string | null>) => void;
+    resetFilterKeyFn: (key: string) => void;
 }
 
 /**
@@ -27,7 +26,8 @@ export const Content: React.FC<Props> = ({
     filteredValues,
     options,
     filterLabel,
-    selectFn
+    selectFn,
+    resetFilterKeyFn
 }) => {
     return (
         <>
@@ -40,6 +40,7 @@ export const Content: React.FC<Props> = ({
                             const isSelected = filteredValues.has(option.value);
                             return (
                                 <CommandItem
+                                    className="cursor-pointer"
                                     onSelect={() => {
                                         if (isSelected) {
                                             filteredValues.delete(option.value);
@@ -56,6 +57,13 @@ export const Content: React.FC<Props> = ({
                                         className="mr-2"
                                     />
                                     <span>{option.label}</span>
+                                    {option.count && (
+                                        // <span>{option.count}</span>
+                                        <span className="ml-auto  text-xs text-muted-foreground">
+                                            {/* <span className="ml-auto flex h-4 w-4 text-right items-center justify-center text-xs text-muted-foreground"> */}
+                                            {option.count}
+                                        </span>
+                                    )}
                                 </CommandItem>
                             );
                         })}
@@ -65,13 +73,10 @@ export const Content: React.FC<Props> = ({
                             <CommandSeparator />
                             <CommandGroup>
                                 <CommandItem
-                                    onSelect={
-                                        () => ({})
-                                        // column?.setFilterValue(undefined)
-                                    }
-                                    className="justify-center text-center"
+                                    onSelect={resetFilterKeyFn}
+                                    className="justify-center text-center cursor-pointer"
                                 >
-                                    Clear filters
+                                    Clear filter
                                 </CommandItem>
                             </CommandGroup>
                         </>

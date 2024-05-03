@@ -20,6 +20,7 @@ interface Props<T extends string> {
     selectedValues: Array<string | null>;
     /** Function to fetch filter options */
     filterFetchFn: () => void;
+    resetFilterKeyFn: (key: T) => void;
 }
 
 export function SelectFilter<T extends string>({
@@ -28,7 +29,8 @@ export function SelectFilter<T extends string>({
     options,
     selectedValues,
     filterFn,
-    filterFetchFn
+    filterFetchFn,
+    resetFilterKeyFn
 }: Props<T>) {
     const filteredValues = new Set(selectedValues);
 
@@ -70,6 +72,7 @@ export function SelectFilter<T extends string>({
                     options={options}
                     filteredValues={filteredValues}
                     selectFn={handleSelect}
+                    resetFilterKeyFn={() => resetFilterKeyFn(filterKey)}
                 />
             </PopoverContent>
         </Popover>

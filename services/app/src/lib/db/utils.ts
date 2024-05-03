@@ -1,5 +1,5 @@
-import { inArray, isNull, or } from 'drizzle-orm';
-import { type PgColumn, PgSelect } from 'drizzle-orm/pg-core';
+import { SQL, asc, desc, inArray, isNull, or } from 'drizzle-orm';
+import { type PgColumn, PgSelect, PgSelectDynamic } from 'drizzle-orm/pg-core';
 
 /**
  * Filter function helper for Drizzle inArray to also allow null values in array.
@@ -45,6 +45,46 @@ export const withPagination = <T extends PgSelect>(
     return query.limit(pageSize).offset((page - 1) * pageSize);
 };
 
-export const queryBuilder = <T extends PgSelect>(query: T, options: {}) => {
-    const dynamicQuery = query.$dynamic();
+type QueryBuilderParams = {
+    page?: number;
+    pageSize?: number;
+    filters?: SQL;
+    orderBy?: Array<{ column: PgColumn; direction: 'asc' | 'desc' }>;
+};
+
+/**
+ * Extend a Drizzle query with pagination, filters and ordering.
+ * @param query Drizzle query.
+ * @param options
+ * @returns
+ */
+export const queryBuilder = <T extends PgSelect>(
+    query: T,
+    { page, pageSize, filters, orderBy }: QueryBuilderParams
+): T => {
+    // const dynamicQuery = query.$dynamic();
+
+    if (filters) {
+        query.where(filters);
+    }
+
+    if (orderBy) {
+        query.orderBy(
+            ...orderBy.map(({ column, direction }) => {
+                if (direction === 'asc') return asc(column);
+                return desc(column);
+            })
+        );
+    }
+
+    if (pageSize) {
+        query.limit(pageSize);
+    }
+
+    if (page) {
+        if (!pageSize) throw new Error('pageSize is required when using page.');
+        query.offset((page - 1) * pageSize);
+    }
+
+    return query;
 };
