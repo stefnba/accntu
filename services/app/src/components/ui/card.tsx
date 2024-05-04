@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
 import * as React from 'react';
+import { IconType } from 'react-icons';
 
 const NavCard = React.forwardRef<
     HTMLDivElement,
@@ -97,7 +97,7 @@ CardFooter.displayName = 'CardFooter';
 
 const CardIcon = React.forwardRef<
     HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement> & { icon: LucideIcon }
+    React.HTMLAttributes<HTMLDivElement> & { icon: IconType }
 >(({ className, icon: Icon, ...props }, ref) => (
     <Icon className="relative mb-6 h-6 w-6 text-primary" />
 ));

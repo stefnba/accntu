@@ -6,13 +6,14 @@ import {
     CardTitle,
     NavCard
 } from '@/components/ui/card';
-import { Bell, Lock, LucideIcon, Settings, Sun, User2 } from 'lucide-react';
+import { type IconType } from 'react-icons';
+import { LuBell, LuLock, LuSettings, LuSun, LuUser2 } from 'react-icons/lu';
 
 type TNavItem = {
     title: string;
     href: string;
     description?: string;
-    avatar?: LucideIcon;
+    avatar?: IconType;
 };
 
 const navItems: TNavItem[] = [
@@ -20,33 +21,33 @@ const navItems: TNavItem[] = [
         title: 'Profile',
         href: 'account/profile',
         description: 'Provide personal details and how we can reach you',
-        avatar: User2
+        avatar: LuUser2
     },
     {
         title: 'Security',
         href: 'account/security',
         description: 'Secure your account and view active sessions',
-        avatar: Lock
+        avatar: LuLock
     },
     {
         title: 'Notification',
         href: 'account/notification',
         description:
             'Choose notification preferences and how you want to be contacted',
-        avatar: Bell
+        avatar: LuBell
     },
     {
         title: 'Apparence',
         href: 'account/apparance',
         description:
             'Customize the appearance of the app - switch between day and night themes.',
-        avatar: Sun
+        avatar: LuSun
     },
     {
         title: 'Settings',
         href: 'account/settings',
         description: 'Set your default language and timezone',
-        avatar: Settings
+        avatar: LuSettings
     }
 ];
 
