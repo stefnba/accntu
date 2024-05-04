@@ -9,6 +9,7 @@ import {
     FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { InputHTMLAttributes } from 'react';
 import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form';
 
 type Props<
@@ -23,6 +24,7 @@ type Props<
     className?: string;
     form: UseFormReturn<TFieldValues>;
     description?: string;
+    autocomplete?: InputHTMLAttributes<HTMLInputElement>['autoComplete'];
 };
 
 export function FormInput<TFieldValues extends FieldValues>({
@@ -32,7 +34,8 @@ export function FormInput<TFieldValues extends FieldValues>({
     placeholder,
     className,
     form,
-    description
+    description,
+    autocomplete
 }: Props<TFieldValues>) {
     return (
         <FormField
@@ -44,6 +47,7 @@ export function FormInput<TFieldValues extends FieldValues>({
                     <FormControl>
                         <div className="relative">
                             <Input
+                                autoComplete={autocomplete}
                                 className={className}
                                 type={type}
                                 placeholder={placeholder}
