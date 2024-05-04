@@ -17,7 +17,8 @@ export const useTransactionTableColumnVisibilityStore =
         setColumns: (columns) => set({ columns })
     }));
 
-type FilterValue = string | Array<string | null> | null;
+type FilterValue = string | Array<string | null> | null | {};
+// type FilterValue = string | Array<string | null> | null;
 
 interface ITransactionTableFilteringStore {
     filters: TTransactionFilter;
@@ -39,6 +40,7 @@ export const useTransactionTableFilteringStore =
             }),
         setFilter: (key, value) =>
             set((state) => {
+                console.log(key, value);
                 if (
                     (Array.isArray(value) && value.length === 0) ||
                     value === undefined

@@ -5,6 +5,7 @@ import {
     SearchFilter
 } from '@/components/data-table/filters';
 
+import { TransactionTableDateFilter } from './filters/date';
 import { TransactionTableSelectFilter } from './filters/select';
 import { useTransactionTableFilteringStore } from './store';
 
@@ -19,6 +20,7 @@ export function TransactionTableFilterBar({}: Props) {
 
     return (
         <div className="flex flex-1 items-center space-x-2">
+            <TransactionTableDateFilter filterKey="date" filterLabel="Date" />
             <TransactionTableSelectFilter
                 filterKey="label"
                 filterLabel="Label"
