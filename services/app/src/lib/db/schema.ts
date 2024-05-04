@@ -5,7 +5,6 @@ import {
     char,
     date,
     doublePrecision,
-    foreignKey,
     integer,
     pgEnum,
     pgTable,
@@ -14,22 +13,38 @@ import {
     uniqueIndex,
     uuid
 } from 'drizzle-orm/pg-core';
+import { z } from 'zod';
 
 export const OAuthProvider = pgEnum('OAuthProvider', ['GITHUB']);
+export const OAuthProviderSchema = z.enum(OAuthProvider.enumValues);
+
 export const LoginMethod = pgEnum('LoginMethod', ['GITHUB', 'EMAIL']);
+export const LoginMethodSchema = z.enum(LoginMethod.enumValues);
+
 export const UserRole = pgEnum('UserRole', ['USER', 'ADMIN']);
+export const UserRoleSchema = z.enum(UserRole.enumValues);
+
 export const Apparance = pgEnum('Apparance', ['SYSTEM', 'DARK', 'LIGHT']);
+export const ApparanceSchema = z.enum(Apparance.enumValues);
+
 export const Language = pgEnum('Language', ['EN']);
+export const LanguageSchema = z.enum(Language.enumValues);
+
 export const TransactionAccountType = pgEnum('TransactionAccountType', [
     'CREDIT_CARD',
     'SAVING',
     'CURRENT'
 ]);
+export const TransactionAccountTypeSchema = z.enum(
+    TransactionAccountType.enumValues
+);
+
 export const TransactionType = pgEnum('TransactionType', [
     'TRANSFER',
     'CREDIT',
     'DEBIT'
 ]);
+export const TransactionTypeSchema = z.enum(TransactionType.enumValues);
 
 export const user = pgTable(
     'user',
@@ -226,52 +241,38 @@ export const bankUploadAccounts = pgTable('bank_upload_accounts', {
     })
 });
 
-export const transactionAccount = pgTable(
-    'transaction_account',
-    {
-        id: uuid('id')
-            .default(sql`gen_random_uuid()`)
-            .primaryKey()
-            .notNull(),
-        parentId: uuid('parentId').references(
-            (): AnyPgColumn => transactionAccount.id
-        ),
-        userId: uuid('userId')
-            .notNull()
-            .references(() => user.id, {
-                onDelete: 'cascade',
-                onUpdate: 'cascade'
-            }),
-        name: text('name').notNull(),
-        description: text('description'),
-        isLeaf: boolean('isLeaf').default(true).notNull(),
-        type: TransactionAccountType('type').notNull(),
-        bankId: uuid('bankId')
-            .notNull()
-            .references(() => bank.id, {
-                onDelete: 'restrict',
-                onUpdate: 'cascade'
-            }),
-        createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp('updatedAt', {
-            precision: 3,
-            mode: 'date'
-        })
-    }
-    // (table) => {
-    //     return {
-    //         transactionAccountAccountParentIdFkey: foreignKey({
-    //             columns: [table.accountParentId],
-    //             foreignColumns: [table.id],
-    //             name: 'transaction_account_accountParentId_fkey'
-    //         })
-    //             .onUpdate('cascade')
-    //             .onDelete('set null')
-    //     };
-    // }
-);
+export const transactionAccount = pgTable('transaction_account', {
+    id: uuid('id')
+        .default(sql`gen_random_uuid()`)
+        .primaryKey()
+        .notNull(),
+    parentId: uuid('parentId').references(
+        (): AnyPgColumn => transactionAccount.id
+    ),
+    userId: uuid('userId')
+        .notNull()
+        .references(() => user.id, {
+            onDelete: 'cascade',
+            onUpdate: 'cascade'
+        }),
+    name: text('name').notNull(),
+    description: text('description'),
+    isLeaf: boolean('isLeaf').default(true).notNull(),
+    type: TransactionAccountType('type').notNull(),
+    bankId: uuid('bankId')
+        .notNull()
+        .references(() => bank.id, {
+            onDelete: 'restrict',
+            onUpdate: 'cascade'
+        }),
+    createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
+        .defaultNow()
+        .notNull(),
+    updatedAt: timestamp('updatedAt', {
+        precision: 3,
+        mode: 'date'
+    })
+});
 
 export const transactionImportFile = pgTable('import_file', {
     id: uuid('id')
@@ -396,58 +397,53 @@ export const transaction = pgTable(
     }
 );
 
-export const label = pgTable(
-    'label',
-    {
-        id: uuid('id')
-            .default(sql`gen_random_uuid()`)
-            .primaryKey()
-            .notNull(),
-        name: text('name').notNull(),
-        userId: uuid('userId')
-            .notNull()
-            .references(() => user.id, {
-                onDelete: 'restrict',
-                onUpdate: 'cascade'
-            }),
-        description: text('description'),
-        parentId: uuid('parentId').references((): AnyPgColumn => label.id),
-        isLeaf: boolean('isLeaf').default(true).notNull(),
-        createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
-            .defaultNow()
-            .notNull(),
-        updatedAt: timestamp('updatedAt', {
-            precision: 3,
-            mode: 'date'
-        })
-    }
-    // (table) => {
-    //     return {
-    //         labelLabelIdFkey: foreignKey({
-    //             columns: [table.parentId],
-    //             foreignColumns: [table.id]
-    //         })
-    //             .onUpdate('cascade')
-    //             .onDelete('set null')
-    //     };
-    // }
-);
-
 export const transactionRelations = relations(transaction, ({ one }) => ({
     user: one(user, {
         fields: [transaction.userId],
         references: [user.id]
     }),
-    // label: one(label, {
-    //     fields: [transaction.labelId],
-    //     references: [label.id]
-    // }),
+    label: one(label, {
+        fields: [transaction.labelId],
+        references: [label.id]
+    }),
     import: one(transactionImport, {
         fields: [transaction.importId],
         references: [transactionImport.id]
     })
 }));
 
-// export const labelRelations = relations(label, ({ many }) => ({
-//     transactions: many(transaction)
-// }));
+export const label = pgTable('label', {
+    id: uuid('id')
+        .default(sql`gen_random_uuid()`)
+        .primaryKey()
+        .notNull(),
+    name: text('name').notNull(),
+    rank: integer('rank').default(0).notNull(),
+    userId: uuid('userId')
+        .notNull()
+        .references(() => user.id, {
+            onDelete: 'restrict',
+            onUpdate: 'cascade'
+        }),
+    description: text('description'),
+    parentId: uuid('parentId').references((): AnyPgColumn => label.id),
+    isLeaf: boolean('isLeaf').default(true).notNull(),
+    createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
+        .defaultNow()
+        .notNull(),
+    updatedAt: timestamp('updatedAt', {
+        precision: 3,
+        mode: 'date'
+    }),
+    isDeleted: boolean('isDeleted').default(false).notNull()
+});
+
+export const labelRelations = relations(label, ({ many, one }) => ({
+    childLabels: many(label, { relationName: 'childLabels' }),
+    transactions: many(transaction),
+    parentLabel: one(label, {
+        fields: [label.parentId],
+        references: [label.id],
+        relationName: 'childLabels'
+    })
+}));
