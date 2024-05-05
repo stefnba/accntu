@@ -1,7 +1,7 @@
 'use client';
 
 import { userActions } from '@/actions';
-import { UpdateUserSchema } from '@/actions/user/update';
+import { UpdateUserSchema } from '@/actions/user/schema';
 import { Form, FormRadio, FormSubmit, useForm } from '@/components/form';
 import {
     FormControl,
@@ -12,7 +12,7 @@ import {
     FormMessage
 } from '@/components/ui/form';
 import { RadioGroup } from '@/components/ui/radio-group';
-import { useMutation } from '@/hooks/mutation';
+import { useMutation } from '@/lib/hooks/actions';
 import { RadioGroupItem } from '@radix-ui/react-radio-group';
 import { useTheme } from 'next-themes';
 

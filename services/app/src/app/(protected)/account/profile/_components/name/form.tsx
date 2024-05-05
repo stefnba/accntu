@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { userActions } from '@/actions';
-import { UpdateUserSchema } from '@/actions/user/update';
+import { UpdateUserSchema } from '@/actions/user/schema';
 import {
     Form,
     FormInput,
@@ -12,8 +12,8 @@ import {
     useForm
 } from '@/components/form';
 import { useToast } from '@/components/ui/use-toast';
-import { useMutation } from '@/hooks/mutation';
 import { useSession } from '@/hooks/session';
+import { useMutation } from '@/lib/hooks/actions';
 import { Dispatch, SetStateAction } from 'react';
 
 interface ProfileUpdateFormProps {
@@ -49,11 +49,16 @@ const ProfileUpdateForm = ({ setOpen }: ProfileUpdateFormProps) => {
                 router.refresh();
             },
             onError: (error) => {
-                toast({
-                    description: 'Profile update failed: ' + error.message
-                });
+                if (error.type === 'VALIDATION_ERROR') {
+                    return;
+                }
+
+                if (error.type === 'SERVER') {
+                    toast({
+                        description: 'Profile update failed: ' + error.error
+                    });
+                }
             },
-            onFieldError: (error) => {},
             resetOnSuccess: false
         },
         form

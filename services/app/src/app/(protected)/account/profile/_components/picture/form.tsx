@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { userActions } from '@/actions';
-import { UploadImageSchema } from '@/actions/user/upload-image';
+import { UploadImageSchema } from '@/actions/user/schema';
 import {
     Form,
     FormDropzone,
@@ -12,7 +12,7 @@ import {
 } from '@/components/form';
 import { AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useMutation } from '@/hooks/mutation';
+import { useMutation } from '@/lib/hooks/actions';
 import { Avatar } from '@radix-ui/react-avatar';
 import { Dispatch, SetStateAction, useState } from 'react';
 
@@ -27,14 +27,13 @@ const ProfileUpdateForm = ({ setOpen }: ProfileUpdateFormProps) => {
     const router = useRouter();
 
     const { execute } = useMutation(
-        userActions.uploadImage,
+        userActions.updloadImage,
         {
             onSuccess: () => {
                 setOpen(false);
                 router.refresh();
             },
             onError: (error) => {},
-            onFieldError: (error) => {},
             resetOnSuccess: false,
             useFormData: true
         },
