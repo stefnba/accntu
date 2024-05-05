@@ -85,7 +85,7 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
             return (
                 <Sheet>
                     <SheetTrigger>{row.original.title}</SheetTrigger>
-                    <ViewTransactionSheetContent />
+                    <ViewTransactionSheetContent id={row.original.id} />
                 </Sheet>
             );
         },

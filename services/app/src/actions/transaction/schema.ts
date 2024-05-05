@@ -191,3 +191,7 @@ export const FilterOptionsSchema = z
     });
 
 export type TTransactionFilterOptions = z.input<typeof FilterOptionsSchema>;
+
+export const FindTransactionByIdSchema = z.object({
+    id: z.string()
+});

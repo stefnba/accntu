@@ -9,10 +9,24 @@ import { and, count, desc, eq, sql } from 'drizzle-orm';
 import {
     CreateTransactionsSchema,
     FilterOptionsSchema,
+    FindTransactionByIdSchema,
     ListTransactionSchema,
     UpdateTransactionSchema
 } from './schema';
 import { TTransactionListActionReturn } from './types';
+
+/**
+ * Fetch transaction record by id.
+ */
+export const findById = createQueryFetch(async ({ user, data: { id } }) => {
+    return db.query.transaction.findFirst({
+        where: (fields, { and, eq }) =>
+            and(eq(fields.userId, user.id), eq(fields.id, id)),
+        with: {
+            label: true
+        }
+    });
+}, FindTransactionByIdSchema);
 
 export const list = createQueryFetch(
     async ({
@@ -206,7 +220,8 @@ export const listFilterOptions = createQueryFetch(
                 dbSchema.transaction,
                 dbSchema.transaction.accountCurrency,
                 filter
-            )
+            ),
+            date: undefined
         };
 
         const query = await filterQueries[filterKey];
