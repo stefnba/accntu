@@ -1,33 +1,25 @@
 'use server';
 
 import { db, schema as dbSchema } from '@/db';
-import { createAction } from '@/lib/actions';
+import { createFetch, createMutation } from '@/lib/actions';
 import { s3Client } from '@/lib/cloud/s3';
-import { createMutation } from '@/lib/mutation';
 import { generateRandonFileName } from '@/lib/upload/utils';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { and, eq } from 'drizzle-orm';
 
 import { allowedFileTypes, maxFileSize } from './config';
-import { CreateUploadRecordSchema, DeleteUploadRecordSchema } from './schema';
-
-type GetSignedS3UrlInput = {
-    fileType: string;
-    fileSize: number;
-    checksum: string;
-    key?: string;
-};
-
-type GetSignedS3UrlReturn = {
-    url: string;
-    key: string;
-};
+import { S3UploadError } from './error';
+import {
+    CreateUploadRecordSchema,
+    DeleteUploadRecordSchema,
+    SignedS3UrlInputSchema
+} from './schema';
 
 /**
  * Create an upload record.
  */
-export const createUploadRecord = createMutation(async (data, user) => {
+export const createUploadRecord = createMutation(async ({ data, user }) => {
     const records = await db
         .insert(dbSchema.transactionImportFile)
         .values({
@@ -44,7 +36,7 @@ export const createUploadRecord = createMutation(async (data, user) => {
 /**
  * Delete an upload record.
  */
-export const deleteUploadRecord = createMutation(async (data, user) => {
+export const deleteUploadRecord = createMutation(async ({ data, user }) => {
     try {
         // delete from the database
         const deletedFiles = await db
@@ -82,21 +74,18 @@ export const deleteUploadRecord = createMutation(async (data, user) => {
 }, DeleteUploadRecordSchema);
 
 /**
- *
+ * Create a signed URL for uploading a file to S3.
  */
-export const getSignedS3Url = createAction<
-    GetSignedS3UrlInput,
-    GetSignedS3UrlReturn
->(async (data, user) => {
+export const getSignedS3Url = createFetch(async ({ data, user }) => {
     const { fileType, fileSize, checksum, key } = data;
 
     // first just make sure in our code that we're only allowing the file types we want
     if (!allowedFileTypes.includes(fileType)) {
-        return { error: 'File type not allowed' };
+        throw new S3UploadError('File type not allowed');
     }
 
     if (fileSize > maxFileSize) {
-        return { error: 'File size too large' };
+        throw new S3UploadError('File size too large');
     }
 
     const objectKey = key || generateRandonFileName();
@@ -118,5 +107,5 @@ export const getSignedS3Url = createAction<
         { expiresIn: 60 } // 60 seconds,
     );
 
-    return { success: { url, key: objectKey } };
-});
+    return { url, key: objectKey };
+}, SignedS3UrlInputSchema);

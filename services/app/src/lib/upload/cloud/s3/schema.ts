@@ -9,3 +9,10 @@ export const CreateUploadRecordSchema = z.object({
 export const DeleteUploadRecordSchema = z.object({
     id: z.string()
 });
+
+export const SignedS3UrlInputSchema = z.object({
+    fileType: z.string(),
+    fileSize: z.number(),
+    checksum: z.string(),
+    key: z.string().optional()
+});
