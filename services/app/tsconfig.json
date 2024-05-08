@@ -32,7 +32,8 @@
             "@/db": ["./src/lib/db/client.ts"],
             "@/db/*": ["./src/lib/db/*"],
             "@/auth": ["./src/lib/auth"],
-            "@/auth/*": ["./src/lib/auth/*"]
+            "@/auth/*": ["./src/lib/auth/*"],
+            "@/logger": ["./src/lib/logger/logger"]
         }
     },
     "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
