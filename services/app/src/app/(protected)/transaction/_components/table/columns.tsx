@@ -120,10 +120,35 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
             const { type } = row.original;
 
             if (type == 'DEBIT') {
-                return <Badge variant="outline">Debit</Badge>;
+                return (
+                    <Badge
+                        className="text-[#d4380d] bg-[#fff2e8] border-[#ffbb96] rounded font-normal"
+                        variant="outline"
+                    >
+                        Debit
+                    </Badge>
+                );
             }
 
-            return <Badge variant="outline">Credit</Badge>;
+            if (type == 'TRANSFER') {
+                return (
+                    <Badge
+                        className="text-[#1d39c4] bg-[#f0f5ff] border-[#adc6ff] rounded font-normal"
+                        variant="outline"
+                    >
+                        Transfer
+                    </Badge>
+                );
+            }
+
+            return (
+                <Badge
+                    className="text-[#389e0d] bg-[#f6ffed] border-[#b7eb8f] rounded font-normal"
+                    variant="outline"
+                >
+                    Credit
+                </Badge>
+            );
         }
     },
     {

@@ -3,7 +3,7 @@
 import { getFilterOptions } from '@/components/data-table/filters/select/db-utils';
 import { createFetch, createMutation, createQueryFetch } from '@/lib/actions';
 import { db, schema as dbSchema } from '@/lib/db/client';
-import { queryBuilder } from '@/lib/db/utils';
+import { inArrayFilter, queryBuilder } from '@/lib/db/utils';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 
 import {
@@ -114,7 +114,9 @@ export const update = createMutation(async ({ user, data: { data, id } }) => {
         .where(
             and(
                 eq(dbSchema.transaction.userId, user.id),
-                eq(dbSchema.transaction.id, id)
+                Array.isArray(id)
+                    ? inArrayFilter(dbSchema.transaction.id, id)
+                    : eq(dbSchema.transaction.id, id)
             )
         )
         .returning();

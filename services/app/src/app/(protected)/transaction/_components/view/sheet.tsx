@@ -17,6 +17,25 @@ interface Props {
     id: string;
 }
 
+const Amount: React.FC<{ amount: number; currency: string }> = ({
+    amount,
+    currency
+}) => {
+    return (
+        <div>
+            <span className="text-4xl font-bold">
+                {Math.trunc(amount).toLocaleString('en-US', {
+                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 0,
+                    currency: currency
+                })}
+            </span>
+            <span>.{Math.round((amount % 1) * 100)}</span>
+            <span className="text-sm ml-1">{currency}</span>
+        </div>
+    );
+};
+
 export const ViewTransactionSheetContent: React.FC<Props> = ({ id }) => {
     const { isLoading, data } = useQuery({
         queryKey: ['transaction', id],
@@ -47,7 +66,11 @@ export const ViewTransactionSheetContent: React.FC<Props> = ({ id }) => {
                     <div className="text-muted-foreground text-sm">
                         Spending Amount
                     </div>
-                    <div className="">
+                    <Amount
+                        amount={spendingAmount}
+                        currency={spendingCurrency}
+                    />
+                    {/* <div className="">
                         <span className="text-4xl font-bold">
                             {spendingAmount?.toLocaleString('en-US', {
                                 maximumFractionDigits:
@@ -64,22 +87,13 @@ export const ViewTransactionSheetContent: React.FC<Props> = ({ id }) => {
                             })}
                         </span>
                         <span className="text-sm ml-1">{spendingCurrency}</span>
-                    </div>
+                    </div> */}
                 </div>
                 <div>
                     <div className="text-muted-foreground text-sm">
                         Account Amount
                     </div>
-                    <div className="">
-                        <span className="text-4xl font-bold">
-                            {accountAmount?.toLocaleString('en-US', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: 2,
-                                currency: accountCurrency
-                            })}
-                        </span>
-                        <span className="text-sm ml-1">{accountCurrency}</span>
-                    </div>
+                    <Amount amount={accountAmount} currency={accountCurrency} />
                 </div>
             </div>
             <div className="mb-6">

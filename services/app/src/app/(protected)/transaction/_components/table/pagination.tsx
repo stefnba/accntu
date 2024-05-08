@@ -14,6 +14,8 @@ import {
     RxDoubleArrowRight
 } from 'react-icons/rx';
 
+import { useTransactionTableRowSelectionStore } from './store';
+
 interface Props<TData> {
     table: Table<TData>;
     pagination?: {
@@ -40,10 +42,18 @@ export function TransactionTablePagination<TData>({
     selection,
     records
 }: Props<TData>) {
+    const rowSelection = useTransactionTableRowSelectionStore(
+        (state) => state.rowSelection
+    );
+    const setRowSelection = useTransactionTableRowSelectionStore(
+        (state) => state.setRowSelection
+    );
+
+    const rowSelectionCount = Object.keys(rowSelection).length;
+
     const count = {
         total: records?.total ?? table.getRowCount(),
-        selected:
-            selection?.count ?? table.getFilteredSelectedRowModel().rows.length
+        selected: selection?.count ?? rowSelectionCount
     };
     const { page, pageSize, pageSizeOptions, totalPages } = {
         page: pagination?.page ?? table.getState().pagination.pageIndex + 1,
@@ -80,7 +90,18 @@ export function TransactionTablePagination<TData>({
     return (
         <div className="flex items-center justify-between px-2 mb-8">
             <div className="flex-1 text-sm text-muted-foreground">
-                {count.selected} of {count.total} row(s) selected
+                {count.selected === 0
+                    ? `Total: ${count.total} records`
+                    : `${count.selected} of ${count.total} records selected`}
+
+                {count.selected > 0 && (
+                    <button
+                        className="text-sm text-muted-foreground hover:underline ml-4"
+                        onClick={() => setRowSelection({})}
+                    >
+                        De-select all
+                    </button>
+                )}
             </div>
             <div className="flex items-center space-x-6 lg:space-x-8">
                 <div className="flex items-center space-x-2">

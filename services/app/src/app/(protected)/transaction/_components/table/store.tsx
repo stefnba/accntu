@@ -1,4 +1,5 @@
 import { TTransactionOrderByObject } from '@/actions/transaction/schema';
+import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { create } from 'zustand';
 
 import type {
@@ -15,6 +16,29 @@ export const useTransactionTableColumnVisibilityStore =
     create<ITransactionTableColumnVisibilityStore>((set) => ({
         columns: [],
         setColumns: (columns) => set({ columns })
+    }));
+
+interface ITransactionTableRowSelectionStore {
+    rowSelection: RowSelectionState;
+    // setRowSelection: OnChangeFn<RowSelectionState>;
+    setRowSelection: (
+        updaterOrValue:
+            | RowSelectionState
+            | ((old: RowSelectionState) => RowSelectionState)
+    ) => void;
+}
+
+export const useTransactionTableRowSelectionStore =
+    create<ITransactionTableRowSelectionStore>((set) => ({
+        rowSelection: {},
+        setRowSelection: (rowSelection) =>
+            set((state) => {
+                if (typeof rowSelection === 'function') {
+                    return { rowSelection: rowSelection(state.rowSelection) };
+                }
+
+                return { rowSelection };
+            })
     }));
 
 type FilterValue = string | Array<string | null> | null | {};

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { useQuery } from '@tanstack/react-query';
 import {
+    RowSelectionState,
     getCoreRowModel,
     getPaginationRowModel,
     useReactTable
@@ -16,6 +17,7 @@ import { TransactionTablePagination } from './pagination';
 import {
     useTransactionTableFilteringStore,
     useTransactionTablePaginationStore,
+    useTransactionTableRowSelectionStore,
     useTransactionTableSortingStore
 } from './store';
 import { DataTableToolbar } from './toolbar';
@@ -40,6 +42,15 @@ export const TransactionTable: React.FC<Props> = () => {
 
     /* Filtering */
     const sorting = useTransactionTableSortingStore((state) => state.sorting);
+
+    /* Row selection */
+    const rowSelection = useTransactionTableRowSelectionStore(
+        (state) => state.rowSelection
+    );
+    const setRowSelection = useTransactionTableRowSelectionStore(
+        (state) => state.setRowSelection
+    );
+    // const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
     /* Query */
     const { data: transactionResponse, isLoading } = useQuery({
@@ -67,9 +78,12 @@ export const TransactionTable: React.FC<Props> = () => {
         columns,
         getCoreRowModel: getCoreRowModel(),
         enableRowSelection: true,
-        // onRowSelectionChange: setRowSelection,
+        onRowSelectionChange: setRowSelection,
         enableSorting: true,
-        getRowId: (row) => row.id
+        getRowId: (row) => row.id,
+        state: {
+            rowSelection
+        }
     });
 
     return (

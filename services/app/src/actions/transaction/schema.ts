@@ -1,7 +1,6 @@
 import { TransactionTypeSchema, transaction } from '@/lib/db/schema';
 import { inArrayFilter, inArrayWithNullFilter } from '@/lib/db/utils';
-import { asc, between, desc, gte, like, lte, sql } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { between, gte, ilike, like, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 /** Converts a plain object's keys into array that is suitable for Zod enum with type safety and autocompletion */
@@ -14,11 +13,32 @@ function prepZodEnumFromObjectKeys<
 }
 
 export const UpdateTransactionSchema = z.object({
-    id: z.string(),
+    id: z.union([z.string(), z.array(z.string())]),
     data: z.object({
+        type: TransactionTypeSchema.optional(),
         labelId: z.string().optional(),
-        title: z.string().optional()
+        title: z
+            .string()
+            .optional()
+            .transform((val) => {
+                if (!val || val.trim() === '') {
+                    return;
+                }
+                return val.trim();
+            }),
+        note: z.string().optional(),
+        country: z.string().length(2).optional(),
+        city: z.string().optional()
     })
+    // .transform((val) => {
+    //     Object.keys(val).forEach((key) => {
+    //         const k = key as keyof typeof val;
+    //         if (val[k] === undefined || val[k] === '') {
+    //             delete val[k];
+    //         }
+    //     });
+    //     return val;
+    // })
 });
 
 const TransactionSchema = z.object({
@@ -134,7 +154,7 @@ export const FilterTransactionSchema = z.object({
         .string()
         .optional()
         .transform((val) =>
-            val ? like(transaction.title, `%${val}%`) : undefined
+            val ? ilike(transaction.title, `%${val}%`) : undefined
         ),
     label: z
         .array(z.string().nullable())
