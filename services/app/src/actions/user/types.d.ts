@@ -10,4 +10,5 @@ export interface ICreateUserInput {
 
 export interface ICreateUserReturn {
     id: string;
+    email: string;
 }

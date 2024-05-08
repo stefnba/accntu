@@ -1,12 +1,14 @@
 import { cookies } from 'next/headers';
 
-import { EMAIL_COOKIE_NAME } from '@/auth/actions/mail/config';
+import { VERIFY_COOKIE_NAME } from '@/auth/actions/mail/config';
 
 import VerifyEmailForm from './_components/form';
 import ResendButton from './_components/resend-button';
 
 export default function VerifyEmail() {
-    const email = cookies().get(EMAIL_COOKIE_NAME)?.value ?? null;
+    const verificationToken = cookies().get(VERIFY_COOKIE_NAME)?.value ?? null;
+
+    const email = 'd';
 
     return (
         <div>

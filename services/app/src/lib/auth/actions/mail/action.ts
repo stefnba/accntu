@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { userActions } from '@/actions';
 import { db, schema as dbSchema } from '@/db';
 import { createMutation } from '@/lib/actions';
+import { logger } from '@/logger';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { TimeSpan, createDate } from 'oslo';
@@ -16,10 +17,10 @@ import { LOGIN_COOKIE_NAME } from '../login-record/config';
 import {
     CODE_EXPIRATION,
     CODE_LENGTH,
-    EMAIL_COOKIE_NAME,
     REDIRECT_URL,
     VERIFY_COOKIE_NAME
 } from './config';
+import { AuthError } from './error';
 import { SendTokenSchema, VerifyTokenSchema } from './schema';
 import type { TSendTokenReturn, TVerifyTokenReturn } from './types';
 
@@ -70,22 +71,17 @@ export const sendToken = createMutation(
                 maxAge: 60 * CODE_EXPIRATION,
                 sameSite: 'lax'
             });
-            cookies().set(EMAIL_COOKIE_NAME, data.email, {
-                path: '/',
-                secure: process.env.NODE_ENV === 'production',
-                httpOnly: true,
-                maxAge: 60 * CODE_EXPIRATION,
-                sameSite: 'lax'
-            });
 
             // todo send email
+            // data.email
+            logger.info('OTP code sent', { email: data.email });
 
             return {
                 success: true,
                 redirectUrl: REDIRECT_URL
             };
         } catch (error: any) {
-            console.error('Error logging in with email', error);
+            logger.error('Error logging in with email', error);
             throw new Error(
                 'An error occurred while logging in. Please try again.'
             );
@@ -101,26 +97,71 @@ export const sendToken = createMutation(
 export const verifyToken = createMutation(
     async ({ data: { code } }): Promise<TVerifyTokenReturn> => {
         try {
-            const token = cookies().get(VERIFY_COOKIE_NAME)?.value ?? null; //verifcation token
-            const email = cookies().get(EMAIL_COOKIE_NAME)?.value ?? null;
-            const loginToken = cookies().get(LOGIN_COOKIE_NAME)?.value ?? null;
+            const verificationToken =
+                cookies().get(VERIFY_COOKIE_NAME)?.value ?? null; //verifcation token
+            const loginToken = cookies().get(LOGIN_COOKIE_NAME)?.value ?? null; // login token for tracking login attempts
             cookies().delete(VERIFY_COOKIE_NAME);
             cookies().delete(LOGIN_COOKIE_NAME);
-            cookies().delete(EMAIL_COOKIE_NAME);
 
-            const codeDb = await db.query.verificationToken.findFirst({
-                where: (fields, { eq, and, gte }) =>
-                    and(
-                        eq(fields.code, code),
-                        eq(fields.token, token || ''),
-                        gte(fields.expiresAt, new Date())
-                    )
-            });
+            // we can't proceed without a token
+            if (!verificationToken) {
+                throw new AuthError({
+                    publicMessage: 'Invalid OTP code',
+                    message: 'No verification token found'
+                });
+            }
 
-            // if codeDb is not null, then the code is valid
-            // if token or email cookie is missing, then attempt not valid
-            if (!codeDb || !token || !email) {
-                throw new Error('Invalid code');
+            const verificationRecord =
+                await db.query.verificationToken.findFirst({
+                    where: (fields, { eq, and, gte }) =>
+                        and(
+                            eq(fields.token, verificationToken || ''),
+                            gte(fields.expiresAt, new Date())
+                        )
+                });
+
+            // record not found, e.g. because expired or invalid token
+            if (!verificationRecord) {
+                throw new AuthError(
+                    {
+                        publicMessage: 'Invalid OTP code',
+                        message:
+                            'No verification record found for specified token'
+                    },
+                    {
+                        token: verificationToken
+                    }
+                );
+            }
+
+            // check if code is valid
+            if (verificationRecord.code !== code) {
+                // check if login attempt is for existing user
+                const user = await db.query.user.findFirst({
+                    where: (fields, { eq }) =>
+                        eq(fields.email, verificationRecord.identifier)
+                });
+                if (user) {
+                    const { loginAttempts } = user;
+
+                    await db
+                        .update(dbSchema.user)
+                        .set({
+                            loginAttempts: loginAttempts + 1
+                        })
+                        .where(eq(dbSchema.user.id, user.id));
+
+                    if (loginAttempts >= 5) {
+                        throw new AuthError('Invalid OTP code');
+
+                        // todo block user
+                    }
+                }
+
+                throw new AuthError({
+                    publicMessage: 'Invalid OTP code',
+                    message: 'Invalid OTP code entered'
+                });
             }
 
             // code is now validated going forward
@@ -129,22 +170,38 @@ export const verifyToken = createMutation(
             await db
                 .delete(dbSchema.verificationToken)
                 .where(
-                    eq(dbSchema.verificationToken.identifier, codeDb.identifier)
+                    eq(
+                        dbSchema.verificationToken.identifier,
+                        verificationRecord.identifier
+                    )
                 );
 
-            // update login attempt
+            // update login attempt to success
             if (loginToken) {
                 await updateLoginAttempt(loginToken);
             }
 
-            // create session
+            // get user by email
             const existingUser = await db.query.user.findFirst({
-                where: (fields, { eq }) => eq(fields.email, email)
+                where: (fields, { eq }) =>
+                    eq(fields.email, verificationRecord.identifier)
             });
 
             // user already exists
             if (existingUser) {
                 await createSession(existingUser.id);
+                await db
+                    .update(dbSchema.user)
+                    .set({
+                        loginAttempts: 0
+                    })
+                    .where(eq(dbSchema.user.id, existingUser.id));
+
+                logger.info('Login success', {
+                    email: existingUser.email,
+                    userId: existingUser.id
+                });
+
                 return {
                     success: true,
                     redirectUrl: '/'
@@ -152,18 +209,27 @@ export const verifyToken = createMutation(
             }
 
             // create new user
-            const user = await userActions.create({ email });
+            const user = await userActions.create({
+                email: verificationRecord.identifier
+            });
             await createSession(user.id);
+
+            logger.info('User created as part of email login', {
+                email: user.email,
+                userId: user.id
+            });
 
             return {
                 success: true,
                 redirectUrl: '/'
             };
         } catch (error: any) {
-            console.error('Error logging in with email', error);
-            throw new Error(
-                'An error occurred while logging in. Please try again.'
-            );
+            // if (error instanceof AuthError) {
+            //     throw new Error(error.publicMessage);
+            // }
+
+            logger.error('Error verifying email', { error });
+            throw error;
         }
     },
     VerifyTokenSchema,

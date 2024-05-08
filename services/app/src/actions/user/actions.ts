@@ -58,6 +58,7 @@ export const create = async (
     });
 
     return {
-        id: newUser.id
+        id: newUser.id,
+        email: newUser.email
     };
 };
