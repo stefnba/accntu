@@ -3,7 +3,7 @@ import { Inter as FontSans } from 'next/font/google';
 
 import { ThemeProvider } from '@/components/providers/theme';
 import { Toaster } from '@/components/ui/toaster';
-import { QueryProvider } from '@/lib/data/query-provider';
+import { QueryProvider } from '@/providers/query';
 import { cn } from '@/utils';
 
 import './globals.css';
