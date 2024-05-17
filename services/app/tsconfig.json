@@ -29,11 +29,14 @@
             "@/components/*": ["./src/components/*"],
             "@/lib/*": ["./src/lib/*"],
             "@/utils": ["./src/lib/utils"],
-            "@/db": ["./src/lib/db/client.ts"],
-            "@/db/*": ["./src/lib/db/*"],
+            "@/db": ["./src/server/db/client.ts"],
+            "@db": ["./src/server/db/client.ts"],
+            "@db/*": ["./src/server/db/*"],
+            "@/db/*": ["./src/server/db/*"],
             "@/auth": ["./src/lib/auth"],
             "@/auth/*": ["./src/lib/auth/*"],
-            "@/logger": ["./src/lib/logger/logger"]
+            "@/logger": ["./src/server/lib/logging/logger"],
+            "@server/*": ["./src/server/*"]
         }
     },
     "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

@@ -58,6 +58,7 @@ export const middleware = async (request: NextRequest) => {
 };
 
 // Optionally, don't invoke Middleware on some paths
+// /api or /_next paths and static files are not invoked by default
 export const config = {
-    matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)']
+    matcher: ['/((?!.+\\.[\\w]+$|_next|api).*)', '/', '/(trpc)(.*)']
 };
