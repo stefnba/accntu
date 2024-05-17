@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { accountActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
 import {
@@ -9,6 +7,9 @@ import {
     CardTitle,
     NavCard
 } from '@/components/ui/card';
+import { CreateConnectedBankTrigger } from '@/features/connectedBank/components/create-account/modal-trigger';
+import { ListConnectedBanks } from '@/features/connectedBank/components/list-accounts';
+import { LuPlus } from 'react-icons/lu';
 
 export default async function AccountList() {
     const { data: accounts = [] } = await accountActions.list();
@@ -33,11 +34,14 @@ export default async function AccountList() {
 
     return (
         <div>
-            <PageHeader title="Accounts" />
-            <Link href="account/new">New</Link>
+            <PageHeader
+                title="Bank Accounts"
+                actionBar={<CreateConnectedBankTrigger />}
+            />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {accountRender}
             </div>
+            <ListConnectedBanks />
         </div>
     );
 }

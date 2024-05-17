@@ -289,7 +289,7 @@ export const connectedAccount = pgTable('connectedAccount', {
     bankId: text('bankId')
         .notNull()
         .references(() => connectedBank.id, {
-            onDelete: 'restrict',
+            onDelete: 'cascade',
             onUpdate: 'cascade'
         }),
     name: text('name').notNull(),

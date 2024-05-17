@@ -2,8 +2,11 @@ import { db } from '@/db/client';
 import { getUser } from '@/server/auth/validate';
 import { zValidator } from '@hono/zod-validator';
 import { createConnectedBank } from '@server/services/connectedBank';
+import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
+
+import { connectedBank } from '../db/schema';
 
 export const CreateConnectedBankSchema = z.object({
     bankId: z.string(),
@@ -32,6 +35,26 @@ const app = new Hono()
             const user = getUser(c);
             const data = await createConnectedBank(user.id, values);
             return c.json(data, 201);
+        }
+    )
+    .delete(
+        '/:id',
+        zValidator('param', z.object({ id: z.string() })),
+        async (c) => {
+            const { id } = c.req.valid('param');
+            const user = getUser(c);
+
+            const [data] = await db
+                .delete(connectedBank)
+                .where(
+                    and(
+                        eq(connectedBank.id, id),
+                        eq(connectedBank.userId, user.id)
+                    )
+                )
+                .returning({ id: connectedBank.id });
+
+            return c.json({ data: 12 }, 201);
         }
     )
     .get(
