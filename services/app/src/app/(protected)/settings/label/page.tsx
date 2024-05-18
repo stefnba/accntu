@@ -1,21 +1,16 @@
-import { labelActions } from '@/actions';
 import { PageHeader } from '@/components/page/header';
-
-import { LabelCard } from './_components/label-card';
-import { NewLabelCard } from './_components/new-label-card';
+import { CreateLabelSheetTrigger } from '@/features/label/components/create-label/sheet-trigger';
+import { ListLabels } from '@/features/label/components/list-labels';
 
 export default async function LabelList() {
-    const labels = await labelActions.list({});
-
     return (
         <div>
-            <PageHeader title="Labels" />
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <NewLabelCard />
-                {labels?.map((label) => (
-                    <LabelCard key={label.id} label={label} />
-                ))}
-            </div>
+            <PageHeader
+                title="Labels"
+                actionBar={<CreateLabelSheetTrigger />}
+            />
+
+            <ListLabels />
         </div>
     );
 }

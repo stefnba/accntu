@@ -1,4 +1,4 @@
-import { InferResultType, Label } from '@/lib/db/types';
+import { InferResultType, Label } from '@/server/db/types';
 
 // export type TLabel = Pick<Label, 'id' | 'name' | 'parentId'>;
 

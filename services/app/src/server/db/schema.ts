@@ -453,7 +453,9 @@ export const InsertTransactionSchema = createInsertSchema(transaction);
 export const label = pgTable('label', {
     id: text('id').primaryKey().notNull(),
     name: text('name').notNull(),
+    color: text('color'),
     rank: integer('rank').default(0).notNull(),
+    level: integer('level').default(0).notNull(),
     userId: text('userId')
         .notNull()
         .references(() => user.id, {
@@ -461,9 +463,10 @@ export const label = pgTable('label', {
             onUpdate: 'cascade'
         }),
     description: text('description'),
-    firstParentId: text('parentId').references((): AnyPgColumn => label.id),
     parentId: text('parentId').references((): AnyPgColumn => label.id),
-    isLeaf: boolean('isLeaf').default(true).notNull(),
+    firstParentId: text('firstParentId').references(
+        (): AnyPgColumn => label.id
+    ),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
         .defaultNow()
         .notNull(),
