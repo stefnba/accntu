@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { Inter as FontSans } from 'next/font/google';
 
-import { ThemeProvider } from '@/components/providers/theme';
-import { Toaster } from '@/components/ui/toaster';
+import { ModalProvider } from '@/providers/modal';
 import { QueryProvider } from '@/providers/query';
+import { SheetProvider } from '@/providers/sheet';
+import { ThemeProvider } from '@/providers/theme';
 import { cn } from '@/utils';
+import { Toaster } from 'react-hot-toast';
 
 import './globals.css';
 
@@ -38,6 +40,9 @@ export default function RootLayout({
                         enableSystem
                         disableTransitionOnChange
                     >
+                        <ModalProvider />
+                        <SheetProvider />
+
                         {children}
                         <Toaster />
                     </ThemeProvider>
