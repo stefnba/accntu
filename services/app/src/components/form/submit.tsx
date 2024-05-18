@@ -1,17 +1,14 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
-
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { UseFormReturn } from 'react-hook-form';
+import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useFormStatus } from 'react-dom';
+import { UseFormReturn } from 'react-hook-form';
 
 interface FormSubmitProps {
     disabled?: boolean;
     className?: string;
-    title?: string;
-    loadingTitle?: string;
     form: UseFormReturn<any>;
     variant?:
         | 'default'
@@ -22,36 +19,39 @@ interface FormSubmitProps {
         | 'link';
     // | 'primary';
     size?: 'sm' | 'icon' | 'lg' | 'default';
+    children?: React.ReactNode;
 }
+
+const LoadingDots = () => (
+    <div className="flex space-x-[3px] justify-center items-center bg-primary">
+        <span className="sr-only">Loading...</span>
+        <div className="size-2 bg-white rounded-full animate-bounce [animation-delay:-0.1s]"></div>
+        <div className="size-2 bg-white rounded-full animate-bounce [animation-delay:-0.05s]"></div>
+        <div className="size-2 bg-white rounded-full animate-bounce"></div>
+    </div>
+);
 
 export const FormSubmit = ({
     disabled,
     className,
     variant = 'default',
-    title = 'Submit',
-    loadingTitle,
     form,
-    size = 'default'
+    size = 'default',
+    children
 }: FormSubmitProps) => {
-    // const allFieldsValid = form.trigger();
-
     return (
         <Button
             size={size}
             variant={variant}
-            disabled={
-                form.formState.isSubmitting ||
-                disabled ||
-                !form.formState.isValid
-            }
+            disabled={disabled || !form.formState.isValid}
             type="submit"
-            className={cn(className)}
+            className={cn('mt-4', className)}
         >
-            {form.formState.isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {form.formState.isSubmitting ? (
+                <LoadingDots />
+            ) : (
+                children || 'Submit'
             )}
-
-            {form.formState.isSubmitting ? loadingTitle || title : title}
         </Button>
     );
 };
