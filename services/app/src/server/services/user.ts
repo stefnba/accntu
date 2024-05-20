@@ -1,8 +1,14 @@
+import type { TUserUpdateValues } from '@/features/user/schema/update-user';
 import { db } from '@db';
 import { user, userSetting } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { InferInsertModel, eq } from 'drizzle-orm';
 
+/**
+ * Create a new user record, mainly done through signing up route.
+ * @param values
+ * @returns
+ */
 export const createUser = async (
     values: Pick<InferInsertModel<typeof user>, 'email'>
 ) => {
@@ -28,16 +34,26 @@ export const createUser = async (
     return newUser;
 };
 
-export const updateUser = async (
-    id: string,
-    values: Pick<
-        InferInsertModel<typeof user>,
-        'email' | 'firstName' | 'image' | 'lastName'
-    >
-) => {
+/**
+ * Update user record together with userSettings fields.
+ * @param id userId.
+ * @param values values to be updated.
+ * @returns public user fields.
+ */
+export const updateUser = async (id: string, values: TUserUpdateValues) => {
+    const { settings, ...updateValues } = values;
+
+    // if (settings) {
+    //     const [{ userId, ...updatedSettings }] = await db
+    //         .update(userSetting)
+    //         .set(settings)
+    //         .where(eq(user.id, id))
+    //         .returning();
+    // }
+
     const [updatedUser] = await db
         .update(user)
-        .set({ ...values, updatedAt: new Date() })
+        .set({ ...updateValues, updatedAt: new Date() })
         .where(eq(user.id, id))
         .returning({
             id: user.id,

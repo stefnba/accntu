@@ -1,3 +1,4 @@
+import { InsertUserSchema, InsertUserSettingsSchema } from '@db/schema';
 import { z } from 'zod';
 
 const MAX_FILE_SIZE = 1024 * 1024 * 5;
@@ -19,13 +20,15 @@ export const UploadImageSchema = z.object({
         )
 });
 
-export const UpdateUserSchema = z.object({
-    firstName: z
-        .string()
-        .min(3, {
-            message: 'Your name must be at least 3 characters.'
+export const UpdateUserSchema = InsertUserSchema.pick({
+    firstName: true,
+    lastName: true
+}).and(
+    z
+        .object({
+            settings: InsertUserSettingsSchema.omit({ userId: true })
         })
-        .optional(),
-    lastName: z.string().optional(),
-    theme: z.enum(['LIGHT', 'DARK']).optional()
-});
+        .optional()
+);
+
+export type TUserUpdateValues = z.infer<typeof UpdateUserSchema>;
