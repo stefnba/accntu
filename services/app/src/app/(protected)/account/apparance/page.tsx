@@ -1,12 +1,10 @@
 import { PageHeader } from '@/components/page/header';
-import { FormItem, FormLabel } from '@/components/ui/form';
-import { Select } from '@/components/ui/select';
+import { UpdateThemeForm } from '@/features/user/components/update-apparence/update-theme-form';
+import { getUser } from '@/lib/auth';
 
-import { AccountSection } from '../_components/section';
-import ThemeSection from './_components/mode-section';
-import { ThemeForm } from './_components/theme-form';
+const ApparancePage = async () => {
+    const user = await getUser();
 
-const ApparancePage = () => {
     return (
         <>
             <PageHeader
@@ -24,8 +22,7 @@ const ApparancePage = () => {
                 subTitle="Customize the appearance of the app - switch between light and dark themes.    "
             />
             <div className="max-w-4xl flex space-x-4">
-                {/* <ThemeSection /> */}
-                <ThemeForm />
+                <UpdateThemeForm />
             </div>
         </>
     );

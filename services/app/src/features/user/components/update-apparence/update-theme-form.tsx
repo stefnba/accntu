@@ -1,6 +1,5 @@
 'use client';
 
-import { UpdateUserSchema } from '@/actions/user/schema';
 import { Form, FormSubmit, useForm } from '@/components/form';
 import {
     FormControl,
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/form';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { useUpdateUser } from '@/features/user/api/update-user';
+import { UpdateUserSchema } from '@/features/user/schema/update-user';
 import { RadioGroupItem } from '@radix-ui/react-radio-group';
 import { useTheme } from 'next-themes';
 import { z } from 'zod';

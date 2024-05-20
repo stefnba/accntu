@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page/header';
-import ChangePasswordSection from './_components/change-password-section';
-import MultiFactorAuthSection from './_components/mfa-section';
+import { ChangePasswordSection } from '@/features/user/components/update-security/change-password-section';
+import { MultiFactorAuthSection } from '@/features/user/components/update-security/mfa-section';
 
 const SecurityPage = () => {
     return (

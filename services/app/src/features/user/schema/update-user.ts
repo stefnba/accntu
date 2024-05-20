@@ -8,17 +8,6 @@ const ACCEPTED_IMAGE_TYPES = [
     'image/png',
     'image/webp'
 ];
-export const UploadImageSchema = z.object({
-    image: z
-        .custom<File>()
-        .refine((file) => file, `Image is required`)
-        .refine((file) => !Array.isArray(file), `Only one image is allowed`)
-        .refine((file) => file?.size <= MAX_FILE_SIZE, `Max. image size is 5MB`)
-        .refine(
-            (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
-            'Only .jpg, .jpeg, .png and .webp formats are supported.'
-        )
-});
 
 export const UpdateUserSchema = InsertUserSchema.pick({
     firstName: true,
@@ -26,7 +15,22 @@ export const UpdateUserSchema = InsertUserSchema.pick({
 }).and(
     z
         .object({
-            settings: InsertUserSettingsSchema.omit({ userId: true })
+            settings: InsertUserSettingsSchema.omit({ userId: true }),
+            image: z
+                .custom<File>()
+                .refine((file) => file, `Image is required`)
+                .refine(
+                    (file) => !Array.isArray(file),
+                    `Only one image is allowed`
+                )
+                .refine(
+                    (file) => file?.size <= MAX_FILE_SIZE,
+                    `Max. image size is 5MB`
+                )
+                .refine(
+                    (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+                    'Only .jpg, .jpeg, .png and .webp formats are supported.'
+                )
         })
         .optional()
 );

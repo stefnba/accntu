@@ -1,6 +1,7 @@
 'use client';
 
 import { CreateConnectedBankModal } from '@/features/connectedBank/components/create-account/modal';
+import { UpdateUserImageModal } from '@/features/user/components/update-profile/update-image-modal';
 import { useMountedState } from 'react-use';
 
 export const ModalProvider = () => {
@@ -10,6 +11,7 @@ export const ModalProvider = () => {
     return (
         <>
             <CreateConnectedBankModal />
+            <UpdateUserImageModal />
         </>
     );
 };

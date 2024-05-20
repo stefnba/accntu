@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page/header';
-import LanguageSection from './_components/language-section';
-import TimezoneSection from './_components/timezone-section';
+import { SettingsLanguageSection } from '@/features/user/components/update-settings/update-language';
+import { SettingsTimezoneSection } from '@/features/user/components/update-settings/update-timezone';
 
 const SettingsPage = () => {
     return (
@@ -20,8 +20,8 @@ const SettingsPage = () => {
                 subTitle="Set your default language and timezone"
             />
             <div className="max-w-6xl">
-                <LanguageSection />
-                <TimezoneSection />
+                <SettingsLanguageSection />
+                <SettingsTimezoneSection />
             </div>
         </>
     );

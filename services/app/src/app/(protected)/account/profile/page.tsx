@@ -1,10 +1,12 @@
 import { PageHeader } from '@/components/page/header';
-
-import EmailSection from './_components/email/section';
-import NameSection from './_components/name/section';
-import PictureSection from './_components/picture/section';
+import { UpdateEmailSection } from '@/features/user/components/update-profile/update-email';
+import { UpdateUserImageSection } from '@/features/user/components/update-profile/update-image';
+import { UpdateNameSection } from '@/features/user/components/update-profile/update-name';
+import { getUser } from '@/lib/auth';
 
 const ProfilePage = async () => {
+    const user = await getUser();
+
     return (
         <>
             <PageHeader
@@ -22,11 +24,14 @@ const ProfilePage = async () => {
                 subTitle="Provide personal details and how we can reach you"
             />
 
-            <PictureSection />
+            <UpdateUserImageSection />
 
-            <div className="max-w-6xl">
-                <NameSection />
-                <EmailSection />
+            <div className="max-w-4xl">
+                <UpdateNameSection
+                    firstName={user.firstName}
+                    lastName={user.lastName}
+                />
+                <UpdateEmailSection email={user.email || ''} />
             </div>
         </>
     );

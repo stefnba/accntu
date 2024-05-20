@@ -2,22 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 
-import { UploadImageSchema } from '@/actions/user/schema';
 import { Form, FormDropzone, useForm } from '@/components/form';
 import { AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { UpdateUserSchema } from '@/features/user/schema/update-user';
 import { Avatar } from '@radix-ui/react-avatar';
 import React, { useState } from 'react';
+import { z } from 'zod';
 
 interface Props {}
 
 export const UpdateUserImageForm: React.FC<Props> = () => {
-    const form = useForm(UploadImageSchema);
+    const form = useForm(UpdateUserSchema);
     const [image, setImage] = useState<File | null>(null);
 
     const router = useRouter();
 
-    const handleSubmit = (values: any) => {};
+    const handleSubmit = (values: z.infer<typeof UpdateUserSchema>) => {
+        alert('not implemented');
+        console.log({ values });
+    };
 
     return (
         <Form form={form} onSubmit={handleSubmit}>
