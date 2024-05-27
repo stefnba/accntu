@@ -1,4 +1,4 @@
-import { SessionContext } from '@/lib/auth/provider';
+import { SessionContext } from '@/providers/session';
 import { useContext } from 'react';
 
 export const useSession = () => {
