@@ -12,7 +12,7 @@ import { z } from 'zod';
 const app = new Hono()
     .get('/', async (c) => {
         const user = getUser(c);
-        const data = getConnectedAccounts(user.id);
+        const data = await getConnectedAccounts(user.id);
         return c.json(data);
     })
     .get(
@@ -21,7 +21,7 @@ const app = new Hono()
         async (c) => {
             const { id } = c.req.valid('param');
             const user = getUser(c);
-            const data = getConnectedAccount(id, user.id);
+            const data = await getConnectedAccount(id, user.id);
             if (!data) {
                 return c.json({ error: 'Not Found' }, 404);
             }

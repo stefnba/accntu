@@ -54,7 +54,7 @@ const app = new Hono()
                 )
                 .returning({ id: connectedBank.id });
 
-            return c.json({ data: 12 }, 201);
+            return c.json(data, 201);
         }
     )
     .get(
