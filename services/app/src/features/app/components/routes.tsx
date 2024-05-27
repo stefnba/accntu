@@ -2,10 +2,8 @@
 
 import {
     LuCreditCard,
-    LuDownload,
     LuImport,
     LuLayoutDashboard,
-    LuPiggyBank,
     LuSettings,
     LuWallet
 } from 'react-icons/lu';

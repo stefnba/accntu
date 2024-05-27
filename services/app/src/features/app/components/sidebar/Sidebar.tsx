@@ -1,9 +1,9 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import SidebarMenu from './Menu';
-import { Menu } from 'lucide-react';
 import { useSidebar } from '@/hooks/sidebar';
+import { cn } from '@/lib/utils';
+
+import SidebarMenu from './Menu';
 
 const Sidebar = () => {
     const { isOpen } = useSidebar();
