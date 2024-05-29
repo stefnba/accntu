@@ -1,7 +1,7 @@
 #!make
 include .env
 
-# Python setup with pipenv
+# Python setup with poetry
 ifeq ($(PY_VERSION),)
 PY_VERSION := 3.12.2
 endif
