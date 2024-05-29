@@ -4,7 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { InferInsertModel, and, eq } from 'drizzle-orm';
 
 export const getConnectedAccounts = async (userId: string) => {
-    const data = db
+    const data = await db
         .select()
         .from(connectedAccount)
         .leftJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))
@@ -14,7 +14,7 @@ export const getConnectedAccounts = async (userId: string) => {
 };
 
 export const getConnectedAccount = async (id: string, userId: string) => {
-    const data = db
+    const data = await db
         .select()
         .from(connectedAccount)
         .leftJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))

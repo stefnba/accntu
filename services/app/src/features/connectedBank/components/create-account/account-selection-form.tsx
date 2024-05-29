@@ -1,7 +1,5 @@
 'use client';
 
-import { accountActions } from '@/actions';
-import { CreateAccountSchema } from '@/actions/account/schema';
 import { Form, FormSubmit, useForm } from '@/components/form';
 import { FormSwitch } from '@/components/form/switch';
 import { useMutation } from '@/lib/hooks/actions';
@@ -9,6 +7,7 @@ import { SelectBankUploadAccountsSchema } from '@db/schema';
 import { z } from 'zod';
 
 import { useCreateConnectedBank } from '../../api/create-connected-bank';
+import { CreateAccountSchema } from '../../schema/reate-connected-bank';
 
 const BankUploadAccountsSchema = SelectBankUploadAccountsSchema.pick({
     id: true,

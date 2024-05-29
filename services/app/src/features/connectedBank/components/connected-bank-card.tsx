@@ -8,11 +8,11 @@ import {
 import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
 import { Plus, PlusCircle } from 'lucide-react';
 
-import { TConnectedBankResponse } from '../api/get-connected-banks';
+import { TConnectedBanksResponse } from '../api/get-connected-banks';
 
 interface Props {
     onClick?: () => void;
-    account: TConnectedBankResponse[0];
+    account: TConnectedBanksResponse[0];
 }
 
 /**
