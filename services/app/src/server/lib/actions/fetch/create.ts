@@ -134,6 +134,7 @@ export function createFetch<
             const result = await executeAction(action, params, schema, options);
             return {
                 status: 'SUCCESS',
+                error: undefined,
                 data: result,
                 isError: false,
                 isSuccess: true
@@ -142,6 +143,7 @@ export function createFetch<
             if (error instanceof ValidationError) {
                 return {
                     status: 'VALIDATION_ERROR',
+                    data: undefined,
                     error: error.fieldErrors,
                     isError: true,
                     isSuccess: false
@@ -149,6 +151,7 @@ export function createFetch<
             }
             return {
                 status: 'ERROR',
+                data: undefined,
                 error: error.message,
                 isError: true,
                 isSuccess: false

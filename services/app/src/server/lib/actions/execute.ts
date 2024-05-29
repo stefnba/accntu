@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { getUser } from '../auth';
+import { getUser } from '../../../lib/auth';
 import { ValidationError } from './errors';
 import type { Action, TActionResult, TCreateActionOptions } from './types';
 import {

@@ -10,21 +10,21 @@ export type TCreateFetchReturn<TInput, TReturn> =
     | {
           status: 'SUCCESS';
           data: TReturn;
-          error?: undefined;
+          error: undefined;
           isSuccess: true;
           isError: false;
       }
     | {
           status: 'ERROR';
           error: string;
-          data?: undefined;
+          data: undefined;
           isSuccess: false;
           isError: true;
       }
     | {
           status: 'VALIDATION_ERROR';
           error: TFieldErrors<TInput>;
-          data?: undefined;
+          data: undefined;
           isSuccess: false;
           isError: true;
       };
