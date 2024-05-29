@@ -1,18 +1,23 @@
 'use client';
 
 import Dropzone from '@/components/ui/dropzone';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FileWithPath, useDropzone } from 'react-dropzone';
 import {
     FieldPath,
     FieldValues,
     Path,
     PathValue,
-    UseFormReturn,
-    useFormContext
+    UseFormReturn
 } from 'react-hook-form';
 
-import { FormField, FormItem, FormMessage } from '../ui/form';
+import {
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
+} from '../ui/form';
 
 type Props<
     TFieldValues extends FieldValues,
@@ -22,7 +27,10 @@ type Props<
     form: UseFormReturn<TFieldValues>;
     maxFiles?: number;
     onDropSuccess?: (files: FileWithPath[]) => void;
+    /** Custom render function for outside of FormFileDropzone. */
+    fileRender?: (files: FileWithPath[]) => React.ReactNode;
     className?: string;
+    label?: string;
 };
 
 export default function FormFileDropzone<TFieldValues extends FieldValues>({
@@ -30,9 +38,13 @@ export default function FormFileDropzone<TFieldValues extends FieldValues>({
     form,
     maxFiles = 1,
     onDropSuccess,
-    className
+    className,
+    label,
+    fileRender
 }: Props<TFieldValues>) {
     const { register, unregister, setValue, control } = form;
+
+    const [files, setFiles] = useState<FileWithPath[]>([]);
 
     useEffect(() => {
         register(name);
@@ -59,6 +71,7 @@ export default function FormFileDropzone<TFieldValues extends FieldValues>({
                 { shouldValidate: true }
             );
             onDropSuccess?.(droppedFiles);
+            setFiles(droppedFiles);
         },
         [setValue, name, maxFiles, onDropSuccess]
     );
@@ -71,21 +84,27 @@ export default function FormFileDropzone<TFieldValues extends FieldValues>({
         });
 
     return (
-        <FormField
-            control={control}
-            name={name}
-            render={({ field }) => (
-                <FormItem>
-                    <Dropzone
-                        className={className}
-                        name={field.name}
-                        isDragActive={isDragActive}
-                        inputProps={getInputProps}
-                        rootProps={getRootProps}
-                    />
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
+        <div>
+            <FormField
+                control={control}
+                name={name}
+                render={({ field }) => (
+                    <FormItem>
+                        {label && <FormLabel>{label}</FormLabel>}
+                        <FormControl>
+                            <Dropzone
+                                className={className}
+                                name={field.name}
+                                isDragActive={isDragActive}
+                                inputProps={getInputProps}
+                                rootProps={getRootProps}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {fileRender && fileRender(files)}
+        </div>
     );
 }

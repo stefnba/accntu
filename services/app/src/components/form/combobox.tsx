@@ -45,7 +45,7 @@ type Props<
     description?: string;
     options: {
         label: string;
-        value: PathValue<TFieldValues, Path<TFieldValues>>;
+        value: string;
     }[];
 };
 
@@ -102,12 +102,15 @@ export function FormCombobox<TFieldValues extends FieldValues>({
                                             <CommandGroup>
                                                 {options.map((o) => (
                                                     <CommandItem
-                                                        value={o.label}
+                                                        value={o.value}
                                                         key={o.value}
                                                         onSelect={() => {
                                                             form.setValue(
                                                                 name,
-                                                                o.value
+                                                                o.value as PathValue<
+                                                                    TFieldValues,
+                                                                    Path<TFieldValues>
+                                                                >
                                                             );
                                                             setOpen(false);
                                                         }}
