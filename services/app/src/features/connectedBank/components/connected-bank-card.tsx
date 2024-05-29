@@ -5,10 +5,9 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
+import { TConnectedBanksResponse } from '@/features/connectedBank/api/get-connected-banks';
 import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
 import { Plus, PlusCircle } from 'lucide-react';
-
-import { TConnectedBanksResponse } from '../api/get-connected-banks';
 
 interface Props {
     onClick?: () => void;
