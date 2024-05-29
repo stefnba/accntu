@@ -129,6 +129,8 @@ export const userSetting = pgTable(
         };
     }
 );
+export const SelectUserSettingsSchema = createSelectSchema(userSetting);
+export const InsertUserSettingsSchema = createInsertSchema(userSetting);
 
 export const login = pgTable('login', {
     id: text('id').primaryKey().notNull(),
@@ -326,10 +328,12 @@ export const transactionImportFile = pgTable('import_file', {
             onUpdate: 'cascade'
         }),
     url: text('url').notNull(),
-    importId: text('importId').references(() => transactionImport.id, {
-        onDelete: 'set null',
-        onUpdate: 'cascade'
-    }),
+    importId: text('importId')
+        .references(() => transactionImport.id, {
+            onDelete: 'set null',
+            onUpdate: 'cascade'
+        })
+        .notNull(),
     filename: text('filename'),
     type: text('type').notNull(),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
@@ -348,6 +352,12 @@ export const transactionImportFileRelations = relations(
             references: [transactionImport.id]
         })
     })
+);
+export const SelectTransactionImportFileSchema = createSelectSchema(
+    transactionImportFile
+);
+export const InsertTransactionImportFileSchema = createInsertSchema(
+    transactionImportFile
 );
 
 export const transactionImport = pgTable('import', {
