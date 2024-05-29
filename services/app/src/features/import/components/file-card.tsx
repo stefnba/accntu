@@ -37,7 +37,6 @@ export const FileCard: React.FC<Props> = ({ name, type, action }) => {
                 {name}
             </div>
             {action && <div className="ml-auto">{action}</div>}
-            <div className="ml-auto"></div>
         </div>
     );
 };

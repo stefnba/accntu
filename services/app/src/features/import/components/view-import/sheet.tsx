@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -52,6 +53,9 @@ export const ViewImportSheet = () => {
                             key={file.id}
                             name={file.filename}
                             type={file.type}
+                            action={
+                                <Badge variant="default">{file.status}</Badge>
+                            }
                         />
                     ))}
                 </div>

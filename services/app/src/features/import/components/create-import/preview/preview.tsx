@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { LuSave } from 'react-icons/lu';
 
+import { ImportForm } from './import-form';
 import { CreateImportPreviewFiles } from './preview-files';
 import { CreateImportPreviewTable } from './preview-table';
 
@@ -11,9 +12,7 @@ export const CreateImportPreview: React.FC<Props> = ({}) => {
         <div className="w-[1200px]">
             <div className="flex space-x-4">
                 <CreateImportPreviewFiles />
-                <Button>
-                    <LuSave className="size-4 mr-2" /> Import
-                </Button>
+                <ImportForm />
             </div>
             <CreateImportPreviewTable />
 

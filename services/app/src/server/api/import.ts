@@ -7,6 +7,7 @@ import { deleteImport } from '@server/services/import';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
+import { parseTransactionFile } from '../services/import-file';
 import importFile from './import-file';
 
 const app = new Hono()
@@ -56,38 +57,9 @@ const app = new Hono()
             const { id: importId, fileId } = c.req.valid('param');
             const user = getUser(c);
 
-            return c.json([
-                {
-                    title: 'ddadsf',
-                    date: '2021-01-01',
-                    amount: 100,
-                    key: 'dkadslkf'
-                },
-                {
-                    title: 'ddadsf',
-                    date: '2021-01-01',
-                    amount: 100,
-                    key: 'dkadslkf'
-                },
-                {
-                    title: 'ddadsf',
-                    date: '2021-01-01',
-                    amount: 100,
-                    key: 'dkadslkf'
-                },
-                {
-                    title: 'ddadsf',
-                    date: '2021-01-01',
-                    amount: 100,
-                    key: 'dkadslkf'
-                },
-                {
-                    title: 'ddadsf',
-                    date: '2021-01-01',
-                    amount: 100,
-                    key: 'dkadslkf'
-                }
-            ]);
+            const data = await parseTransactionFile(fileId, importId, user.id);
+
+            return c.json(data);
         }
     )
     .get(

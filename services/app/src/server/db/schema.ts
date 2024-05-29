@@ -469,7 +469,8 @@ export const SelectTransactionSchema = createSelectSchema(transaction);
 export const InsertTransactionSchema = createInsertSchema(transaction).omit({
     userId: true,
     accountId: true,
-    importId: true
+    importId: true,
+    id: true
 });
 
 export const label = pgTable('label', {

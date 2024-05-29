@@ -3,21 +3,30 @@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table';
-import type { TParsedTransaction } from '@/features/import/types/preview-transactions';
+import type { TParsedTransaction } from '@/features/import/schema/preview-transactions';
 import { ColumnDef } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 
 export const columns: ColumnDef<TParsedTransaction>[] = [
     {
-        id: 'title'
-    },
-    {
         accessorKey: 'date',
         header: 'Date'
     },
     {
-        accessorKey: 'key',
-        header: 'Key'
+        accessorKey: 'title',
+        header: 'Title'
+    },
+    {
+        accessorKey: 'type',
+        header: 'Type'
+    },
+    {
+        accessorKey: 'spendingAmount',
+        header: 'Spending Amount'
+    },
+    {
+        accessorKey: 'isDuplicate',
+        header: 'isDuplicate'
     }
 ];
 // {
