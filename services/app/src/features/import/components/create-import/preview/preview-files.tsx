@@ -1,0 +1,118 @@
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandList
+} from '@/components/ui/command';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
+} from '@/components/ui/popover';
+import { useGetImport } from '@/features/import/api/get-import';
+import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
+import { storePreviewImportFiles } from '@/features/import/store/preview-import-files';
+import { ChevronsUpDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface Props {}
+
+const frameworks = [
+    {
+        value: 'next.js',
+        label: 'Next.js'
+    },
+    {
+        value: 'sveltekit',
+        label: 'SvelteKit'
+    },
+    {
+        value: 'nuxt.js',
+        label: 'Nuxt.js'
+    },
+    {
+        value: 'remix',
+        label: 'Remix'
+    },
+    {
+        value: 'astro',
+        label: 'Astro'
+    }
+];
+
+/**
+ * Get files for importId.
+ */
+export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
+    const { importId } = storeCreateImportModal();
+
+    const { data, isLoading } = useGetImport({
+        id: importId
+    });
+
+    const [open, setOpen] = useState(false);
+    const { fileId, setFileId } = storePreviewImportFiles();
+
+    useEffect(() => {
+        if (data) {
+            setFileId(data?.files[0]?.id);
+        }
+    }, [data, setFileId]);
+
+    if (isLoading) return <div>Loading files...</div>;
+    if (!data) return null;
+    const { files = [] } = data;
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-[400px] justify-between overflow-hidden truncate"
+                >
+                    {fileId
+                        ? files.find((f) => f.id === fileId)?.filename
+                        : 'Select files...'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent
+                align="start"
+                className="w-[400px] p-0 overflow-ellipsis"
+            >
+                <Command>
+                    <CommandEmpty>No files found.</CommandEmpty>
+                    <CommandList>
+                        <CommandGroup>
+                            {files.map((f) => (
+                                <CommandItem
+                                    key={f.id}
+                                    value={f.id}
+                                    onSelect={(currentValue) => {
+                                        setFileId(
+                                            currentValue === fileId
+                                                ? ''
+                                                : currentValue
+                                        );
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Checkbox
+                                        checked={fileId === f.id}
+                                        className="mr-2"
+                                    />
+                                    {f.filename}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
