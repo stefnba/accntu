@@ -15,23 +15,30 @@ interface IStoreCreateImportModal {
     isOpen: boolean;
     handleOpen: () => void;
     handleClose: () => void;
+
+    // contine
+    handleContinue: (importId: string) => void;
 }
 
 export const storeCreateImportModal = create<IStoreCreateImportModal>(
     (set) => ({
         // steps
-        step: 'preview',
+        step: 'selection',
         handleStep: (step) => set({ step }),
 
         // import id
-        importId: 'wdjdlhx80v61x14fcu0i0r0j',
+        importId: undefined,
         setImportId: (importId) => set({ importId }),
 
         // visibility
         isOpen: false,
-        handleOpen: () => set({ isOpen: true, step: 'preview' }),
+        handleOpen: () => set({ isOpen: true, step: 'selection' }),
         handleClose: () => {
             set({ isOpen: false });
-        }
+        },
+
+        // contine
+        handleContinue: (importId) =>
+            set({ isOpen: true, importId, step: 'preview' })
     })
 );

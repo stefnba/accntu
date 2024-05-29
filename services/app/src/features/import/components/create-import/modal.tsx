@@ -30,8 +30,11 @@ export const CreateImportModal: React.FC<Props> = ({}) => {
                 </DialogHeader>
 
                 {/* Steps */}
-                {step === 'selection' && <CreateImportSelectionForm />}
-                {step === 'uploading' && <ImportFileUpload />}
+
+                <div className="min-w-[450px]">
+                    {step === 'selection' && <CreateImportSelectionForm />}
+                    {step === 'uploading' && <ImportFileUpload />}
+                </div>
                 {step === 'preview' && <CreateImportPreview />}
             </DialogContent>
         </Dialog>

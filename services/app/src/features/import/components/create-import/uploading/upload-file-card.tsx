@@ -1,11 +1,10 @@
 import { useDeleteImportFile } from '@/features/import/api/delete-import-file';
 import { useUploadImportFile } from '@/features/import/api/upload-import-file';
+import { FileCard } from '@/features/import/components/file-card';
 import { useEffect } from 'react';
 import { FileWithPath } from 'react-dropzone';
 import { AiOutlineLoading } from 'react-icons/ai';
 import { LuCheck } from 'react-icons/lu';
-
-import { FileCard } from '../file-card';
 
 interface Props {
     file: FileWithPath;
@@ -26,7 +25,8 @@ export const UploadFileCard: React.FC<Props> = ({ file, importId }) => {
 
     return (
         <FileCard
-            file={file}
+            name={file.name}
+            type={file.type}
             action={
                 uploadIsPending ? (
                     <AiOutlineLoading className="animate-spin" />

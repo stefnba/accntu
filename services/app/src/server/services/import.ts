@@ -1,29 +1,29 @@
-import { CreateImportSchema } from '@/features/import/schema/create-import';
 import { db } from '@db';
 import { transactionImport, transactionImportFile } from '@db/schema';
-import { createId } from '@paralleldrive/cuid2';
 import { and, eq, inArray } from 'drizzle-orm';
-import { z } from 'zod';
 
 import { deleteObject } from '../lib/upload/cloud/s3/actions';
 
-export const createImportFile = async (values: any) => {
-    const newImportFile = await db
-        .insert(transactionImportFile)
-        .values({
-            id: createId(),
-            url: values.url,
-            userId: values.userId,
-            type: 'csv'
-        })
+export const deleteImport = async (id: string, userId: string) => {
+    // todo delete files on S3
+
+    // Delete record from db
+    const [deletedImport] = await db
+        .delete(transactionImport)
+        .where(
+            and(
+                eq(transactionImport.id, id),
+                eq(transactionImport.userId, userId)
+            )
+        )
         .returning();
 
-    if (newImportFile.length === 0 || newImportFile.length > 1)
-        throw new Error('Failed to create import file record');
+    if (!deletedImport) {
+        console.error(`Import '${id}' doesn't exist`);
+        throw new Error('Failed to delete import record');
+    }
 
-    return {
-        id: newImportFile[0].id
-    };
+    return deletedImport;
 };
 
 /**
@@ -56,37 +56,6 @@ export const deleteImportFile = async (id: string, userId: string) => {
     await deleteObject(bucket, key);
 
     return deletedFile;
-};
-
-export const createImport = async (
-    values: z.infer<typeof CreateImportSchema>,
-    userId: string
-) => {
-    const newImport = await db
-        .insert(transactionImport)
-        .values({
-            id: createId(),
-            userId: userId,
-            accountId: values.accountId
-        })
-        .returning();
-
-    if (newImport.length === 0 || newImport.length > 1)
-        throw new Error('Failed to create import record');
-
-    const newImportRecord = newImport[0];
-
-    // Update files with importId.
-    // File records already created before when uploading files.
-    await db
-        .update(transactionImportFile)
-        .set({ importId: newImportRecord.id })
-        .where(inArray(transactionImportFile.id, values.fileIds))
-        .returning();
-
-    return {
-        id: newImportRecord.id
-    };
 };
 
 /**

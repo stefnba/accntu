@@ -1,11 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { FileCard } from '@/features/import/components/file-card';
 import { CreateImportSelectionSchema } from '@/features/import/schema/create-import';
 import { FileWithPath } from 'react-dropzone';
 import { UseFormReturn } from 'react-hook-form';
 import { LuTrash } from 'react-icons/lu';
 import { z } from 'zod';
-
-import { FileCard } from '../file-card';
 
 interface Props {
     file: FileWithPath;
@@ -37,7 +36,8 @@ export const DroppedFileCard: React.FC<Props> = ({ file, form }) => {
 
     return (
         <FileCard
-            file={file}
+            type={file.type}
+            name={file.name}
             action={
                 <Button
                     size="icon"

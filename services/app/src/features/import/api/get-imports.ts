@@ -1,7 +1,10 @@
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
+import { InferResponseType } from 'hono';
 
 const query = client.api.import.$get;
+
+export type ImportResponse = InferResponseType<typeof query>;
 
 export const useGetImports = () => {
     const q = useQuery({

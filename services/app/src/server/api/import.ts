@@ -1,11 +1,12 @@
 import { getUser } from '@/server/auth/validate';
 import { db } from '@db';
+import { InsertTransactionImportSchema, transactionImport } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { createId } from '@paralleldrive/cuid2';
+import { deleteImport } from '@server/services/import';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { InsertTransactionImportSchema, transactionImport } from '../db/schema';
 import importFile from './import-file';
 
 const app = new Hono()
@@ -52,10 +53,8 @@ const app = new Hono()
             })
         ),
         async (c) => {
-            const { id, fileId } = c.req.valid('param');
+            const { id: importId, fileId } = c.req.valid('param');
             const user = getUser(c);
-
-            console.log({ id, fileId, user });
 
             return c.json([
                 {
@@ -116,6 +115,18 @@ const app = new Hono()
             }
 
             return c.json(data);
+        }
+    )
+    .delete(
+        '/:id',
+        zValidator('param', z.object({ id: z.string() })),
+        async (c) => {
+            const { id } = c.req.valid('param');
+            const user = getUser(c);
+
+            const data = await deleteImport(id, user.id);
+
+            return c.json(data, 201);
         }
     );
 
