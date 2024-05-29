@@ -21,8 +21,8 @@ class BarclasyDeCreditCardParser(BaseParser):
     def read_file(self, path: str) -> pl.DataFrame:
         """Read file from S3 with boto3 and return a DataFrame."""
 
-        # file = self.read_cloud_file(path)
-        file = self._read_local_file("Umsätze-8.xlsx")
+        file = self._read_cloud_file(path)
+        # file = self._read_local_file("Umsätze-8.xlsx")
 
         return pl.from_pandas(pd.read_excel(BytesIO(file), skiprows=self.skiprows))
 

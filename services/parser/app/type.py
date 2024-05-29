@@ -15,6 +15,10 @@ class ParseFile(BaseModel):
 
 
 class ParseBody(BaseModel):
+    """
+    JSON body for parsing transactions.
+    """
+
     files: list[ParseFile]
     parser_id: ParserIds
     user_id: str
