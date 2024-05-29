@@ -13,5 +13,8 @@ export const computeSHA256 = async (file: File) => {
     return hashHex;
 };
 
+/**
+ * Create a random file name using crypt library.
+ */
 export const generateRandonFileName = (bytes = 32) =>
     crypto.randomBytes(bytes).toString('hex');

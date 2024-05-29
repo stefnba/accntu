@@ -1,4 +1,4 @@
-import { CustomError } from '@/lib/error';
+import { CustomError } from '@server/lib/error';
 
 export class S3UploadError extends CustomError {
     constructor(message: string) {

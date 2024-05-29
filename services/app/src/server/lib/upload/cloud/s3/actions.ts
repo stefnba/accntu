@@ -1,63 +1,25 @@
 'use server';
 
-import { createFetch, createMutation } from '@/lib/actions';
-import { s3Client } from '@/lib/cloud/s3';
-import { db, schema as dbSchema } from '@/server/db/client';
 import { generateRandonFileName } from '@/server/lib/upload/utils';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { transactionImportFile } from '@db/schema';
+import { s3Client } from '@server/lib/cloud/s3';
 import { and, eq } from 'drizzle-orm';
+import { TypeOf, z } from 'zod';
 
 import { allowedFileTypes, maxFileSize } from './config';
 import { S3UploadError } from './error';
-import {
-    CreateUploadRecordSchema,
-    DeleteUploadRecordSchema,
-    SignedS3UrlInputSchema
-} from './schema';
+import { SignedS3UrlInputSchema } from './schema';
 
 /**
- * Create an upload record.
+ * Delete an object that was uploaded to S3.
  */
-export const createUploadRecord = createMutation(async ({ data, user }) => {
-    const records = await db
-        .insert(dbSchema.transactionImportFile)
-        .values({
-            userId: user.id,
-            url: data.url,
-            type: data.type,
-            filename: data.filename
-        })
-        .returning();
-
-    return records[0];
-}, CreateUploadRecordSchema);
-
-/**
- * Delete an upload record.
- */
-export const deleteUploadRecord = createMutation(async ({ data, user }) => {
+export const deleteObject = async (bucket: string, key: string) => {
     try {
-        // delete from the database
-        const deletedFiles = await db
-            .delete(dbSchema.transactionImportFile)
-            .where(
-                and(
-                    eq(dbSchema.transactionImportFile.userId, user.id),
-                    eq(dbSchema.transactionImportFile.id, data.id)
-                )
-            )
-            .returning();
-
-        const deletedFile = deletedFiles[0];
-
-        // delete from s3
-        const url = deletedFile.url;
-        const key = url.split('/').slice(-1)[0];
-
         await s3Client.send(
             new DeleteObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME!,
+                Bucket: bucket,
                 Key: key
             })
         );
@@ -71,33 +33,36 @@ export const deleteUploadRecord = createMutation(async ({ data, user }) => {
             error: 'Error deleting file from s3'
         };
     }
-}, DeleteUploadRecordSchema);
+};
 
 /**
  * Create a signed URL for uploading a file to S3.
  */
-export const getSignedS3Url = createFetch(async ({ data, user }) => {
-    const { fileType, fileSize, checksum, key } = data;
+export const getSignedS3Url = async (
+    values: z.infer<typeof SignedS3UrlInputSchema>,
+    userId: string
+) => {
+    // const { fileType, fileSize, checksum, key, bucket } = values;
 
     // first just make sure in our code that we're only allowing the file types we want
-    if (!allowedFileTypes.includes(fileType)) {
+    if (!allowedFileTypes.includes(values.fileType)) {
         throw new S3UploadError('File type not allowed');
     }
 
-    if (fileSize > maxFileSize) {
+    if (values.fileSize > maxFileSize) {
         throw new S3UploadError('File size too large');
     }
 
-    const objectKey = key || generateRandonFileName();
+    const key = values.key || generateRandonFileName();
 
     const putObjectCommand = new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME!,
-        Key: objectKey,
-        ContentType: fileType,
-        ContentLength: fileSize,
-        ChecksumSHA256: checksum,
+        Bucket: values.bucket,
+        Key: key,
+        ContentType: values.fileType,
+        ContentLength: values.fileSize,
+        ChecksumSHA256: values.checksum,
         Metadata: {
-            userId: user.id
+            userId: userId
         }
     });
 
@@ -107,5 +72,5 @@ export const getSignedS3Url = createFetch(async ({ data, user }) => {
         { expiresIn: 60 } // 60 seconds,
     );
 
-    return { url, key: objectKey };
-}, SignedS3UrlInputSchema);
+    return { url, key, bucket: values.bucket };
+};

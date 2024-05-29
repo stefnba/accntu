@@ -6,13 +6,10 @@ export const CreateUploadRecordSchema = z.object({
     filename: z.string()
 });
 
-export const DeleteUploadRecordSchema = z.object({
-    id: z.string()
-});
-
 export const SignedS3UrlInputSchema = z.object({
     fileType: z.string(),
     fileSize: z.number(),
     checksum: z.string(),
-    key: z.string().optional()
+    key: z.string().optional(),
+    bucket: z.string()
 });
