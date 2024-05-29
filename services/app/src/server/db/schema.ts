@@ -46,6 +46,13 @@ export const TransactionType = pgEnum('TransactionType', [
 ]);
 export const TransactionTypeSchema = z.enum(TransactionType.enumValues);
 
+export const ImportFileStatus = pgEnum('ImportFileStatus', [
+    'IMPORTED',
+    'UPLOADED',
+    'PROCESSING'
+]);
+export const ImportFileStatusSchema = z.enum(ImportFileStatus.enumValues);
+
 export const user = pgTable(
     'user',
     {
@@ -334,8 +341,9 @@ export const transactionImportFile = pgTable('import_file', {
             onUpdate: 'cascade'
         })
         .notNull(),
-    filename: text('filename'),
+    filename: text('filename').notNull(),
     type: text('type').notNull(),
+    status: ImportFileStatus('status').notNull().default('PROCESSING'),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
         .defaultNow()
         .notNull(),
@@ -458,7 +466,11 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     })
 }));
 export const SelectTransactionSchema = createSelectSchema(transaction);
-export const InsertTransactionSchema = createInsertSchema(transaction);
+export const InsertTransactionSchema = createInsertSchema(transaction).omit({
+    userId: true,
+    accountId: true,
+    importId: true
+});
 
 export const label = pgTable('label', {
     id: text('id').primaryKey().notNull(),
