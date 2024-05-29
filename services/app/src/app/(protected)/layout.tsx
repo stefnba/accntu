@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
 
+import Navbar from '@/features/app/components/navbar/Navbar';
+import Sidebar from '@/features/app/components/sidebar/Sidebar';
 import { authRoutes, validateRequest } from '@/lib/auth';
-import { SessionProvider } from '@/lib/auth/provider';
-
-import Navbar from './_components/navbar/Navbar';
-import Sidebar from './_components/sidebar/Sidebar';
+import { SessionProvider } from '@/providers/session';
 
 interface Props {
     children: React.ReactNode;
