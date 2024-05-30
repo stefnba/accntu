@@ -1,4 +1,4 @@
-import { db } from '@/lib/db/client';
+import { db } from '@/server/db/client';
 import { SQL, and, eq, sql } from 'drizzle-orm';
 import { PgColumn, PgSelect, PgTable } from 'drizzle-orm/pg-core';
 
