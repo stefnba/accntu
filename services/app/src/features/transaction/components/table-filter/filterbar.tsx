@@ -1,21 +1,18 @@
 'use client';
 
-import {
-    FilterResetButton,
-    SearchFilter
-} from '@/components/data-table/filters';
+import { FilterResetButton } from '@/components/data-table/filters';
+import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 
 import { TransactionTableDateFilter } from './filters/date';
 import { TransactionTableSearchFilter } from './filters/search';
 import { TransactionTableSelectFilter } from './filters/select';
-import { useTransactionTableFilteringStore } from './store';
 
 interface Props {}
 
 export function TransactionTableFilterBar({}: Props) {
     /* Filtering */
-    const filters = useTransactionTableFilteringStore((state) => state.filters);
-    const resetFilters = useTransactionTableFilteringStore(
+    const filters = storeTransactionTableFiltering((state) => state.filters);
+    const resetFilters = storeTransactionTableFiltering(
         (state) => state.resetFilters
     );
 

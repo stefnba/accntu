@@ -1,7 +1,7 @@
 import { DateFilter } from '@/components/data-table/filters/date/';
+import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 import dayjs from 'dayjs';
 
-import { useTransactionTableFilteringStore } from '../store';
 import type { TTransactionFilterKeys } from './types';
 
 interface Props {
@@ -32,11 +32,11 @@ export const TransactionTableDateFilter: React.FC<Props> = ({
     filterKey,
     filterLabel
 }) => {
-    const filters = useTransactionTableFilteringStore((state) => state.filters);
-    const setFilter = useTransactionTableFilteringStore(
+    const filters = storeTransactionTableFiltering((state) => state.filters);
+    const setFilter = storeTransactionTableFiltering(
         (state) => state.setFilter
     );
-    const resetFilterKey = useTransactionTableFilteringStore(
+    const resetFilterKey = storeTransactionTableFiltering(
         (state) => state.resetFilterKey
     );
 

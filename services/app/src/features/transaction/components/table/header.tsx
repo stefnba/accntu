@@ -1,7 +1,6 @@
-import { TTransactionOrderByObject } from '@/actions/transaction/schema';
 import { DataTableColumnHeader } from '@/components/ui/data-table';
-
-import { useTransactionTableSortingStore } from './store';
+import { TTransactionOrderByObject } from '@/features/transaction/schema/table-sorting';
+import { storeTransactionTableSorting } from '@/features/transaction/store';
 
 interface Props<TColKey extends TTransactionOrderByObject['column']>
     extends React.HTMLAttributes<HTMLDivElement> {
@@ -14,9 +13,8 @@ interface Props<TColKey extends TTransactionOrderByObject['column']>
 export function TransactionTableSortableColumnHeader<
     TColKey extends TTransactionOrderByObject['column']
 >(props: Props<TColKey>) {
-    // sorting
-    const sorting = useTransactionTableSortingStore((state) => state.sorting);
-    const setSorting = useTransactionTableSortingStore(
+    const sorting = storeTransactionTableSorting((state) => state.sorting);
+    const setSorting = storeTransactionTableSorting(
         (state) => state.setSorting
     );
 

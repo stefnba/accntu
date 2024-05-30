@@ -9,9 +9,9 @@ import {
     useForm
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { label } from '@/lib/db/schema';
 import { useMutation } from '@/lib/hooks/actions';
 import { cn } from '@/lib/utils';
+import { label } from '@/server/db/schema';
 import { useQueryClient } from '@tanstack/react-query';
 import { set } from 'date-fns';
 import { useState } from 'react';

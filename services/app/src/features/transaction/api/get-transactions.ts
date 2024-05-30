@@ -1,14 +1,40 @@
+import {
+    storeTransactionTableFiltering,
+    storeTransactionTablePagination,
+    storeTransactionTableRowSelection,
+    storeTransactionTableSorting
+} from '@/features/transaction/store';
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
-import type { InferRequestType } from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 
-const $get = client.api.transactions.$get;
+const query = client.api.transactions.$get;
 
-type TGetTransactionsParams = InferRequestType<typeof $get>['query'];
+type TGetTransactionsParams = InferRequestType<typeof query>['query'];
+export type TGetTransactionsResponse = InferResponseType<typeof query>;
 
 export const useGetTransactions = (params?: TGetTransactionsParams) => {
-    const query = useQuery({
-        queryKey: ['transactions'],
+    /* Pagination */
+    const page = storeTransactionTablePagination((state) => state.page);
+    const pageSize = storeTransactionTablePagination((state) => state.pageSize);
+    const setPage = storeTransactionTablePagination((state) => state.setPage);
+    const setPageSize = storeTransactionTablePagination(
+        (state) => state.setPageSize
+    );
+
+    /* Filtering */
+    const filters = storeTransactionTableFiltering((state) => state.filters);
+
+    /* Filtering */
+    const sorting = storeTransactionTableSorting((state) => state.sorting);
+
+    const q = useQuery({
+        queryKey: [
+            'transactions',
+            { pageSize, page },
+            { filters },
+            { sorting }
+        ],
         queryFn: async () => {
             const res = await client.api.transactions.$get({
                 query: params || {}
@@ -20,5 +46,11 @@ export const useGetTransactions = (params?: TGetTransactionsParams) => {
         }
     });
 
-    return query;
+    const { data, ...rest } = q;
+
+    return {
+        ...rest,
+        data: data?.transactions || [],
+        count: data?.count || 0
+    };
 };

@@ -1,8 +1,7 @@
-import { transactionActions } from '@/actions';
 import { SelectFilter } from '@/components/data-table/filters';
+import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 import { useQuery } from '@tanstack/react-query';
 
-import { useTransactionTableFilteringStore } from '../store';
 import type { TTransactionFilterKeys } from './types';
 
 interface Props {
@@ -14,19 +13,18 @@ export const TransactionTableSelectFilter: React.FC<Props> = ({
     filterKey,
     filterLabel
 }) => {
-    const filters = useTransactionTableFilteringStore((state) => state.filters);
-    const resetFilterKey = useTransactionTableFilteringStore(
+    const filters = storeTransactionTableFiltering((state) => state.filters);
+    const resetFilterKey = storeTransactionTableFiltering(
         (state) => state.resetFilterKey
     );
-    const setFilter = useTransactionTableFilteringStore(
+    const setFilter = storeTransactionTableFiltering(
         (state) => state.setFilter
     );
     const selectedFilters = filters[filterKey] || [];
 
     const { data: filterOptions, refetch } = useQuery({
         queryKey: ['filterOptions', filterKey],
-        queryFn: () =>
-            transactionActions.listFilterOptions({ filterKey, filters }),
+        queryFn: () => {},
         enabled: false
     });
 

@@ -8,15 +8,13 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
+import { storeTransactionTableRowSelection } from '@/features/transaction/store';
 import { RxDotsHorizontal, RxDownload, RxPencil2 } from 'react-icons/rx';
-
-import { TransactionUpdateSheet } from '../update/update-sheet';
-import { useTransactionTableRowSelectionStore } from './store';
 
 interface Props {}
 
 export const TransactionTableActionBar: React.FC<Props> = () => {
-    const rowSelection = useTransactionTableRowSelectionStore(
+    const rowSelection = storeTransactionTableRowSelection(
         (state) => state.rowSelection
     );
 
@@ -24,7 +22,7 @@ export const TransactionTableActionBar: React.FC<Props> = () => {
 
     return (
         <div className="flex items-center justify-between space-x-2">
-            {selectedRowCount > 0 && <TransactionUpdateSheet />}
+            {/* {selectedRowCount > 0 && <TransactionUpdateSheet />} */}
             {selectedRowCount > 0 && (
                 <Button
                     variant="outline"

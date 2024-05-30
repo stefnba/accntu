@@ -1,6 +1,5 @@
 'use client';
 
-import { TTransactionListQueryReturn } from '@/actions/transaction/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,17 +17,18 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetTrigger } from '@/components/ui/sheet';
+import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import { HiOutlineEye } from 'react-icons/hi';
 import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
-import { ViewTransactionSheetContent } from '../view/sheet';
 import { TransactionTableSortableColumnHeader } from './header';
 
-export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
+type TRow = TGetTransactionsResponse['transactions'][0];
+
+export const columns: ColumnDef<TRow>[] = [
     {
         id: 'select',
         header: ({ table }) => (
@@ -82,12 +82,7 @@ export const columns: ColumnDef<TTransactionListQueryReturn>[] = [
             />
         ),
         cell: ({ row }) => {
-            return (
-                <Sheet>
-                    <SheetTrigger>{row.original.title}</SheetTrigger>
-                    <ViewTransactionSheetContent id={row.original.id} />
-                </Sheet>
-            );
+            return row.original.title;
         },
         enableSorting: true
     },

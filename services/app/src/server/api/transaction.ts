@@ -1,32 +1,27 @@
 import { CreateTransactionsSchema } from '@/features/transaction/schema/create-transactions';
 import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
+import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
 import { db } from '@/server/db/client';
 import { InsertTransactionSchema } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
-import { createTransactions } from '@server/services/transaction';
+import {
+    createTransactions,
+    listTransactions
+} from '@server/services/transaction';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
 import { getUser } from '../auth/validate';
 
 const app = new Hono()
-    .get(
-        '/',
-        zValidator(
-            'query',
-            z.object({
-                page: z.coerce.number().optional(),
-                pageSize: z.coerce.number().optional()
-            })
-        ),
-        async (c) => {
-            const a = await db.query.bank.findMany();
+    .get('/', zValidator('query', ListTransactionSchema), async (c) => {
+        const user = getUser(c);
+        const queryParams = c.req.valid('query');
 
-            return c.json({
-                data: a
-            });
-        }
-    )
+        const data = await listTransactions(queryParams, user.id);
+
+        return c.json(data);
+    })
     .post(
         '/create',
         zValidator('json', CreateTransactionsSchema),

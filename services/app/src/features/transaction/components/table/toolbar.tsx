@@ -1,9 +1,9 @@
 'use client';
 
+import { TransactionTableFilterBar } from '@/features/transaction/components/table-filter/filterbar';
 import { Table } from '@tanstack/react-table';
 
 import { TransactionTableActionBar } from './actionbar';
-import { TransactionTableFilterBar } from './filterbar';
 
 interface DataTableToolbarProps<TData> {
     table: Table<TData>;

@@ -1,6 +1,6 @@
 import { SearchFilter } from '@/components/data-table/filters/';
+import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 
-import { useTransactionTableFilteringStore } from '../store';
 import { TTransactionFilterKeys } from './types';
 
 interface Props {
@@ -12,11 +12,11 @@ export const TransactionTableSearchFilter: React.FC<Props> = ({
     filterKey,
     filterLabel
 }) => {
-    const filters = useTransactionTableFilteringStore((state) => state.filters);
-    const setFilter = useTransactionTableFilteringStore(
+    const filters = storeTransactionTableFiltering((state) => state.filters);
+    const setFilter = storeTransactionTableFiltering(
         (state) => state.setFilter
     );
-    const resetFilterKey = useTransactionTableFilteringStore(
+    const resetFilterKey = storeTransactionTableFiltering(
         (state) => state.resetFilterKey
     );
 
