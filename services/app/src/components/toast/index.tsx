@@ -8,7 +8,7 @@ export const successToast = (message: string) => {
             <div
                 className={`${
                     t.visible ? 'animate-enter' : 'animate-leave'
-                } max-w-80 bg-emerald-500 text-white w-full shadow-lg rounded-lg pointer-events-auto border-emerald-800 flex ring-1 ring-transparent`}
+                } min-w-80 bg-emerald-500 text-white shadow-lg rounded-lg pointer-events-auto border-emerald-800 flex ring-1 ring-transparent`}
             >
                 <div className="flex p-4">
                     <LuCheck className="size-6 mr-2" />
