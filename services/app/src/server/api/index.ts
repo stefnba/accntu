@@ -1,3 +1,4 @@
+import authRouter from '../auth/api';
 import bankRouter from './bank';
 import connectedRouter from './connected';
 import importRouter from './import';
@@ -11,5 +12,6 @@ export {
     importRouter,
     userRouter,
     transactionRouter,
-    connectedRouter
+    connectedRouter,
+    authRouter
 };

@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { getUser } from '@/server/auth/validate';
+import { getUser } from '@/server/auth';
 import { zValidator } from '@hono/zod-validator';
 import { createConnectedBank } from '@server/services/connectedBank';
 import { and, eq } from 'drizzle-orm';

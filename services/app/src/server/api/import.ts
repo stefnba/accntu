@@ -1,4 +1,4 @@
-import { getUser } from '@/server/auth/validate';
+import { getUser } from '@/server/auth';
 import { db } from '@db';
 import { InsertTransactionImportSchema, transactionImport } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';

@@ -1,4 +1,4 @@
-import { getUser } from '@/server/auth/validate';
+import { getUser } from '@/server/auth';
 import { db } from '@db';
 import {
     InsertTransactionImportFileSchema,

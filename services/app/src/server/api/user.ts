@@ -1,5 +1,5 @@
 import { UpdateUserSchema } from '@/features/user/schema/update-user';
-import { getUser } from '@/server/auth/validate';
+import { getUser } from '@/server/auth';
 import { zValidator } from '@hono/zod-validator';
 import { findUser, updateUser } from '@server/services/user';
 import { Hono } from 'hono';

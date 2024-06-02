@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { getUser } from '@/server/auth/validate';
+import { getUser } from '@/server/auth';
 import { InsertLabelSchema, label } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { createLabel } from '@server/services/label';

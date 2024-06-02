@@ -1,4 +1,3 @@
-import { db } from '@/db/client';
 import { zValidator } from '@hono/zod-validator';
 import { getAccountsByBankId, getBank, getBanks } from '@server/services/bank';
 import { Hono } from 'hono';
