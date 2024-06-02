@@ -33,8 +33,8 @@
             "@db": ["./src/server/db/client.ts"],
             "@db/*": ["./src/server/db/*"],
             "@/db/*": ["./src/server/db/*"],
-            "@/auth": ["./src/lib/auth"],
-            "@/auth/*": ["./src/lib/auth/*"],
+            "@auth": ["./src/server/auth"],
+            "@auth/*": ["./src/server/auth/*"],
             "@/logger": ["./src/server/lib/logging/logger"],
             "@server/*": ["./src/server/*"]
         }
