@@ -8,6 +8,7 @@ type TGetTransactionsParams = InferRequestType<typeof query>['param'];
 
 export const useGetTransaction = (params?: TGetTransactionsParams) => {
     const q = useQuery({
+        enabled: !!params?.id,
         queryKey: ['transaction', params?.id],
         queryFn: async () => {
             const res = await query({
