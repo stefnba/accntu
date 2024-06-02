@@ -2,7 +2,7 @@ import { PageHeader } from '@/components/page/header';
 import { UpdateEmailSection } from '@/features/user/components/update-profile/update-email';
 import { UpdateUserImageSection } from '@/features/user/components/update-profile/update-image';
 import { UpdateNameSection } from '@/features/user/components/update-profile/update-name';
-import { getUser } from '@/lib/auth';
+import { getUser } from '@auth/next';
 
 const ProfilePage = async () => {
     const user = await getUser();

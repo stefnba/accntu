@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getUser } from '@/lib/auth';
+import { getUser } from '@auth/next';
 
 import { UpdateUserImageTrigger } from './update-image-trigger';
 
