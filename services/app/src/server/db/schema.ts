@@ -179,13 +179,16 @@ export const oauthAccount = pgTable('oauth_account', {
     provider: OAuthProvider('provider').notNull(),
     providerUserId: text('providerUserId').notNull()
 });
-
 export const oauthAccountRelations = relations(oauthAccount, ({ one }) => ({
     user: one(user, {
         fields: [oauthAccount.userId],
         references: [user.id]
     })
 }));
+export const SelectoauthAccountSchema = createSelectSchema(oauthAccount);
+export const InsertoauthAccountSchema = createInsertSchema(oauthAccount).omit({
+    id: true
+});
 
 export const verificationToken = pgTable(
     'verification_token',
