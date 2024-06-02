@@ -3,22 +3,14 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import * as authRoutes from '@/lib/auth/routes';
-
-import { AUTH_COOKIE_NAME } from './lib/auth/config';
-
-const { isUrlPatternMatch } = authRoutes;
+import { isUrlMatch } from '@auth/utils';
+import { AUTH_COOKIE_NAME } from '@server/auth/config';
 
 export const middleware = async (request: NextRequest) => {
     const { nextUrl } = request;
 
-    const isPublicRoute = isUrlPatternMatch(
-        nextUrl.pathname,
-        authRoutes.publicRoutes
-    );
-    const isAuthRoute = isUrlPatternMatch(
-        nextUrl.pathname,
-        authRoutes.authRoutes
-    );
+    const isPublicRoute = isUrlMatch(nextUrl.pathname, authRoutes.publicRoutes);
+    const isAuthRoute = isUrlMatch(nextUrl.pathname, authRoutes.authRoutes);
 
     // Get sessionId from cookies. It's an indication if a user is logged in
     // validateSession is not possible to be called here because next.js middleware runs on edge environment
