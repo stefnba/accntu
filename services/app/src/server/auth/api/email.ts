@@ -1,18 +1,24 @@
 import { SendOTPSchema, VerifyOTPSchema } from '@/features/auth/schema/otp';
 import { requestEmailOTP, verifyEmailOTP } from '@auth/actions/email-otp';
+import { recordLoginAttempt } from '@auth/actions/login-record';
 import { createSession } from '@auth/authenticate';
-import { EMAIL_OTP_LOGIN, LOGIN_ATTEMPT_COOKIE_NAME } from '@auth/config';
+import {
+    createEmailOtpCookie,
+    getEmailOtpCookie
+} from '@auth/cookies/email-otp';
+import {
+    createLoginAttemptCookie,
+    getLoginAttemptCookie
+} from '@auth/cookies/login-record';
 import { AuthError } from '@auth/error';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-
-import { recordLoginAttempt } from '../actions/login-record';
 
 const app = new Hono()
     .post('/request', zValidator('json', SendOTPSchema), async (c) => {
         const { email } = c.req.valid('json');
 
+        // action to send email OTP
         const { success, token, userId } = await requestEmailOTP(email);
 
         // record login attempt if user exists
@@ -21,12 +27,7 @@ const app = new Hono()
                 method: 'EMAIL',
                 userId
             });
-            setCookie(c, LOGIN_ATTEMPT_COOKIE_NAME, loginAttemptToken, {
-                path: '/',
-                secure: process.env.NODE_ENV === 'production',
-                httpOnly: true,
-                sameSite: 'Lax'
-            });
+            await createLoginAttemptCookie(c, loginAttemptToken);
         }
 
         if (!success) {
@@ -39,23 +40,15 @@ const app = new Hono()
         }
 
         // set cookie to track email verification
-        setCookie(c, EMAIL_OTP_LOGIN.COOKIE_NAME, token, {
-            path: '/',
-            secure: process.env.NODE_ENV === 'production',
-            httpOnly: true,
-            maxAge: 60 * EMAIL_OTP_LOGIN.EXPIRATION,
-            sameSite: 'Lax'
-        });
+        await createEmailOtpCookie(c, token);
 
         return c.json({ success: true }, 201);
     })
     .post('/verify', zValidator('json', VerifyOTPSchema), async (c) => {
         const { code } = c.req.valid('json');
 
-        const verificationToken = getCookie(c, EMAIL_OTP_LOGIN.COOKIE_NAME); //verifcation token
-        const loginAttemptToken = getCookie(c, LOGIN_ATTEMPT_COOKIE_NAME); // login token for tracking login attempts
-        deleteCookie(c, EMAIL_OTP_LOGIN.COOKIE_NAME);
-        deleteCookie(c, LOGIN_ATTEMPT_COOKIE_NAME);
+        const verificationToken = await getEmailOtpCookie(c, true);
+        const loginAttemptToken = await getLoginAttemptCookie(c, true);
 
         try {
             const { success, userId } = await verifyEmailOTP({

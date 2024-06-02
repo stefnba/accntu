@@ -14,29 +14,41 @@ interface IRecordLoginAttemptParams {
 /**
  * Add a new record to the login table when a user tries to log in.
  */
-export const recordLoginAttempt = async ({
-    userId,
-    method
-}: IRecordLoginAttemptParams) => {
+export const recordLoginAttempt = async (
+    { userId, method }: IRecordLoginAttemptParams,
+    immediateSuccess = false
+) => {
     const token = crypto.randomBytes(128).toString('base64url');
 
     await db.insert(login).values({
         id: token,
         userId,
-        method
+        method,
+        successAt: immediateSuccess ? new Date() : null
     });
+
+    if (immediateSuccess) {
+        logger.info('Login success', {
+            userId
+        });
+    }
 
     return { token };
 };
 
+interface IMakeLoginAttemptSuccessParams {
+    id?: string;
+    userId: string;
+}
+
 /**
  * Update the login record when a user successfully logs in.
  */
-export const makeLoginAttemptSuccess = async (
-    id?: string,
-    userId?: string
-): Promise<void> => {
-    if (!id || !userId) return;
+export const makeLoginAttemptSuccess = async ({
+    id,
+    userId
+}: IMakeLoginAttemptSuccessParams): Promise<void> => {
+    if (!id) return;
 
     logger.info('Login success', {
         userId

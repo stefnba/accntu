@@ -5,6 +5,10 @@ import { SelectUserSchema, user } from '@db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+/**
+ * Check if the user has exceeded the maximum number of failed login attempts.
+ * @param userRecord The user record to check.
+ */
 export const checkInvalidLoginAttempts = async (
     userRecord?: z.infer<typeof SelectUserSchema>
 ) => {

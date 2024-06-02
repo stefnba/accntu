@@ -164,7 +164,10 @@ export const verifyEmailOTP = async ({
     }
 
     // update login attempt to success
-    await makeLoginAttemptSuccess(loginAttemptToken);
+    await makeLoginAttemptSuccess({
+        id: loginAttemptToken,
+        userId: user.id
+    });
 
     return {
         success: true,

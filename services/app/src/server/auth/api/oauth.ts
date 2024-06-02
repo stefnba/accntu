@@ -1,3 +1,4 @@
+import { recordLoginAttempt } from '@auth/actions/login-record';
 import {
     initiateGitHubOAuth,
     verifyGitHubOAuth
@@ -21,7 +22,7 @@ const app = new Hono()
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
-            maxAge: 60 * 10,
+            maxAge: 60 * 10, // 10 minutes
             sameSite: 'Lax'
         });
 
@@ -60,6 +61,15 @@ const app = new Hono()
 
                 // create session
                 await createSession(c, userId);
+
+                // record login attempt
+                await recordLoginAttempt(
+                    {
+                        method: 'GITHUB',
+                        userId
+                    },
+                    true
+                );
 
                 return c.redirect('/', 301);
             } catch (e) {
