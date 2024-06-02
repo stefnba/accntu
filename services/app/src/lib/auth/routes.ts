@@ -8,7 +8,12 @@ export const publicRoutes: string[] = ['/landing', '/terms', '/privacy'];
  * An array of routes that are used for authentication
  * These routes will redirect logged in users to /
  */
-export const authRoutes: string[] = ['/login*', '/register*', '/auth/*'];
+export const authRoutes: string[] = [
+    '/login',
+    '/login/**',
+    '/register**',
+    '/auth/**'
+];
 
 /**
  * The default redirect path after logging in
@@ -25,7 +30,7 @@ export const LOGIN_URL = '/login';
  */
 export const LOGOUT_URL = '/logout';
 
-export const isUrlPatternMatch = (url: string, patterns: string[]) =>
-    patterns.some((p, i) =>
-        RegExp('^' + patterns[i].replace('*', '.*') + '$').test(url)
-    );
+/**
+ * The URL to the OTP verification page for Email login.
+ */
+export const EMAIL_OTP_REDIRECT_URL = '/login/email/verify';

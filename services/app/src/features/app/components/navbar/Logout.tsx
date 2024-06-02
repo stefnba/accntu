@@ -1,17 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useLogout } from '@/features/auth/api/logout';
 
 const Logout = () => {
-    const router = useRouter();
+    const { mutate } = useLogout();
 
     return (
-        <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => router.push('/logout')}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => mutate()}>
             Logout
         </DropdownMenuItem>
     );

@@ -1,4 +1,5 @@
 import {
+    authRouter,
     bankRouter,
     connectedRouter,
     importRouter,
@@ -6,11 +7,11 @@ import {
     transactionRouter
 } from '@/server/api';
 import user from '@/server/api/user';
-import auth from '@/server/auth/api';
 import { authMiddleware } from '@/server/auth/middleware';
 import upload from '@/server/lib/upload/api';
 import { logger } from '@/server/middleware/logging';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import { handle } from 'hono/vercel';
@@ -36,11 +37,12 @@ app.onError((err, c) => {
     return c.json({ error: 'Internal error' }, 500);
 });
 app.use(csrf());
+// app.use(cors({ origin: ['http://localhost:3000', 'https://github.com'] }));
 app.use(authMiddleware);
 app.notFound((c) => c.text('Not Found', 404));
 
 const routes = app
-    .route('/auth', auth)
+    .route('/auth', authRouter)
     .route('/transactions', transactionRouter)
     .route('/labels', labelRouter)
     .route('/banks', bankRouter)

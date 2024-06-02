@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import LoginForm from '../_components/form';
+import { LoginRegisterForm } from '@/features/auth/components/login-register-form';
 
 const Login = async () => {
     return (
@@ -14,7 +14,7 @@ const Login = async () => {
                 </p>
             </div>
 
-            <LoginForm type="login" />
+            <LoginRegisterForm type="login" />
 
             <p className="mt-8 px-8 text-center text-sm text-muted-foreground">
                 If you don&apos;t have an account yet, you can register{' '}

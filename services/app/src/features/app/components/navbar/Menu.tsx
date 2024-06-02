@@ -1,16 +1,15 @@
-import { getUser } from '@/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
-    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuLinkItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { LuBell, LuUser } from 'react-icons/lu';
+import { getUser } from '@auth/next';
+import { LuBell } from 'react-icons/lu';
 
 import Logout from './Logout';
 

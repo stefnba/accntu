@@ -1,12 +1,15 @@
-import { lucia } from '@/lib/auth/lucia';
 import { getCookie } from 'hono/cookie';
 import { createMiddleware } from 'hono/factory';
 
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register'];
+import { PUBLIC_API_ROUTES } from './config';
+import { lucia } from './lucia';
+import { isUrlMatch } from './utils';
 
 export const authMiddleware = createMiddleware(async (c, next) => {
+    const { path } = c.req;
+
     // Skip auth for public routes
-    if (PUBLIC_ROUTES.includes(c.req.path)) {
+    if (isUrlMatch(path, PUBLIC_API_ROUTES)) {
         return next();
     }
 
