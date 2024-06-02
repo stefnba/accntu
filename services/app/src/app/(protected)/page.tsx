@@ -1,5 +1,5 @@
-import { getUser } from '@/auth';
 import { PageHeader } from '@/components/page/header';
+import { getUser } from '@server/auth/next/authenticate';
 
 export default async function Home() {
     const user = await getUser();
