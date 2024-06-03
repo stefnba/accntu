@@ -1,4 +1,4 @@
-import { TFieldErrors } from '@/lib/actions/types';
+import { TFieldErrors } from '@/server/lib/actions/types';
 
 export type TUseMutationError<TInput = {}> =
     | {

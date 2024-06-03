@@ -1,4 +1,4 @@
-import { ValidationError } from '@/lib/actions/errors';
+import { ValidationError } from '@/server/lib/actions/errors';
 import { useCallback, useState } from 'react';
 
 import { IUseMutationOptions, TActionStatus, TUseMutationError } from './types';

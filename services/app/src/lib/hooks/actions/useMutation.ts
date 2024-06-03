@@ -1,5 +1,5 @@
-import { ValidationError } from '@/lib/actions/errors';
-import type { Action } from '@/lib/actions/types';
+import { ValidationError } from '@/server/lib/actions/errors';
+import type { Action } from '@/server/lib/actions/types';
 import { useCallback, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
