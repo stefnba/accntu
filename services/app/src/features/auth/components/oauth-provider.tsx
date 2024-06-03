@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { LoadingBouncer } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { useInitGitHubOauth } from '@/features/auth/api/init-github-oauth';
 import { IconType } from 'react-icons';
@@ -10,24 +11,38 @@ interface OAuthProviderProps {
     title: string;
     onClick: () => void;
     icon: IconType;
+    isLoading?: boolean;
 }
 
-const OAuthProvider = ({ title, onClick, icon: Icon }: OAuthProviderProps) => (
+const OAuthProvider = ({
+    title,
+    onClick,
+    icon: Icon,
+    isLoading = false
+}: OAuthProviderProps) => (
     <Button
         onClick={onClick}
         className="mt-2 w-full text-center"
         variant="outline"
         type="button"
     >
-        <Icon className="mr-2 h-6 w-6" />
-        {title}
+        {isLoading ? (
+            <LoadingBouncer />
+        ) : (
+            <>
+                <Icon className="mr-2 h-6 w-6" />
+                {title}{' '}
+            </>
+        )}
+        {/* */}
     </Button>
 );
 
 const GitHubOAuth = () => {
-    const { mutate } = useInitGitHubOauth();
+    const { mutate, isPending } = useInitGitHubOauth();
     return (
         <OAuthProvider
+            isLoading={isPending}
             title="GitHub"
             icon={AiFillGithub}
             onClick={() => mutate()}
