@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { bank, bankUploadAccounts } from '@db/schema';
+import { bank, bankUploadAccount } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
 
 import { TSeedBanks } from './types';
@@ -12,7 +12,8 @@ const banksSeed: TSeedBanks = [
         accounts: [
             {
                 type: 'CREDIT_CARD',
-                id: createId()
+                id: createId(),
+                parserKey: 'BARCLAYS_DE_CREDITCARD'
             }
         ]
     },
@@ -23,21 +24,12 @@ const banksSeed: TSeedBanks = [
         accounts: [
             {
                 type: 'CREDIT_CARD',
-                id: createId()
+                id: createId(),
+                parserKey: 'MILESANDMORE_CH_CREDITCARD'
             }
         ]
     },
-    {
-        id: createId(),
-        name: 'Barclays',
-        country: 'DE',
-        accounts: [
-            {
-                type: 'CREDIT_CARD',
-                id: createId()
-            }
-        ]
-    },
+
     {
         id: createId(),
         name: 'UBS',
@@ -45,11 +37,13 @@ const banksSeed: TSeedBanks = [
         accounts: [
             {
                 type: 'CREDIT_CARD',
-                id: createId()
+                id: createId(),
+                parserKey: 'UBS_CH_CREDITCARD'
             },
             {
                 type: 'CURRENT',
-                id: createId()
+                id: createId(),
+                parserKey: 'UBS_CH_CURRENT'
             }
         ]
     }
@@ -76,7 +70,7 @@ export const seedBanks = async () => {
                 };
             });
 
-            return db.insert(bankUploadAccounts).values(accounts);
+            return db.insert(bankUploadAccount).values(accounts);
         })
     );
 };
