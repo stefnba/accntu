@@ -4,7 +4,6 @@ import { GitHubEmail, GitHubUser } from '@auth/types/oauth';
 import { db } from '@db';
 import { generateState } from 'arctic';
 
-import { recordLoginAttempt } from '../login-record';
 import { createOAuthAccount } from './oauth';
 
 const { provider, providerId } = github;
@@ -76,15 +75,6 @@ export async function verifyGitHubOAuth(code: string) {
 
         userId = user.id;
     }
-
-    // record login attempt
-    await recordLoginAttempt(
-        {
-            method: 'GITHUB',
-            userId
-        },
-        true
-    );
 
     return {
         userId,

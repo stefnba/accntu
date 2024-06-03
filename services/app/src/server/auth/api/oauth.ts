@@ -1,9 +1,13 @@
-import { recordLoginAttempt } from '@auth/actions/login-record';
+import {
+    makeLoginAttemptSuccess,
+    recordLoginAttempt
+} from '@auth/actions/login-record';
 import {
     initiateGitHubOAuth,
     verifyGitHubOAuth
 } from '@auth/actions/oauth/github';
 import { createSession } from '@auth/authenticate';
+import { getLoginAttemptCookie } from '@auth/cookies/login-record';
 import { github } from '@auth/oauth/github';
 import { zValidator } from '@hono/zod-validator';
 import { OAuth2RequestError } from 'arctic';
@@ -15,9 +19,10 @@ const app = new Hono()
     .get('/github/init', async (c) => {
         const { state, url } = await initiateGitHubOAuth();
 
-        // todo login attempt cookie
+        // record login attempt with db and cookie
+        await recordLoginAttempt(c, { method: 'GITHUB_OAUTH' });
 
-        //
+        // set state in cookie
         setCookie(c, github.cookieName, state, {
             path: '/',
             secure: process.env.NODE_ENV === 'production',
@@ -58,18 +63,15 @@ const app = new Hono()
                         400
                     );
                 }
+                const loginAttemptToken = await getLoginAttemptCookie(c, true);
+                // if verification was successful, mark the login attempt as successful
+                await makeLoginAttemptSuccess({
+                    id: loginAttemptToken,
+                    userId
+                });
 
                 // create session
                 await createSession(c, userId);
-
-                // record login attempt
-                await recordLoginAttempt(
-                    {
-                        method: 'GITHUB',
-                        userId
-                    },
-                    true
-                );
 
                 return c.redirect('/', 301);
             } catch (e) {

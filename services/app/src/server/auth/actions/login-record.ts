@@ -1,35 +1,70 @@
 import { logger } from '@/server/lib/logging/logger';
+import {
+    createLoginAttemptCookie,
+    getLoginAttemptCookie
+} from '@auth/cookies/login-record';
 import { db } from '@db';
-import { LoginMethodSchema, login } from '@db/schema';
+import { InsertLoginSchema, LoginMethodSchema, login, user } from '@db/schema';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
+import { Context } from 'hono';
 import { z } from 'zod';
 
-interface IRecordLoginAttemptParams {
-    userId?: string;
-    email?: string;
-    method: z.infer<typeof LoginMethodSchema>;
-}
+const RecordLoginAttemptSchema = InsertLoginSchema.pick({
+    identifier: true,
+    method: true
+});
 
 /**
- * Add a new record to the login table when a user tries to log in.
+ * Handles creation of a login record when a user tries to log in as welll as setting a cookie to track the login attempt.
+ * @param c Honos context.
  */
 export const recordLoginAttempt = async (
-    { userId, method }: IRecordLoginAttemptParams,
+    c: Context,
+    values: z.infer<typeof RecordLoginAttemptSchema>,
+    immediateSuccess = false
+) => {
+    const userAgent = c.req.header('User-Agent');
+
+    const { token } = await createLoginRecord(
+        { ...values, userAgent },
+        immediateSuccess
+    );
+
+    await createLoginAttemptCookie(c, token);
+};
+
+/**
+ * Create a login record in the database. It also checks if the user exists and assigns the userId if it does.
+ */
+export const createLoginRecord = async (
+    values: z.infer<typeof InsertLoginSchema>,
     immediateSuccess = false
 ) => {
     const token = crypto.randomBytes(128).toString('base64url');
 
+    let { userId, identifier } = values;
+
+    // If the userId is not provided, use the identifier to look up the user and assign it to userId if the user exists.
+    if (!userId && identifier) {
+        const user = await db.query.user.findFirst({
+            where: (fields, { eq }) => eq(fields.email, identifier)
+        });
+        if (user) {
+            userId = user.id;
+        }
+    }
+
     await db.insert(login).values({
+        ...values,
         id: token,
         userId,
-        method,
         successAt: immediateSuccess ? new Date() : null
     });
 
     if (immediateSuccess) {
         logger.info('Login success', {
-            userId
+            userId: values.userId
         });
     }
 
@@ -42,20 +77,29 @@ interface IMakeLoginAttemptSuccessParams {
 }
 
 /**
- * Update the login record when a user successfully logs in.
+ * Update the login and user record when a user successfully logs in.
+ * @param id The login record ID.
+ * @param userId The user ID.
  */
 export const makeLoginAttemptSuccess = async ({
     id,
     userId
 }: IMakeLoginAttemptSuccessParams): Promise<void> => {
-    if (!id) return;
+    if (!id || !userId) return;
 
     logger.info('Login success', {
         userId
     });
 
+    // update the user's last login time and reset the login attempts.
+    await db
+        .update(user)
+        .set({ lastLoginAt: new Date(), loginAttempts: 0 })
+        .where(eq(user.id, userId));
+
+    // update the login record with the success time and the user ID.
     await db
         .update(login)
-        .set({ successAt: new Date() })
+        .set({ successAt: new Date(), userId })
         .where(eq(login.id, id));
 };

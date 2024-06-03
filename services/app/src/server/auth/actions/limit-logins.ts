@@ -17,12 +17,16 @@ export const checkInvalidLoginAttempts = async (
     const { loginAttempts } = userRecord;
 
     if (loginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        // block user
+        await db
+            .update(user)
+            .set({ isEnabled: false })
+            .where(eq(user.id, userRecord.id));
+
         throw new AuthError({
             message: 'Invalid code',
             internalMessage: 'Exceeded maximum login attempts with invalid'
         });
-
-        // todo block user
     }
 
     // update login attempts
@@ -31,5 +35,5 @@ export const checkInvalidLoginAttempts = async (
         .set({
             loginAttempts: loginAttempts + 1
         })
-        .where(eq(user.id, user.id));
+        .where(eq(user.id, userRecord.id));
 };

@@ -11,7 +11,6 @@ import { eq } from 'drizzle-orm';
 import { TimeSpan, createDate } from 'oslo';
 
 import { checkInvalidLoginAttempts } from './limit-logins';
-import { makeLoginAttemptSuccess } from './login-record';
 
 /**
  * Send a verification code to the user's email.
@@ -22,11 +21,6 @@ export const requestEmailOTP = async (email: string) => {
         await db
             .delete(dbSchema.verificationToken)
             .where(eq(dbSchema.verificationToken.identifier, email));
-
-        // check if user exists
-        const user = await db.query.user.findFirst({
-            where: (fields, { eq }) => eq(fields.email, email)
-        });
 
         const code = generateEmailOTP();
         const token = crypto.randomBytes(128).toString('base64url');
@@ -45,22 +39,17 @@ export const requestEmailOTP = async (email: string) => {
         logger.info('OTP code sent', { email });
 
         return {
-            success: true,
-            token,
-            userId: user?.id
+            token
         };
     } catch (error: any) {
         logger.error('Error logging in with email', error);
-        throw new Error(
-            'An error occurred while logging in. Please try again.'
-        );
+        throw new Error('Failed to send verification email');
     }
 };
 
 interface IVerifyEmailOTP {
     code: string;
     verificationToken?: string;
-    loginAttemptToken?: string;
 }
 
 /**
@@ -71,8 +60,7 @@ interface IVerifyEmailOTP {
  */
 export const verifyEmailOTP = async ({
     code,
-    verificationToken,
-    loginAttemptToken
+    verificationToken
 }: IVerifyEmailOTP) => {
     // we can't proceed without a token
     if (!verificationToken) {
@@ -114,7 +102,7 @@ export const verifyEmailOTP = async ({
 
         await checkInvalidLoginAttempts(user);
 
-        // user exists
+        // throw error since code is invalid
         throw new AuthError({
             message: 'Invalid code',
             internalMessage: 'Invalid OTP code entered'
@@ -162,12 +150,6 @@ export const verifyEmailOTP = async ({
             email: verificationRecord.identifier
         });
     }
-
-    // update login attempt to success
-    await makeLoginAttemptSuccess({
-        id: loginAttemptToken,
-        userId: user.id
-    });
 
     return {
         success: true,

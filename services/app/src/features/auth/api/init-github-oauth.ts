@@ -10,6 +10,7 @@ const query = client.api.auth.oauth.github.init.$get;
 
 export const useInitGitHubOauth = () => {
     const router = useRouter();
+
     const q = useMutation<InferResponseType<typeof query>, Error, void>({
         mutationFn: async (values) => {
             const response = await query({

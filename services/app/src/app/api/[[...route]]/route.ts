@@ -7,6 +7,7 @@ import {
     transactionRouter
 } from '@/server/api';
 import user from '@/server/api/user';
+import { AuthError } from '@/server/auth/error';
 import { authMiddleware } from '@/server/auth/middleware';
 import upload from '@/server/lib/upload/api';
 import { logger } from '@/server/middleware/logging';
@@ -33,6 +34,9 @@ app.onError((err, c) => {
 
     if (err instanceof HTTPException) {
         return err.getResponse();
+    }
+    if (err instanceof AuthError) {
+        return c.json({ error: err.message }, 401);
     }
     return c.json({ error: 'Internal error' }, 500);
 });
