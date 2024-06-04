@@ -10,6 +10,8 @@ import { useGetConnectedBank } from '@/features/connectedBank/api/get-connected-
 import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
 import { LuFileEdit, LuTrash } from 'react-icons/lu';
 
+import { ConnectedAccountCard } from '../account-card';
+
 export const UpdateConnectedBankSheet = () => {
     const { isOpen, handleClose, id } = storeUpdateConnectedBankSheet();
 
@@ -24,12 +26,17 @@ export const UpdateConnectedBankSheet = () => {
         <Sheet open={isOpen} onOpenChange={handleClose}>
             <SheetContent size="md">
                 <SheetHeader>
-                    <SheetTitle>{bank.name}</SheetTitle>
+                    <SheetTitle className="text-2xl">{bank.name}</SheetTitle>
                 </SheetHeader>
 
-                <div className="my-8">
+                <div className="my-8 space-y-2">
                     {accounts.map((a) => (
-                        <div key={a.id}>{a.name}</div>
+                        <ConnectedAccountCard
+                            name={a.name}
+                            type={a.type}
+                            key={a.id}
+                            description={a.description}
+                        />
                     ))}
                 </div>
 

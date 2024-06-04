@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { useCreateConnectedBank } from '../../api/create-connected-bank';
 import { CreateAccountSchema } from '../../schema/reate-connected-bank';
+import { ConnectedAccountCard } from '../account-card';
 
 const BankUploadAccountsSchema = SelectBankUploadAccountsSchema.pick({
     id: true,
@@ -44,21 +45,31 @@ export const AccountSelectionForm: React.FC<Props> = ({ bankId, accounts }) => {
 
     return (
         <Form form={form} onSubmit={handleSubmit}>
-            {accounts.map((a, index) => (
-                <div
-                    key={a.id}
-                    className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-2 w-full"
-                >
-                    <div className="space-y-0.5">
-                        <div>{accountTypeMapping[a.type]}</div>
-                    </div>
-                    <FormSwitch
-                        name={`accounts.${index}.include`}
-                        form={form}
+            <div className="space-y-2">
+                {accounts.map((a, index) => (
+                    <ConnectedAccountCard
+                        key={a.id}
+                        name={accountTypeMapping[a.type]}
+                        type={a.type}
+                        action={
+                            <FormSwitch
+                                name={`accounts.${index}.include`}
+                                form={form}
+                            />
+                        }
                     />
-                </div>
-            ))}
-            <FormSubmit className="w-full" form={form}>
+                    // <div
+                    //     key={a.id}
+                    //     className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm w-full"
+                    // >
+                    //     <div className="space-y-0.5">
+                    //         <div>{accountTypeMapping[a.type]}</div>
+                    //     </div>
+
+                    // </div>
+                ))}
+            </div>
+            <FormSubmit className="w-full mt-6" form={form}>
                 Create Account
             </FormSubmit>
         </Form>
