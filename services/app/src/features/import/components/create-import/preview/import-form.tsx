@@ -2,6 +2,7 @@ import { Form, FormSubmit, useForm } from '@/components/form';
 import { usePreviewTransactions } from '@/features/import/api/preview-transactions';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { storePreviewImportFiles } from '@/features/import/store/preview-import-files';
+import { storeUploadImportFiles } from '@/features/import/store/upload-import-files';
 import { useCreateTransactions } from '@/features/transaction/api/create-transactions';
 import { CreateTransactionsSchema } from '@/features/transaction/schema/create-transactions';
 import { useEffect, useMemo } from 'react';
@@ -14,8 +15,9 @@ export const ImportForm: React.FC<Props> = ({}) => {
     const form = useForm(CreateTransactionsSchema);
     const { mutate } = useCreateTransactions();
 
-    const { importId } = storeCreateImportModal();
+    const { importId, importData } = storeCreateImportModal();
     const { fileId } = storePreviewImportFiles();
+    const { accountId } = importData || {};
 
     const { data } = usePreviewTransactions({
         id: importId,
@@ -28,17 +30,18 @@ export const ImportForm: React.FC<Props> = ({}) => {
     );
 
     useEffect(() => {
-        if (newTransactions && importId) {
+        if (newTransactions && importId && accountId) {
             form.setValue('values', newTransactions, { shouldValidate: true });
             form.setValue('importId', importId, { shouldValidate: true });
-            form.setValue('accountId', 'twbhdpp6rwkz6w2brc2r8y22', {
+            form.setValue('accountId', accountId, {
                 shouldValidate: true
-            }); // todo replace with actual account id
+            });
         }
-    }, [newTransactions, form, importId]);
+        console.log('newTransactions', importId, accountId);
+    }, [newTransactions, form, importId, accountId]);
 
     const handleSubmit = (values: z.infer<typeof CreateTransactionsSchema>) => {
-        // todo create transactions
+        // create transactions
         mutate(values);
     };
 

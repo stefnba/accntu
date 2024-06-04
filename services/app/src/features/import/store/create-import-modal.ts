@@ -1,3 +1,5 @@
+import { CreateImportSelectionSchema } from '@/features/import/schema/create-import';
+import { z } from 'zod';
 import { create } from 'zustand';
 
 const steps = ['selection', 'uploading', 'preview', 'importing'] as const;
@@ -10,6 +12,10 @@ interface IStoreCreateImportModal {
     // import id
     importId?: string;
     setImportId: (importId: string) => void;
+
+    // import data (files and account id)
+    importData?: z.infer<typeof CreateImportSelectionSchema>;
+    setImportData: (data: z.infer<typeof CreateImportSelectionSchema>) => void;
 
     // visibility
     isOpen: boolean;
@@ -25,6 +31,10 @@ export const storeCreateImportModal = create<IStoreCreateImportModal>(
         // steps
         step: 'selection',
         handleStep: (step) => set({ step }),
+
+        // import data
+        importData: undefined,
+        setImportData: (data) => set({ importData: data }),
 
         // import id
         importId: undefined,

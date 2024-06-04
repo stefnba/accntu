@@ -33,12 +33,13 @@ export const deleteImport = async (id: string, userId: string) => {
  */
 export const deleteImportFile = async (id: string, userId: string) => {
     // Delete record from db
+    // todo add userId to where clause
     const [deletedFile] = await db
         .delete(transactionImportFile)
         .where(
             and(
-                eq(transactionImportFile.id, id),
-                eq(transactionImportFile.userId, userId)
+                eq(transactionImportFile.id, id)
+                // eq(transactionImportFile.userId, userId)
             )
         )
         .returning();

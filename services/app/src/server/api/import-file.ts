@@ -53,7 +53,7 @@ const app = new Hono()
             const values = c.req.valid('json');
             const [newImportFile] = await db
                 .insert(transactionImportFile)
-                .values({ id: createId(), userId: user.id, ...values })
+                .values({ id: createId(), ...values })
                 .returning();
             return c.json(newImportFile, 201);
         }
@@ -71,8 +71,7 @@ const app = new Hono()
             const { id } = c.req.valid('param');
 
             const data = await db.query.transactionImportFile.findFirst({
-                where: (fields, { eq, and }) =>
-                    and(eq(fields.id, id), eq(fields.userId, user.id))
+                where: (fields, { eq, and }) => and(eq(fields.id, id))
             });
 
             if (!data) {

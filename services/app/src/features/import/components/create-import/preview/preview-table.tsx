@@ -62,36 +62,3 @@ export const CreateImportPreviewTable: React.FC<Props> = ({}) => {
         </div>
     );
 };
-
-// const PARSING_SERVER = 'http://127.0.0.1:8000';
-
-// const getParsedTransactions = async (files: IFile[], userId: string) => {
-//     const res = await fetch(PARSING_SERVER + '/parse/new', {
-//         method: 'POST',
-//         body: JSON.stringify({
-//             files: files.map((f) => ({ id: f.id, url: f.url })),
-//             user_id: userId,
-//             parser_id: 'BARCLAYS_DE_CREDITCARD'
-//         })
-//     });
-//     if (!res.ok) {
-//         throw new Error('Network response was not ok');
-//     }
-//     return res.json();
-// };
-
-// const [fileId, setFileId] = useState<string>(files[0].id);
-
-// const [rowSelection, setRowSelection] = useState({});
-
-// const newTransactions = transactionData.filter((f) => !f.is_duplicate);
-
-// useEffect(() => {
-//     if (isSuccess) {
-//         const selectedRows = transactionData.reduce((acc, transaction) => {
-//             if (transaction.is_duplicate) return acc;
-//             return { ...acc, [transaction.key]: true };
-//         }, {});
-//         setRowSelection(selectedRows);
-//     }
-// }, [transactionData, isSuccess]);

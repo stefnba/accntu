@@ -33,7 +33,19 @@ export const parseTransactionFile = async (
         throw new Error(`File '${fileId}' doesn't exist`);
     }
 
-    const parserId = 'BARCLAYS_DE_CREDITCARD'; // todo get from importRecord
+    const accountRecord = await db.query.connectedAccount.findFirst({
+        where: (fields, { eq }) => eq(fields.id, importRecord.accountId)
+    });
+
+    if (!accountRecord) {
+        throw new Error('Connected Account not found');
+    }
+
+    const parserKey = accountRecord.parserKey;
+
+    if (!parserKey) {
+        throw new Error('Parser not found');
+    }
 
     const body: TParserBody = {
         files: [
@@ -42,7 +54,7 @@ export const parseTransactionFile = async (
                 url: fileRecord.url
             }
         ],
-        parser_id: parserId,
+        parser_id: parserKey,
         user_id: userId
     };
 
@@ -67,7 +79,6 @@ export const parseTransactionFile = async (
                 if (!validatedData.success) {
                     throw new Error(validatedData.error.message);
                 }
-                console.log(validatedData.data);
                 return validatedData.data;
             } else {
                 throw new Error(res.statusText);

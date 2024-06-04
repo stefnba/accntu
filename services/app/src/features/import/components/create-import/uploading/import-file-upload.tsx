@@ -11,17 +11,17 @@ import { UploadFileCard } from './upload-file-card';
 export const ImportFileUpload = () => {
     const { mutate, isPending } = useCreateImport();
 
-    const { data: newImportData, uploadedFiles } = storeUploadImportFiles();
-    const { importId, handleStep } = storeCreateImportModal();
+    const { importId, handleStep, importData } = storeCreateImportModal();
+    const { uploadedFiles } = storeUploadImportFiles();
 
-    const files = newImportData?.files;
+    const files = importData?.files;
 
     useEffect(() => {
-        if (newImportData) {
-            // create new import record
-            mutate({ accountId: newImportData.accountId });
+        if (importData) {
+            // create new import importData
+            mutate({ accountId: importData.accountId });
         }
-    }, [mutate, newImportData]);
+    }, [mutate, importData]);
     useEffect(() => {
         if (files?.length === uploadedFiles.length) {
             handleStep('preview');
@@ -35,8 +35,6 @@ export const ImportFileUpload = () => {
     if (!importId) {
         return <div>No data</div>;
     }
-
-    console.log('newImportData', importId);
 
     return (
         <div>
