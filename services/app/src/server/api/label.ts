@@ -1,8 +1,8 @@
 import { db } from '@/db/client';
+import { createLabel } from '@/server/actions/label';
 import { getUser } from '@/server/auth';
 import { InsertLabelSchema, label } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
-import { createLabel } from '@server/services/label';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { level } from 'winston';

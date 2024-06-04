@@ -1,11 +1,11 @@
-import { getUser } from '@/server/auth';
-import { InsertConnectedAccountSchema } from '@db/schema';
-import { zValidator } from '@hono/zod-validator';
 import {
     createConnectedAccounts,
     getConnectedAccount,
     getConnectedAccounts
-} from '@server/services/connected-account';
+} from '@/server/actions/connected-account';
+import { getUser } from '@/server/auth';
+import { InsertConnectedAccountSchema } from '@db/schema';
+import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
 

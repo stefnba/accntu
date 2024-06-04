@@ -1,5 +1,5 @@
+import { getAccountsByBankId, getBank, getBanks } from '@/server/actions/bank';
 import { zValidator } from '@hono/zod-validator';
-import { getAccountsByBankId, getBank, getBanks } from '@server/services/bank';
 import { Hono } from 'hono';
 import { z } from 'zod';
 

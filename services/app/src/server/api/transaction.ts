@@ -1,14 +1,14 @@
 import { CreateTransactionsSchema } from '@/features/transaction/schema/create-transactions';
 import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
 import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
+import {
+    createTransactions,
+    listTransactions
+} from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
 import { db } from '@/server/db/client';
 import { InsertTransactionSchema } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
-import {
-    createTransactions,
-    listTransactions
-} from '@server/services/transaction';
 import { Hono } from 'hono';
 import { z } from 'zod';
 

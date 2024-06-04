@@ -1,13 +1,13 @@
+import { deleteImport } from '@/server/actions/import';
 import { getUser } from '@/server/auth';
 import { db } from '@db';
 import { InsertTransactionImportSchema, transactionImport } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { createId } from '@paralleldrive/cuid2';
-import { deleteImport } from '@server/services/import';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { parseTransactionFile } from '../services/import-file';
+import { parseTransactionFile } from '../actions/import-file';
 import importFile from './import-file';
 
 const app = new Hono()
