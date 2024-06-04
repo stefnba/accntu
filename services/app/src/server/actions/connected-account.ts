@@ -1,13 +1,17 @@
 import { db } from '@db';
-import { connectedAccount, connectedBank } from '@db/schema';
+import { bank, connectedAccount, connectedBank } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { InferInsertModel, and, eq } from 'drizzle-orm';
 
 export const getConnectedAccounts = async (userId: string) => {
     const data = await db
-        .select()
+        .select({
+            account: connectedAccount,
+            bank: bank
+        })
         .from(connectedAccount)
         .leftJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))
+        .leftJoin(bank, eq(connectedAccount.bankId, bank.id))
         .where(and(eq(connectedBank.userId, userId)));
 
     return data;

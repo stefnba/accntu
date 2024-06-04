@@ -28,9 +28,9 @@ export const BankAccountSelect = <TFieldValues extends FieldValues>({
 }: Props<TFieldValues>) => {
     const { data } = useGetConnectedBankAccounts();
 
-    const accounts = data?.map((a) => ({
-        label: a?.connected_account.name,
-        value: a?.connected_account.id
+    const accounts = data?.map(({ account }) => ({
+        label: account?.name,
+        value: account?.id
     }));
 
     return (
