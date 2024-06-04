@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-import Navbar from '@/features/app/components/navbar/Navbar';
-import Sidebar from '@/features/app/components/sidebar/Sidebar';
+import Navbar from '@/features/page/components/navbar/Navbar';
+import Sidebar from '@/features/page/components/sidebar/Sidebar';
 import { LOGIN_URL } from '@/lib/auth/routes';
 import { ModalProvider } from '@/providers/modal';
 import { SessionProvider } from '@/providers/session';
