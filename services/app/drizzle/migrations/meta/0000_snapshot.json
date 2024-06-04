@@ -1,19 +1,18 @@
 {
-  "id": "cf507fcd-1c57-4c04-a78c-37d56e4180cb",
+  "id": "43a64037-10a3-4f0f-8306-31770927fac1",
   "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "5",
-  "dialect": "pg",
+  "version": "6",
+  "dialect": "postgresql",
   "tables": {
-    "bank": {
+    "public.bank": {
       "name": "bank",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "name": {
           "name": "name",
@@ -76,26 +75,32 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "bank_upload_accounts": {
-      "name": "bank_upload_accounts",
+    "public.bank_upload_account": {
+      "name": "bank_upload_account",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "type": {
           "name": "type",
-          "type": "TransactionAccountType",
+          "type": "ConnectedAccountType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parserKey": {
+          "name": "parserKey",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "bankId": {
           "name": "bankId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -115,9 +120,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "bank_upload_accounts_bankId_bank_id_fk": {
-          "name": "bank_upload_accounts_bankId_bank_id_fk",
-          "tableFrom": "bank_upload_accounts",
+        "bank_upload_account_bankId_bank_id_fk": {
+          "name": "bank_upload_account_bankId_bank_id_fk",
+          "tableFrom": "bank_upload_account",
           "tableTo": "bank",
           "columnsFrom": [
             "bankId"
@@ -132,26 +137,25 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "label": {
-      "name": "label",
+    "public.connected_account": {
+      "name": "connected_account",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
-        "name": {
-          "name": "name",
+        "bankId": {
+          "name": "bankId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "userId": {
-          "name": "userId",
-          "type": "uuid",
+        "name": {
+          "name": "name",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -161,18 +165,18 @@
           "primaryKey": false,
           "notNull": false
         },
-        "parentId": {
-          "name": "parentId",
-          "type": "uuid",
+        "type": {
+          "name": "type",
+          "type": "ConnectedAccountType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parserKey": {
+          "name": "parserKey",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "isLeaf": {
-          "name": "isLeaf",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
         },
         "createdAt": {
           "name": "createdAt",
@@ -186,6 +190,174 @@
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "connected_account_bankId_connected_bank_id_fk": {
+          "name": "connected_account_bankId_connected_bank_id_fk",
+          "tableFrom": "connected_account",
+          "tableTo": "connected_bank",
+          "columnsFrom": [
+            "bankId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.connected_bank": {
+      "name": "connected_bank",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bankId": {
+          "name": "bankId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "connected_bank_bankId_bank_id_fk": {
+          "name": "connected_bank_bankId_bank_id_fk",
+          "tableFrom": "connected_bank",
+          "tableTo": "bank",
+          "columnsFrom": [
+            "bankId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "connected_bank_userId_user_id_fk": {
+          "name": "connected_bank_userId_user_id_fk",
+          "tableFrom": "connected_bank",
+          "tableTo": "user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.label": {
+      "name": "label",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parentId": {
+          "name": "parentId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firstParentId": {
+          "name": "firstParentId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isDeleted": {
+          "name": "isDeleted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
@@ -215,12 +387,25 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "label_firstParentId_label_id_fk": {
+          "name": "label_firstParentId_label_id_fk",
+          "tableFrom": "label",
+          "tableTo": "label",
+          "columnsFrom": [
+            "firstParentId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "login": {
+    "public.login": {
       "name": "login",
       "schema": "",
       "columns": {
@@ -233,17 +418,18 @@
         "method": {
           "name": "method",
           "type": "LoginMethod",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "sessionId": {
-          "name": "sessionId",
+        "identifier": {
+          "name": "identifier",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -298,46 +484,33 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "cascade"
-        },
-        "login_sessionId_session_id_fk": {
-          "name": "login_sessionId_session_id_fk",
-          "tableFrom": "login",
-          "tableTo": "session",
-          "columnsFrom": [
-            "sessionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "oauth_account": {
+    "public.oauth_account": {
       "name": "oauth_account",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "provider": {
           "name": "provider",
           "type": "OAuthProvider",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -360,14 +533,14 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "session": {
+    "public.session": {
       "name": "session",
       "schema": "",
       "columns": {
@@ -379,7 +552,7 @@
         },
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -409,32 +582,31 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "transaction": {
+    "public.transaction": {
       "name": "transaction",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "accountId": {
           "name": "accountId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "importId": {
           "name": "importId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -453,6 +625,7 @@
         "type": {
           "name": "type",
           "type": "TransactionType",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -519,7 +692,7 @@
         },
         "labelId": {
           "name": "labelId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -563,10 +736,10 @@
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
-        "transaction_accountId_transaction_account_id_fk": {
-          "name": "transaction_accountId_transaction_account_id_fk",
+        "transaction_accountId_connected_account_id_fk": {
+          "name": "transaction_accountId_connected_account_id_fk",
           "tableFrom": "transaction",
-          "tableTo": "transaction_account",
+          "tableTo": "connected_account",
           "columnsFrom": [
             "accountId"
           ],
@@ -606,139 +779,25 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "transaction_account": {
-      "name": "transaction_account",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "parentId": {
-          "name": "parentId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "isLeaf": {
-          "name": "isLeaf",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "type": {
-          "name": "type",
-          "type": "TransactionAccountType",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "bankId": {
-          "name": "bankId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "transaction_account_parentId_transaction_account_id_fk": {
-          "name": "transaction_account_parentId_transaction_account_id_fk",
-          "tableFrom": "transaction_account",
-          "tableTo": "transaction_account",
-          "columnsFrom": [
-            "parentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "transaction_account_userId_user_id_fk": {
-          "name": "transaction_account_userId_user_id_fk",
-          "tableFrom": "transaction_account",
-          "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "transaction_account_bankId_bank_id_fk": {
-          "name": "transaction_account_bankId_bank_id_fk",
-          "tableFrom": "transaction_account",
-          "tableTo": "bank",
-          "columnsFrom": [
-            "bankId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "import": {
+    "public.import": {
       "name": "import",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "accountId": {
           "name": "accountId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -777,10 +836,10 @@
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
-        "import_accountId_transaction_account_id_fk": {
-          "name": "import_accountId_transaction_account_id_fk",
+        "import_accountId_connected_account_id_fk": {
+          "name": "import_accountId_connected_account_id_fk",
           "tableFrom": "import",
-          "tableTo": "transaction_account",
+          "tableTo": "connected_account",
           "columnsFrom": [
             "accountId"
           ],
@@ -794,21 +853,14 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "import_file": {
+    "public.import_file": {
       "name": "import_file",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "userId": {
-          "name": "userId",
-          "type": "uuid",
-          "primaryKey": false,
           "notNull": true
         },
         "url": {
@@ -819,21 +871,29 @@
         },
         "importId": {
           "name": "importId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "filename": {
           "name": "filename",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "type": {
           "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "ImportFileStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PROCESSING'"
         },
         "createdAt": {
           "name": "createdAt",
@@ -851,19 +911,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "import_file_userId_user_id_fk": {
-          "name": "import_file_userId_user_id_fk",
-          "tableFrom": "import_file",
-          "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
-        },
         "import_file_importId_import_id_fk": {
           "name": "import_file_importId_import_id_fk",
           "tableFrom": "import_file",
@@ -881,16 +928,15 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "user": {
+    "public.user": {
       "name": "user",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "firstName": {
           "name": "firstName",
@@ -925,6 +971,7 @@
         "role": {
           "name": "role",
           "type": "UserRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'USER'"
@@ -941,6 +988,13 @@
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": false
+        },
+        "isEnabled": {
+          "name": "isEnabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "lastLoginAt": {
           "name": "lastLoginAt",
@@ -969,13 +1023,13 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "user_setting": {
+    "public.user_setting": {
       "name": "user_setting",
       "schema": "",
       "columns": {
         "userId": {
           "name": "userId",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -988,6 +1042,7 @@
         "language": {
           "name": "language",
           "type": "Language",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
           "default": "'EN'"
@@ -995,6 +1050,7 @@
         "apparance": {
           "name": "apparance",
           "type": "Apparance",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
           "default": "'LIGHT'"
@@ -1027,7 +1083,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "verification_token": {
+    "public.verification_token": {
       "name": "verification_token",
       "schema": "",
       "columns": {
@@ -1056,71 +1112,86 @@
           "notNull": true
         }
       },
-      "indexes": {
-        "verification_token_identifier_token_key": {
-          "name": "verification_token_identifier_token_key",
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "verification_token_identifier_token_pk": {
+          "name": "verification_token_identifier_token_pk",
           "columns": [
             "identifier",
             "token"
-          ],
-          "isUnique": true
+          ]
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     }
   },
   "enums": {
-    "Apparance": {
+    "public.Apparance": {
       "name": "Apparance",
-      "values": {
-        "SYSTEM": "SYSTEM",
-        "DARK": "DARK",
-        "LIGHT": "LIGHT"
-      }
+      "schema": "public",
+      "values": [
+        "SYSTEM",
+        "DARK",
+        "LIGHT"
+      ]
     },
-    "Language": {
+    "public.ConnectedAccountType": {
+      "name": "ConnectedAccountType",
+      "schema": "public",
+      "values": [
+        "CREDIT_CARD",
+        "SAVING",
+        "CURRENT"
+      ]
+    },
+    "public.ImportFileStatus": {
+      "name": "ImportFileStatus",
+      "schema": "public",
+      "values": [
+        "IMPORTED",
+        "UPLOADED",
+        "PROCESSING"
+      ]
+    },
+    "public.Language": {
       "name": "Language",
-      "values": {
-        "EN": "EN"
-      }
+      "schema": "public",
+      "values": [
+        "EN"
+      ]
     },
-    "LoginMethod": {
+    "public.LoginMethod": {
       "name": "LoginMethod",
-      "values": {
-        "GITHUB": "GITHUB",
-        "EMAIL": "EMAIL"
-      }
+      "schema": "public",
+      "values": [
+        "GITHUB_OAUTH",
+        "EMAIL_OTP"
+      ]
     },
-    "OAuthProvider": {
+    "public.OAuthProvider": {
       "name": "OAuthProvider",
-      "values": {
-        "GITHUB": "GITHUB"
-      }
+      "schema": "public",
+      "values": [
+        "GITHUB"
+      ]
     },
-    "TransactionAccountType": {
-      "name": "TransactionAccountType",
-      "values": {
-        "CREDIT_CARD": "CREDIT_CARD",
-        "SAVING": "SAVING",
-        "CURRENT": "CURRENT"
-      }
-    },
-    "TransactionType": {
+    "public.TransactionType": {
       "name": "TransactionType",
-      "values": {
-        "TRANSFER": "TRANSFER",
-        "CREDIT": "CREDIT",
-        "DEBIT": "DEBIT"
-      }
+      "schema": "public",
+      "values": [
+        "TRANSFER",
+        "CREDIT",
+        "DEBIT"
+      ]
     },
-    "UserRole": {
+    "public.UserRole": {
       "name": "UserRole",
-      "values": {
-        "USER": "USER",
-        "ADMIN": "ADMIN"
-      }
+      "schema": "public",
+      "values": [
+        "USER",
+        "ADMIN"
+      ]
     }
   },
   "schemas": {},

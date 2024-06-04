@@ -39,7 +39,7 @@ export type ConnectedAccount = InferSelectModel<
 >;
 
 export type BankUploadAccounts = InferSelectModel<
-    typeof dbSchema.bankUploadAccounts
+    typeof dbSchema.bankUploadAccount
 >;
 
 export type Label = InferSelectModel<typeof dbSchema.label>;

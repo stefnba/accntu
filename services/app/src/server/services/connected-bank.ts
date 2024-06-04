@@ -1,7 +1,7 @@
 import { db } from '@db';
 import { connectedAccount, connectedBank } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
-import { CreateConnectedBankSchema } from '@server/api/connectedBank';
+import { CreateConnectedBankSchema } from '@server/api/connected-bank';
 import { z } from 'zod';
 
 type TCreateConnectedBank = z.output<typeof CreateConnectedBankSchema>;
@@ -25,7 +25,7 @@ export const createConnectedBank = async (
 
     const accounts = await Promise.all(
         values.accounts.map(async (a) => {
-            const uploadAccount = await db.query.bankUploadAccounts.findFirst({
+            const uploadAccount = await db.query.bankUploadAccount.findFirst({
                 where: (fields, { eq }) => eq(fields.id, a)
             });
 
@@ -43,7 +43,8 @@ export const createConnectedBank = async (
                 id: createId(),
                 bankId: newBank.id,
                 name: mapping[uploadAccount.type],
-                type: uploadAccount.type
+                type: uploadAccount.type,
+                parserKey: uploadAccount.parserKey
             };
         })
     );

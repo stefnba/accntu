@@ -8,6 +8,7 @@ import {
     integer,
     pgEnum,
     pgTable,
+    primaryKey,
     text,
     timestamp,
     uniqueIndex
@@ -18,7 +19,7 @@ import { z } from 'zod';
 export const OAuthProvider = pgEnum('OAuthProvider', ['GITHUB']);
 export const OAuthProviderSchema = z.enum(OAuthProvider.enumValues);
 
-export const LoginMethod = pgEnum('LoginMethod', ['GITHUB', 'EMAIL']);
+export const LoginMethod = pgEnum('LoginMethod', ['GITHUB_OAUTH', 'EMAIL_OTP']);
 export const LoginMethodSchema = z.enum(LoginMethod.enumValues);
 
 export const UserRole = pgEnum('UserRole', ['USER', 'ADMIN']);
@@ -73,6 +74,7 @@ export const user = pgTable(
             precision: 3,
             mode: 'date'
         }),
+        isEnabled: boolean('isEnabled').default(true).notNull(),
         lastLoginAt: timestamp('lastLoginAt', { precision: 3, mode: 'date' }),
         loginAttempts: integer('loginAttempts').default(0).notNull()
     },
@@ -97,6 +99,7 @@ export const InsertUserSchema = createInsertSchema(user);
 
 export const session = pgTable('session', {
     id: text('id').primaryKey().notNull(),
+    // todo create token to be used as a key not id
     userId: text('userId')
         .notNull()
         .references(() => user.id, {
@@ -141,15 +144,13 @@ export const InsertUserSettingsSchema = createInsertSchema(userSetting);
 
 export const login = pgTable('login', {
     id: text('id').primaryKey().notNull(),
+    // todo create token to be used as a key not id
     method: LoginMethod('method').notNull(),
     userId: text('userId').references(() => user.id, {
-        onDelete: 'set null',
+        onDelete: 'cascade',
         onUpdate: 'cascade'
     }),
-    sessionId: text('sessionId').references(() => session.id, {
-        onDelete: 'set null',
-        onUpdate: 'cascade'
-    }),
+    identifier: text('identifier'),
     device: text('device'),
     ip: text('ip'),
     location: text('location'),
@@ -166,14 +167,14 @@ export const loginRelations = relations(login, ({ one }) => ({
     })
 }));
 export const SelectLoginSchema = createSelectSchema(login);
-export const InsertLoginSchema = createInsertSchema(login);
+export const InsertLoginSchema = createInsertSchema(login).omit({ id: true });
 
 export const oauthAccount = pgTable('oauth_account', {
     id: text('id').primaryKey().notNull(),
     userId: text('userId')
         .notNull()
         .references(() => user.id, {
-            onDelete: 'restrict',
+            onDelete: 'cascade',
             onUpdate: 'cascade'
         }),
     provider: OAuthProvider('provider').notNull(),
@@ -203,9 +204,7 @@ export const verificationToken = pgTable(
     },
     (table) => {
         return {
-            identifierTokenKey: uniqueIndex(
-                'verification_token_identifier_token_key'
-            ).on(table.identifier, table.token)
+            pk: primaryKey({ columns: [table.identifier, table.token] })
         };
     }
 );
@@ -228,13 +227,14 @@ export const bank = pgTable('bank', {
     })
 });
 export const bankRelations = relations(bank, ({ many }) => ({
-    accounts: many(bankUploadAccounts)
+    accounts: many(bankUploadAccount)
 }));
 export const SelectBankSchema = createSelectSchema(bank);
 
-export const bankUploadAccounts = pgTable('bank_upload_accounts', {
+export const bankUploadAccount = pgTable('bank_upload_account', {
     id: text('id').primaryKey().notNull(),
     type: ConnectedAccountType('type').notNull(),
+    parserKey: text('parserKey').notNull(),
     bankId: text('bankId')
         .notNull()
         .references(() => bank.id, {
@@ -250,18 +250,18 @@ export const bankUploadAccounts = pgTable('bank_upload_accounts', {
     })
 });
 export const bankUploadAccountsRelations = relations(
-    bankUploadAccounts,
+    bankUploadAccount,
     ({ one }) => ({
         import: one(bank, {
-            fields: [bankUploadAccounts.bankId],
+            fields: [bankUploadAccount.bankId],
             references: [bank.id]
         })
     })
 );
 export const SelectBankUploadAccountsSchema =
-    createSelectSchema(bankUploadAccounts);
+    createSelectSchema(bankUploadAccount);
 
-export const connectedBank = pgTable('connectedBank', {
+export const connectedBank = pgTable('connected_bank', {
     id: text('id').primaryKey().notNull(),
     bankId: text('bankId')
         .notNull()
@@ -296,7 +296,7 @@ export const connectedBankRelations = relations(
 export const SelectConnectedBankSchema = createSelectSchema(connectedBank);
 export const InsertConnectedBankSchema = createInsertSchema(connectedBank);
 
-export const connectedAccount = pgTable('connectedAccount', {
+export const connectedAccount = pgTable('connected_account', {
     id: text('id').primaryKey().notNull(),
     bankId: text('bankId')
         .notNull()
@@ -307,6 +307,7 @@ export const connectedAccount = pgTable('connectedAccount', {
     name: text('name').notNull(),
     description: text('description'),
     type: ConnectedAccountType('type').notNull(),
+    parserKey: text('parserKey'),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
         .defaultNow()
         .notNull(),
@@ -331,12 +332,6 @@ export const InsertConnectedAccountSchema =
 
 export const transactionImportFile = pgTable('import_file', {
     id: text('id').primaryKey().notNull(),
-    userId: text('userId')
-        .notNull()
-        .references(() => user.id, {
-            onDelete: 'restrict',
-            onUpdate: 'cascade'
-        }),
     url: text('url').notNull(),
     importId: text('importId')
         .references(() => transactionImport.id, {

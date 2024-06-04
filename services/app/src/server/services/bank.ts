@@ -26,7 +26,7 @@ export const getBank = async (id: string) => {
 };
 
 export const getAccountsByBankId = async (bankId: string) => {
-    const data = await db.query.bankUploadAccounts.findMany({
+    const data = await db.query.bankUploadAccount.findMany({
         where: (fields, { and, eq }) => and(eq(fields.bankId, bankId))
     });
 

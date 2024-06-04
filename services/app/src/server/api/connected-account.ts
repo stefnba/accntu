@@ -5,7 +5,7 @@ import {
     createConnectedAccounts,
     getConnectedAccount,
     getConnectedAccounts
-} from '@server/services/connectedAccount';
+} from '@server/services/connected-account';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
