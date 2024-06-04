@@ -1,4 +1,4 @@
-import { createUser } from '@/server/services/user';
+import { createUser } from '@/server/actions/user';
 import { github } from '@auth/oauth/github';
 import { GitHubEmail, GitHubUser } from '@auth/types/oauth';
 import { db } from '@db';

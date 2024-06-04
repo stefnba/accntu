@@ -1,8 +1,8 @@
 'use server';
 
+import { createUser } from '@/server/actions/user';
 import { db, schema as dbSchema } from '@/server/db/client';
 import { logger } from '@/server/lib/logging/logger';
-import { createUser } from '@/server/services/user';
 import { EMAIL_OTP_LOGIN } from '@auth/config';
 import { AuthError } from '@auth/error';
 import { generateEmailOTP } from '@auth/utils';
