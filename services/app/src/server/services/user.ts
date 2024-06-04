@@ -1,4 +1,5 @@
 import type { TUserUpdateValues } from '@/features/user/schema/update-user';
+import { logger } from '@/server/lib/logging/logger';
 import { db } from '@db';
 import { user, userSetting } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -10,7 +11,10 @@ import { InferInsertModel, eq } from 'drizzle-orm';
  * @returns
  */
 export const createUser = async (
-    values: Pick<InferInsertModel<typeof user>, 'email'>
+    values: Pick<
+        InferInsertModel<typeof user>,
+        'email' | 'firstName' | 'lastName' | 'image'
+    >
 ) => {
     const [newUser] = await db
         .insert(user)
@@ -28,6 +32,11 @@ export const createUser = async (
 
     // create user settings record
     await db.insert(userSetting).values({
+        userId: newUser.id
+    });
+
+    logger.info('User created as part of email login', {
+        email: newUser.email,
         userId: newUser.id
     });
 
