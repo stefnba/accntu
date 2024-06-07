@@ -26,13 +26,11 @@ export const ImportCard: React.FC<Props> = ({ importRecord }) => {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <CardDescription>
-                    {successAt ? (
-                        <Badge variant="default">Completed</Badge>
-                    ) : (
-                        <Badge variant="outline">Draft</Badge>
-                    )}
-                </CardDescription>
+                {successAt ? (
+                    <Badge variant="default">Completed</Badge>
+                ) : (
+                    <Badge variant="outline">Draft</Badge>
+                )}
             </CardContent>
         </Card>
     );
