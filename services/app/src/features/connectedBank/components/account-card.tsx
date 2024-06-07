@@ -36,8 +36,8 @@ export const ConnectedAccountCard: React.FC<{
     action?: React.ReactElement;
 }> = ({ name, type, description, action }) => {
     return (
-        <div className="group flex items-center text-lg rounded-md border py-2 px-3 cursor-pointer transition">
-            <div className="mr-3 bg-primary text-white p-2 rounded-md">
+        <div className="group flex items-center rounded-md border py-2 px-3 transition">
+            <div className="mr-3 bg-slate-400 text-white p-2 rounded-md">
                 <AccountTypeIcon type={type} />
             </div>
 

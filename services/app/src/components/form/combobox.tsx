@@ -44,7 +44,7 @@ type Props<
     form: UseFormReturn<TFieldValues>;
     description?: string;
     options: {
-        label: string;
+        label: string | React.ReactNode;
         value: string;
     }[];
 };

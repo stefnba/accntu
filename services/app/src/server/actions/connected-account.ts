@@ -10,8 +10,8 @@ export const getConnectedAccounts = async (userId: string) => {
             bank: bank
         })
         .from(connectedAccount)
-        .leftJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))
-        .leftJoin(bank, eq(connectedAccount.bankId, bank.id))
+        .innerJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))
+        .innerJoin(bank, eq(connectedBank.bankId, bank.id))
         .where(and(eq(connectedBank.userId, userId)));
 
     return data;

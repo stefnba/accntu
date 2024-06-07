@@ -1,4 +1,5 @@
 import { FormCombobox } from '@/components/form';
+import { Button } from '@/components/ui/button';
 import type {
     FieldPath,
     FieldValues,
@@ -28,8 +29,8 @@ export const BankAccountSelect = <TFieldValues extends FieldValues>({
 }: Props<TFieldValues>) => {
     const { data } = useGetConnectedBankAccounts();
 
-    const accounts = data?.map(({ account }) => ({
-        label: account?.name,
+    const accounts = data?.map(({ account, bank }) => ({
+        label: <AccountSelectItem name={account.name} bank={bank.name} />,
         value: account?.id
     }));
 
@@ -40,5 +41,13 @@ export const BankAccountSelect = <TFieldValues extends FieldValues>({
             name={name}
             options={accounts || []}
         />
+    );
+};
+
+const AccountSelectItem = ({ name, bank }: { name: string; bank: string }) => {
+    return (
+        <div>
+            {name} - {bank}
+        </div>
     );
 };
