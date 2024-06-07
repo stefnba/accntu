@@ -93,6 +93,7 @@
         "postcss": "^8",
         "prettier": "^3.2.5",
         "prettier-plugin-tailwindcss": "^0.5.12",
+        "@tanstack/react-query-devtools": "^5.40.1",
         "tailwindcss": "^3.4.1",
         "ts-node": "^10.9.2",
         "tsx": "^4.7.2",
