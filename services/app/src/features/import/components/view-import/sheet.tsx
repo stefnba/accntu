@@ -13,6 +13,7 @@ import { useDeleteImport } from '@/features/import/api/delete-import';
 import { useGetImport } from '@/features/import/api/get-import';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { storeViewImportSheet } from '@/features/import/store/view-import-sheet';
+import dayjs from 'dayjs';
 import { LuPencil, LuTrash } from 'react-icons/lu';
 
 import { FileCard } from '../file-card';
@@ -28,20 +29,25 @@ export const ViewImportSheet = () => {
 
     if (isLoading) return <div>Loading...</div>;
 
-    if (!importRecord) return <div>Import not found</div>;
+    if (!importRecord) return;
 
     const { files } = importRecord;
 
     const handleComplete = () => {
         handleClose();
-        handleContinue(importRecord.id);
+        handleContinue(importRecord.id, importRecord.accountId);
     };
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
             <SheetContent>
                 <SheetHeader>
-                    <SheetTitle>{importRecord.createdAt}</SheetTitle>
+                    <SheetTitle>
+                        {dayjs(importRecord.createdAt).format(
+                            'DD-MMM YY HH:mm'
+                        )}
+                    </SheetTitle>
+
                     {/* <SheetDescription>ddd</SheetDescription> */}
                 </SheetHeader>
 
@@ -54,22 +60,28 @@ export const ViewImportSheet = () => {
                             name={file.filename}
                             type={file.type}
                             action={
-                                <Badge variant="default">{file.status}</Badge>
+                                <Badge variant="default">
+                                    {file.importedAt!!
+                                        ? 'Imported'
+                                        : 'Not Imported'}
+                                </Badge>
                             }
                         />
                     ))}
                 </div>
 
                 <div className="mt-10">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full mt-2"
-                        onClick={handleComplete}
-                    >
-                        <LuPencil className="size-4 mr-2" />
-                        Complete
-                    </Button>
+                    {!importRecord.successAt && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-2"
+                            onClick={handleComplete}
+                        >
+                            <LuPencil className="size-4 mr-2" />
+                            Complete
+                        </Button>
+                    )}
 
                     <Button
                         size="sm"

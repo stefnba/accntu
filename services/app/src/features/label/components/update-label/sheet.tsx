@@ -22,9 +22,7 @@ export const ViewUpdateLabelSheet = () => {
 
     const { data: label, isLoading } = useGetLabel({ id });
 
-    if (isLoading) return <div>Loading...</div>;
-
-    if (!label) return <div>Label not found</div>;
+    if (!label) return;
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
