@@ -7,7 +7,8 @@ import {
     connectedAccount,
     label,
     transaction,
-    transactionImport
+    transactionImport,
+    transactionImportFile
 } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { and, count, eq } from 'drizzle-orm';
@@ -16,12 +17,17 @@ import { z } from 'zod';
 /**
  * Create new transaction records.
  */
-export const createTransactions = async (
-    values: z.infer<typeof InsertTransactionSchema>[],
-    importId: string,
-    accountId: string,
-    userId: string
-) => {
+export const createTransactions = async ({
+    values,
+    importFileId,
+    accountId,
+    userId
+}: {
+    values: z.infer<typeof InsertTransactionSchema>[];
+    importFileId: string;
+    accountId: string;
+    userId: string;
+}) => {
     const newTransactions = await db
         .insert(transaction)
         .values(
@@ -30,27 +36,66 @@ export const createTransactions = async (
                 id: createId(),
                 accountId,
                 userId,
-                importId
+                importFileId
             }))
         )
         .returning()
         .onConflictDoNothing();
 
+    // update import file
+    const [importFileRecord] = await db
+        .update(transactionImportFile)
+        .set({
+            importedAt: new Date(),
+            transactionCount: values.length,
+            importedTransactionCount: newTransactions.length,
+            updatedAt: new Date()
+        })
+        .where(and(eq(transactionImportFile.id, importFileId)))
+        .returning();
+
+    if (!importFileRecord) {
+        throw new Error('Import file not found');
+    }
+
+    const importRecord = await db.query.transactionImport.findFirst({
+        where: (fields, { eq, and }) =>
+            and(
+                eq(fields.id, importFileRecord.importId),
+                eq(fields.userId, userId)
+            )
+    });
+
+    if (!importRecord) {
+        throw new Error('Import not found');
+    }
+
     // update import record
-    await db
+    const [updatedImportRecord] = await db
         .update(transactionImport)
         .set({
-            successAt: new Date()
-            //  countTransactions: newTransactions.length
+            importedFileCount: importRecord.importedFileCount || 0 + 1,
+            importedTransactionCount:
+                importRecord.importedTransactionCount ||
+                0 + newTransactions.length,
+            successAt:
+                importRecord.importedFileCount ||
+                0 + 1 === importRecord.fileCount
+                    ? new Date()
+                    : null
         })
         .where(
             and(
-                eq(transactionImport.id, importId),
+                eq(transactionImport.id, importFileRecord.importId),
                 eq(transactionImport.userId, userId)
             )
-        );
+        )
+        .returning();
 
-    return newTransactions;
+    return {
+        transactions: newTransactions,
+        allImported: updatedImportRecord.successAt !== null
+    };
 };
 
 /**
@@ -62,13 +107,15 @@ export const listTransactions = async (
 ) => {
     const { orderBy, page, pageSize, ...filters } = params;
 
+    console.log({ page, pageSize, filters });
+
     const filterClause = and(
         eq(transaction.userId, userId),
         eq(transaction.isDeleted, false),
         ...Object.values(filters).map((f) => f)
     );
 
-    const countTransactions = (
+    const transactionCount = (
         await db
             .select({ count: count() })
             .from(transaction)
@@ -93,7 +140,7 @@ export const listTransactions = async (
             accountCurrency: transaction.accountCurrency,
             spendingAmount: transaction.spendingAmount,
             spendingCurrency: transaction.spendingCurrency,
-            importId: transaction.importId,
+            importFileId: transaction.importFileId,
             label: {
                 id: label.id,
                 name: label.name
@@ -118,7 +165,7 @@ export const listTransactions = async (
     });
 
     return {
-        count: 0,
+        count: transactionCount,
         transactions: await transactions
     };
 };

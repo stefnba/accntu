@@ -7,25 +7,24 @@ import {
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
+import { useMemo } from 'react';
+
+import { transaction } from './../../../server/db/schema';
 
 const query = client.api.transactions.$get;
 
 type TGetTransactionsParams = InferRequestType<typeof query>['query'];
 export type TGetTransactionsResponse = InferResponseType<typeof query>;
 
-export const useGetTransactions = (params?: TGetTransactionsParams) => {
+export const useGetTransactions = () => {
     /* Pagination */
     const page = storeTransactionTablePagination((state) => state.page);
     const pageSize = storeTransactionTablePagination((state) => state.pageSize);
-    const setPage = storeTransactionTablePagination((state) => state.setPage);
-    const setPageSize = storeTransactionTablePagination(
-        (state) => state.setPageSize
-    );
 
     /* Filtering */
     const filters = storeTransactionTableFiltering((state) => state.filters);
 
-    /* Filtering */
+    /* Sorting */
     const sorting = storeTransactionTableSorting((state) => state.sorting);
 
     const q = useQuery({
@@ -37,7 +36,10 @@ export const useGetTransactions = (params?: TGetTransactionsParams) => {
         ],
         queryFn: async () => {
             const res = await client.api.transactions.$get({
-                query: params || {}
+                query: {
+                    page: String(page),
+                    pageSize: String(pageSize)
+                }
             });
 
             if (!res.ok) throw new Error(res.statusText);
@@ -47,10 +49,14 @@ export const useGetTransactions = (params?: TGetTransactionsParams) => {
     });
 
     const { data, ...rest } = q;
+    const { transactions, count } = data || {};
 
     return {
         ...rest,
-        data: data?.transactions || [],
-        count: data?.count || 0
+        transactions: useMemo(
+            () => (Array.isArray(transactions) ? transactions : []),
+            [transactions]
+        ),
+        count: count || 0
     };
 };

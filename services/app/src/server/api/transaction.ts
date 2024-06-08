@@ -7,7 +7,6 @@ import {
 } from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
 import { db } from '@/server/db/client';
-import { InsertTransactionSchema } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -16,6 +15,8 @@ const app = new Hono()
     .get('/', zValidator('query', ListTransactionSchema), async (c) => {
         const user = getUser(c);
         const queryParams = c.req.valid('query');
+
+        const page = queryParams.page;
 
         const data = await listTransactions(queryParams, user.id);
 
@@ -26,14 +27,14 @@ const app = new Hono()
         zValidator('json', CreateTransactionsSchema),
         async (c) => {
             const user = getUser(c);
-            const { values, accountId, importId } = c.req.valid('json');
+            const { values, accountId, importFileId } = c.req.valid('json');
 
-            const data = await createTransactions(
+            const data = await createTransactions({
                 values,
-                importId,
                 accountId,
-                user.id
-            );
+                importFileId,
+                userId: user.id
+            });
 
             return c.json(data, 201);
         }
