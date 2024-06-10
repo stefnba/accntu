@@ -15,10 +15,9 @@ class CloudStorageSettings(BaseSettings):
 
 
 class Settings(BaseSettings):
-    app_name: str = "Awesome API"
+    app_name: str = "accntu Parsing API"
     cloud_storage: CloudStorageSettings = CloudStorageSettings()
-
-    # model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    db_url: str = Field(alias="DATABASE_URL", default=None)
 
 
 settings = Settings()
