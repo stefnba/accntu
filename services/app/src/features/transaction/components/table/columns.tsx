@@ -25,6 +25,7 @@ import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
 import { TransactionTableSortableColumnHeader } from './header';
+import { Amount, Date, TransactionType } from './utils';
 
 type TRow = TGetTransactionsResponse['transactions'][0];
 
@@ -69,7 +70,7 @@ export const columns: ColumnDef<TRow>[] = [
         cell: ({ row }) => {
             const { date } = row.original;
 
-            return <span>{dayjs(date).format('DD-MMM YY')}</span>;
+            return <Date date={date} />;
         },
         sortingFn: 'datetime'
     },
@@ -114,36 +115,7 @@ export const columns: ColumnDef<TRow>[] = [
         cell: ({ row }) => {
             const { type } = row.original;
 
-            if (type == 'DEBIT') {
-                return (
-                    <Badge
-                        className="text-[#d4380d] bg-[#fff2e8] border-[#ffbb96] rounded font-normal"
-                        variant="outline"
-                    >
-                        Debit
-                    </Badge>
-                );
-            }
-
-            if (type == 'TRANSFER') {
-                return (
-                    <Badge
-                        className="text-[#1d39c4] bg-[#f0f5ff] border-[#adc6ff] rounded font-normal"
-                        variant="outline"
-                    >
-                        Transfer
-                    </Badge>
-                );
-            }
-
-            return (
-                <Badge
-                    className="text-[#389e0d] bg-[#f6ffed] border-[#b7eb8f] rounded font-normal"
-                    variant="outline"
-                >
-                    Credit
-                </Badge>
-            );
+            return <TransactionType type={type} />;
         }
     },
     {
@@ -156,19 +128,15 @@ export const columns: ColumnDef<TRow>[] = [
         //         className="justify-end"
         //     />
         // ),
-        header: () => <div className="text-right">Amount</div>,
+        header: () => <div className="text-right">Amount Spent</div>,
         cell: ({ row }) => {
             const { spendingAmount, spendingCurrency } = row.original;
 
             return (
-                <div className="text-right pr-4">
-                    {spendingAmount.toLocaleString('en-US', {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                        currency: spendingCurrency
-                    })}{' '}
-                    {spendingCurrency}
-                </div>
+                <Amount
+                    amountInCents={spendingAmount}
+                    currency={spendingCurrency}
+                />
             );
         }
     },
@@ -182,19 +150,15 @@ export const columns: ColumnDef<TRow>[] = [
         //         className="justify-end"
         //     />
         // ),
-        header: () => <div className="text-right">Amount</div>,
+        header: () => <div className="text-right">Amount Booked</div>,
         cell: ({ row }) => {
             const { accountAmount, accountCurrency } = row.original;
 
             return (
-                <div className="text-right pr-4">
-                    {accountAmount.toLocaleString('en-US', {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                        currency: accountCurrency
-                    })}{' '}
-                    {accountCurrency}
-                </div>
+                <Amount
+                    amountInCents={accountAmount}
+                    currency={accountCurrency}
+                />
             );
         }
     },

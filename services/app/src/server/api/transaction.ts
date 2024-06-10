@@ -1,6 +1,7 @@
 import { CreateTransactionsSchema } from '@/features/transaction/schema/create-transactions';
 import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
 import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
+import { TransactionFilterKeysSchema } from '@/features/transaction/schema/table-filtering';
 import {
     createTransactions,
     listTransactions
@@ -8,20 +9,48 @@ import {
 import { getUser } from '@/server/auth';
 import { db } from '@/server/db/client';
 import { zValidator } from '@hono/zod-validator';
+import { listFilterOptions } from '@server/actions/transaction-filter';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
 const app = new Hono()
     .get('/', zValidator('query', ListTransactionSchema), async (c) => {
         const user = getUser(c);
-        const queryParams = c.req.valid('query');
+        const { page, pageSize, orderBy, ...filters } = c.req.valid('query');
 
-        const page = queryParams.page;
-
-        const data = await listTransactions(queryParams, user.id);
+        const data = await listTransactions({
+            userId: user.id,
+            filters,
+            pagination: {
+                page: page,
+                pageSize: pageSize
+            }
+        });
 
         return c.json(data);
     })
+    .get(
+        '/filters/:filterKey',
+        zValidator(
+            'param',
+            z.object({ filterKey: TransactionFilterKeysSchema })
+        ),
+        zValidator('query', ListTransactionSchema),
+        async (c) => {
+            const user = getUser(c);
+            const { filterKey } = c.req.valid('param');
+            const { page, pageSize, orderBy, ...filters } =
+                c.req.valid('query');
+
+            const data = await listFilterOptions({
+                userId: user.id,
+                filterKey,
+                filters
+            });
+
+            return c.json(data);
+        }
+    )
     .post(
         '/create',
         zValidator('json', CreateTransactionsSchema),
@@ -39,6 +68,7 @@ const app = new Hono()
             return c.json(data, 201);
         }
     )
+
     .get('/:id', zValidator('param', GetTransactionByIdSchema), async (c) => {
         const { id } = c.req.valid('param');
         const user = getUser(c);

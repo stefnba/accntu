@@ -1,4 +1,5 @@
 import { errorToast, successToast } from '@/components/toast';
+import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
@@ -6,6 +7,9 @@ import { InferRequestType, InferResponseType } from 'hono';
 const query = client.api.transactions.create['$post'];
 
 export const useCreateTransactions = () => {
+    const queryClient = useQueryClient();
+    const { handleStep } = storeCreateImportModal();
+
     const q = useMutation<
         InferResponseType<typeof query>,
         Error,
@@ -20,8 +24,23 @@ export const useCreateTransactions = () => {
 
             return response.json();
         },
-        onSuccess: () => {
-            successToast('Transactions created');
+        onSuccess: ({ allImported, transactions }) => {
+            if (allImported) {
+                // successToast('All transactions imported');
+                handleStep('success');
+            } else {
+                successToast(`${transactions.length} Transactions created`);
+            }
+
+            // queryClient.invalidateQueries({
+            //     queryKey: [
+            //         'import',
+            //         {
+            //             id: params.id
+            //         }
+            //     ]
+            // });
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
         },
         onError: (error) => {
             errorToast(error.message);

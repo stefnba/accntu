@@ -10,8 +10,13 @@ import { type PgColumn, PgSelect, PgSelectDynamic } from 'drizzle-orm/pg-core';
  */
 export const inArrayWithNullFilter = (
     column: PgColumn,
-    value: Array<string | number | null> | undefined
-) => {
+    value: Array<string | number | null> | undefined | string | number | null
+): undefined | SQL => {
+    if (!value) return undefined;
+
+    // turn value into an array and re-run function
+    if (!Array.isArray(value)) return inArrayWithNullFilter(column, [value]);
+
     if (!value || value.length === 0) return undefined;
 
     if (value.includes(null)) {

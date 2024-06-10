@@ -1,4 +1,7 @@
-import { DateFilter } from '@/components/data-table/filters/date/';
+import {
+    DateFilter,
+    type TDateFilterPeriodOptions
+} from '@/components/data-table/filters/date/';
 import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 import dayjs from 'dayjs';
 
@@ -9,22 +12,30 @@ interface Props {
     filterLabel: string;
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: TDateFilterPeriodOptions = [
     {
         value: 'CURRENT_MONTH',
-        label: `This Month (${dayjs().format('MMM')})`
-    },
-    {
-        value: 'CURRENT_YEAR',
-        label: `This Year (${new Date().getFullYear()})`
-    },
-    {
-        value: 'PREVIOUS_YEAR',
-        label: `Last Year (${new Date().getFullYear() - 1})`
+        label: `Current Month (${dayjs().format('MMM')})`,
+        startDate: dayjs().startOf('month').toDate(),
+        endDate: dayjs().endOf('month').toDate()
     },
     {
         value: 'PREVIOUS_MONTH',
-        label: `Last Month (${dayjs().subtract(1, 'M').format('MMM')})`
+        label: `Last Month (${dayjs().subtract(1, 'M').format('MMM')})`,
+        startDate: dayjs().subtract(1, 'M').startOf('month').toDate(),
+        endDate: dayjs().subtract(1, 'M').endOf('month').toDate()
+    },
+    {
+        value: 'CURRENT_YEAR',
+        label: `Current Year (${new Date().getFullYear()})`,
+        startDate: dayjs().startOf('year').toDate(),
+        endDate: dayjs().endOf('year').toDate()
+    },
+    {
+        value: 'PREVIOUS_YEAR',
+        label: `Last Year (${new Date().getFullYear() - 1})`,
+        startDate: dayjs().subtract(1, 'y').startOf('year').toDate(),
+        endDate: dayjs().subtract(1, 'y').endOf('year').toDate()
     }
 ];
 
@@ -40,13 +51,18 @@ export const TransactionTableDateFilter: React.FC<Props> = ({
         (state) => state.resetFilterKey
     );
 
-    const selectedDate = filters[filterKey];
+    const selectedRange: [Date | undefined, Date | undefined] = [
+        filters.startDate,
+        filters.endDate
+    ];
 
     return (
         <DateFilter
             periodOptions={PERIOD_OPTIONS}
-            filteredValue={selectedDate}
+            filteredValue={selectedRange}
             filterKey={filterKey}
+            periodEndfilterKey="endDate"
+            periodStartfilterKey="startDate"
             filterLabel={filterLabel}
             filterFn={setFilter}
             resetFilterKeyFn={resetFilterKey}

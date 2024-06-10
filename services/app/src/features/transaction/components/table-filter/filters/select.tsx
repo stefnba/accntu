@@ -1,4 +1,5 @@
 import { SelectFilter } from '@/components/data-table/filters';
+import { useGetTransactionFilterOptions } from '@/features/transaction/api/get-filter-options';
 import { storeTransactionTableFiltering } from '@/features/transaction/store/table-filtering';
 import { useQuery } from '@tanstack/react-query';
 
@@ -22,11 +23,8 @@ export const TransactionTableSelectFilter: React.FC<Props> = ({
     );
     const selectedFilters = filters[filterKey] || [];
 
-    const { data: filterOptions, refetch } = useQuery({
-        queryKey: ['filterOptions', filterKey],
-        queryFn: () => {},
-        enabled: false
-    });
+    const { data: filterOptions, refetch } =
+        useGetTransactionFilterOptions(filterKey);
 
     // todo type narrowing
     if (!Array.isArray(selectedFilters)) {

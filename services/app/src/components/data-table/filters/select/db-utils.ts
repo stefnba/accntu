@@ -1,6 +1,6 @@
 import { db } from '@/server/db/client';
 import { SQL, and, eq, sql } from 'drizzle-orm';
-import { PgColumn, PgSelect, PgTable } from 'drizzle-orm/pg-core';
+import { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 
 export const getFilterOptions = async (
     table: PgTable,

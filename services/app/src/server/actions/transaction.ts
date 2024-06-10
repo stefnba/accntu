@@ -1,10 +1,12 @@
-import { getFilterOptions } from '@/components/data-table/filters/select/db-utils';
-import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
+import { FilterTransactionSchema } from '@/features/transaction/schema/table-filtering';
+import { PaginationTransactionSchema } from '@/features/transaction/schema/table-pagination';
 import { inArrayFilter, queryBuilder } from '@/server/db/utils';
 import { db } from '@db';
 import {
     InsertTransactionSchema,
+    bank,
     connectedAccount,
+    connectedBank,
     label,
     transaction,
     transactionImport,
@@ -101,14 +103,15 @@ export const createTransactions = async ({
 /**
  * List transaction records with pagination, ordering, filtering.
  */
-export const listTransactions = async (
-    params: z.infer<typeof ListTransactionSchema>,
-    userId: string
-) => {
-    const { orderBy, page, pageSize, ...filters } = params;
-
-    console.log({ page, pageSize, filters });
-
+export const listTransactions = async ({
+    userId,
+    filters,
+    pagination
+}: {
+    filters: z.infer<typeof FilterTransactionSchema>;
+    pagination: z.infer<typeof PaginationTransactionSchema>;
+    userId: string;
+}) => {
     const filterClause = and(
         eq(transaction.userId, userId),
         eq(transaction.isDeleted, false),
@@ -147,7 +150,10 @@ export const listTransactions = async (
             },
             account: {
                 id: connectedAccount.id,
-                name: connectedAccount.name
+                name: connectedAccount.name,
+                bankName: bank.name,
+                bankLogo: bank.logo,
+                bankCountry: bank.country
             }
         })
         .from(transaction)
@@ -155,13 +161,15 @@ export const listTransactions = async (
         .leftJoin(
             connectedAccount,
             eq(connectedAccount.id, transaction.accountId)
-        );
+        )
+        .leftJoin(connectedBank, eq(connectedAccount.bankId, connectedBank.id))
+        .leftJoin(bank, eq(connectedBank.bankId, bank.id));
 
     const transactions = queryBuilder(transactionsQuery.$dynamic(), {
-        orderBy,
+        // orderBy,
         filters: filterClause,
-        page,
-        pageSize
+        page: pagination.page,
+        pageSize: pagination.pageSize
     });
 
     return {

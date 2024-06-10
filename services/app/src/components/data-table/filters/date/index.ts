@@ -1,3 +1,3 @@
-import { DateFilter } from './date-filter';
+import { DateFilter, type TDateFilterPeriodOptions } from './date-filter';
 
-export { DateFilter };
+export { DateFilter, type TDateFilterPeriodOptions };

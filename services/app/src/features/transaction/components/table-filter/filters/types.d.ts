@@ -1,7 +1,7 @@
 import {
     TTransactionFilter,
     TTransactionFilterOptions
-} from '@/actions/transaction/schema';
+} from '@/features/transaction/schema/table-filtering';
 
 export type TTransactionFilterKeys = TTransactionFilterOptions['filterKey'];
 

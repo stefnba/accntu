@@ -1,27 +1,20 @@
 'use client';
 
 import { DataTable } from '@/components/ui/data-table';
-import {
-    storeTransactionTablePagination,
-    storeTransactionTableRowSelection
-} from '@/features/transaction/store';
-import {
-    RowSelectionState,
-    getCoreRowModel,
-    getPaginationRowModel,
-    useReactTable
-} from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { storeTransactionTableRowSelection } from '@/features/transaction/store';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useMemo } from 'react';
 
+import { useGetTransactionFilterOptions } from '../../api/get-filter-options';
 import { useGetTransactions } from '../../api/get-transactions';
 import { columns } from './columns';
-import { TransactionTablePagination } from './pagination';
+import { TransactionTableFooter } from './footer';
 import { DataTableToolbar } from './toolbar';
 
 interface Props {}
 
 export const TransactionTable: React.FC<Props> = () => {
-    const { data, count, isLoading } = useGetTransactions();
+    const { transactions, isLoading } = useGetTransactions();
 
     /* Row selection */
     const rowSelection = storeTransactionTableRowSelection(
@@ -31,9 +24,11 @@ export const TransactionTable: React.FC<Props> = () => {
         (state) => state.setRowSelection
     );
 
+    const { data } = useGetTransactionFilterOptions('spendingCurrency');
+
     /* Table */
     const table = useReactTable({
-        data: useMemo(() => data, [data]),
+        data: transactions,
         columns,
         getCoreRowModel: getCoreRowModel(),
         enableRowSelection: true,
@@ -49,18 +44,7 @@ export const TransactionTable: React.FC<Props> = () => {
         <div>
             <DataTableToolbar table={table} />
             <DataTable isLoading={isLoading} table={table} />
-            {/* <TransactionTablePagination
-                table={table}
-                records={{
-                    total: transactionCount
-                }}
-                pagination={{
-                    page,
-                    pageSize,
-                    handlePageSizeChange: (pageSize) => setPageSize(pageSize),
-                    handlePageChange: (page) => setPage(page)
-                }}
-            /> */}
+            <TransactionTableFooter />
         </div>
     );
 };

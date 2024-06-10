@@ -9,24 +9,37 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
-    DropdownMenuShortcut,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import dayjs from 'dayjs';
+import { filter } from 'minimatch';
 import { RxPlusCircled } from 'react-icons/rx';
+import { start } from 'repl';
 
 import { FilteredLabels } from './filtered-labels';
 import type { TDateFilterFilteredValue } from './types';
 
+export type TDateFilterPeriodOptions = Array<{
+    value: string;
+    label: string;
+    startDate: Date;
+    endDate: Date;
+}>;
+
 interface Props<T extends string> {
     filterLabel: string;
     filterKey: T;
-    filterFn: (key: T, value: TDateFilterFilteredValue) => void;
-    filteredValue?: TDateFilterFilteredValue;
+    periodEndfilterKey: T;
+    periodStartfilterKey: T;
+
+    filterFn: (key: T, value: Date) => void;
+    filteredValue?: [Date | undefined, Date | undefined];
     resetFilterKeyFn: (key: T) => void;
-    periodOptions: Array<{ value: string; label: string }>;
+    /** Pre-selected period ranges, e.g. current year. */
+    periodOptions: TDateFilterPeriodOptions;
 }
 
 export function DateFilter<T extends string>({
@@ -34,14 +47,23 @@ export function DateFilter<T extends string>({
     filterLabel,
     filteredValue,
     periodOptions,
+    periodEndfilterKey,
+    periodStartfilterKey,
     filterFn,
     resetFilterKeyFn
 }: Props<T>) {
-    const onOpen = (open: boolean) => {
-        if (open) {
-            // handleFilterOptionsFetch();
-        }
-    };
+    const startDate = filteredValue?.[0]
+        ? dayjs(filteredValue?.[0]).format('YYYY-MM-DD')
+        : undefined;
+    const endDate = filteredValue?.[1]
+        ? dayjs(filteredValue?.[1]).format('YYYY-MM-DD')
+        : undefined;
+
+    const filteredPeriod = periodOptions.find(
+        (o) =>
+            dayjs(o.startDate).format('YYYY-MM-DD') === startDate &&
+            dayjs(o.endDate).format('YYYY-MM-DD') === endDate
+    );
 
     return (
         <DropdownMenu>
@@ -54,26 +76,30 @@ export function DateFilter<T extends string>({
                     <RxPlusCircled className="mr-2 h-4 w-4" />
                     {filterLabel}
                     <FilteredLabels
-                        filteredPeriod={filteredValue?.period}
+                        filteredPeriod={filteredPeriod?.value}
                         periodOptions={periodOptions}
                     />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[200px] p-1" align="start">
                 {periodOptions.map((option) => {
-                    const isSelected = filteredValue?.period === option.value;
+                    const isSelected = filteredPeriod?.value === option.value;
                     return (
                         <DropdownMenuItem
                             key={option.value}
                             onSelect={() => {
                                 if (isSelected) {
-                                    resetFilterKeyFn(filterKey);
+                                    resetFilterKeyFn(periodEndfilterKey);
+                                    resetFilterKeyFn(periodStartfilterKey);
                                     return;
                                 }
 
-                                filterFn(filterKey, {
-                                    period: option.value
-                                });
+                                filterFn(
+                                    periodStartfilterKey,
+                                    option.startDate
+                                );
+
+                                filterFn(periodEndfilterKey, option.endDate);
                             }}
                         >
                             <Checkbox checked={isSelected} className="mr-2" />
@@ -84,7 +110,11 @@ export function DateFilter<T extends string>({
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                         <Checkbox
-                            checked={filteredValue?.period === 'CUSTOM'}
+                            checked={
+                                filteredPeriod === undefined &&
+                                startDate !== undefined &&
+                                endDate !== undefined
+                            }
                             className="mr-2"
                         />
                         Custom

@@ -1,12 +1,10 @@
-import { create } from 'zustand';
-
 import type {
     TTransactionFilter,
     TTransactionFilterKeys
-} from './filters/types';
+} from '@/features/transaction/components/table-filter/filters/types';
+import { create } from 'zustand';
 
 type FilterValue = string | Array<string | null> | null | {};
-// type FilterValue = string | Array<string | null> | null;
 
 interface IStoreTransactionTableFiltering {
     filters: TTransactionFilter;
@@ -28,7 +26,6 @@ export const storeTransactionTableFiltering =
             }),
         setFilter: (key, value) =>
             set((state) => {
-                console.log(key, value);
                 if (
                     (Array.isArray(value) && value.length === 0) ||
                     value === undefined

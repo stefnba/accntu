@@ -1,6 +1,16 @@
 import { z } from 'zod';
 
-export const PaginationTransactionSchema = z.object({
-    page: z.coerce.number().optional().default(1),
-    pageSize: z.coerce.number().optional().default(10)
-});
+export const PaginationTransactionSchema = z
+    .object({
+        page: z
+            .string()
+            .optional()
+            .transform((val) => Number(val))
+            .pipe(z.number()),
+        pageSize: z
+            .string()
+            .optional()
+            .transform((val) => Number(val))
+            .pipe(z.number())
+    })
+    .partial();
