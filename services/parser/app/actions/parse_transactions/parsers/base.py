@@ -1,4 +1,5 @@
 import logging
+import re
 import typing as t
 from pathlib import Path
 from urllib.parse import urlparse
@@ -8,9 +9,9 @@ import polars as pl
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
+from app.actions.parse_transactions.types import TransformedTransaction
 from app.config import settings
 from app.db.query.transaction import get_transactions
-from app.type import ParseFile
 from app.utils.duckdb import SQL, DuckDB
 
 
@@ -39,118 +40,110 @@ class BaseParser:
 
     key_cols: t.List[str]
 
-    final_cols = [
-        "date",
-        "title",
-        "country",
-        "type",
-        "account_amount",
-        "spending_amount",
-        "user_amount",
-        "account_currency",
-        "user_currency",
-        "spending_currency",
-        "spending_account_rate",
-        "key",
-    ]
+    def parse(self, file_uri: str, file_id: str) -> pl.DataFrame:
+        """
+        Entry point to parse a transaction file either from cloud storage (if starting with 's3://')
+        or local storage (if starting with 'file://').
+        """
 
-    def add_key(self):
-        """Add hashed key column to uniquely identify a transaction."""
+        file_content: bytes | None = None
 
-        df = self.df_raw
+        if file_uri.startswith("s3://") or re.search(
+            r"^https:\/\/[a-z0-9.-]+\.s3\.[a-z0-9-]+\.amazonaws\.com\/[a-f0-9]+$", file_uri
+        ):
+            file_content = self._read_s3_file(file_uri)
 
-        df = df.with_columns([pl.concat_str([pl.col(col) for col in self.key_cols], separator="_").alias("key")])
+        if file_uri.startswith("file://"):
+            file_content = self._read_local_file(file_uri)
 
-        self.df_raw = DuckDB.query(SQL_QUERY["key"], data=df)
+        if file_content is None:
+            raise ParseException(f"Invalid file URI: {file_uri}")
 
-    def validate(self, df: pl.DataFrame):
-        """Check all required columns are present."""
+        # todo loggin
+        print(f"Started parsing file '{file_id}' located at '{file_uri}'.")
+        df = self.read_into_df(file_content)
 
-        if set(df.columns) != set(self.final_cols):
-            print(sorted(self.final_cols))
-
-            print(sorted(df.columns))
-            raise ParseException("Columns not identical")
-
-    def test_parse(self, file_path: str) -> pl.DataFrame:
-        """Test parsing a transaction file."""
-
-        self.file_id = "test"
-
-        print(f"Started parsing file '{self.file_id}' located at '{file_path}'.")
-
-        # read file and store in self.df_raw
-        self._read_file(path=file_path)
-
-        # add key
-        self.add_key()
+        # add key. Needs to be done before transforming data.
+        df = self.add_key(df=df)
 
         # transform data
-        transformed_df = self.transform(self.df_raw)
+        try:
+            df = self.transform(df=df)
+        except Exception as e:
+            # todo logging
+            print(f"Error transforming data: {e}")
+            raise ParseException(f"Error transforming data: {e}")
 
-        self.validate(transformed_df)
+        # get first 5 rows to check if transformation was successful
+        [TransformedTransaction(**row) for row in df.head(5).to_dicts()]
 
-        return transformed_df.with_columns([pl.lit(self.file_id).alias("file_id")])
+        # add file_id
+        df = self.add_file_id(df=df, file_id=file_id)
 
-    def parse(self, file: ParseFile) -> pl.DataFrame:
-        """Start parsing a transaction file."""
+        return df
 
-        self.file_id = file.id
+    def add_key(self, df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Add hashed key column to uniquely identify a transaction.
+        """
 
-        print(f"Started parsing file '{file.id}' located at '{file.url}'.")
+        df = df.with_columns(
+            [
+                pl.concat_str([pl.col(col) for col in self.key_cols], separator="_").alias("key"),
+            ]
+        )
+        return DuckDB.query(SQL_QUERY["key"], data=df)
 
-        # read file and store in self.df_raw
-        self._read_file(path=file.url)
-
-        # add key
-        self.add_key()
-
-        # transform data
-        transformed_df = self.transform(self.df_raw)
-
-        self.validate(transformed_df)
-
-        return transformed_df.with_columns([pl.lit(self.file_id).alias("file_id")])
-
-        # return transformed_df.sort("date", "type", "title", descending=[True, False, False]).to_dicts()
+    def add_file_id(self, df: pl.DataFrame, file_id: str) -> pl.DataFrame:
+        """
+        Add file_id column to identify the source of the transaction.
+        """
+        return df.with_columns([pl.lit(file_id).alias("file_id")])
 
     def transform(self, df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Main transformation logic. Implemented in child class.
+        """
+
         raise NotImplementedError
 
-    def _read_file(self, path: str):
-        logging.info(f"Reading file '{path}'.")
-        try:
-            self.df_raw = self.read_file(path=path)
-        except Exception as e:
+    def read_into_df(self, content: bytes) -> pl.DataFrame:
+        """
+        Implementation done in child classes.
+        """
 
-            logging.error(f"Error reading file '{self.file_id}': {e}")
-
-    def read_file(self, path: str) -> pl.DataFrame:
         raise NotImplementedError
 
     def _read_local_file(self, path: str) -> bytes:
         """
         Read file from local storage.
         """
+        logging.info(f"Reading local file located at '{path}'.")
         return Path(path).read_bytes()
 
-    def _read_cloud_file(self, url: str) -> bytes:
+    def _read_s3_file(self, file_uri: str) -> bytes:
         """
         Read file from S3.
         """
 
-        parsed_url = urlparse(url)
-        if parsed_url.netloc:
-            key = parsed_url.path.strip("/")
-        else:
-            key = url.strip("/")
+        try:
 
-        bucket = settings.cloud_storage.bucket_name
+            parsed_url = urlparse(file_uri)
+            if parsed_url.netloc:
+                key = parsed_url.path.strip("/")
+            else:
+                key = file_uri.strip("/")
 
-        logging.info(f"Reading file from S3: {bucket}/{key}")
-        response = s3_client.get_object(Bucket=bucket, Key=key)
+            bucket = settings.cloud_storage.bucket_name
 
-        return t.cast(bytes, response["Body"].read())
+            logging.info(f"Reading file from S3: {bucket}/{key}")
+            response = s3_client.get_object(Bucket=bucket, Key=key)
+
+            return t.cast(bytes, response["Body"].read())
+
+        except Exception as e:
+            logging.error(f"Error reading file from S3: {e}")
+            raise e
 
     @staticmethod
     def identify_duplicates(transactions: pl.DataFrame, user_id: str, db: Session) -> pl.DataFrame:

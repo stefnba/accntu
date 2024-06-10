@@ -18,16 +18,16 @@ class BarclaysDeCreditCardParser(BaseParser):
         "Originalbetrag",
     ]
 
-    def read_file(self, path: str) -> pl.DataFrame:
-        """Read file from S3 with boto3 and return a DataFrame."""
+    def read_into_df(self, content: bytes) -> pl.DataFrame:
+        """
+        Read content into DataFrame.
+        """
 
-        file = self._read_cloud_file(path)
-        # file = self._read_local_file("Umsätze-8.xlsx")
+        return pl.from_pandas(pd.read_excel(BytesIO(content), skiprows=self.skiprows))
 
-        return pl.from_pandas(pd.read_excel(BytesIO(file), skiprows=self.skiprows))
+    def transform(self, df: pl.DataFrame) -> pl.DataFrame:
 
-    def transform(self, data: pl.DataFrame) -> pl.DataFrame:
-        df = data.select(
+        df = df.select(
             [
                 pl.col("Buchungsdatum").alias("date"),
                 pl.col("Land").alias("country"),
@@ -36,24 +36,28 @@ class BarclaysDeCreditCardParser(BaseParser):
                 pl.col("Beschreibung").alias("title"),
                 pl.lit(self.default_currency).alias("account_currency"),
                 pl.col("Typ").alias("type"),
-                "key",
+                pl.col("key").name.keep(),
             ]
         ).with_columns(
             [
                 pl.col("date").str.to_date(self.date_format).name.keep(),
-                pl.col("account_amount").str.replace("€", "").str.strip().str.replace(r"\.", "").str.replace(",", "")
-                # .cast(pl.Float64)
-                # .mul(100)
-                .cast(pl.Int64).abs().name.keep(),
+                pl.col("account_amount")
+                .str.replace("€", "")
+                .str.strip()
+                .str.replace(r"\.", "")
+                .str.replace(",", "")
+                .cast(pl.Int64)
+                .abs()
+                .name.keep(),
                 pl.col("spending_amount").str.extract(r"([A-Z]{3}|€)$").replace("€", "EUR").alias("spending_currency"),
                 pl.col("spending_amount")
                 .str.replace(r"([A-Z]{3}|€)$", "")
                 .str.strip()
                 .str.replace(r"\.", "")
                 .str.replace(",", "")
-                # .cast(pl.Float64)
-                # .mul(100)
-                .cast(pl.Int64).abs().name.keep(),
+                .cast(pl.Int64)
+                .abs()
+                .name.keep(),
                 # pl.col('title').str.extract(r'^(.*?)\s{2,}').name.keep(),
                 pl.when(pl.col("type") == "Gutschrift").then(pl.lit("CREDIT")).otherwise(pl.lit("DEBIT")).name.keep(),
             ]
@@ -68,12 +72,3 @@ class BarclaysDeCreditCardParser(BaseParser):
         )
 
         return df
-
-
-class TestBarclaysDeCreditCardParser(BarclaysDeCreditCardParser):
-    def read_file(self, path: str) -> pl.DataFrame:
-        """Read local test file"""
-
-        file = self._read_local_file(path)
-
-        return pl.from_pandas(pd.read_excel(BytesIO(file), skiprows=self.skiprows))

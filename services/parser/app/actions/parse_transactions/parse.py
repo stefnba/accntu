@@ -1,4 +1,5 @@
 import concurrent.futures
+import typing as t
 
 import polars as pl
 from sqlalchemy.orm import Session
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.actions.parse_transactions.parsers.barclays_de_creditcard.parser import BarclaysDeCreditCardParser
 from app.actions.parse_transactions.parsers.base import BaseParser
 from app.actions.parse_transactions.parsers.milesandmore_ch_creditcard.parser import MilesAndMoreChCreditCardParser
-from app.type import ParseFile, ParserIds
+from app.actions.parse_transactions.types import ParsedTransaction, ParseFile, ParserIds
 
 parsers: dict[ParserIds, type[BaseParser]] = {
     "BARCLAYS_DE_CREDITCARD": BarclaysDeCreditCardParser,
@@ -17,13 +18,22 @@ parsers: dict[ParserIds, type[BaseParser]] = {
 
 
 def parse_one_transaction_file(file: ParseFile, parser_id: ParserIds) -> pl.DataFrame:
+    """
+    Parse a single transaction file as part of parallel processing.
+    """
+
+    # use parser based on parser_id
     parser = parsers[parser_id]()
-    return parser.parse(file)
+    return parser.parse(file_uri=file.url, file_id=file.id)
 
 
-def parse_transaction_files(files: list[ParseFile], parser_id: ParserIds, user_id: str, db: Session):
+def parse_transaction_files(
+    files: list[ParseFile], parser_id: ParserIds, user_id: str, db: Session
+) -> t.List[ParsedTransaction]:
+    """
+    Parallel parsing of multiple transaction files.
+    """
 
-    file_ids = [file.id for file in files]
     parsed_dfs: list[pl.DataFrame] = []
 
     # parse transactions in parallel
@@ -34,9 +44,12 @@ def parse_transaction_files(files: list[ParseFile], parser_id: ParserIds, user_i
 
         parsed_dfs.append(result)
 
-    parsed_df = pl.concat(parsed_dfs).sort("date", "type", "title", descending=[True, False, False])
+    # combine all parsed transactions
+    parsed_df = pl.concat(parsed_dfs)
 
-    # combine transactions and check for duplicates
-    unique_df = BaseParser.identify_duplicates(transactions=parsed_df, user_id=user_id, db=db)
+    # combine transactions and check for duplicates, sort by date, type, title
+    unique_df = BaseParser.identify_duplicates(transactions=parsed_df, user_id=user_id, db=db).sort(
+        "date", "type", "title", descending=[True, False, False]
+    )
 
-    return {file_id: unique_df.filter(pl.col("file_id") == file_id).to_dicts() for file_id in file_ids}
+    return [ParsedTransaction(**record) for record in unique_df.to_dicts()]
