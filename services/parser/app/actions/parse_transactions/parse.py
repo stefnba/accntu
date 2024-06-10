@@ -3,9 +3,9 @@ import concurrent.futures
 import polars as pl
 from sqlalchemy.orm import Session
 
-from app.services.parse_transactions.parsers.barclays_de_creditcard.parser import BarclaysDeCreditCardParser
-from app.services.parse_transactions.parsers.base import BaseParser
-from app.services.parse_transactions.parsers.milesandmore_ch_creditcard.parser import MilesAndMoreChCreditCardParser
+from app.actions.parse_transactions.parsers.barclays_de_creditcard.parser import BarclaysDeCreditCardParser
+from app.actions.parse_transactions.parsers.base import BaseParser
+from app.actions.parse_transactions.parsers.milesandmore_ch_creditcard.parser import MilesAndMoreChCreditCardParser
 from app.type import ParseFile, ParserIds
 
 parsers: dict[ParserIds, type[BaseParser]] = {

@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.actions.parse_transactions.parse import parse_transaction_files
 from app.db.client import get_db
-from app.services.parse_transactions.parse import parse_transaction_files
 from app.type import ParseBody
 
 router = APIRouter(

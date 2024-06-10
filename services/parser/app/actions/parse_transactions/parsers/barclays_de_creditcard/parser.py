@@ -3,7 +3,7 @@ from io import BytesIO
 import pandas as pd
 import polars as pl
 
-from app.services.parse_transactions.parsers.base import BaseParser
+from app.actions.parse_transactions.parsers.base import BaseParser
 
 
 class BarclaysDeCreditCardParser(BaseParser):
