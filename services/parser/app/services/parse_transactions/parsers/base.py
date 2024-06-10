@@ -46,7 +46,9 @@ class BaseParser:
         "type",
         "account_amount",
         "spending_amount",
+        "user_amount",
         "account_currency",
+        "user_currency",
         "spending_currency",
         "spending_account_rate",
         "key",
@@ -65,7 +67,30 @@ class BaseParser:
         """Check all required columns are present."""
 
         if set(df.columns) != set(self.final_cols):
+            print(sorted(self.final_cols))
+
+            print(sorted(df.columns))
             raise ParseException("Columns not identical")
+
+    def test_parse(self, file_path: str) -> pl.DataFrame:
+        """Test parsing a transaction file."""
+
+        self.file_id = "test"
+
+        print(f"Started parsing file '{self.file_id}' located at '{file_path}'.")
+
+        # read file and store in self.df_raw
+        self._read_file(path=file_path)
+
+        # add key
+        self.add_key()
+
+        # transform data
+        transformed_df = self.transform(self.df_raw)
+
+        self.validate(transformed_df)
+
+        return transformed_df.with_columns([pl.lit(self.file_id).alias("file_id")])
 
     def parse(self, file: ParseFile) -> pl.DataFrame:
         """Start parsing a transaction file."""

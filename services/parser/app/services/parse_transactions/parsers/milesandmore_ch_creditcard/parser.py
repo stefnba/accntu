@@ -6,24 +6,22 @@ import polars as pl
 from app.services.parse_transactions.parsers.base import BaseParser
 
 
-class BarclaysDeCreditCardParser(BaseParser):
+class MilesAndMoreChCreditCardParser(BaseParser):
 
     date_format = "%d.%m.%Y"
-    default_currency = "EUR"
-    skiprows = 12
+    default_currency = "CHF"
+    skiprows = 0
 
     key_cols = [
-        "Buchungsdatum",
-        "Beschreibung",
-        "Originalbetrag",
+        "Transaction date",
+        "Description",
+        "Amount",
     ]
 
     def read_file(self, path: str) -> pl.DataFrame:
         """Read file from S3 with boto3 and return a DataFrame."""
 
         file = self._read_cloud_file(path)
-        # file = self._read_local_file("Umsätze-8.xlsx")
-
         return pl.from_pandas(pd.read_excel(BytesIO(file), skiprows=self.skiprows))
 
     def transform(self, data: pl.DataFrame) -> pl.DataFrame:
@@ -70,7 +68,7 @@ class BarclaysDeCreditCardParser(BaseParser):
         return df
 
 
-class TestBarclaysDeCreditCardParser(BarclaysDeCreditCardParser):
+class TestBarclaysDeCreditCardParser(MilesAndMoreChCreditCardParser):
     def read_file(self, path: str) -> pl.DataFrame:
         """Read local test file"""
 
