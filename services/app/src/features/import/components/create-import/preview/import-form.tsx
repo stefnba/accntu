@@ -30,15 +30,15 @@ export const ImportForm: React.FC<Props> = ({}) => {
     );
 
     useEffect(() => {
-        if (newTransactions && importId && accountId) {
+        console.log('newTransactions', fileId, accountId);
+        if (newTransactions && fileId && accountId) {
             form.setValue('values', newTransactions, { shouldValidate: true });
-            form.setValue('importId', importId, { shouldValidate: true });
+            form.setValue('importFileId', fileId, { shouldValidate: true });
             form.setValue('accountId', accountId, {
                 shouldValidate: true
             });
         }
-        console.log('newTransactions', importId, accountId);
-    }, [newTransactions, form, importId, accountId]);
+    }, [newTransactions, form, fileId, accountId]);
 
     const handleSubmit = (values: z.infer<typeof CreateTransactionsSchema>) => {
         // create transactions

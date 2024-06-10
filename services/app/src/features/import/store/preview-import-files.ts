@@ -2,13 +2,13 @@ import { create } from 'zustand';
 
 interface IStorePreviewImportFiles {
     // file
-    fileId: string;
+    fileId?: string;
     setFileId: (fileId: string) => void;
 }
 
 export const storePreviewImportFiles = create<IStorePreviewImportFiles>(
     (set) => ({
-        fileId: 'wdjdlhx80v61x14fcu0i0r0j',
+        fileId: undefined,
         setFileId: (fileId) => set({ fileId })
     })
 );

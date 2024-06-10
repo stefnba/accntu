@@ -4,13 +4,23 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/data-table';
 import type { TParsedTransaction } from '@/features/import/schema/preview-transactions';
+import {
+    Amount,
+    Date,
+    TransactionType
+} from '@/features/transaction/components/table/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 
 export const columns: ColumnDef<TParsedTransaction>[] = [
     {
         accessorKey: 'date',
-        header: 'Date'
+        header: 'Date',
+        cell: ({ row }) => {
+            const { date } = row.original;
+
+            return <Date date={date} />;
+        }
     },
     {
         accessorKey: 'title',
@@ -18,15 +28,41 @@ export const columns: ColumnDef<TParsedTransaction>[] = [
     },
     {
         accessorKey: 'type',
-        header: 'Type'
+        header: 'Type',
+        cell: ({ row }) => {
+            const { type } = row.original;
+
+            return <TransactionType type={type} />;
+        }
     },
     {
         accessorKey: 'spendingAmount',
-        header: 'Spending Amount'
+        header: 'Spending Amount',
+        cell: ({ row }) => {
+            const { spendingAmount, spendingCurrency } = row.original;
+
+            return (
+                <Amount
+                    currency={spendingCurrency}
+                    amountInCents={spendingAmount}
+                />
+            );
+        }
+    },
+    {
+        accessorKey: 'userAmount',
+        header: 'User Amount',
+        cell: ({ row }) => {
+            const { userAmount, userCurrency } = row.original;
+
+            return (
+                <Amount currency={userCurrency} amountInCents={userAmount} />
+            );
+        }
     },
     {
         accessorKey: 'isDuplicate',
-        header: 'isDuplicate'
+        header: 'Duplicate'
     }
 ];
 // {

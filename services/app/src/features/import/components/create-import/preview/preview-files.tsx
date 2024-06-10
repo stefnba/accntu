@@ -20,29 +20,6 @@ import { useEffect, useState } from 'react';
 
 interface Props {}
 
-const frameworks = [
-    {
-        value: 'next.js',
-        label: 'Next.js'
-    },
-    {
-        value: 'sveltekit',
-        label: 'SvelteKit'
-    },
-    {
-        value: 'nuxt.js',
-        label: 'Nuxt.js'
-    },
-    {
-        value: 'remix',
-        label: 'Remix'
-    },
-    {
-        value: 'astro',
-        label: 'Astro'
-    }
-];
-
 /**
  * Get files for importId.
  */

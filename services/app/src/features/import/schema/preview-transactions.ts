@@ -6,9 +6,11 @@ export const ParsedTransactionSchema = z
         date: z.coerce.date(),
         country: z.string().nullable(),
         account_amount: z.number(),
-        account_currency: z.string(),
+        user_amount: z.number(),
+        account_currency: z.string().length(3),
         spending_amount: z.number(),
-        spending_currency: z.string(),
+        spending_currency: z.string().length(3),
+        user_currency: z.string().length(3),
         spending_account_rate: z.number(),
         type: TransactionTypeSchema,
         title: z.string(),
@@ -23,6 +25,8 @@ export const ParsedTransactionSchema = z
             spending_amount,
             spending_currency,
             account_currency,
+            user_amount,
+            user_currency,
             ...rest
         } = v;
 
@@ -33,7 +37,9 @@ export const ParsedTransactionSchema = z
             accountCurrency: account_currency,
             spendingAccountRate: spending_account_rate,
             spendingAmount: spending_amount,
-            spendingCurrency: spending_currency
+            spendingCurrency: spending_currency,
+            userAmount: user_amount,
+            userCurrency: user_currency
         };
     });
 

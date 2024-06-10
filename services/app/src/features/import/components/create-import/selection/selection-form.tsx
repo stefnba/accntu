@@ -20,7 +20,6 @@ export const CreateImportSelectionForm = () => {
     const handleSubmit = (
         values: z.infer<typeof CreateImportSelectionSchema>
     ) => {
-        console.log('values', values);
         // add to store
         setImportData(values);
         // go to next step

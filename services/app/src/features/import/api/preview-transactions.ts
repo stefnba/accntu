@@ -1,3 +1,4 @@
+import { errorToast } from '@/components/toast';
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
 import type { InferRequestType } from 'hono/client';
@@ -26,5 +27,10 @@ export const usePreviewTransactions = (params: TParams) => {
             return res.json();
         }
     });
+
+    if (q.error && q.failureCount === 1) {
+        errorToast(q.error.message);
+    }
+
     return q;
 };

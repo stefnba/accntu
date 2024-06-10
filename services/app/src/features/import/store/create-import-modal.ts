@@ -2,7 +2,13 @@ import { CreateImportSelectionSchema } from '@/features/import/schema/create-imp
 import { z } from 'zod';
 import { create } from 'zustand';
 
-const steps = ['selection', 'uploading', 'preview', 'importing'] as const;
+const steps = [
+    'selection',
+    'uploading',
+    'preview',
+    'importing',
+    'success'
+] as const;
 
 interface IStoreCreateImportModal {
     // steps
@@ -23,7 +29,7 @@ interface IStoreCreateImportModal {
     handleClose: () => void;
 
     // contine
-    handleContinue: (importId: string) => void;
+    handleContinue: (importId: string, accountId: string) => void;
 }
 
 export const storeCreateImportModal = create<IStoreCreateImportModal>(
@@ -48,7 +54,12 @@ export const storeCreateImportModal = create<IStoreCreateImportModal>(
         },
 
         // contine
-        handleContinue: (importId) =>
-            set({ isOpen: true, importId, step: 'preview' })
+        handleContinue: (importId, accountId) =>
+            set({
+                isOpen: true,
+                importId,
+                step: 'preview',
+                importData: { accountId, files: [] }
+            })
     })
 );

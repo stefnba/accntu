@@ -10,6 +10,13 @@ type TParserBody = {
 
 const ParsedTransactionsSchema = z.array(ParsedTransactionSchema);
 
+/**
+ * Parse transaction file by calling the parser service and return the parsed data.
+ * @param fileId
+ * @param importId
+ * @param userId
+ * @returns
+ */
 export const parseTransactionFile = async (
     fileId: string,
     importId: string,
@@ -69,7 +76,6 @@ export const parseTransactionFile = async (
         .then(async (res) => {
             if (res.ok) {
                 const data = await res.json();
-                console.log(data[fileId]);
 
                 // zod parse
                 const validatedData = ParsedTransactionsSchema.safeParse(

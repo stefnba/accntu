@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 
+import { ImportSuccess } from './importing/success';
 import { CreateImportPreview } from './preview/preview';
 import { CreateImportSelectionForm } from './selection/selection-form';
 import { ImportFileUpload } from './uploading/import-file-upload';
@@ -34,6 +35,9 @@ export const CreateImportModal: React.FC<Props> = ({}) => {
                 <div className="min-w-[450px]">
                     {step === 'selection' && <CreateImportSelectionForm />}
                     {step === 'uploading' && <ImportFileUpload />}
+                    {step === 'success' && (
+                        <ImportSuccess transactionCount={0} />
+                    )}
                 </div>
                 {step === 'preview' && <CreateImportPreview />}
             </DialogContent>

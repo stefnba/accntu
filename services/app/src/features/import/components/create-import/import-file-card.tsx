@@ -36,7 +36,7 @@ const FileIcon: React.FC<{ type: string }> = ({ type }) => {
 export const ImportFileCard: React.FC<Props> = ({ file }) => {
     const isMounted = useMountedState();
     const [fileId, setFileId] = useState<string | null>(null);
-    const updateFileId = storeUploadImportFiles((state) => state.updateFileId);
+    const updateFileId = storeUploadImportFiles((state) => state.);
     const deleteFile = storeUploadImportFiles((state) => state.deleteFile);
 
     const { mutateAsync: mutateDeleteFile } = useDeleteImportFile();

@@ -1,3 +1,4 @@
+import { count } from 'console';
 import { relations } from 'drizzle-orm';
 import {
     AnyPgColumn,
@@ -46,13 +47,6 @@ export const TransactionType = pgEnum('TransactionType', [
     'DEBIT'
 ]);
 export const TransactionTypeSchema = z.enum(TransactionType.enumValues);
-
-export const ImportFileStatus = pgEnum('ImportFileStatus', [
-    'IMPORTED',
-    'UPLOADED',
-    'PROCESSING'
-]);
-export const ImportFileStatusSchema = z.enum(ImportFileStatus.enumValues);
 
 export const user = pgTable(
     'user',
@@ -341,7 +335,9 @@ export const transactionImportFile = pgTable('import_file', {
         .notNull(),
     filename: text('filename').notNull(),
     type: text('type').notNull(),
-    status: ImportFileStatus('status').notNull().default('PROCESSING'),
+    importedAt: timestamp('importedAt', { precision: 3, mode: 'date' }),
+    transactionCount: integer('transactionCount'),
+    importedTransactionCount: integer('importedTransactionCount'),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
         .defaultNow()
         .notNull(),
@@ -352,11 +348,12 @@ export const transactionImportFile = pgTable('import_file', {
 });
 export const transactionImportFileRelations = relations(
     transactionImportFile,
-    ({ one }) => ({
+    ({ one, many }) => ({
         import: one(transactionImport, {
             fields: [transactionImportFile.importId],
             references: [transactionImport.id]
-        })
+        }),
+        transactions: many(transaction)
     })
 );
 export const SelectTransactionImportFileSchema = createSelectSchema(
@@ -371,20 +368,22 @@ export const transactionImport = pgTable('import', {
     userId: text('userId')
         .notNull()
         .references(() => user.id, {
-            onDelete: 'restrict',
+            onDelete: 'cascade',
             onUpdate: 'cascade'
         }),
     accountId: text('accountId')
         .notNull()
         .references(() => connectedAccount.id, {
-            onDelete: 'restrict',
+            onDelete: 'cascade',
             onUpdate: 'cascade'
         }),
+    importedTransactionCount: integer('importedTransactionCount'),
+    fileCount: integer('fileCount'),
+    importedFileCount: integer('importedFileCount'),
     createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
         .defaultNow()
         .notNull(),
-    successAt: timestamp('successAt', { precision: 3, mode: 'date' }),
-    countTransactions: integer('countTransactions')
+    successAt: timestamp('successAt', { precision: 3, mode: 'date' })
 });
 export const transactionImportRelations = relations(
     transactionImport,
@@ -404,28 +403,30 @@ export const transaction = pgTable(
         userId: text('userId')
             .notNull()
             .references(() => user.id, {
-                onDelete: 'restrict',
+                onDelete: 'cascade',
                 onUpdate: 'cascade'
             }),
         accountId: text('accountId')
             .notNull()
             .references(() => connectedAccount.id, {
-                onDelete: 'restrict',
+                onDelete: 'cascade',
                 onUpdate: 'cascade'
             }),
-        importId: text('importId')
+        importFileId: text('importFileId')
             .notNull()
-            .references(() => transactionImport.id, {
-                onDelete: 'restrict',
+            .references(() => transactionImportFile.id, {
+                onDelete: 'cascade',
                 onUpdate: 'cascade'
             }),
         date: date('date').notNull(),
         title: text('title').notNull(),
         type: TransactionType('type').notNull(),
-        spendingAmount: doublePrecision('spendingAmount').notNull(),
+        spendingAmount: integer('spendingAmount').notNull(),
         spendingCurrency: char('spendingCurrency', { length: 3 }).notNull(),
-        accountAmount: doublePrecision('accountAmount').notNull(),
+        accountAmount: integer('accountAmount').notNull(),
         accountCurrency: char('accountCurrency', { length: 3 }).notNull(),
+        userAmount: integer('userAmount').notNull(),
+        userCurrency: char('userCurrency', { length: 3 }).notNull(),
         createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
             .defaultNow()
             .notNull(),
@@ -458,16 +459,16 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
         fields: [transaction.labelId],
         references: [label.id]
     }),
-    import: one(transactionImport, {
-        fields: [transaction.importId],
-        references: [transactionImport.id]
+    importFile: one(transactionImportFile, {
+        fields: [transaction.importFileId],
+        references: [transactionImportFile.id]
     })
 }));
 export const SelectTransactionSchema = createSelectSchema(transaction);
 export const InsertTransactionSchema = createInsertSchema(transaction).omit({
     userId: true,
     accountId: true,
-    importId: true,
+    importFileId: true,
     id: true
 });
 
