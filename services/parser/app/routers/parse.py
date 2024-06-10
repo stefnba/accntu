@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.client import get_db
@@ -12,9 +13,13 @@ router = APIRouter(
 )
 
 
+class TestResponse(BaseModel):
+    message: str
+
+
 @router.get("/")
-def test():
-    return {"message": "Hello World"}
+def test() -> TestResponse:
+    return TestResponse(message="Parser service running...")
 
 
 @router.post(
@@ -28,4 +33,4 @@ async def parse_transactions(body: ParseBody, db: Session = Depends(get_db)):
         return parse_transaction_files(body.files, body.parser_id, body.user_id, db)
     except Exception as e:
         print(e)
-        return {"message": "Parsing failed"}
+        raise HTTPException(status_code=400, detail="Parsing failed")
