@@ -11,10 +11,12 @@ import { AuthError } from '@/server/auth/error';
 import { authMiddleware } from '@/server/auth/middleware';
 import upload from '@/server/lib/upload/api';
 import { logger } from '@/server/middleware/logging';
+import { validationError } from '@/server/middleware/validation';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
+// import { logger } from 'hono/logger';
 import { handle } from 'hono/vercel';
 import { Session, User } from 'lucia';
 
@@ -28,9 +30,14 @@ const app = new Hono<{
 }>().basePath('/api');
 
 app.use(logger);
+app.use(validationError);
+
+// app.use(logger);
 app.onError((err, c) => {
     // todo logging
     console.error(err);
+
+    console.log('asdfasdf');
 
     if (err instanceof HTTPException) {
         return err.getResponse();
