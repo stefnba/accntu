@@ -24,6 +24,8 @@
     "files.exclude": {
         "**/__pycache__": true,
         ".mypy_cache": true,
-        ".ruff_cache": true
+        ".ruff_cache": true,
+        ".pytest_cache": true,
+        ".venv": true
     }
 }
