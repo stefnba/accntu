@@ -53,7 +53,7 @@ class BaseParser:
         ):
             file_content = self._read_s3_file(file_uri)
 
-        if file_uri.startswith("file://"):
+        if file_uri.startswith("file://") or Path(file_uri).exists():
             file_content = self._read_local_file(file_uri)
 
         if file_content is None:
