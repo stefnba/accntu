@@ -8,6 +8,7 @@ const query = client.api.import.create['$post'];
 
 export const useCreateImport = () => {
     const { setImportId } = storeCreateImportModal();
+    const queryClient = useQueryClient();
 
     const q = useMutation<
         InferResponseType<typeof query>,
@@ -24,6 +25,7 @@ export const useCreateImport = () => {
             return response.json();
         },
         onSuccess: ({ id }) => {
+            queryClient.invalidateQueries({ queryKey: ['imports'] });
             setImportId(id);
         },
         onError: (error) => {

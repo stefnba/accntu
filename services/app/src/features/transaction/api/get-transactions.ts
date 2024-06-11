@@ -6,9 +6,12 @@ import {
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { InferResponseType } from 'hono/client';
 import { useMemo } from 'react';
 
 const query = client.api.transactions.$get;
+
+export type TGetTransactionsResponse = InferResponseType<typeof query>;
 
 export const useGetTransactions = () => {
     /* Pagination */

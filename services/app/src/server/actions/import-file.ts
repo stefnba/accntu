@@ -1,5 +1,11 @@
 import { ParsedTransactionSchema } from '@/features/import/schema/preview-transactions';
 import { db } from '@db';
+import {
+    InsertTransactionImportFileSchema,
+    transactionImport,
+    transactionImportFile
+} from '@db/schema';
+import { createId } from '@paralleldrive/cuid2';
 import { z } from 'zod';
 
 type TParserBody = {
@@ -78,9 +84,7 @@ export const parseTransactionFile = async (
                 const data = await res.json();
 
                 // zod parse
-                const validatedData = ParsedTransactionsSchema.safeParse(
-                    data[fileId]
-                );
+                const validatedData = ParsedTransactionsSchema.safeParse(data);
 
                 if (!validatedData.success) {
                     throw new Error(validatedData.error.message);
@@ -93,4 +97,36 @@ export const parseTransactionFile = async (
         .catch((err) => {
             throw err;
         });
+};
+
+export const createImportFile = async ({
+    userId,
+    values
+}: {
+    userId: string;
+    values: z.infer<typeof InsertTransactionImportFileSchema>;
+}) => {
+    const importRecord = await db.query.transactionImport.findFirst({
+        where: (fields, { eq, and }) =>
+            and(eq(fields.id, values.importId), eq(fields.userId, userId))
+    });
+
+    if (!importRecord) {
+        throw new Error(`Import record doesn't exist`);
+    }
+
+    const [newImportFile] = await db
+        .insert(transactionImportFile)
+        .values({ id: createId(), ...values })
+        .returning();
+
+    if (!newImportFile) {
+        throw new Error('Failed to create import file');
+    }
+
+    await db.update(transactionImport).set({
+        fileCount: (importRecord.fileCount || 0) + 1
+    });
+
+    return newImportFile;
 };

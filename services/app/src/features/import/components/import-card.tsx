@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const ImportCard: React.FC<Props> = ({ importRecord }) => {
-    const { successAt, createdAt, id } = importRecord;
+    const { successAt, createdAt, id, importedTransactionCount } = importRecord;
     const { handleOpen } = storeViewImportSheet();
 
     return (
@@ -24,13 +24,25 @@ export const ImportCard: React.FC<Props> = ({ importRecord }) => {
                 <CardTitle>
                     {dayjs(createdAt).format('DD-MMM YY HH:mm')}
                 </CardTitle>
+                <CardDescription>
+                    {importRecord.account.name}
+                    {' - '}
+                    {importRecord.account.bank.bank.name}
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                {successAt ? (
-                    <Badge variant="default">Completed</Badge>
-                ) : (
-                    <Badge variant="outline">Draft</Badge>
-                )}
+                <div className="flex">
+                    {successAt ? (
+                        <Badge variant="default">Completed</Badge>
+                    ) : (
+                        <Badge variant="outline">Draft</Badge>
+                    )}
+                    {(importedTransactionCount || 0) > 0 && (
+                        <CardDescription className="ml-4">
+                            {importRecord.importedTransactionCount} Transactions
+                        </CardDescription>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );

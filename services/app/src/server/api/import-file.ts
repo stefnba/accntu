@@ -6,7 +6,6 @@ import {
     transactionImportFile
 } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
-import { createId } from '@paralleldrive/cuid2';
 import {
     SignedS3UrlInputSchema,
     getSignedS3Url
@@ -14,6 +13,8 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
+
+import { createImportFile } from '../actions/import-file';
 
 const app = new Hono()
     .post(
@@ -74,23 +75,17 @@ const app = new Hono()
     )
     .post(
         '/create',
-        zValidator(
-            'json',
-            InsertTransactionImportFileSchema.pick({
-                url: true,
-                type: true,
-                filename: true,
-                importId: true
-            })
-        ),
+        zValidator('json', InsertTransactionImportFileSchema),
         async (c) => {
             const user = getUser(c);
             const values = c.req.valid('json');
-            const [newImportFile] = await db
-                .insert(transactionImportFile)
-                .values({ id: createId(), ...values })
-                .returning();
-            return c.json(newImportFile, 201);
+
+            const data = await createImportFile({
+                userId: user.id,
+                values
+            });
+
+            return c.json(data, 201);
         }
     )
     .get(

@@ -17,7 +17,14 @@ const app = new Hono()
         const data = await db.query.transactionImport.findMany({
             where: (fields, { eq, and }) => and(eq(fields.userId, user.id)),
             with: {
-                files: true
+                files: true,
+                account: {
+                    with: {
+                        bank: {
+                            with: { bank: true }
+                        }
+                    }
+                }
             }
         });
         return c.json(data);

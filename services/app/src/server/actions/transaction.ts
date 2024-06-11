@@ -72,17 +72,23 @@ export const createTransactions = async ({
         throw new Error('Import not found');
     }
 
+    const currentFileCount = importRecord.importedFileCount || 0;
+    const currentTransactionCount = importRecord.importedTransactionCount || 0;
+
+    if (currentFileCount + 1 > (importRecord.fileCount || 0)) {
+        throw new Error('Import file count exceeded');
+    }
+
     // update import record
     const [updatedImportRecord] = await db
         .update(transactionImport)
         .set({
-            importedFileCount: importRecord.importedFileCount || 0 + 1,
+            importedFileCount: currentFileCount + 1,
             importedTransactionCount:
-                importRecord.importedTransactionCount ||
-                0 + newTransactions.length,
+                currentTransactionCount + newTransactions.length,
             successAt:
-                importRecord.importedFileCount ||
-                0 + 1 === importRecord.fileCount
+                (importRecord.importedFileCount || 0) + 1 ===
+                importRecord.fileCount
                     ? new Date()
                     : null
         })
