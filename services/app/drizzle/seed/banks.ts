@@ -43,7 +43,7 @@ const banksSeed: TSeedBanks = [
             {
                 type: 'CURRENT',
                 id: createId(),
-                parserKey: 'UBS_CH_CURRENT'
+                parserKey: 'UBS_CH_ACCOUNT'
             }
         ]
     }

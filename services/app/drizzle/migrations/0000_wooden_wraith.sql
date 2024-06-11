@@ -11,12 +11,6 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."ImportFileStatus" AS ENUM('IMPORTED', 'UPLOADED', 'PROCESSING');
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
  CREATE TYPE "public"."Language" AS ENUM('EN');
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -132,14 +126,16 @@ CREATE TABLE IF NOT EXISTS "transaction" (
 	"id" text PRIMARY KEY NOT NULL,
 	"userId" text NOT NULL,
 	"accountId" text NOT NULL,
-	"importId" text NOT NULL,
+	"importFileId" text NOT NULL,
 	"date" date NOT NULL,
 	"title" text NOT NULL,
 	"type" "TransactionType" NOT NULL,
-	"spendingAmount" double precision NOT NULL,
+	"spendingAmount" integer NOT NULL,
 	"spendingCurrency" char(3) NOT NULL,
-	"accountAmount" double precision NOT NULL,
+	"accountAmount" integer NOT NULL,
 	"accountCurrency" char(3) NOT NULL,
+	"userAmount" integer NOT NULL,
+	"userCurrency" char(3) NOT NULL,
 	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
 	"updatedAt" timestamp (3),
 	"key" text NOT NULL,
@@ -155,9 +151,11 @@ CREATE TABLE IF NOT EXISTS "import" (
 	"id" text PRIMARY KEY NOT NULL,
 	"userId" text NOT NULL,
 	"accountId" text NOT NULL,
+	"importedTransactionCount" integer,
+	"fileCount" integer,
+	"importedFileCount" integer,
 	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
-	"successAt" timestamp (3),
-	"countTransactions" integer
+	"successAt" timestamp (3)
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "import_file" (
@@ -166,7 +164,9 @@ CREATE TABLE IF NOT EXISTS "import_file" (
 	"importId" text NOT NULL,
 	"filename" text NOT NULL,
 	"type" text NOT NULL,
-	"status" "ImportFileStatus" DEFAULT 'PROCESSING' NOT NULL,
+	"importedAt" timestamp (3),
+	"transactionCount" integer,
+	"importedTransactionCount" integer,
 	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
 	"updatedAt" timestamp (3)
 );
@@ -262,19 +262,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "transaction" ADD CONSTRAINT "transaction_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE cascade;
+ ALTER TABLE "transaction" ADD CONSTRAINT "transaction_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "transaction" ADD CONSTRAINT "transaction_accountId_connected_account_id_fk" FOREIGN KEY ("accountId") REFERENCES "public"."connected_account"("id") ON DELETE restrict ON UPDATE cascade;
+ ALTER TABLE "transaction" ADD CONSTRAINT "transaction_accountId_connected_account_id_fk" FOREIGN KEY ("accountId") REFERENCES "public"."connected_account"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "transaction" ADD CONSTRAINT "transaction_importId_import_id_fk" FOREIGN KEY ("importId") REFERENCES "public"."import"("id") ON DELETE restrict ON UPDATE cascade;
+ ALTER TABLE "transaction" ADD CONSTRAINT "transaction_importFileId_import_file_id_fk" FOREIGN KEY ("importFileId") REFERENCES "public"."import_file"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -286,19 +286,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "import" ADD CONSTRAINT "import_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE cascade;
+ ALTER TABLE "import" ADD CONSTRAINT "import_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "import" ADD CONSTRAINT "import_accountId_connected_account_id_fk" FOREIGN KEY ("accountId") REFERENCES "public"."connected_account"("id") ON DELETE restrict ON UPDATE cascade;
+ ALTER TABLE "import" ADD CONSTRAINT "import_accountId_connected_account_id_fk" FOREIGN KEY ("accountId") REFERENCES "public"."connected_account"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "import_file" ADD CONSTRAINT "import_file_importId_import_id_fk" FOREIGN KEY ("importId") REFERENCES "public"."import"("id") ON DELETE set null ON UPDATE cascade;
+ ALTER TABLE "import_file" ADD CONSTRAINT "import_file_importId_import_id_fk" FOREIGN KEY ("importId") REFERENCES "public"."import"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -309,6 +309,7 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "identifier_idx" ON "login" ("identifier");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "transaction_userId_key_isDeleted_key" ON "transaction" ("userId","key","isDeleted");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_email_key" ON "user" ("email");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_setting_userId_key" ON "user_setting" ("userId");

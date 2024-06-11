@@ -1,5 +1,5 @@
 {
-  "id": "43a64037-10a3-4f0f-8306-31770927fac1",
+  "id": "b967bc81-58ad-4036-bddc-b3e2865d7a06",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -472,7 +472,15 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "identifier_idx": {
+          "name": "identifier_idx",
+          "columns": [
+            "identifier"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "login_userId_user_id_fk": {
           "name": "login_userId_user_id_fk",
@@ -604,8 +612,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "importId": {
-          "name": "importId",
+        "importFileId": {
+          "name": "importFileId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -631,7 +639,7 @@
         },
         "spendingAmount": {
           "name": "spendingAmount",
-          "type": "double precision",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -643,12 +651,24 @@
         },
         "accountAmount": {
           "name": "accountAmount",
-          "type": "double precision",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
         "accountCurrency": {
           "name": "accountCurrency",
+          "type": "char(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userAmount": {
+          "name": "userAmount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userCurrency": {
+          "name": "userCurrency",
           "type": "char(3)",
           "primaryKey": false,
           "notNull": true
@@ -733,7 +753,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         },
         "transaction_accountId_connected_account_id_fk": {
@@ -746,20 +766,20 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         },
-        "transaction_importId_import_id_fk": {
-          "name": "transaction_importId_import_id_fk",
+        "transaction_importFileId_import_file_id_fk": {
+          "name": "transaction_importFileId_import_file_id_fk",
           "tableFrom": "transaction",
-          "tableTo": "import",
+          "tableTo": "import_file",
           "columnsFrom": [
-            "importId"
+            "importFileId"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         },
         "transaction_labelId_label_id_fk": {
@@ -801,6 +821,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "importedTransactionCount": {
+          "name": "importedTransactionCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fileCount": {
+          "name": "fileCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "importedFileCount": {
+          "name": "importedFileCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp (3)",
@@ -811,12 +849,6 @@
         "successAt": {
           "name": "successAt",
           "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "countTransactions": {
-          "name": "countTransactions",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }
@@ -833,7 +865,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         },
         "import_accountId_connected_account_id_fk": {
@@ -846,7 +878,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
@@ -887,13 +919,23 @@
           "primaryKey": false,
           "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "ImportFileStatus",
-          "typeSchema": "public",
+        "importedAt": {
+          "name": "importedAt",
+          "type": "timestamp (3)",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'PROCESSING'"
+          "notNull": false
+        },
+        "transactionCount": {
+          "name": "transactionCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "importedTransactionCount": {
+          "name": "importedTransactionCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -921,7 +963,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
@@ -1143,15 +1185,6 @@
         "CREDIT_CARD",
         "SAVING",
         "CURRENT"
-      ]
-    },
-    "public.ImportFileStatus": {
-      "name": "ImportFileStatus",
-      "schema": "public",
-      "values": [
-        "IMPORTED",
-        "UPLOADED",
-        "PROCESSING"
       ]
     },
     "public.Language": {

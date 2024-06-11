@@ -1,11 +1,11 @@
-import { count } from 'console';
 import { relations } from 'drizzle-orm';
 import {
     AnyPgColumn,
+    Index,
     boolean,
     char,
     date,
-    doublePrecision,
+    index,
     integer,
     pgEnum,
     pgTable,
@@ -136,24 +136,32 @@ export const userSetting = pgTable(
 export const SelectUserSettingsSchema = createSelectSchema(userSetting);
 export const InsertUserSettingsSchema = createInsertSchema(userSetting);
 
-export const login = pgTable('login', {
-    id: text('id').primaryKey().notNull(),
-    // todo create token to be used as a key not id
-    method: LoginMethod('method').notNull(),
-    userId: text('userId').references(() => user.id, {
-        onDelete: 'cascade',
-        onUpdate: 'cascade'
-    }),
-    identifier: text('identifier'),
-    device: text('device'),
-    ip: text('ip'),
-    location: text('location'),
-    userAgent: text('userAgent'),
-    attemptedAt: timestamp('attemptedAt', { precision: 3, mode: 'date' })
-        .defaultNow()
-        .notNull(),
-    successAt: timestamp('successAt', { precision: 3, mode: 'date' })
-});
+export const login = pgTable(
+    'login',
+    {
+        id: text('id').primaryKey().notNull(),
+        // todo create token to be used as a key not id
+        method: LoginMethod('method').notNull(),
+        userId: text('userId').references(() => user.id, {
+            onDelete: 'cascade',
+            onUpdate: 'cascade'
+        }),
+        identifier: text('identifier'),
+        device: text('device'),
+        ip: text('ip'),
+        location: text('location'),
+        userAgent: text('userAgent'),
+        attemptedAt: timestamp('attemptedAt', { precision: 3, mode: 'date' })
+            .defaultNow()
+            .notNull(),
+        successAt: timestamp('successAt', { precision: 3, mode: 'date' })
+    },
+    (table) => {
+        return {
+            identifier: index('identifier_idx').on(table.identifier)
+        };
+    }
+);
 export const loginRelations = relations(login, ({ one }) => ({
     user: one(user, {
         fields: [login.userId],
@@ -312,11 +320,12 @@ export const connectedAccount = pgTable('connected_account', {
 });
 export const connectedAccountRelations = relations(
     connectedAccount,
-    ({ one }) => ({
-        import: one(connectedBank, {
+    ({ one, many }) => ({
+        bank: one(connectedBank, {
             fields: [connectedAccount.bankId],
             references: [connectedBank.id]
-        })
+        }),
+        imports: many(transactionImport)
     })
 );
 export const SelectConnectedAccountSchema =
@@ -329,7 +338,7 @@ export const transactionImportFile = pgTable('import_file', {
     url: text('url').notNull(),
     importId: text('importId')
         .references(() => transactionImport.id, {
-            onDelete: 'set null',
+            onDelete: 'cascade',
             onUpdate: 'cascade'
         })
         .notNull(),
@@ -361,7 +370,12 @@ export const SelectTransactionImportFileSchema = createSelectSchema(
 );
 export const InsertTransactionImportFileSchema = createInsertSchema(
     transactionImportFile
-);
+).pick({
+    url: true,
+    type: true,
+    filename: true,
+    importId: true
+});
 
 export const transactionImport = pgTable('import', {
     id: text('id').primaryKey().notNull(),
@@ -387,8 +401,12 @@ export const transactionImport = pgTable('import', {
 });
 export const transactionImportRelations = relations(
     transactionImport,
-    ({ many }) => ({
-        files: many(transactionImportFile)
+    ({ many, one }) => ({
+        files: many(transactionImportFile),
+        account: one(connectedAccount, {
+            fields: [transactionImport.accountId],
+            references: [connectedAccount.id]
+        })
     })
 );
 export const SelectTransactionImportSchema =
