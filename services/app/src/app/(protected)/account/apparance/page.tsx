@@ -1,10 +1,7 @@
 import { PageHeader } from '@/components/page/header';
 import { UpdateThemeForm } from '@/features/user/components/update-apparence/update-theme-form';
-import { getUser } from '@/lib/auth';
 
 const ApparancePage = async () => {
-    const user = await getUser();
-
     return (
         <>
             <PageHeader
