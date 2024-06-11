@@ -19,7 +19,7 @@ export const inArrayWithNullFilter = (
 
     if (!value || value.length === 0) return undefined;
 
-    if (value.includes(null)) {
+    if (value.includes(null) || value.includes('null')) {
         const nonNullValues = value.filter((f) => f);
 
         // Drizzle doesn't support empty array in inArray
