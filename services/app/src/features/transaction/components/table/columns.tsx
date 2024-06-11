@@ -18,6 +18,7 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
+import { storeViewUpdateTransactionSheet } from '@/features/transaction/store/view-update-transaction-sheet';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import { HiOutlineEye } from 'react-icons/hi';
@@ -83,7 +84,18 @@ export const columns: ColumnDef<TRow>[] = [
             />
         ),
         cell: ({ row }) => {
-            return row.original.title;
+            const { handleOpen } = storeViewUpdateTransactionSheet();
+            const { id, title } = row.original;
+            return (
+                <Button
+                    onClick={() => handleOpen(id)}
+                    className="p-0 m-0 h-6"
+                    variant="link"
+                    size="sm"
+                >
+                    {title}
+                </Button>
+            );
         },
         enableSorting: true
     },
@@ -167,6 +179,9 @@ export const columns: ColumnDef<TRow>[] = [
         id: 'actions',
 
         cell: ({ row }) => {
+            const { id } = row.original;
+            const { handleOpen } = storeViewUpdateTransactionSheet();
+
             return (
                 <div className="flex justify-end">
                     <DropdownMenu>
@@ -182,7 +197,7 @@ export const columns: ColumnDef<TRow>[] = [
 
                         <DropdownMenuContent align="end" className="w-[160px]">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpen(id)}>
                                 <HiOutlineEye className="mr-2 h-4 w-4" />
                                 View
                             </DropdownMenuItem>
