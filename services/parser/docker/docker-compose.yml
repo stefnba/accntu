@@ -5,11 +5,10 @@ services:
         build:
             context: .
             dockerfile: docker/Dockerfile
-            # target: dev # build stage
-            # args:
-            #     PY_MAJOR_VERSION: ${PY_MAJOR_VERSION}
+        environment:
+            - TEST
         env_file:
             - .env
         ports:
-            - '8000:8000'
+            - '8112:8000'
         restart: always
