@@ -5,8 +5,6 @@ services:
         build:
             context: .
             dockerfile: docker/Dockerfile
-        environment:
-            - TEST
         env_file:
             - .env
         ports:
