@@ -480,6 +480,10 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     importFile: one(transactionImportFile, {
         fields: [transaction.importFileId],
         references: [transactionImportFile.id]
+    }),
+    account: one(connectedAccount, {
+        fields: [transaction.accountId],
+        references: [connectedAccount.id]
     })
 }));
 export const SelectTransactionSchema = createSelectSchema(transaction);
@@ -507,12 +511,12 @@ export const label = pgTable('label', {
     firstParentId: text('firstParentId').references(
         (): AnyPgColumn => label.id
     ),
-    createdAt: timestamp('createdAt', { precision: 3, mode: 'date' })
+    createdAt: timestamp('createdAt', { precision: 3, mode: 'string' })
         .defaultNow()
         .notNull(),
     updatedAt: timestamp('updatedAt', {
         precision: 3,
-        mode: 'date'
+        mode: 'string'
     }),
     isDeleted: boolean('isDeleted').default(false).notNull()
 });
