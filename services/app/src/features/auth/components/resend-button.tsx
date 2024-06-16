@@ -1,14 +1,16 @@
 'use client';
 
-interface Props {
-    email: string;
-}
+import { useResendEmailOTP } from '@/features/auth/api/resend-email-otp';
 
-export default function ResendButton({ email }: Props) {
+interface Props {}
+
+export default function ResendButton({}: Props) {
+    const { mutate } = useResendEmailOTP();
+
     return (
         <button
             className="ml-1 text-primary hover:underline"
-            onClick={() => sendToken({ email })}
+            onClick={() => mutate()}
         >
             Resend
         </button>

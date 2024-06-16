@@ -21,7 +21,7 @@ export default function VerifyEmailOTPForm() {
     return (
         <Form form={form} onSubmit={handleSubmit}>
             <FormInputOTP
-                description="Enter your one-time code thas been sent to your email."
+                description="Enter the code thas been sent to your Email."
                 name="code"
                 form={form}
             />

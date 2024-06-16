@@ -5,6 +5,7 @@ import {
     recordLoginAttempt
 } from '@auth/actions/login-record';
 import { createSession } from '@auth/authenticate';
+import { EMAIL_OTP_LOGIN } from '@auth/config';
 import {
     createEmailOtpCookie,
     deleteEmailOtpCookie,
@@ -12,10 +13,51 @@ import {
 } from '@auth/cookies/email-otp';
 import { getLoginAttemptCookie } from '@auth/cookies/login-record';
 import { AuthError } from '@auth/error';
+import { db } from '@db';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
+const { COOKIE_NAME } = EMAIL_OTP_LOGIN;
+
 const app = new Hono()
+    .post('/resend', async (c) => {
+        const token = await getEmailOtpCookie(c, true);
+
+        console.log('token', token);
+
+        if (!token) {
+            console.log('No email OTP token found');
+            return c.json(
+                {
+                    error: 'No email OTP token found'
+                },
+                400
+            );
+        }
+
+        const verificationRecord = await db.query.verificationToken.findFirst({
+            where: (fields, { and, eq }) => and(eq(fields.token, token))
+        });
+
+        if (!verificationRecord) {
+            return c.json(
+                {
+                    error: 'Invalid email OTP token'
+                },
+                400
+            );
+        }
+
+        const email = verificationRecord.identifier;
+
+        // action to send email OTP
+        const { token: newToken } = await requestEmailOTP(email);
+
+        // set cookie to track email verification
+        await createEmailOtpCookie(c, newToken);
+
+        return c.json({ success: true }, 201);
+    })
     .post('/request', zValidator('json', SendOTPSchema), async (c) => {
         const { email } = c.req.valid('json');
 

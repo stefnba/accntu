@@ -20,9 +20,8 @@ export const useRequestEmailOTP = () => {
                 json: values
             });
 
-            if (response.status === 400) {
-                const { error } = await response.json();
-                throw new Error(error);
+            if (!response.ok) {
+                throw new Error('Failed to request email OTP');
             }
 
             return response.json();

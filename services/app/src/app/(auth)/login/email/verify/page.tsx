@@ -1,16 +1,15 @@
+import ResendButton from '@/features/auth/components/resend-button';
 import VerifyEmailForm from '@/features/auth/components/verify-email-otp-form';
 
-// import ResendButton from './_components/resend-button';
-
 export default function VerifyEmail() {
-    const email = 'd';
-
     return (
         <div>
             <VerifyEmailForm />
             <div className="mt-4">
-                Didn&apos;t receive a code?
-                {/* <ResendButton email={email || ''} /> */}
+                <span className="text-sm text-muted-foreground">
+                    Didn&apos;t receive a code?
+                    <ResendButton />
+                </span>
             </div>
         </div>
     );
