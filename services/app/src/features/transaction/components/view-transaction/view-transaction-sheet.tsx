@@ -11,12 +11,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet';
 import { LabelCard } from '@/features/label/components/label-card';
+import { LabelSelectPopover } from '@/features/label/components/label-select';
 import { useGetTransaction } from '@/features/transaction/api/get-transaction';
+import { useUpdateTransaction } from '@/features/transaction/api/update-transaction';
 import { storeViewUpdateTransactionSheet } from '@/features/transaction/store/view-update-transaction-sheet';
 import { SelectLabelSchema } from '@db/schema';
 import dayjs from 'dayjs';
 import { Copy } from 'lucide-react';
-import { LuCalendar, LuMoreVertical } from 'react-icons/lu';
+import { LuCalendar, LuChevronsUpDown, LuMoreVertical } from 'react-icons/lu';
 import { z } from 'zod';
 
 import { TransactionType } from '../table/utils';
@@ -28,6 +30,10 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
     const { isOpen, handleClose } = storeViewUpdateTransactionSheet();
 
     const { isLoading, data } = useGetTransaction({ id: transactionId });
+
+    const { mutate: updateTransaction } = useUpdateTransaction({
+        id: transactionId || ''
+    });
 
     if (!data) return null;
 
@@ -101,6 +107,49 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
                 </CardHeader>
 
                 <div className="px-6 text-sm">
+                    {/* Label */}
+                    <div className="grid gap-3">
+                        <div className="font-semibold">Label</div>
+
+                        {!label && (
+                            <div>
+                                <span className="text-muted-foreground">
+                                    No label assigned
+                                </span>
+                                <LabelSelectPopover
+                                    handleSelect={(labelId) =>
+                                        updateTransaction({ labelId })
+                                    }
+                                >
+                                    <Button variant="link" size="sm">
+                                        Select Label
+                                    </Button>
+                                </LabelSelectPopover>
+                            </div>
+                        )}
+
+                        {label && (
+                            <div>
+                                <LabelCard
+                                    label={label}
+                                    action={
+                                        <LabelSelectPopover
+                                            handleSelect={(labelId) =>
+                                                updateTransaction({ labelId })
+                                            }
+                                        >
+                                            <Button variant="ghost" size="sm">
+                                                <LuChevronsUpDown />
+                                            </Button>
+                                        </LabelSelectPopover>
+                                    }
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <Separator className="my-4" />
+
                     {/* Amount */}
                     <div className="grid gap-3">
                         <div className="font-semibold">Amount Details</div>

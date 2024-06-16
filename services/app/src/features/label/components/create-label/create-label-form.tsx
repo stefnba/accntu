@@ -1,20 +1,17 @@
 import {
     Form,
-    FormCombobox,
     FormInput,
     FormSelect,
     FormSubmit,
     FormTextarea,
     useForm
 } from '@/components/form';
-import { SelectItem } from '@/components/ui/select';
 import { useCreateLabel } from '@/features/label/api/create-label';
 import { CreateLabelSchema } from '@/features/label/schema/create-label';
-import { useEffect } from 'react';
 import { z } from 'zod';
 
 import { ColorSelectContent } from '../label-color-select';
-import { LabelSelect } from '../label-select';
+import { LabelSelectWithForm } from '../label-select';
 
 type CreateLabelFormValues = z.infer<typeof CreateLabelSchema>;
 
@@ -34,7 +31,6 @@ export const CreateLabelForm: React.FC<Props> = () => {
     });
 
     const handleSubmit = (values: CreateLabelFormValues) => {
-        console.log({ values });
         mutate(values);
     };
 
@@ -47,7 +43,7 @@ export const CreateLabelForm: React.FC<Props> = () => {
                 autocomplete="off"
                 placeholder="Provide a name for the label"
             />
-            <LabelSelect
+            <LabelSelectWithForm
                 label="Parent Label"
                 form={form}
                 name="parentId"

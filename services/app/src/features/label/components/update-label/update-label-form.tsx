@@ -36,7 +36,7 @@ export const UpdateLabelForm: React.FC<Props> = ({ label }) => {
     };
 
     return (
-        <Form className="mt-8" form={form} onSubmit={handleSubmit}>
+        <Form className="mt-8 space-y-4" form={form} onSubmit={handleSubmit}>
             <FormInput
                 form={form}
                 name="name"
@@ -56,9 +56,11 @@ export const UpdateLabelForm: React.FC<Props> = ({ label }) => {
                 name="color"
                 label="Color"
             />
-            <FormSubmit className="w-full" form={form}>
-                Save Changes
-            </FormSubmit>
+            <div>
+                <FormSubmit className="w-full mt-4" form={form}>
+                    Save Changes
+                </FormSubmit>
+            </div>
         </Form>
     );
 };

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sheet';
 import { useDeleteLabel } from '@/features/label/api/delete-label';
 import { useGetLabel } from '@/features/label/api/get-label';
+import { LabelIcon } from '@/features/label/components/label-icon';
 import { storeViewUpdateLabelSheet } from '@/features/label/store/view-update-label-sheet';
 import { BiLabel } from 'react-icons/bi';
 import { LuPencil, LuTrash } from 'react-icons/lu';
@@ -48,10 +49,7 @@ export const ViewUpdateLabelSheet = () => {
                 {view === 'view' && (
                     <>
                         <div className="flex align-middle items-center mb-4">
-                            <BiLabel
-                                style={{ color: label?.color || '--primary' }}
-                                className="size-6 mr-1"
-                            />
+                            <LabelIcon color={label?.color} />
                             <span className="text-2xl font-semibold">
                                 {label?.name}
                             </span>

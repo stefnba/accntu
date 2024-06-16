@@ -17,11 +17,13 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { LabelSelectCommand } from '@/features/label/components/label-select';
 import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
 import { useUpdateTransaction } from '@/features/transaction/api/update-transaction';
 import { storeViewUpdateTransactionSheet } from '@/features/transaction/store/view-update-transaction-sheet';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
+import { useState } from 'react';
 import { HiOutlineEye } from 'react-icons/hi';
 import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
@@ -189,11 +191,12 @@ export const columns: ColumnDef<TRow>[] = [
 
 const TransactionAction = ({ id }: { id: string }) => {
     const { handleOpen } = storeViewUpdateTransactionSheet();
+    const [open, setOpen] = useState(false);
 
     const { mutate } = useUpdateTransaction({ id });
     return (
         <div className="flex justify-end">
-            <DropdownMenu>
+            <DropdownMenu open={open} onOpenChange={setOpen}>
                 <DropdownMenuTrigger asChild>
                     <Button
                         variant="ghost"
@@ -244,13 +247,12 @@ const TransactionAction = ({ id }: { id: string }) => {
                             Labels
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
-                            <DropdownMenuRadioGroup value={'d'}>
-                                {/* {labels.map((label) => (
-        <DropdownMenuRadioItem key={label.value} value={label.value}>
-          {label.label}
-        </DropdownMenuRadioItem>
-      ))} */}
-                            </DropdownMenuRadioGroup>
+                            <LabelSelectCommand
+                                handleSelect={(labelId) => {
+                                    setOpen(false);
+                                    mutate({ labelId });
+                                }}
+                            />
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
 

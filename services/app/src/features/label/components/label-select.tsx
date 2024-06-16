@@ -39,13 +39,16 @@ import { LabelColorDot } from './label-color-select';
 
 type TLabelItem = {
     name: string;
-    color?: string;
+    color: string | null;
 };
 
 const LabelItem = ({ name, color }: TLabelItem) => {
     return (
         <div className="flex items-center">
-            <BiLabel style={{ color }} className="mr-2 size-4" />
+            <BiLabel
+                style={{ color: color || 'black' }}
+                className="mr-2 size-4"
+            />
             {name}
         </div>
     );
@@ -72,7 +75,7 @@ type Props<
 /**
  * LabelSelect component. Must be wrapped in a form.
  */
-export function LabelSelect<TFieldValues extends FieldValues>({
+export function LabelSelectWithForm<TFieldValues extends FieldValues>({
     form,
     name,
     label,
@@ -178,3 +181,64 @@ export function LabelSelect<TFieldValues extends FieldValues>({
         />
     );
 }
+
+interface LabelSelectProps {
+    handleSelect: (labelId: string) => void;
+    children: React.ReactNode;
+}
+
+export const LabelSelectPopover = ({
+    handleSelect,
+    children
+}: LabelSelectProps) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>{children}</PopoverTrigger>
+            <PopoverContent align="start" className="p-0">
+                <LabelSelectCommand
+                    handleSelect={(labelId) => {
+                        handleSelect(labelId);
+                        setOpen(false);
+                    }}
+                />
+            </PopoverContent>
+        </Popover>
+    );
+};
+
+interface LabelSelectCommandProps {
+    handleSelect: (labelId: string) => void;
+}
+
+/**
+ * Main Command component for selecting labels. It fetches the labels and displays them in a command list.
+ */
+export const LabelSelectCommand: React.FC<LabelSelectCommandProps> = ({
+    handleSelect
+}) => {
+    const { data: labels = [], isLoading } = useGetLabels({});
+
+    return (
+        <Command>
+            <CommandInput placeholder="Search..." />
+            <CommandList>
+                <CommandEmpty>No Values found.</CommandEmpty>
+                <CommandGroup>
+                    {labels.map((l) => (
+                        <CommandItem
+                            className="cursor-pointer"
+                            value={l.id}
+                            key={l.name}
+                            onSelect={() => {
+                                handleSelect(l.id);
+                            }}
+                        >
+                            <LabelItem name={l.name} color={l.color} />
+                        </CommandItem>
+                    ))}
+                </CommandGroup>
+            </CommandList>
+        </Command>
+    );
+};
