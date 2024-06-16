@@ -13,6 +13,7 @@ import {
     transactionImportFile
 } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
+import { getTableColumns } from 'drizzle-orm';
 import { and, count, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -150,10 +151,7 @@ export const listTransactions = async ({
             spendingAmount: transaction.spendingAmount,
             spendingCurrency: transaction.spendingCurrency,
             importFileId: transaction.importFileId,
-            label: {
-                id: label.id,
-                name: label.name
-            },
+            label: getTableColumns(label),
             account: {
                 id: connectedAccount.id,
                 name: connectedAccount.name,
