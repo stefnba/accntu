@@ -1,8 +1,9 @@
 import { Dispatch, SetStateAction } from 'react';
-import { DialogFooter } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { FormSubmit } from '.';
 import { UseFormReturn } from 'react-hook-form';
+
+import { FormSubmit } from '.';
+import { Button } from '../ui/button';
+import { DialogFooter } from '../ui/dialog';
 
 interface Props {
     showClose?: boolean;
@@ -18,9 +19,7 @@ interface Props {
 const FormModalSubmit: React.FC<Props> = ({
     setOpen,
     form,
-    showClose = true,
-    submitLoadingText = 'Submitting...',
-    submitText = 'Submit'
+    showClose = true
 }) => {
     return (
         <DialogFooter className="pt-6">
@@ -34,11 +33,7 @@ const FormModalSubmit: React.FC<Props> = ({
                 </Button>
             )}
 
-            <FormSubmit
-                loadingTitle={submitLoadingText}
-                title={submitText}
-                form={form}
-            />
+            <FormSubmit form={form}>Submit</FormSubmit>
         </DialogFooter>
     );
 };
