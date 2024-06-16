@@ -1,12 +1,8 @@
-import { InsertTransactionSchema } from '@db/schema';
 import { z } from 'zod';
 
+import { UpdateTransactionSchema } from './update-transaction';
+
 export const UpdateTransactionsSchema = z.object({
-    values: InsertTransactionSchema.pick({
-        title: true,
-        type: true,
-        labelId: true,
-        note: true
-    }).partial(),
+    values: UpdateTransactionSchema,
     ids: z.array(z.string())
 });

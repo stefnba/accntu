@@ -2,6 +2,7 @@ import { CreateTransactionsSchema } from '@/features/transaction/schema/create-t
 import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
 import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
 import { TransactionFilterKeysSchema } from '@/features/transaction/schema/table-filtering';
+import { UpdateTransactionSchema } from '@/features/transaction/schema/update-transaction';
 import { UpdateTransactionsSchema } from '@/features/transaction/schema/update-transactions';
 import {
     createTransactions,
@@ -36,7 +37,7 @@ const app = new Hono()
         const user = getUser(c);
         const { ids, values } = c.req.valid('json');
 
-        await db
+        const updatedRecords = await db
             .update(transaction)
             .set({ ...values, updatedAt: new Date() })
             .where(
@@ -44,9 +45,10 @@ const app = new Hono()
                     inArray(transaction.id, ids),
                     eq(transaction.userId, user.id)
                 )
-            );
+            )
+            .returning();
 
-        return c.json({}, 201);
+        return c.json(updatedRecords, 201);
     })
     .get(
         '/filters/:filterKey',
@@ -114,6 +116,26 @@ const app = new Hono()
         }
 
         return c.json(data);
-    });
+    })
+    .patch(
+        '/:id/update',
+        zValidator('json', UpdateTransactionSchema),
+        zValidator('param', GetTransactionByIdSchema),
+        async (c) => {
+            const user = getUser(c);
+            const values = c.req.valid('json');
+            const { id } = c.req.valid('param');
+
+            const [updatedRecord] = await db
+                .update(transaction)
+                .set({ ...values, updatedAt: new Date() })
+                .where(
+                    and(eq(transaction.id, id), eq(transaction.userId, user.id))
+                )
+                .returning();
+
+            return c.json(updatedRecord, 201);
+        }
+    );
 
 export default app;
