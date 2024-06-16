@@ -31,7 +31,6 @@ export type TDateFilterPeriodOptions = Array<{
 
 interface Props<T extends string> {
     filterLabel: string;
-    filterKey: T;
     periodEndfilterKey: T;
     periodStartfilterKey: T;
 
@@ -43,7 +42,6 @@ interface Props<T extends string> {
 }
 
 export function DateFilter<T extends string>({
-    filterKey,
     filterLabel,
     filteredValue,
     periodOptions,
@@ -132,7 +130,10 @@ export function DateFilter<T extends string>({
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                             <DropdownMenuItem
-                                onClick={() => resetFilterKeyFn(filterKey)}
+                                onClick={() => {
+                                    resetFilterKeyFn(periodEndfilterKey);
+                                    resetFilterKeyFn(periodStartfilterKey);
+                                }}
                                 className="justify-center text-center cursor-pointer"
                             >
                                 Clear filter

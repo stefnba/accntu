@@ -22,7 +22,11 @@ export function TransactionTableFilterBar({}: Props) {
                 filterKey="title"
                 filterLabel="Title"
             />
-            <TransactionTableDateFilter filterKey="date" filterLabel="Date" />
+            <TransactionTableDateFilter
+                periodEndfilterKey="endDate"
+                periodStartfilterKey="startDate"
+                filterLabel="Date"
+            />
             <TransactionTableSelectFilter
                 filterKey="label"
                 filterLabel="Label"

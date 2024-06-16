@@ -8,7 +8,8 @@ import dayjs from 'dayjs';
 import type { TTransactionFilterKeys } from './types';
 
 interface Props {
-    filterKey: Extract<TTransactionFilterKeys, 'date'>;
+    periodStartfilterKey: Extract<TTransactionFilterKeys, 'startDate'>;
+    periodEndfilterKey: Extract<TTransactionFilterKeys, 'endDate'>;
     filterLabel: string;
 }
 
@@ -40,7 +41,8 @@ const PERIOD_OPTIONS: TDateFilterPeriodOptions = [
 ];
 
 export const TransactionTableDateFilter: React.FC<Props> = ({
-    filterKey,
+    periodStartfilterKey,
+    periodEndfilterKey,
     filterLabel
 }) => {
     const filters = storeTransactionTableFiltering((state) => state.filters);
@@ -60,7 +62,6 @@ export const TransactionTableDateFilter: React.FC<Props> = ({
         <DateFilter
             periodOptions={PERIOD_OPTIONS}
             filteredValue={selectedRange}
-            filterKey={filterKey}
             periodEndfilterKey="endDate"
             periodStartfilterKey="startDate"
             filterLabel={filterLabel}
