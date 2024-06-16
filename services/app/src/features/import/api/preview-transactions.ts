@@ -1,11 +1,12 @@
 import { errorToast } from '@/components/toast';
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
-import type { InferRequestType } from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 
 const query = client.api.import[':id']['preview'][':fileId'].$get;
 
 type TParams = InferRequestType<typeof query>['param'];
+export type TPreviewTransactionReponse = InferResponseType<typeof query>;
 
 export const usePreviewTransactions = (params: TParams) => {
     const q = useQuery({
