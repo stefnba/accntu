@@ -170,7 +170,10 @@ export const listTransactions = async ({
         .leftJoin(bank, eq(connectedBank.bankId, bank.id));
 
     const transactions = queryBuilder(transactionsQuery.$dynamic(), {
-        // orderBy,
+        orderBy: [
+            { column: transaction.date, direction: 'desc' },
+            { column: transaction.key, direction: 'asc' }
+        ],
         filters: filterClause,
         page: pagination.page,
         pageSize: pagination.pageSize
