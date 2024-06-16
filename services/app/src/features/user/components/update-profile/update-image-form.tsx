@@ -67,7 +67,7 @@ export const UpdateUserImageForm: React.FC<Props> = () => {
             )}
             <FormDropzone
                 form={form}
-                name="image"
+                name="lastName"
                 onDropSuccess={(files) => setImage(files[0])}
                 className={image ? 'hidden' : 'block'}
             />

@@ -1,17 +1,11 @@
 'use client';
 
-import { AccountCollapsibleSection } from '../update-section';
+import { AccountCustomSection } from '../update-section';
 
 interface Props {
     email: string;
 }
 
 export const UpdateEmailSection: React.FC<Props> = ({ email }) => {
-    return (
-        <AccountCollapsibleSection
-            title="Email"
-            subTitle={email}
-            content={<div>Coming soon...</div>}
-        />
-    );
+    return <AccountCustomSection title="Email" subTitle={email} />;
 };
