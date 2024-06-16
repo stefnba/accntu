@@ -1,27 +1,23 @@
-import { transactionActions } from '@/actions';
-import { update } from '@/actions/label';
-import { UpdateTransactionSchema } from '@/actions/transaction/schema';
 import {
     Form,
     FormInput,
     FormRadio,
     FormSubmit,
+    FormTextarea,
     useForm
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { useMutation } from '@/lib/hooks/actions';
+import { UpdateTransactionsSchema } from '@/features/transaction/schema/update-transactions';
+import { storeTransactionTableRowSelection } from '@/features/transaction/store/table-row-selection';
 import { cn } from '@/lib/utils';
-import { label } from '@/server/db/schema';
 import { useQueryClient } from '@tanstack/react-query';
-import { set } from 'date-fns';
 import { useState } from 'react';
 import { RxPlusCircled } from 'react-icons/rx';
+import { z } from 'zod';
 
-import { useTransactionTableRowSelectionStore } from '../table/store';
+import { useUpdateTransactions } from '../../api/update-transactions';
 
-interface Props {
-    handleClose: () => void;
-}
+interface Props {}
 
 const updateableFields = [
     {
@@ -46,49 +42,34 @@ const updateableFields = [
     // },
 ];
 
-export const TransactionUpdateForm: React.FC<Props> = ({ handleClose }) => {
+export const TransactionUpdateForm: React.FC<Props> = () => {
     const [updateFields, setUpdateFields] = useState<string[]>([]);
 
-    const rowSelection = useTransactionTableRowSelectionStore(
+    const rowSelection = storeTransactionTableRowSelection(
         (state) => state.rowSelection
     );
-    const setRowSelection = useTransactionTableRowSelectionStore(
+    const setRowSelection = storeTransactionTableRowSelection(
         (state) => state.setRowSelection
     );
 
-    const queryClient = useQueryClient();
+    const { mutate } = useUpdateTransactions();
 
-    const { execute: executeUpdateTransactions } = useMutation(
-        transactionActions.update,
-        {
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                handleClose();
-                setRowSelection({});
-            }
-        }
-    );
-
-    const form = useForm(UpdateTransactionSchema, {
+    const form = useForm(UpdateTransactionsSchema, {
         defaultValues: {
-            data: {
-                title: ''
-            },
-            id: Object.keys(rowSelection)
+            ids: Object.keys(rowSelection),
+            values: {}
         }
     });
+
+    const handleSubmit = (values: z.infer<typeof UpdateTransactionsSchema>) => {
+        mutate(values);
+    };
 
     const updateCount = Object.keys(rowSelection).length;
 
     const formUpdateFields = {
-        title: (
-            <FormInput
-                // className="mt-8"
-                label="Title"
-                form={form}
-                name="data.title"
-            />
-        )
+        title: <FormInput label="Title" form={form} name="values.title" />,
+        note: <FormTextarea label="Note" form={form} name="values.note" />
     };
 
     return (
@@ -123,13 +104,13 @@ export const TransactionUpdateForm: React.FC<Props> = ({ handleClose }) => {
             </div>
 
             <Form
-                onSubmit={executeUpdateTransactions}
+                onSubmit={handleSubmit}
                 form={form}
                 className="space-y-8 mt-8"
             >
                 {/* Title */}
                 {updateFields.includes('title') && (
-                    <FormInput label="Title" form={form} name="data.title" />
+                    <FormInput label="Title" form={form} name="values.title" />
                 )}
 
                 {/* Type */}
@@ -137,7 +118,7 @@ export const TransactionUpdateForm: React.FC<Props> = ({ handleClose }) => {
                     <FormRadio
                         label="Type"
                         form={form}
-                        name="data.type"
+                        name="values.type"
                         options={[
                             {
                                 label: 'Credit',
@@ -156,11 +137,10 @@ export const TransactionUpdateForm: React.FC<Props> = ({ handleClose }) => {
                 )}
 
                 {updateFields.length > 0 && (
-                    <FormSubmit
-                        title={`Update ${updateCount} transaction${updateCount > 1 ? 's' : ''}`}
-                        className="mt-8"
-                        form={form}
-                    />
+                    <FormSubmit className="mt-8" form={form}>
+                        Update {updateCount} transaction
+                        {updateCount > 1 ? 's' : ''}
+                    </FormSubmit>
                 )}
             </Form>
         </div>

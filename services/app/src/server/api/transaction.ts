@@ -2,14 +2,17 @@ import { CreateTransactionsSchema } from '@/features/transaction/schema/create-t
 import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
 import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
 import { TransactionFilterKeysSchema } from '@/features/transaction/schema/table-filtering';
+import { UpdateTransactionsSchema } from '@/features/transaction/schema/update-transactions';
 import {
     createTransactions,
     listTransactions
 } from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
 import { db } from '@/server/db/client';
+import { transaction } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { listFilterOptions } from '@server/actions/transaction-filter';
+import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -28,6 +31,22 @@ const app = new Hono()
         });
 
         return c.json(data);
+    })
+    .patch('/', zValidator('json', UpdateTransactionsSchema), async (c) => {
+        const user = getUser(c);
+        const { ids, values } = c.req.valid('json');
+
+        await db
+            .update(transaction)
+            .set({ ...values, updatedAt: new Date() })
+            .where(
+                and(
+                    inArray(transaction.id, ids),
+                    eq(transaction.userId, user.id)
+                )
+            );
+
+        return c.json({}, 201);
     })
     .get(
         '/filters/:filterKey',

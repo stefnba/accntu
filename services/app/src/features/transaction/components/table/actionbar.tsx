@@ -7,8 +7,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { storeTransactionTableRowSelection } from '@/features/transaction/store';
+import { storeBulkUpdateTransactionSheet } from '@/features/transaction/store/bulk-update-transaction-sheet';
 import { RxDotsHorizontal, RxDownload, RxPencil2 } from 'react-icons/rx';
 
 interface Props {}
@@ -18,11 +18,25 @@ export const TransactionTableActionBar: React.FC<Props> = () => {
         (state) => state.rowSelection
     );
 
+    const { handleOpen } = storeBulkUpdateTransactionSheet();
+
     const selectedRowCount = Object.keys(rowSelection).length;
 
     return (
         <div className="flex items-center justify-between space-x-2">
-            {/* {selectedRowCount > 0 && <TransactionUpdateSheet />} */}
+            {/* Update Button */}
+            {selectedRowCount > 0 && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto hidden h-8 lg:flex"
+                    onClick={handleOpen}
+                >
+                    <RxPencil2 className="mr-2 h-4 w-4" />
+                    Update
+                </Button>
+            )}
+            {/* Export Button */}
             {selectedRowCount > 0 && (
                 <Button
                     variant="outline"
