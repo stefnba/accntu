@@ -1,5 +1,5 @@
 import { transaction } from '@db/schema';
-import { inArrayWithNullFilter } from '@db/utils';
+import { inArrayFilter, inArrayWithNullFilter } from '@db/utils';
 import { between, gte, ilike, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -45,7 +45,11 @@ export const FilterTransactionSchema = z
         ),
         accountCurrency: MultiSelectFilterSchema.transform((val) =>
             inArrayWithNullFilter(transaction.accountCurrency, val)
+        ),
+        type: MultiSelectFilterSchema.transform((val) =>
+            inArrayFilter(transaction.type, val)
         )
+
         // date: z
         //     .discriminatedUnion('period', [
         //         z.object({

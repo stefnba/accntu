@@ -34,8 +34,13 @@ export const inArrayWithNullFilter = (
 
 export const inArrayFilter = (
     column: PgColumn,
-    value: Array<string> | undefined
+    value: Array<string> | string | undefined
 ) => {
+    if (!value) return undefined;
+
+    // turn value into an array and re-run function
+    if (!Array.isArray(value)) return inArrayWithNullFilter(column, [value]);
+
     // Drizzle doesn't support empty array in inArray
     if (!value || value.length === 0) return undefined;
 

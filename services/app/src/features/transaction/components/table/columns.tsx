@@ -18,6 +18,7 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
+import { useUpdateTransaction } from '@/features/transaction/api/update-transaction';
 import { storeViewUpdateTransactionSheet } from '@/features/transaction/store/view-update-transaction-sheet';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import dayjs from 'dayjs';
@@ -180,60 +181,87 @@ export const columns: ColumnDef<TRow>[] = [
 
         cell: ({ row }) => {
             const { id } = row.original;
-            const { handleOpen } = storeViewUpdateTransactionSheet();
 
-            return (
-                <div className="flex justify-end">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-                            >
-                                <RxDotsHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align="end" className="w-[160px]">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleOpen(id)}>
-                                <HiOutlineEye className="mr-2 h-4 w-4" />
-                                View
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem>
-                                <LuFileEdit className="mr-2 h-4 w-4" />
-                                Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel>Quick Update</DropdownMenuLabel>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <LuTags className="mr-2 h-4 w-4" />
-                                    Labels
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuRadioGroup value={'d'}>
-                                        {/* {labels.map((label) => (
-                <DropdownMenuRadioItem key={label.value} value={label.value}>
-                  {label.label}
-                </DropdownMenuRadioItem>
-              ))} */}
-                                    </DropdownMenuRadioGroup>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                                <RxTrash className="mr-2 h-4 w-4" />
-                                Delete
-                                <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            );
+            return <TransactionAction id={id} />;
         }
     }
 ];
+
+const TransactionAction = ({ id }: { id: string }) => {
+    const { handleOpen } = storeViewUpdateTransactionSheet();
+
+    const { mutate } = useUpdateTransaction({ id });
+    return (
+        <div className="flex justify-end">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+                    >
+                        <RxDotsHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Open menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-[160px]">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => handleOpen(id)}>
+                        <HiOutlineEye className="mr-2 h-4 w-4" />
+                        View
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem>
+                        <LuFileEdit className="mr-2 h-4 w-4" />
+                        Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Quick Update</DropdownMenuLabel>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>Type</DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuItem
+                                onClick={() => mutate({ type: 'CREDIT' })}
+                            >
+                                Credit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => mutate({ type: 'DEBIT' })}
+                            >
+                                Debit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => mutate({ type: 'TRANSFER' })}
+                            >
+                                Transfer
+                            </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <LuTags className="mr-2 h-4 w-4" />
+                            Labels
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuRadioGroup value={'d'}>
+                                {/* {labels.map((label) => (
+        <DropdownMenuRadioItem key={label.value} value={label.value}>
+          {label.label}
+        </DropdownMenuRadioItem>
+      ))} */}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-600">
+                        <RxTrash className="mr-2 h-4 w-4" />
+                        Delete
+                        <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+};

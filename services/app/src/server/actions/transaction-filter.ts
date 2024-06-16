@@ -57,6 +57,7 @@ export const listFilterOptions = async ({
             transaction.accountCurrency,
             filter
         ),
+        type: getFilterOptions(transaction, transaction.type, filter),
         endDate: undefined,
         startDate: undefined
     };
