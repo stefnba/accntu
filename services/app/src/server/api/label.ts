@@ -88,12 +88,12 @@ const app = new Hono()
             const values = c.req.valid('json');
             const user = getUser(c);
 
-            console.log({ values });
             try {
                 const data = await createLabel(values, user.id);
                 return c.json(data, 201);
             } catch (e) {
                 console.error(e);
+                return c.json({ error: 'Failed to create label' }, 400);
             }
         }
     )
