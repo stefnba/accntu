@@ -100,8 +100,8 @@ export const useUploadImportFile = (importId: string) => {
             errorToast(error.message);
         },
         onSuccess: (data) => {
+            // add successfully uploaded file to store
             addUploadedFile(data.id);
-            // successToast(`File '${data.filename}' uploaded successfully`);
         }
     });
 

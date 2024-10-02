@@ -52,12 +52,14 @@ export const CreateImportFileDropzone: React.FC<Props> = ({ form }) => {
                 .map((file: FileWithPath) => file);
 
             if (filesToUpload.length === 0) {
-                toast.error('File already uploaded');
+                toast.error('File already selected');
                 return;
             }
 
             // add file to form
-            form.setValue('files', filesToUpload, { shouldValidate: true });
+            form.setValue('files', [...files, ...filesToUpload], {
+                shouldValidate: true
+            });
         }
     });
 

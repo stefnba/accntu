@@ -12,6 +12,9 @@ import { z } from 'zod';
 
 import { CreateImportFileDropzone } from './file-dropzone';
 
+/**
+ * Form to select bank account and select files for a new import.
+ */
 export const CreateImportSelectionForm = () => {
     const form = useForm(CreateImportSelectionSchema);
 
@@ -20,7 +23,7 @@ export const CreateImportSelectionForm = () => {
     const handleSubmit = (
         values: z.infer<typeof CreateImportSelectionSchema>
     ) => {
-        // add to store
+        // add accountId and files to store
         setImportData(values);
         // go to next step
         handleStep('uploading');

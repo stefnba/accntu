@@ -11,16 +11,15 @@ interface Props {
 }
 
 /**
- * One card for a upload file.
+ * One card for uploading a import file.
  */
 export const UploadFileCard: React.FC<Props> = ({ file, importId }) => {
-    const { mutate: uploadFile, isPending: uploadIsPending } =
+    const { mutate: uploadFileMutate, isPending: uploadIsPending } =
         useUploadImportFile(importId);
-    // const { mutate: deleteFile } = useDeleteImportFile();
 
     useEffect(() => {
-        uploadFile(file);
-    }, [uploadFile, file]);
+        uploadFileMutate(file);
+    }, [uploadFileMutate, file]);
 
     return (
         <FileCard
