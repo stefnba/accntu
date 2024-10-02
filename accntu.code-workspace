@@ -11,6 +11,10 @@
     {
       "name": "Parser",
       "path": "./services/parser"
+    },
+    {
+      "name": "Database",
+      "path": "./services/db"
     }
   ],
   "settings": {
