@@ -85,7 +85,7 @@ const ListChildLabels = ({
     return (
         <div
             style={{ paddingLeft: level + 1 * 50 }}
-            className="grid grid-cols-1 gap-4 mt-4 mb-6 max-w-[800px]"
+            className="grid grid-cols-1 gap-4 mt-4 mb-2 max-w-[800px]"
         >
             {data?.map((l) => <LabelCardForList label={l} key={l.id} />)}
         </div>

@@ -22,7 +22,7 @@ import {
     PopoverContent,
     PopoverTrigger
 } from '@/components/ui/popover';
-import { useGetLabels } from '@/features/label/api/get-labels';
+import { useGetAllLabels } from '@/features/label/api/get-all-labels';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import type {
@@ -82,7 +82,7 @@ export function LabelSelectWithForm<TFieldValues extends FieldValues>({
     placeholder,
     description
 }: Props<TFieldValues>) {
-    const { data, isLoading } = useGetLabels({});
+    const { data, isLoading } = useGetAllLabels();
     const [open, setOpen] = useState(false);
 
     if (isLoading) {
@@ -131,43 +131,18 @@ export function LabelSelectWithForm<TFieldValues extends FieldValues>({
                                     </FormControl>
                                 </PopoverTrigger>
                                 <PopoverContent align="start" className="p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Search..." />
-                                        <CommandList>
-                                            <CommandEmpty>
-                                                No Values found.
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                {options.map((o) => (
-                                                    <CommandItem
-                                                        value={o.value}
-                                                        key={o.value}
-                                                        onSelect={() => {
-                                                            form.setValue(
-                                                                name,
-                                                                o.value
-                                                            );
-                                                            setOpen(false);
-                                                        }}
-                                                    >
-                                                        {/* <LuCheck
-                                                            className={cn(
-                                                                'mr-2 h-4 w-4',
-                                                                o.value ===
-                                                                    field.value
-                                                                    ? 'opacity-100'
-                                                                    : 'opacity-0'
-                                                            )}
-                                                        /> */}
-                                                        <LabelItem
-                                                            name={o.label}
-                                                            color={o.value}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
+                                    <LabelSelectCommand
+                                        handleSelect={(labelId) => {
+                                            form.setValue(
+                                                name,
+                                                labelId as PathValue<
+                                                    TFieldValues,
+                                                    Path<TFieldValues>
+                                                >
+                                            );
+                                            setOpen(false);
+                                        }}
+                                    />
                                 </PopoverContent>
                             </Popover>
                         </div>
@@ -217,7 +192,7 @@ interface LabelSelectCommandProps {
 export const LabelSelectCommand: React.FC<LabelSelectCommandProps> = ({
     handleSelect
 }) => {
-    const { data: labels = [], isLoading } = useGetLabels({});
+    const { data: labels = [], isLoading } = useGetAllLabels();
 
     return (
         <Command>
@@ -225,18 +200,39 @@ export const LabelSelectCommand: React.FC<LabelSelectCommandProps> = ({
             <CommandList>
                 <CommandEmpty>No Values found.</CommandEmpty>
                 <CommandGroup>
-                    {labels.map((l) => (
-                        <CommandItem
-                            className="cursor-pointer"
-                            value={l.id}
-                            key={l.name}
-                            onSelect={() => {
-                                handleSelect(l.id);
-                            }}
-                        >
-                            <LabelItem name={l.name} color={l.color} />
-                        </CommandItem>
-                    ))}
+                    {labels.map((l) => {
+                        const { name, level, parentLabel, rootParent } = l;
+
+                        console.log(11, level);
+
+                        const labelName = () => {
+                            if (level === 0) {
+                                return name;
+                            }
+
+                            if (level === 1) {
+                                return `${parentLabel?.name} > ${name}`;
+                            }
+                            if (level === 2) {
+                                return `${rootParent?.name} > ${parentLabel?.name} > ${name}`;
+                            }
+
+                            return `${rootParent?.name} > ... > ${parentLabel?.name} > ${name}`;
+                        };
+
+                        return (
+                            <CommandItem
+                                className="cursor-pointer"
+                                value={l.id}
+                                key={l.id}
+                                onSelect={() => {
+                                    handleSelect(l.id);
+                                }}
+                            >
+                                <LabelItem name={labelName()} color={l.color} />
+                            </CommandItem>
+                        );
+                    })}
                 </CommandGroup>
             </CommandList>
         </Command>

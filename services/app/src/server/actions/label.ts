@@ -45,22 +45,19 @@ export const createLabel = async (
             )
         );
 
-    // create label record
-    try {
-        const [newLabel] = await db
-            .insert(label)
-            .values({
-                id: createId(),
-                userId,
-                ...values,
-                rank: (maxRank?.rank || -1) + 1,
-                level,
-                firstParentId
-            })
-            .returning();
+    const newRank = (maxRank?.rank ?? 0) + 1;
 
-        return newLabel;
-    } catch (e) {
-        console.error(e);
-    }
+    const [newLabel] = await db
+        .insert(label)
+        .values({
+            id: createId(),
+            userId,
+            ...values,
+            rank: newRank,
+            level,
+            firstParentId
+        })
+        .returning();
+
+    return newLabel;
 };
