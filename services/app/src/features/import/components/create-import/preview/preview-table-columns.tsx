@@ -1,6 +1,6 @@
 'use client';
 
-// import type { TParsedTransaction } from '@/features/import/schema/preview-transactions';
+import { Badge } from '@/components/ui/badge';
 import type { TPreviewTransactionReponse } from '@/features/import/api/preview-transactions';
 import {
     Amount,
@@ -10,6 +10,19 @@ import {
 import { ColumnDef } from '@tanstack/react-table';
 
 export const columns: ColumnDef<TPreviewTransactionReponse[0]>[] = [
+    {
+        accessorKey: 'isDuplicate',
+        header: 'Status',
+        cell: ({ row }) => {
+            return (
+                <Badge
+                    variant={row.original.isDuplicate ? 'secondary' : 'default'}
+                >
+                    {row.original.isDuplicate ? 'Duplicate' : 'New'}
+                </Badge>
+            );
+        }
+    },
     {
         accessorKey: 'date',
         header: 'Date',
@@ -34,7 +47,7 @@ export const columns: ColumnDef<TPreviewTransactionReponse[0]>[] = [
     },
     {
         accessorKey: 'spendingAmount',
-        header: 'Spending Amount',
+        header: 'Transaction Amount',
         cell: ({ row }) => {
             const { spendingAmount, spendingCurrency } = row.original;
 
@@ -56,9 +69,5 @@ export const columns: ColumnDef<TPreviewTransactionReponse[0]>[] = [
                 <Amount currency={userCurrency} amountInCents={userAmount} />
             );
         }
-    },
-    {
-        accessorKey: 'isDuplicate',
-        header: 'Duplicate'
     }
 ];

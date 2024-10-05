@@ -8,7 +8,7 @@ const query = client.api.transactions.create['$post'];
 
 export const useCreateTransactions = () => {
     const queryClient = useQueryClient();
-    const { handleStep, importId } = storeCreateImportModal();
+    const { handleStep } = storeCreateImportModal();
 
     const q = useMutation<
         InferResponseType<typeof query>,
@@ -33,14 +33,14 @@ export const useCreateTransactions = () => {
             }
 
             queryClient.invalidateQueries({ queryKey: ['imports'] });
-            queryClient.invalidateQueries({
-                queryKey: [
-                    'import',
-                    {
-                        id: importId
-                    }
-                ]
-            });
+            // queryClient.invalidateQueries({
+            //     queryKey: [
+            //         'import',
+            //         {
+            //             id: transactions[0].import
+            //         }
+            //     ]
+            // });
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
         },
         onError: (error) => {

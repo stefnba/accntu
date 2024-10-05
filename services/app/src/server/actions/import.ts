@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { transactionImport, transactionImportFile } from '@db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { deleteObject } from '../lib/upload/cloud/s3/actions';
 

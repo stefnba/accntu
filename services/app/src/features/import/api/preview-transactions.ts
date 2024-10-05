@@ -5,7 +5,7 @@ import type { InferRequestType, InferResponseType } from 'hono/client';
 
 const query = client.api.import[':id']['preview'][':fileId'].$get;
 
-type TParams = InferRequestType<typeof query>['param'];
+type TParams = Partial<InferRequestType<typeof query>['param']>;
 export type TPreviewTransactionReponse = InferResponseType<typeof query>;
 
 export const usePreviewTransactions = (params: TParams) => {
@@ -19,8 +19,15 @@ export const usePreviewTransactions = (params: TParams) => {
             }
         ],
         queryFn: async () => {
+            if (!params.id || !params.fileId) {
+                throw new Error('Missing required parameters');
+            }
+
             const res = await query({
-                param: params
+                param: {
+                    id: params.id,
+                    fileId: params.fileId
+                }
             });
 
             if (!res.ok) throw new Error(res.statusText);

@@ -13,7 +13,7 @@ import {
     PopoverTrigger
 } from '@/components/ui/popover';
 import { useGetImport } from '@/features/import/api/get-import';
-import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
+import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storePreviewImportFiles } from '@/features/import/store/preview-import-files';
 import { ChevronsUpDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -24,7 +24,7 @@ interface Props {}
  * Get files for importId.
  */
 export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
-    const { importId } = storeCreateImportModal();
+    const { importId } = storeCreateImportData();
 
     const { data, isLoading } = useGetImport({
         id: importId
@@ -54,7 +54,7 @@ export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
                 >
                     {fileId
                         ? files.find((f) => f.id === fileId)?.filename
-                        : 'Select files...'}
+                        : 'Select Files...'}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>

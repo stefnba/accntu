@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { useCreateImport } from '@/features/import/api/create-import';
+import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { storeUploadImportFiles } from '@/features/import/store/upload-import-files';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { UploadFileCard } from './upload-file-card';
 
@@ -10,30 +11,22 @@ import { UploadFileCard } from './upload-file-card';
  * Component to create a new import record and then upload all selected files.
  */
 export const ImportFileUpload = () => {
-    const { mutate, isPending } = useCreateImport();
+    const hasFired = useRef(false);
+    const { mutate: mutateCreateImport, isPending } = useCreateImport();
 
-    const { importId, handleStep, importData } = storeCreateImportModal();
-    const { uploadedFiles, resetUploadedFiles } = storeUploadImportFiles();
+    const { handleStep } = storeCreateImportModal();
+    const { importId, importData, setImportId } = storeCreateImportData();
+    const { uploadedFiles } = storeUploadImportFiles();
 
     const files = importData?.files;
 
     useEffect(() => {
-        resetUploadedFiles();
-    }, [resetUploadedFiles]);
-
-    // create new import record
-    useEffect(() => {
-        if (importData) {
-            // create new import importData
-            mutate({ accountId: importData.accountId });
+        // create new import record, and update store with importId
+        if (!hasFired.current && importData) {
+            hasFired.current = true;
+            mutateCreateImport({ accountId: importData.accountId });
         }
-    }, [mutate, importData]);
-
-    useEffect(() => {
-        if (files?.length === uploadedFiles.length) {
-            // handleStep('preview');
-        }
-    }, [uploadedFiles, files, handleStep]);
+    }, [mutateCreateImport, importData, setImportId]);
 
     if (isPending) {
         return <div>Creating Import...</div>;
@@ -51,24 +44,21 @@ export const ImportFileUpload = () => {
     return (
         <div>
             <div className="gap-y-2 grid">
-                {files?.map((f) => (
-                    <UploadFileCard key={f.path} importId={importId} file={f} />
-                ))}
+                {files?.map((f) => <UploadFileCard key={f.path} file={f} />)}
             </div>
 
-            {!allFilesUploaded ? (
-                <div className="mt-4 text-sm text-muted-foreground ml-auto mr-0">
-                    {uploadedFilesCount} of {filesCount} file(s) uploaded
-                </div>
-            ) : (
-                <Button
-                    className="w-full mt-8"
-                    disabled={!allFilesUploaded}
-                    onClick={() => handleStep('preview')}
-                >
-                    Continue
-                </Button>
-            )}
+            <div className="text-sm text-muted-foreground mt-4">
+                {uploadedFilesCount} of {filesCount} file
+                {filesCount > 1 ? 's' : null} uploaded
+            </div>
+
+            <Button
+                className="w-full mt-4"
+                disabled={!allFilesUploaded}
+                onClick={() => handleStep('preview')}
+            >
+                Continue
+            </Button>
         </div>
     );
 };

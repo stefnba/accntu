@@ -1,4 +1,5 @@
 import { errorToast, successToast } from '@/components/toast';
+import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { storeUploadImportFiles } from '@/features/import/store/upload-import-files';
 import { client } from '@/lib/api/client';
 import { computeSHA256 } from '@/server/lib/upload/utils';
@@ -67,15 +68,15 @@ const createFileRecord = async (
     return response.json();
 };
 
-export const useUploadImportFile = (importId: string) => {
+export const useUploadImportFile = () => {
     const { addUploadedFile } = storeUploadImportFiles();
 
     const q = useMutation<
         InferResponseType<typeof createFileCall>,
         Error,
-        FileWithPath
+        { file: FileWithPath; importId: string }
     >({
-        mutationFn: async (file) => {
+        mutationFn: async ({ file, importId }) => {
             const values = {
                 checksum: await computeSHA256(file),
                 fileSize: file.size,
@@ -101,6 +102,7 @@ export const useUploadImportFile = (importId: string) => {
         },
         onSuccess: (data) => {
             // add successfully uploaded file to store
+            console.log('add', data);
             addUploadedFile(data.id);
         }
     });

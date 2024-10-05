@@ -1,14 +1,11 @@
 import Dropzone from '@/components/ui/dropzone';
 import { FormDescription, FormLabel } from '@/components/ui/form';
-import { storeUploadImportFiles } from '@/features/import/store/upload-import-files';
-import { useState } from 'react';
 import { FileWithPath, useDropzone } from 'react-dropzone';
 import { UseFormReturn } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 
 import { CreateImportSelectionSchema } from '../../../schema/create-import';
-import { ImportFileCard } from '../import-file-card';
 import { DroppedFileCard } from './dropped-file-card';
 
 interface Props {
@@ -20,10 +17,6 @@ interface Props {
 }
 
 export const CreateImportFileDropzone: React.FC<Props> = ({ form }) => {
-    // const [files, setFiles] = useState<FileWithPath[]>([]);
-    // const files = storeUploadImportFiles((state) => state.files);
-    // const addFile = storeUploadImportFiles((state) => state.addFile);
-
     const files = form.getValues('files') || [];
 
     const { getRootProps, getInputProps } = useDropzone({
@@ -36,7 +29,7 @@ export const CreateImportFileDropzone: React.FC<Props> = ({ form }) => {
         // },
         onDropRejected() {
             toast.error(
-                'Invalid file type.Please upload a valid file. Only CSV and Excel files are allowed.'
+                'Invalid file type. Please upload a valid file. Only CSV and Excel files are allowed.'
             );
         },
         onDropAccepted(acceptedFiles) {

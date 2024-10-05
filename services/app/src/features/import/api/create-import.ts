@@ -1,4 +1,5 @@
 import { errorToast, successToast } from '@/components/toast';
+import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,8 +7,11 @@ import { InferRequestType, InferResponseType } from 'hono';
 
 const query = client.api.import.create['$post'];
 
+/**
+ * Create new import record. If action is successful, importId store is updated.
+ */
 export const useCreateImport = () => {
-    const { setImportId } = storeCreateImportModal();
+    const { setImportId } = storeCreateImportData();
     const queryClient = useQueryClient();
 
     const q = useMutation<

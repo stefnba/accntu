@@ -1,11 +1,8 @@
 import { DataTable, DataTablePagination } from '@/components/ui/data-table';
 import { usePreviewTransactions } from '@/features/import/api/preview-transactions';
-import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
+import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storePreviewImportFiles } from '@/features/import/store/preview-import-files';
-import type { TParsedTransaction } from '@/features/import/types/preview-transactions';
 import {
-    ColumnDef,
-    flexRender,
     getCoreRowModel,
     getPaginationRowModel,
     getSortedRowModel,
@@ -21,7 +18,7 @@ interface Props {}
  * Display transactions
  */
 export const CreateImportPreviewTable: React.FC<Props> = ({}) => {
-    const { importId } = storeCreateImportModal();
+    const { importId } = storeCreateImportData();
     const { fileId } = storePreviewImportFiles();
 
     const { data } = usePreviewTransactions({
@@ -34,16 +31,13 @@ export const CreateImportPreviewTable: React.FC<Props> = ({}) => {
         columns,
         getCoreRowModel: getCoreRowModel(),
         enableRowSelection: true,
-        // onRowSelectionChange: setRowSelection,
         enableSorting: true,
         getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        // state: {
-        //     rowSelection
-        // },
+        // getPaginationRowModel: getPaginationRowModel(),
         getRowId: (row) => row.key,
         initialState: {
             sorting: [
+                { id: 'isDuplicate', desc: false },
                 {
                     id: 'date',
                     desc: true
@@ -55,10 +49,20 @@ export const CreateImportPreviewTable: React.FC<Props> = ({}) => {
             ]
         }
     });
+
+    if (!importId || !fileId) {
+        return (
+            <div className="h-96">
+                <h1>No Import File selected</h1>
+                <p>Please select an import file to view the transactions</p>
+            </div>
+        );
+    }
+
     return (
-        <div>
+        <div className="overflow-y-scroll h-[600px]">
             <DataTable table={table} />
-            <DataTablePagination table={table} />
+            {/* <DataTablePagination table={table} /> */}
         </div>
     );
 };

@@ -23,7 +23,7 @@ export const useDeleteImportFile = () => {
             return response.json();
         },
         onSuccess: (data) => {
-            // queryClient.invalidateQueries({ queryKey: [] });
+            queryClient.invalidateQueries({ queryKey: [] });
             successToast(`File '${data.filename}' has been deleted`);
         },
         onError: (error) => {

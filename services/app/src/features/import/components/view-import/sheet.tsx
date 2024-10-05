@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { useDeleteImport } from '@/features/import/api/delete-import';
 import { useGetImport } from '@/features/import/api/get-import';
+import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { storeViewImportSheet } from '@/features/import/store/view-import-sheet';
 import dayjs from 'dayjs';
@@ -18,13 +19,13 @@ import { LuPencil, LuTrash } from 'react-icons/lu';
 
 import { FileCard } from '../file-card';
 
-// import { UpdateLabelForm } from './update-label-form';
-
 export const ViewImportSheet = () => {
-    const { isOpen, handleClose, id } = storeViewImportSheet();
-    const { handleContinue } = storeCreateImportModal();
+    const { isOpen, handleClose, id: importId } = storeViewImportSheet();
+    const { handleOpen: handleModalOpen, handleStep: handleModalStep } =
+        storeCreateImportModal();
+    const { setImportId, setImportData } = storeCreateImportData();
 
-    const { data: importRecord, isLoading } = useGetImport({ id });
+    const { data: importRecord, isLoading } = useGetImport({ id: importId });
     const { mutate: deleteImport } = useDeleteImport();
 
     if (isLoading) return <div>Loading...</div>;
@@ -35,8 +36,18 @@ export const ViewImportSheet = () => {
 
     const handleComplete = () => {
         handleClose();
-        handleContinue(importRecord.id, importRecord.accountId);
+        handleModalOpen();
+        handleModalStep('preview');
+        setImportId(importRecord.id);
+        setImportData({
+            accountId: importRecord.accountId,
+            files: []
+        });
     };
+
+    if (!importId) {
+        return <div>Error</div>;
+    }
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
@@ -87,7 +98,7 @@ export const ViewImportSheet = () => {
                         size="sm"
                         variant="destructive"
                         className="w-full mt-2"
-                        onClick={() => deleteImport({ id })}
+                        onClick={() => deleteImport({ id: importId })}
                     >
                         <LuTrash className="size-4 mr-2" />
                         Delete

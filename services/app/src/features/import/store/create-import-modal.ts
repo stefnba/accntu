@@ -10,6 +10,22 @@ const steps = [
     'success'
 ] as const;
 
+interface State {
+    step: (typeof steps)[number];
+    isOpen: boolean;
+}
+
+const initialState: State = {
+    step: 'selection',
+    isOpen: false
+};
+
+interface Actions {
+    handleStep: (step: (typeof steps)[number]) => void;
+    handleOpen: () => void;
+    handleClose: () => void;
+}
+
 interface IStoreCreateImportModal {
     // steps
     step: (typeof steps)[number];
@@ -18,10 +34,12 @@ interface IStoreCreateImportModal {
     // import id
     importId?: string;
     setImportId: (importId: string) => void;
+    resetImportId: () => void;
 
     // import data (files and account id)
     importData?: z.infer<typeof CreateImportSelectionSchema>;
     setImportData: (data: z.infer<typeof CreateImportSelectionSchema>) => void;
+    resetImportData: () => void;
 
     // visibility
     isOpen: boolean;
@@ -32,34 +50,36 @@ interface IStoreCreateImportModal {
     handleContinue: (importId: string, accountId: string) => void;
 }
 
-export const storeCreateImportModal = create<IStoreCreateImportModal>(
-    (set) => ({
-        // steps
-        step: 'selection',
-        handleStep: (step) => set({ step }),
+export const storeCreateImportModal = create<State & Actions>()((set, get) => ({
+    ...initialState,
 
-        // import data
-        importData: undefined,
-        setImportData: (data) => set({ importData: data }),
+    // steps
+    handleStep: (step) => set({ step }),
 
-        // import id
-        importId: undefined,
-        setImportId: (importId) => set({ importId }),
+    // visibility
+    handleOpen: () => set({ isOpen: true, step: 'selection' }),
+    handleClose: () => {
+        set({ isOpen: false });
+    }
 
-        // visibility
-        isOpen: false,
-        handleOpen: () => set({ isOpen: true, step: 'selection' }),
-        handleClose: () => {
-            set({ isOpen: false });
-        },
+    // import data
+    // importData: undefined,
+    // setImportData: (data) => set({ importData: data }),
+    // resetImportData: () => set({ importData: undefined }),
 
-        // contine
-        handleContinue: (importId, accountId) =>
-            set({
-                isOpen: true,
-                importId,
-                step: 'preview',
-                importData: { accountId, files: [] }
-            })
-    })
-);
+    // // import id
+    // importId: undefined,
+    // setImportId: (importId) => set({ importId }),
+    // resetImportId: () => set({ importId: undefined }),
+
+    // visibility
+
+    // // contine
+    // handleContinue: (importId, accountId) =>
+    //     set({
+    //         isOpen: true,
+    //         importId,
+    //         step: 'preview',
+    //         importData: { accountId, files: [] }
+    //     })
+}));

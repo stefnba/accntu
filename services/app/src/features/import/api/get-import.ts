@@ -6,7 +6,7 @@ const query = client.api.import[':id'].$get;
 
 type TParams = InferRequestType<typeof query>['param'];
 
-export const useGetImport = (params: TParams) => {
+export const useGetImport = (params: Partial<TParams>) => {
     const q = useQuery({
         enabled: !!params.id,
         queryKey: [
@@ -17,7 +17,9 @@ export const useGetImport = (params: TParams) => {
         ],
         queryFn: async () => {
             const res = await query({
-                param: params
+                param: {
+                    id: params.id!
+                }
             });
 
             if (!res.ok) throw new Error(res.statusText);

@@ -1,18 +1,25 @@
 import { create } from 'zustand';
 
-interface IStoreUploadImportFiles {
+interface State {
     uploadedFiles: string[];
-    addUploadedFile: (files: string) => void;
-    resetUploadedFiles: () => void;
 }
 
-export const storeUploadImportFiles = create<IStoreUploadImportFiles>(
-    (set) => ({
-        uploadedFiles: [],
-        resetUploadedFiles: () => set({ uploadedFiles: [] }),
-        addUploadedFile: (file) =>
-            set((state) => ({
-                uploadedFiles: [...state.uploadedFiles, file]
-            }))
-    })
-);
+interface Actions {
+    addUploadedFile: (files: string) => void;
+    reset: () => void;
+}
+
+const initialState: State = {
+    uploadedFiles: []
+};
+
+/**
+ * Track uploading status of import files using only the ID of the file.
+ */
+export const storeUploadImportFiles = create<State & Actions>()((set, get) => ({
+    ...initialState,
+    reset: () => set(initialState),
+    addUploadedFile: (file) => {
+        set({ uploadedFiles: [...get().uploadedFiles, file] });
+    }
+}));

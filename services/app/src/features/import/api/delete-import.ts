@@ -24,9 +24,9 @@ export const useDeleteImport = () => {
 
             return response.json();
         },
-        onSuccess: (data) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['imports'] });
-            successToast(`Import has been deleted`);
+            successToast(`Import deleted`);
             handleClose();
         },
         onError: (error) => {
