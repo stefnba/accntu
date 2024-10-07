@@ -6,6 +6,9 @@ const query = client.api.import.$get;
 
 export type ImportResponse = InferResponseType<typeof query>;
 
+/**
+ * Fetch all import records for given user.
+ */
 export const useGetImports = () => {
     const q = useQuery({
         queryKey: ['imports'],

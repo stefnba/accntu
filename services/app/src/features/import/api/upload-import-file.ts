@@ -68,6 +68,9 @@ const createFileRecord = async (
     return response.json();
 };
 
+/**
+ * Upload file to the import record.
+ */
 export const useUploadImportFile = () => {
     const { addUploadedFile } = storeUploadImportFiles();
 

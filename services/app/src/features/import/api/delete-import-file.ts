@@ -5,6 +5,9 @@ import { InferRequestType, InferResponseType } from 'hono';
 
 const query = client.api.import.file[':id'].delete.$delete;
 
+/**
+ * Delete an import file by fileId.
+ */
 export const useDeleteImportFile = () => {
     const queryClient = useQueryClient();
 

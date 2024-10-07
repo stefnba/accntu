@@ -6,6 +6,9 @@ const query = client.api.import[':id'].$get;
 
 type TParams = InferRequestType<typeof query>['param'];
 
+/**
+ * Fetch import record by id.
+ */
 export const useGetImport = (params: Partial<TParams>) => {
     const q = useQuery({
         enabled: !!params.id,

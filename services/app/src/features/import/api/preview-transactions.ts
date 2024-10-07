@@ -8,6 +8,10 @@ const query = client.api.import[':id']['preview'][':fileId'].$get;
 type TParams = Partial<InferRequestType<typeof query>['param']>;
 export type TPreviewTransactionReponse = InferResponseType<typeof query>;
 
+/**
+ * Fetch preview transactions for an import by importId and fileId.
+ * This will return a list of transactions.
+ */
 export const usePreviewTransactions = (params: TParams) => {
     const q = useQuery({
         enabled: !!params.id && !!params.fileId,
