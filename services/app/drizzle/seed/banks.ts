@@ -9,6 +9,8 @@ const banksSeed: TSeedBanks = [
         id: createId(),
         name: 'Barclays',
         country: 'DE',
+        color: '#00aeef',
+        logo: 'https://accntu-public.s3.eu-central-1.amazonaws.com/logos/barclays_de.png',
         accounts: [
             {
                 type: 'CREDIT_CARD',
@@ -19,8 +21,10 @@ const banksSeed: TSeedBanks = [
     },
     {
         id: createId(),
-        name: 'Swiss Miles & More',
+        name: 'Swisscard Miles & More',
         country: 'CH',
+        color: '#28516F',
+        logo: 'https://accntu-public.s3.eu-central-1.amazonaws.com/logos/swisscard_ch.webp',
         accounts: [
             {
                 type: 'CREDIT_CARD',
@@ -34,6 +38,8 @@ const banksSeed: TSeedBanks = [
         id: createId(),
         name: 'UBS',
         country: 'CH',
+        color: '#e60100',
+        logo: 'https://accntu-public.s3.eu-central-1.amazonaws.com/logos/ubs1508.jpg',
         accounts: [
             {
                 type: 'CREDIT_CARD',

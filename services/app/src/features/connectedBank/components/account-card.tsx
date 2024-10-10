@@ -21,8 +21,9 @@ export const BankAccountCard: React.FC<Props> = ({ onClick, label }) => {
     );
 };
 
-const AccountTypeIcon: React.FC<{
+export const AccountTypeIcon: React.FC<{
     type: z.infer<typeof ConnectedAccountTypeSchema>;
+    color?: string;
 }> = ({ type }) => {
     if (type === 'CREDIT_CARD') return <LuCreditCard className="size-6" />;
     if (type === 'CURRENT') return <LuPiggyBank className="size-6" />;
@@ -34,11 +35,15 @@ export const ConnectedAccountCard: React.FC<{
     type: z.infer<typeof ConnectedAccountTypeSchema>;
     description?: string | null;
     action?: React.ReactElement;
-}> = ({ name, type, description, action }) => {
+    color?: string;
+}> = ({ name, type, description, action, color }) => {
     return (
         <div className="group flex items-center rounded-md border py-2 px-3 transition">
-            <div className="mr-3 bg-slate-400 text-white p-2 rounded-md">
-                <AccountTypeIcon type={type} />
+            <div
+                style={{ backgroundColor: color }}
+                className="mr-3 bg-slate-400 text-white p-2 rounded-md"
+            >
+                <AccountTypeIcon type={type} color={color} />
             </div>
 
             <div>

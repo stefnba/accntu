@@ -8,7 +8,7 @@ import {
 import { useDeleteConnectedBank } from '@/features/connectedBank/api/delete-connected-bank';
 import { useGetConnectedBank } from '@/features/connectedBank/api/get-connected-bank';
 import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
-import { LuFileEdit, LuTrash } from 'react-icons/lu';
+import { LuTrash } from 'react-icons/lu';
 
 import { ConnectedAccountCard } from '../account-card';
 
@@ -21,6 +21,8 @@ export const UpdateConnectedBankSheet = () => {
     if (!connectedBank) return null;
 
     const { bank, accounts } = connectedBank;
+
+    if (!id) return <div>Bank not found</div>;
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
@@ -36,6 +38,7 @@ export const UpdateConnectedBankSheet = () => {
                             type={a.type}
                             key={a.id}
                             description={a.description}
+                            color={bank.color || undefined}
                         />
                     ))}
                 </div>

@@ -15,9 +15,9 @@ export const useDeleteConnectedBank = () => {
         Error,
         InferRequestType<typeof query>['param']
     >({
-        mutationFn: async (param) => {
+        mutationFn: async ({ id }) => {
             const response = await query({
-                param
+                param: { id }
             });
 
             if (!response.ok) throw new Error(response.statusText);
