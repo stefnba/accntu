@@ -2,6 +2,7 @@ import { db } from '@/db';
 
 export const getBanks = async (country?: string) => {
     const data = await db.query.bank.findMany({
+        with: { accounts: true },
         where: (fields, { eq, and }) =>
             and(country ? eq(fields.country, country) : undefined)
     });

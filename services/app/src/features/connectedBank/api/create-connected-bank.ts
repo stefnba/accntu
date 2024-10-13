@@ -1,5 +1,5 @@
 import { errorToast, successToast } from '@/components/toast';
-import { storeCreateConnectedBankModal } from '@/features/connectedBank/store/create-bank-modal';
+import { storeBankAccountCreate } from '@/features/connectedBank/store/account-create-modal';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
@@ -7,7 +7,7 @@ import { InferRequestType, InferResponseType } from 'hono';
 const query = client.api.connected.banks.create.$post;
 
 export const useCreateConnectedBank = () => {
-    const { handleClose } = storeCreateConnectedBankModal();
+    const { handleClose } = storeBankAccountCreate();
     const queryClient = useQueryClient();
 
     const q = useMutation<

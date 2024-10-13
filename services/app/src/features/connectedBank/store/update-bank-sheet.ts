@@ -7,6 +7,9 @@ interface IStoreUpdateConnectedBankSheet {
     handleClose: () => void;
 }
 
+/**
+ * Store for displaying Sheet Component of viewing and editing a Bank connection.
+ */
 export const storeUpdateConnectedBankSheet =
     create<IStoreUpdateConnectedBankSheet>((set) => ({
         isOpen: false,

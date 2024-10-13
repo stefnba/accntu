@@ -1,11 +1,11 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { storeCreateConnectedBankModal } from '@/features/connectedBank/store/create-bank-modal';
+import { storeBankAccountCreate } from '@/features/connectedBank/store/account-create-modal';
 import { LuPlus } from 'react-icons/lu';
 
 export const CreateConnectedBankTrigger = () => {
-    const { handleOpen } = storeCreateConnectedBankModal();
+    const { handleOpen } = storeBankAccountCreate();
 
     return (
         <Button size="sm" onClick={handleOpen}>

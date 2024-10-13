@@ -1,8 +1,10 @@
 import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
-import { InferRequestType } from 'hono';
+import { InferRequestType, InferResponseType } from 'hono';
 
 const query = client.api.connected.banks[':id'].$get;
+
+export type TConnectedBankResponse = InferResponseType<typeof query>;
 
 export const useGetConnectedBank = ({
     id

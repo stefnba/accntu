@@ -1,22 +1,29 @@
+import {
+    Card,
+    CardDescription,
+    CardHeader,
+    CardTitle
+} from '@/components/ui/card';
+import { TBankResponse } from '@/features/bank/api/get-bank';
 import { ConnectedAccountTypeSchema } from '@db/schema';
 import { LuBanknote, LuCreditCard, LuPiggyBank } from 'react-icons/lu';
 import { z } from 'zod';
 
 interface Props {
     onClick?: () => void;
-    label: string;
+    bank: TBankResponse;
 }
 
 /**
  * Bank & account card component used in Modal.
  */
-export const BankAccountCard: React.FC<Props> = ({ onClick, label }) => {
+export const BankAccountCard: React.FC<Props> = ({ onClick, bank }) => {
     return (
         <div
             onClick={onClick}
             className="flex text-2xl rounded-md border align-middle items-center justify-center h-24 cursor-pointer hover:shadow-md transition hover:border-gray-300"
         >
-            {label}
+            {bank.name}
         </div>
     );
 };
@@ -38,23 +45,39 @@ export const ConnectedAccountCard: React.FC<{
     color?: string;
 }> = ({ name, type, description, action, color }) => {
     return (
-        <div className="group flex items-center rounded-md border py-2 px-3 transition">
-            <div
-                style={{ backgroundColor: color }}
-                className="mr-3 bg-slate-400 text-white p-2 rounded-md"
-            >
-                <AccountTypeIcon type={type} color={color} />
-            </div>
+        <Card className="flex items-center rounded-md border py-2 px-3 transition p-2 min-h-14">
+            <AccountIcon type={type} color={color} />
 
             <div>
-                <div className="">{name}</div>
-                {description && (
-                    <div className="text-sm text-muted-foreground mt-[-4px]">
-                        This is a test account
-                    </div>
-                )}
+                <CardHeader className="m-0 p-0">
+                    <CardTitle className="text-lg font-semibold">
+                        {name}
+                    </CardTitle>
+                    {description && (
+                        <CardDescription className="mt-[-6px] p-0">
+                            asdfasdfsaf
+                        </CardDescription>
+                        // <div className="text-sm text-muted-foreground mt-[-4px]">
+                        //     This is a test account
+                        // </div>
+                    )}
+                </CardHeader>
             </div>
             {action && <div className="ml-auto">{action}</div>}
+        </Card>
+    );
+};
+
+export const AccountIcon: React.FC<{
+    type: z.infer<typeof ConnectedAccountTypeSchema>;
+    color?: string;
+}> = ({ color, type }) => {
+    return (
+        <div
+            style={{ backgroundColor: color }}
+            className="mr-3 bg-slate-400 text-white p-2 rounded-md"
+        >
+            <AccountTypeIcon type={type} color={color} />
         </div>
     );
 };
