@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page/header';
+import { ListConnectedBanks } from '@/features/connectedBank/components/account-list';
 import { CreateConnectedBankTrigger } from '@/features/connectedBank/components/create-account/modal-trigger';
-import { ListConnectedBanks } from '@/features/connectedBank/components/list-accounts';
 
 export default async function AccountList() {
     return (
