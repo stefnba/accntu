@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS "label" (
 	"description" text,
 	"parentId" text,
 	"firstParentId" text,
-	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
-	"updatedAt" timestamp (3),
+	"createdAt" timestamp(3) DEFAULT now() NOT NULL,
+	"updatedAt" timestamp(3),
 	"isDeleted" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
@@ -129,6 +129,10 @@ CREATE TABLE IF NOT EXISTS "transaction" (
 	"importFileId" text NOT NULL,
 	"date" date NOT NULL,
 	"title" text NOT NULL,
+	"description" text,
+	"counterparty" text,
+	"iban" text,
+	"bic" text,
 	"type" "TransactionType" NOT NULL,
 	"spendingAmount" integer NOT NULL,
 	"spendingCurrency" char(3) NOT NULL,

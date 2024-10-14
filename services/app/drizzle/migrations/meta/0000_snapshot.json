@@ -1,5 +1,5 @@
 {
-  "id": "b967bc81-58ad-4036-bddc-b3e2865d7a06",
+  "id": "e2c426f5-9e7c-45a5-94e0-4d746507547c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -341,14 +341,14 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp (3)",
+          "type": "timestamp(3)",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp (3)",
+          "type": "timestamp(3)",
           "primaryKey": false,
           "notNull": false
         },
@@ -629,6 +629,30 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "counterparty": {
+          "name": "counterparty",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "iban": {
+          "name": "iban",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bic": {
+          "name": "bic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "type": {
           "name": "type",
