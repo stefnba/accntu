@@ -19,7 +19,10 @@ export const ImportCard: React.FC<Props> = ({ importRecord }) => {
     const { handleOpen } = storeViewImportSheet();
 
     return (
-        <Card onClick={() => handleOpen(importRecord.id)}>
+        <Card
+            className="hover:shadow-md cursor-pointer hover:scale-[1.01]"
+            onClick={() => handleOpen(importRecord.id)}
+        >
             <CardHeader>
                 <CardTitle>
                     {dayjs(createdAt).format('DD-MMM YY HH:mm')}

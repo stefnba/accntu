@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react';
 interface Props {}
 
 /**
- * Get files for importId.
+ * Drop
  */
 export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
     const { importId } = storeCreateImportData();
@@ -42,6 +42,11 @@ export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
     if (isLoading) return <div>Loading files...</div>;
     if (!data) return null;
     const { files = [] } = data;
+
+    console.log(data);
+
+    const newFiles = files.filter((f) => !f.importedAt);
+    const importedFiles = files.filter((f) => f.importedAt);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -65,9 +70,10 @@ export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
                 <Command>
                     <CommandEmpty>No files found.</CommandEmpty>
                     <CommandList>
-                        <CommandGroup>
-                            {files.map((f) => (
+                        <CommandGroup heading="New">
+                            {newFiles.map((f) => (
                                 <CommandItem
+                                    // className="h-8"
                                     key={f.id}
                                     value={f.id}
                                     onSelect={(currentValue) => {
@@ -83,6 +89,14 @@ export const CreateImportPreviewFiles: React.FC<Props> = ({}) => {
                                         checked={fileId === f.id}
                                         className="mr-2"
                                     />
+                                    {f.filename}
+                                    {f.updatedAt && <div>upload</div>}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                        <CommandGroup heading="Already imported">
+                            {importedFiles.map((f) => (
+                                <CommandItem key={f.id}>
                                     {f.filename}
                                 </CommandItem>
                             ))}

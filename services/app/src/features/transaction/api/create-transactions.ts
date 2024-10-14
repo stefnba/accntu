@@ -1,5 +1,6 @@
 import { errorToast, successToast } from '@/components/toast';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
+import { storeImportTransactions } from '@/features/import/store/import-transactions';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
@@ -9,6 +10,7 @@ const query = client.api.transactions.create['$post'];
 export const useCreateTransactions = () => {
     const queryClient = useQueryClient();
     const { handleStep } = storeCreateImportModal();
+    const { updateCount } = storeImportTransactions();
 
     const q = useMutation<
         InferResponseType<typeof query>,
@@ -24,7 +26,9 @@ export const useCreateTransactions = () => {
 
             return response.json();
         },
-        onSuccess: ({ allImported, transactions }) => {
+        onSuccess: ({ allImported, transactions, importId }) => {
+            console.log(allImported);
+
             if (allImported) {
                 // successToast('All transactions imported');
                 handleStep('success');
@@ -32,15 +36,18 @@ export const useCreateTransactions = () => {
                 successToast(`${transactions.length} Transactions created`);
             }
 
+            // update store with number of transactions successfully imported
+            updateCount(transactions.length);
+
             queryClient.invalidateQueries({ queryKey: ['imports'] });
-            // queryClient.invalidateQueries({
-            //     queryKey: [
-            //         'import',
-            //         {
-            //             id: transactions[0].import
-            //         }
-            //     ]
-            // });
+            queryClient.invalidateQueries({
+                queryKey: [
+                    'import',
+                    {
+                        id: importId
+                    }
+                ]
+            });
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
         },
         onError: (error) => {

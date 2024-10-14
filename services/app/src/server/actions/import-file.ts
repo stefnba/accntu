@@ -6,7 +6,7 @@ import {
     transactionImportFile
 } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 type TParserBody = {
@@ -101,7 +101,7 @@ export const parseTransactionFile = async (
 };
 
 /**
- * Create import file record.
+ * Create import file record. Upon creating the file record, the associated import record will also be updated with file count.
  */
 export const createImportFile = async ({
     userId,
@@ -130,11 +130,19 @@ export const createImportFile = async ({
         throw new Error('Failed to create import file');
     }
 
+    const { count: fileCount } = (
+        await db
+            .select({ count: count() })
+            .from(transactionImportFile)
+            .where(eq(transactionImportFile.importId, values.importId))
+    )[0];
+
     // update import record
     await db
         .update(transactionImport)
         .set({
-            fileCount: (importRecord.fileCount || 0) + 1
+            // fileCount: (importRecord.fileCount || 0) + 1
+            fileCount
         })
         .where(eq(transactionImport.id, newImportFile.importId));
 

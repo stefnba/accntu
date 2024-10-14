@@ -31,6 +31,7 @@ export const createTransactions = async ({
     accountId: string;
     userId: string;
 }) => {
+    // create transaction records
     const newTransactions = await db
         .insert(transaction)
         .values(
@@ -88,8 +89,7 @@ export const createTransactions = async ({
             importedTransactionCount:
                 currentTransactionCount + newTransactions.length,
             successAt:
-                (importRecord.importedFileCount || 0) + 1 ===
-                importRecord.fileCount
+                currentFileCount + 1 === importRecord.fileCount
                     ? new Date()
                     : null
         })
@@ -103,7 +103,8 @@ export const createTransactions = async ({
 
     return {
         transactions: newTransactions,
-        allImported: updatedImportRecord.successAt !== null
+        allImported: updatedImportRecord.successAt !== null,
+        importId: importRecord.id
     };
 };
 

@@ -85,7 +85,16 @@ const app = new Hono()
                 where: (fields, { eq, and }) =>
                     and(eq(fields.id, id), eq(fields.userId, user.id)),
                 with: {
-                    files: true
+                    files: true,
+                    account: {
+                        with: {
+                            bank: {
+                                with: {
+                                    bank: true
+                                }
+                            }
+                        }
+                    }
                 }
             });
 
