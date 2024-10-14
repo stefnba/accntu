@@ -7,6 +7,9 @@ const query = client.api.banks[':id'].$get;
 type TParams = InferRequestType<typeof query>['param'];
 export type TBankResponse = InferResponseType<typeof query, 200>;
 
+/**
+ * Fetch a bank by Id from API endpoint.
+ */
 export const useGetBank = ({ id }: Partial<TParams>) => {
     const q = useQuery({
         queryKey: ['bank', id],

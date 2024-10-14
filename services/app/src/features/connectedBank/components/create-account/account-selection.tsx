@@ -4,26 +4,13 @@ import { Form, FormSubmit, useForm } from '@/components/form';
 import { FormSwitch } from '@/components/form/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useGetBank } from '@/features/bank/api';
+import { useCreateConnectedBank } from '@/features/connectedBank/api/create-connected-bank';
+import { ConnectedAccountCard } from '@/features/connectedBank/components/account-card';
+import { CreateAccountSchema } from '@/features/connectedBank/schema/create-connected-bank';
 import { storeBankAccountCreate } from '@/features/connectedBank/store/account-create-modal';
-import { SelectBankUploadAccountsSchema } from '@db/schema';
 import { useEffect } from 'react';
 import { z } from 'zod';
-
-import { useCreateConnectedBank } from '../../api/create-connected-bank';
-import { CreateAccountSchema } from '../../schema/create-connected-bank';
-import { ConnectedAccountCard } from '../account-card';
-
-const BankUploadAccountsSchema = SelectBankUploadAccountsSchema.pick({
-    id: true,
-    type: true
-});
-
-// interface Props {
-//     bankId: string;
-//     accounts: z.infer<typeof BankUploadAccountsSchema>[];
-// }
 
 const accountTypeMapping = {
     CREDIT_CARD: 'Credit Card',
@@ -53,14 +40,7 @@ export const AccountSelection: React.FC<Props> = () => {
         }
     });
 
-    const { reset, watch } = form;
-
-    useEffect(() => {
-        const { unsubscribe } = watch((value) => {
-            console.log(value);
-        });
-        return () => unsubscribe();
-    }, [watch]);
+    const { reset } = form;
 
     useEffect(() => {
         reset({

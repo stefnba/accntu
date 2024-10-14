@@ -1,51 +1,34 @@
-import { getAccountsByBankId, getBank, getBanks } from '@/server/actions/bank';
+import {
+    GetAccountByBankSchema,
+    GetBankSchema,
+    GetBanksSchema,
+    getAccountsByBankId,
+    getBank,
+    getBanks
+} from '@/server/actions/bank';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { z } from 'zod';
 
 const app = new Hono()
-    .get(
-        '/',
-        zValidator('query', z.object({ country: z.string().optional() })),
-        async (c) => {
-            const { country } = c.req.valid('query');
-            const data = await getBanks(country);
-            return c.json(data);
+    .get('/', zValidator('query', GetBanksSchema), async (c) => {
+        const data = await getBanks(c.req.valid('query'));
+        return c.json(data);
+    })
+    .get('/:id', zValidator('param', GetBankSchema), async (c) => {
+        const { id } = c.req.valid('param');
+        const data = await getBank({ id });
+        if (!data) {
+            return c.json({ error: 'Not1111 Found' }, 404);
         }
-    )
-    .post('/', (c) => c.json('create an author', 201))
-    .get(
-        '/:id',
-        zValidator(
-            'param',
-            z.object({
-                id: z.string()
-            })
-        ),
-        async (c) => {
-            const { id } = c.req.valid('param');
-
-            const data = await getBank(id);
-
-            if (!data) {
-                return c.json({ error: 'Not Found' }, 404);
-            }
-
-            return c.json(data);
-        }
-    )
+        return c.json(data);
+    })
     .get(
         '/:id/accounts',
-        zValidator(
-            'param',
-            z.object({
-                id: z.string()
-            })
-        ),
+        zValidator('param', GetAccountByBankSchema),
         async (c) => {
-            const { id } = c.req.valid('param');
+            const { bankId } = c.req.valid('param');
 
-            const data = await getAccountsByBankId(id);
+            const data = await getAccountsByBankId({ bankId });
 
             if (!data) {
                 return c.json({ error: 'Not Found' }, 404);

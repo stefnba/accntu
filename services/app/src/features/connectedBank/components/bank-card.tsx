@@ -6,7 +6,6 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
-import { TConnectedBanksResponse } from '@/features/connectedBank/api/get-connected-banks';
 import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
 import { countries } from '@/lib/constants';
 import type { ConnectedAccountType } from '@db/types';
