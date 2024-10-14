@@ -53,5 +53,5 @@ export type LoginMethod = z.infer<typeof dbSchema.LoginMethodSchema>;
 export type TransactionType = z.infer<typeof dbSchema.TransactionTypeSchema>;
 export type Language = z.infer<typeof dbSchema.LanguageSchema>;
 export type ConnectedAccountType = z.infer<
-    typeof dbSchema.connectedAccountSchema
+    typeof dbSchema.ConnectedAccountTypeSchema
 >;
