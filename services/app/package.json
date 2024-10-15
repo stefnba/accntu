@@ -13,6 +13,7 @@
         "db:drop": "drizzle-kit drop --config=drizzle/config.ts",
         "db:introspect": "drizzle-kit introspect:pg --config=drizzle/config.ts",
         "db:seed": "tsx ./drizzle/seed/seed.ts",
+        "db:reset": "tsx ./drizzle/reset.ts",
         "docker:dev": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --project-directory . up -d --build --force-recreate ",
         "docker:db": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --project-directory . up db -d --build --force-recreate ",
         "docker:test": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.test.yml --project-directory . up -d --build --force-recreate"
