@@ -22,6 +22,7 @@ import { LuCalendar, LuChevronsUpDown, LuMoreVertical } from 'react-icons/lu';
 import { z } from 'zod';
 
 import { TransactionType } from '../table/utils';
+import { TransactionNote } from './note';
 
 interface Props {}
 
@@ -35,7 +36,7 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
         id: transactionId || ''
     });
 
-    if (!data) return null;
+    if (!data || !transactionId) return null;
 
     const {
         title,
@@ -234,19 +235,10 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
                     {/* Note */}
                     <div className="grid gap-3">
                         <div className="font-semibold ">Note</div>
-                        <span className="text-justify">
-                            Die Elf von Julian Nagelsmann agiert extrem geduldig
-                            und erhöht nun auf 2:0. Deutschland wartet, bis die
-                            Bravehearts sich aus der Reserve locken lassen, und
-                            spielt dann explosionsartig nach vorne. Gündoğan
-                            findet Havertz mit einem Zuckerpass, der es selbst
-                            machen könnte, aber lieber wartet, bis Musiala
-                            nachrückt. Das Zuspiel kommt an und der Münchner
-                            Spieler lässt sich nicht zweimal bitten.
-                            Kompromisslos nagelt er die Kugel aus elf Metern mit
-                            rechts oben links in den Winkel. Nichts zu halten
-                            für Gunn.
-                        </span>
+                        <TransactionNote
+                            note={note}
+                            transactionId={transactionId}
+                        />
                     </div>
                 </div>
 
