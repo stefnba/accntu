@@ -23,19 +23,10 @@ interface Props {}
  */
 export const CreateImportModal: React.FC<Props> = ({}) => {
     const { isOpen, handleClose, step } = storeCreateImportModal();
-    const { reset: resetUploadFiles } = storeUploadImportFiles();
-    const { reset: resetImportData } = storeCreateImportData();
+    const { importData, importId } = storeCreateImportData();
 
-    // reset importData
-    useEffect(() => {
-        if (isOpen) {
-            resetUploadFiles();
-
-            if (step === 'selection') {
-                resetImportData();
-            }
-        }
-    }, [step, resetUploadFiles, isOpen, resetImportData]);
+    console.log('importData', importData);
+    console.log('importId', importId);
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -50,9 +41,7 @@ export const CreateImportModal: React.FC<Props> = ({}) => {
                 <div className="min-w-[450px]">
                     {step === 'selection' && <CreateImportSelectionForm />}
                     {step === 'uploading' && <ImportFileUpload />}
-                    {step === 'success' && (
-                        <ImportSuccess transactionCount={0} />
-                    )}
+                    {step === 'success' && <ImportSuccess />}
                 </div>
                 {step === 'preview' && <CreateImportPreview />}
             </DialogContent>

@@ -2,13 +2,10 @@ import { CreateImportSelectionSchema } from '@/features/import/schema/create-imp
 import { z } from 'zod';
 import { create } from 'zustand';
 
-const steps = [
-    'selection',
-    'uploading',
-    'preview',
-    'importing',
-    'success'
-] as const;
+import { storeCreateImportData } from './create-import-data';
+import { storeUploadImportFiles } from './upload-import-files';
+
+const steps = ['selection', 'uploading', 'preview', 'success'] as const;
 
 interface State {
     step: (typeof steps)[number];
@@ -22,7 +19,7 @@ const initialState: State = {
 
 interface Actions {
     handleStep: (step: (typeof steps)[number]) => void;
-    handleOpen: () => void;
+    handleOpen: (step?: (typeof steps)[number], reset?: boolean) => void;
     handleClose: () => void;
 }
 
@@ -33,7 +30,15 @@ export const storeCreateImportModal = create<State & Actions>()((set) => ({
     handleStep: (step) => set({ step }),
 
     // visibility
-    handleOpen: () => set({ isOpen: true, step: 'selection' }),
+    handleOpen: (step = 'selection', reset = true) => {
+        // reset import data and uploaded files if requested
+        if (reset) {
+            storeCreateImportData.getState().reset();
+            storeUploadImportFiles.getState().reset();
+        }
+
+        set({ isOpen: true, step });
+    },
     handleClose: () => {
         set({ isOpen: false });
     }

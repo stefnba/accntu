@@ -2,6 +2,7 @@ import { Form, FormSubmit, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useDeleteImport } from '@/features/import/api/delete-import';
 import { useDeleteImportFile } from '@/features/import/api/delete-import-file';
+import { useGetImport } from '@/features/import/api/get-import';
 import { usePreviewTransactions } from '@/features/import/api/preview-transactions';
 import { storeCreateImportData } from '@/features/import/store/create-import-data';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
@@ -19,28 +20,30 @@ interface Props {}
 
 export const CreateImportPreview: React.FC<Props> = ({}) => {
     const form = useForm(CreateTransactionsSchema);
+
     const { mutate: mutateCreateTransactions } = useCreateTransactions();
     const { mutate: mutateDeleteImportFile } = useDeleteImportFile();
     const { mutate: mutateDeleteImport } = useDeleteImport();
 
     const { importId, importData } = storeCreateImportData();
+    const { data: importRecord } = useGetImport({ id: importId });
     const { handleStep } = storeCreateImportModal();
     const { fileId } = storePreviewImportFiles();
     const { accountId } = importData || {};
 
-    const { data } = usePreviewTransactions({
+    const { data: previewTransactions } = usePreviewTransactions({
         id: importId,
         fileId
     });
 
     const newTransactions = useMemo(
-        () => data?.filter((t) => !t.isDuplicate),
-        [data]
+        () => previewTransactions?.filter((t) => !t.isDuplicate),
+        [previewTransactions]
     );
 
     const duplicateTransactions = useMemo(
-        () => data?.filter((t) => t.isDuplicate),
-        [data]
+        () => previewTransactions?.filter((t) => t.isDuplicate),
+        [previewTransactions]
     );
 
     useEffect(() => {
@@ -73,14 +76,15 @@ export const CreateImportPreview: React.FC<Props> = ({}) => {
         handleStep('selection');
     };
 
-    if (importData?.files?.length === 0)
+    //
+    if (importRecord?.files?.length === 0)
         return (
             <div>
                 <div>No files are assigned to this Import.</div>
                 <div className="flex mt-4 space-x-2">
-                    <Button onClick={() => handleUploadFiles()}>
+                    {/* <Button onClick={() => handleUploadFiles()}>
                         Upload Files
-                    </Button>
+                    </Button> */}
                     <Button
                         variant="secondary"
                         onClick={() => handleImportDelete()}

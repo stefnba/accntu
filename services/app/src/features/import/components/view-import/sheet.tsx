@@ -40,9 +40,13 @@ export const ViewImportSheet = () => {
     } = account;
 
     const handleComplete = () => {
+        // close sheet
         handleClose();
-        handleModalOpen();
-        handleModalStep('preview');
+
+        // open modal and reset entire state
+        handleModalOpen('preview', true);
+
+        // set importData and importId
         setImportId(importRecord.id);
         setImportData({
             accountId: importRecord.accountId,
@@ -71,7 +75,7 @@ export const ViewImportSheet = () => {
                         <div className="font-semibold">Account</div>
                         <div className="grid gap-0.5 not-italic text-muted-foreground">
                             <span>
-                                {account.name} - {account.bank.bank.name}
+                                {account.bank.bank.name} - {account.name}
                             </span>
                         </div>
                     </div>
@@ -152,13 +156,6 @@ export const ViewImportSheet = () => {
                                 key={file.id}
                                 name={file.filename}
                                 type={file.type}
-                                // action={
-                                //     <Badge variant="default">
-                                //         {file.importedAt!!
-                                //             ? 'Imported'
-                                //             : 'Not Imported'}
-                                //     </Badge>
-                                // }
                                 description={
                                     <div className="flex space-x-4 text-sm text-muted-foreground">
                                         <div className="flex items-center">

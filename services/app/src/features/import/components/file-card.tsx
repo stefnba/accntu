@@ -73,24 +73,7 @@ export const FileCard: React.FC<Props> = ({
             </div>
             <div className="">
                 <CardHeader className="m-0 p-0">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger className="text-sm overflow-hidden truncate">
-                                <Button
-                                    className="m-0 p-0 h-0"
-                                    size="sm"
-                                    variant="link"
-                                >
-                                    {name}
-                                </Button>
-                                {/* <CardTitle className="text-sm"> */}
-                                {/* </CardTitle> */}
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>{name}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <div className="overflow-hidden truncate">{name}</div>
                 </CardHeader>
                 {description && (
                     <CardContent className="m-0 p-0">{description}</CardContent>

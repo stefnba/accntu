@@ -23,10 +23,10 @@ export const CreateImportFileDropzone: React.FC<Props> = ({ form }) => {
         multiple: true,
         maxFiles: 10,
         maxSize: 1024 * 1024 * 10,
-        // accept: {
-        //     'application/vnd.ms-excel': ['.xls', '.xlsx'],
-        //     'text/csv': ['.csv']
-        // },
+        accept: {
+            'application/vnd.ms-excel': ['.xls', '.xlsx'],
+            'text/csv': ['.csv']
+        },
         onDropRejected() {
             toast.error(
                 'Invalid file type. Please upload a valid file. Only CSV and Excel files are allowed.'
