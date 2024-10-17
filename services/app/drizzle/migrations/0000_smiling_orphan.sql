@@ -122,6 +122,22 @@ CREATE TABLE IF NOT EXISTS "session" (
 	"expiresAt" timestamp (3) NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "tag" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"color" text,
+	"userId" text NOT NULL,
+	"createdAt" timestamp(3) DEFAULT now() NOT NULL,
+	"updatedAt" timestamp(3)
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "tag_to_transaction" (
+	"transactionId" text NOT NULL,
+	"tagId" text NOT NULL,
+	"createdAt" timestamp(3) DEFAULT now() NOT NULL,
+	CONSTRAINT "tag_to_transaction_tagId_transactionId_pk" PRIMARY KEY("tagId","transactionId")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "transaction" (
 	"id" text PRIMARY KEY NOT NULL,
 	"userId" text NOT NULL,
@@ -266,6 +282,24 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
+ ALTER TABLE "tag" ADD CONSTRAINT "tag_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE restrict ON UPDATE cascade;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "tag_to_transaction" ADD CONSTRAINT "tag_to_transaction_transactionId_transaction_id_fk" FOREIGN KEY ("transactionId") REFERENCES "public"."transaction"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "tag_to_transaction" ADD CONSTRAINT "tag_to_transaction_tagId_tag_id_fk" FOREIGN KEY ("tagId") REFERENCES "public"."tag"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
  ALTER TABLE "transaction" ADD CONSTRAINT "transaction_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE cascade;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -314,6 +348,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "identifier_idx" ON "login" ("identifier");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "tag_name_userId_index" ON "tag" ("name","userId");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "transaction_userId_key_isDeleted_key" ON "transaction" ("userId","key","isDeleted");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_email_key" ON "user" ("email");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_setting_userId_key" ON "user_setting" ("userId");

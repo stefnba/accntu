@@ -472,7 +472,7 @@ export const transaction = pgTable(
         };
     }
 );
-export const transactionRelations = relations(transaction, ({ one }) => ({
+export const transactionRelations = relations(transaction, ({ one, many }) => ({
     user: one(user, {
         fields: [transaction.userId],
         references: [user.id]
@@ -488,7 +488,8 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     account: one(connectedAccount, {
         fields: [transaction.accountId],
         references: [connectedAccount.id]
-    })
+    }),
+    tags: many(tagToTransaction)
 }));
 export const SelectTransactionSchema = createSelectSchema(transaction);
 export const InsertTransactionSchema = createInsertSchema(transaction).omit({
@@ -496,6 +497,67 @@ export const InsertTransactionSchema = createInsertSchema(transaction).omit({
     accountId: true,
     importFileId: true,
     id: true
+});
+
+export const tag = pgTable(
+    'tag',
+    {
+        id: text('id').primaryKey().notNull(),
+        name: text('name').notNull(),
+        color: text('color'),
+        userId: text('userId')
+            .notNull()
+            .references(() => user.id, {
+                onDelete: 'restrict',
+                onUpdate: 'cascade'
+            }),
+        createdAt: timestamp('createdAt', { precision: 3, mode: 'string' })
+            .defaultNow()
+            .notNull(),
+        updatedAt: timestamp('updatedAt', {
+            precision: 3,
+            mode: 'string'
+        })
+    },
+    (t) => ({
+        unique: uniqueIndex().on(t.name, t.userId)
+    })
+);
+export const tagRelations = relations(tag, ({ many }) => ({
+    transactions: many(tagToTransaction)
+}));
+export const SelectTagSchema = createSelectSchema(tag);
+export const InsertTagSchema = createInsertSchema(tag).pick({
+    id: true,
+    name: true,
+    color: true,
+    userId: true
+});
+
+export const tagToTransaction = pgTable(
+    'tag_to_transaction',
+    {
+        transactionId: text('transactionId')
+            .notNull()
+            .references(() => transaction.id),
+        tagId: text('tagId')
+            .notNull()
+            .references(() => tag.id),
+        createdAt: timestamp('createdAt', { precision: 3, mode: 'string' })
+            .defaultNow()
+            .notNull()
+    },
+    (t) => ({
+        pk: primaryKey({ columns: [t.tagId, t.transactionId] })
+    })
+);
+export const SelectTagToTransactionSchema =
+    createSelectSchema(tagToTransaction);
+export const InsertTagToTransactionSchema = createInsertSchema(
+    tagToTransaction
+).pick({
+    transactionId: true,
+    tagId: true
 });
 
 export const label = pgTable('label', {
