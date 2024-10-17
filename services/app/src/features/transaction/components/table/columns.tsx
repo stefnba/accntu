@@ -17,6 +17,13 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger
+} from '@/components/ui/tooltip';
+import { AccountIcon } from '@/features/connectedBank/components/account-card';
 import { LabelSelectCommand } from '@/features/label/components/label-select';
 import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
 import { useUpdateTransaction } from '@/features/transaction/api/update-transaction';
@@ -104,11 +111,34 @@ export const columns: ColumnDef<TRow>[] = [
     },
     {
         accessorKey: 'account.name',
-        // header: ({ column }) => (
-        //     <TransactionTableColumnHeader title="Account" column={column} />
-        // ),
         header: 'Account',
-        enableSorting: true
+        enableSorting: true,
+        cell: ({ row }) => {
+            const {
+                account: { name, bankName, bankLogo, bankColor, type }
+            } = row.original;
+
+            return bankName;
+
+            return (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <div className="flex items-center">
+                                <AccountIcon
+                                    type={type || 'CURRENT'}
+                                    color={bankColor || undefined}
+                                />
+                                {bankName}
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            );
+        }
     },
     {
         accessorFn: (row) => {
