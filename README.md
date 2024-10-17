@@ -1,1 +1,3 @@
-# accntu
+# Accntu
+
+Spending aggregation made eaasy!

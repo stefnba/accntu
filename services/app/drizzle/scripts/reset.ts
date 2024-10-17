@@ -1,4 +1,3 @@
-// import { db } from '@db';
 import * as schema from '@db/schema';
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
