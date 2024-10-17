@@ -29,6 +29,9 @@
       ".ruff_cache": true,
       ".pytest_cache": true,
       ".venv": true
+    },
+    "files.associations": {
+      "*.css": "tailwindcss"
     }
   }
 }
