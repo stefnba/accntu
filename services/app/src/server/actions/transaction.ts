@@ -156,7 +156,9 @@ export const listTransactions = async ({
             account: {
                 id: connectedAccount.id,
                 name: connectedAccount.name,
+                type: connectedAccount.type,
                 bankName: bank.name,
+                bankColor: bank.color,
                 bankLogo: bank.logo,
                 bankCountry: bank.country
             }
