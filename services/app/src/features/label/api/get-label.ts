@@ -4,13 +4,15 @@ import { InferRequestType } from 'hono';
 
 const query = client.api.labels[':id'].$get;
 
-export const useGetLabel = (param: InferRequestType<typeof query>['param']) => {
+export type TParam = InferRequestType<typeof query>['param'];
+
+export const useGetLabel = ({ id }: Partial<TParam>) => {
     const q = useQuery({
-        queryKey: ['label', { id: param.id }],
-        enabled: !!param.id,
+        queryKey: ['label', { id }],
+        enabled: !!id,
         queryFn: async () => {
             const response = await query({
-                param
+                param: { id: id! }
             });
             if (!response.ok) throw new Error(response.statusText);
             return response.json();

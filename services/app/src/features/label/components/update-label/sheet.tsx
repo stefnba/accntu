@@ -23,7 +23,7 @@ export const ViewUpdateLabelSheet = () => {
 
     const { data: label, isLoading } = useGetLabel({ id });
 
-    if (!label) return;
+    if (!label || !id) return;
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
