@@ -7,4 +7,4 @@ docker-up:
 	
 	
 docker-test-prod:
-	docker compose --project-directory . --env-file services/app/.env -f deploy/docker-compose.yml up -d --build --force-recreate --remove-orphans
+	docker compose --project-directory . --env-file services/app/.env -f deploy/docker-compose.yml -f docker/docker-compose.test.yml up -d --build --force-recreate --remove-orphans
