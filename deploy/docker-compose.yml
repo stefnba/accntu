@@ -14,7 +14,7 @@ services:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
         restart: always
         ports:
-            - 3000:3000
+            - 3001:3000
         command:
             - ./entrypoint.sh
 
