@@ -37,8 +37,6 @@ app.onError((err, c) => {
     // todo logging
     console.error(err);
 
-    console.log('asdfasdf');
-
     if (err instanceof HTTPException) {
         return err.getResponse();
     }
