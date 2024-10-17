@@ -15,10 +15,14 @@ services:
     app:
         environment:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
+        depends_on:
+            - db
 
     parser:
         environment:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
+        depends_on:
+            - db
 
 volumes:
     pg-data:
