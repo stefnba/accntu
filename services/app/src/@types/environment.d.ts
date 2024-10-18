@@ -16,5 +16,7 @@ declare namespace NodeJS {
         AWS_BUCKET_REGION: string;
         AWS_BUCKET_NAME_PUBLIC_UPLOAD: string;
         AWS_BUCKET_NAME_PRIVATE_UPLOAD: string;
+        // Parser API
+        PARSER_API_URL: string;
     }
 }

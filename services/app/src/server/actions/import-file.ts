@@ -17,6 +17,9 @@ type TParserBody = {
 
 const ParsedTransactionsSchema = z.array(ParsedTransactionSchema);
 
+const PARSER_API_URL = process.env.PARSER_API_URL;
+const PARSER_API_ENDPOINT = '/parse/new';
+
 /**
  * Parse transaction file by calling the parser service and return the parsed data.
  * @param fileId
@@ -72,8 +75,9 @@ export const parseTransactionFile = async (
         user_id: userId
     };
 
-    // todo put into env
-    return fetch('http://127.0.0.1:8000/parse/new', {
+    // call parser service
+    const url = PARSER_API_URL.replace(/\/+$/, '') + PARSER_API_ENDPOINT;
+    return fetch(url, {
         method: 'POST',
         body: JSON.stringify(body),
         headers: {

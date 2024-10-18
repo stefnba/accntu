@@ -17,6 +17,7 @@ services:
         environment:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
             - NEXT_PUBLIC_URL=http://localhost:3000
+            - PARSER_API_URL=http://parser:8000
         depends_on:
             - db
         env_file:
