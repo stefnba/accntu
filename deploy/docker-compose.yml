@@ -25,6 +25,3 @@ services:
         expose:
             - 8000
         restart: always
-
-volumes:
-    pg-data:
