@@ -17,8 +17,11 @@ services:
     app:
         environment:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
+            - NEXT_PUBLIC_URL=http://localhost:3000
         depends_on:
             - db
+        ports:
+            - 3000:3000
 
     parser:
         env_file:
@@ -27,6 +30,8 @@ services:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
         depends_on:
             - db
+        ports:
+            - 8000:8000
 
 volumes:
     pg-data:
