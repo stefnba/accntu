@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class CloudStorageSettings(BaseSettings):
-    bucket_name: str = Field(alias="AWS_BUCKET_NAME", default="")
+    bucket_name: str = Field(alias="AWS_BUCKET_NAME_PRIVATE_UPLOAD", default="")
     region: str = Field(alias="AWS_BUCKET_REGION", default="")
     access_key: str = Field(alias="AWS_ACCESS_KEY", default="")
     secret_key: str = Field(
