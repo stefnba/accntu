@@ -1,0 +1,16 @@
+services:
+    db:
+        container_name: accntu-db
+        image: postgres:16.3-alpine
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=password
+            - POSTGRES_USER=postgres
+            - POSTGRES_DB=db
+        ports:
+            - 5449:5432
+        volumes:
+            - accntu-pg-data-dev:/var/lib/postgresql/data/ # Make db data persist
+
+volumes:
+    accntu-pg-data-dev:
