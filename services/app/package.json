@@ -10,6 +10,7 @@
         "drizzle:generate": "drizzle-kit generate --config=drizzle/config.ts",
         "drizzle:migrate": "node ./drizzle/scripts/migrate/migrate.mjs",
         "drizzle:seed": "node ./drizzle/scripts/seed/seed.mjs",
+        "drizzle:setup:dev": "node --env-file .env ./drizzle/scripts/migrate/migrate.mjs && node --env-file .env ./drizzle/scripts/seed/seed.mjs",
         "drizzle:reset": "tsx ./drizzle/scripts/reset.ts",
         "drizzle:studio": "drizzle-kit studio --config=drizzle/config.ts",
         "drizzle:drop": "drizzle-kit drop --config=drizzle/config.ts",
