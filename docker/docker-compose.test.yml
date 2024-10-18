@@ -9,6 +9,8 @@ services:
             - POSTGRES_DB=db
         ports:
             - 5449:5432
+        env_file:
+            - ./services/app/.env
         volumes:
             - pg-data:/var/lib/postgresql/data/ # Make db data persist
 
@@ -19,6 +21,8 @@ services:
             - db
 
     parser:
+        env_file:
+            - ./services/parser/.env
         environment:
             - DATABASE_URL=postgresql://postgres:password@db:5432/db # necessary to change since communication through container networks
         depends_on:
