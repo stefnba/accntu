@@ -1,5 +1,7 @@
-from app.services.parse_transactions.parsers.barclays_de_creditcard.parser import TestBarclaysDeCreditCardParser
+from app.actions.parse_transactions.parsers.barclays_de_creditcard.parser import BarclaysDeCreditCardParser
 
-test_parser = TestBarclaysDeCreditCardParser()
+test_parser = BarclaysDeCreditCardParser()
 
-test_parser.test_parse("tests/files/BARCLAYS_DE_CREDITCARD.xlsx")
+a = test_parser.parse(file_uri="file://tests/files/BARCLAYS_DE_CREDITCARD.xlsx", file_id="test")
+
+print(a)
