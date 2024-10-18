@@ -46,7 +46,15 @@ app.onError((err, c) => {
     return c.json({ error: 'Internal error' }, 500);
 });
 app.use(csrf());
-// app.use(cors({ origin: ['http://localhost:3000', 'https://github.com'] }));
+app.use(
+    cors({
+        origin: [
+            'http://localhost:3000',
+            'https://github.com',
+            'https://accntu.com'
+        ]
+    })
+);
 app.use(authMiddleware);
 app.notFound((c) => c.text('Not Found', 404));
 
