@@ -12,7 +12,6 @@ import {
 } from '@server/lib/upload/cloud/s3';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { todo } from 'node:test';
 import { z } from 'zod';
 
 import { createImportFile } from '../actions/import-file';
@@ -31,7 +30,7 @@ const app = new Hono()
         async (c) => {
             const user = getUser(c);
             const values = c.req.valid('json');
-            const BUCKET = 'accntu'; // todo: replace with actual bucket name
+            const BUCKET = process.env.AWS_BUCKET_NAME_PRIVATE_UPLOAD;
 
             const signedUrlObject = await getSignedS3Url(
                 { ...values, bucket: BUCKET },
@@ -60,6 +59,7 @@ const app = new Hono()
             const values = c.req.valid('json');
             const user = getUser(c);
 
+            // todo: filter for user
             const data = await db
                 .update(transactionImportFile)
                 .set({ ...values, updatedAt: new Date() })

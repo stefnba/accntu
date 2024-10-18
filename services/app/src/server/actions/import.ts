@@ -52,7 +52,7 @@ export const deleteImportFile = async (id: string, userId: string) => {
     // Delete file from S3
     const url = deletedFile.url;
     const key = url.split('/').slice(-1)[0];
-    const bucket = 'accntu';
+    const bucket = process.env.AWS_BUCKET_NAME_PRIVATE_UPLOAD;
 
     await deleteObject(bucket, key);
 
