@@ -1,4 +1,14 @@
 services:
+    parser:
+        build:
+            context: ./services/parser
+            dockerfile: ./docker/Dockerfile
+        environment:
+            - DATABASE_URL={DATABASE_URL}
+        expose:
+            - 8000
+        restart: always
+
     app:
         build:
             context: ./services/app/
@@ -15,13 +25,3 @@ services:
             - 3000
         command:
             - ./entrypoint.sh
-
-    parser:
-        build:
-            context: ./services/parser
-            dockerfile: ./docker/Dockerfile
-        environment:
-            - DATABASE_URL={DATABASE_URL}
-        expose:
-            - 8000
-        restart: always
