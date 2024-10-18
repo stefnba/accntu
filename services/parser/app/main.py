@@ -4,11 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.db import model
-from app.db.client import engine
 from app.routers import parse
-
-model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
