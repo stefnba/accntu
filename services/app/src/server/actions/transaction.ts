@@ -4,18 +4,28 @@ import { inArrayFilter, queryBuilder } from '@/server/db/utils';
 import { db } from '@db';
 import {
     InsertTransactionSchema,
+    SelectTagSchema,
     bank,
     connectedAccount,
     connectedBank,
     label,
+    tag,
+    tagToTransaction,
     transaction,
     transactionImport,
     transactionImportFile
 } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
-import { getTableColumns } from 'drizzle-orm';
+import { getTableColumns, sql } from 'drizzle-orm';
 import { and, count, eq } from 'drizzle-orm';
 import { z } from 'zod';
+
+const TagSchema = SelectTagSchema.pick({
+    id: true,
+    name: true,
+    color: true,
+    createdAt: true
+});
 
 /**
  * Create new transaction records.
@@ -133,6 +143,15 @@ export const listTransactions = async ({
             .where(filterClause)
     )[0].count;
 
+    // const withTags = db
+    //     .$with('withTags')
+    //     .as(
+    //         db
+    //             .select()
+    //             .from(tagToTransaction)
+    //             .leftJoin(tag, eq(tagToTransaction.tagId, tag.id))
+    //     );
+
     const transactionsQuery = db
         .select({
             id: transaction.id,
@@ -161,7 +180,22 @@ export const listTransactions = async ({
                 bankColor: bank.color,
                 bankLogo: bank.logo,
                 bankCountry: bank.country
-            }
+            },
+            tags: sql<(typeof TagSchema)[]>`(
+                SELECT
+                    coalesce(json_agg(json_build_object(
+                        'id', ${tag.id},
+                        'name', ${tag.name},
+                        'color', ${tag.color},
+                        'createdAt', ${tagToTransaction.createdAt}
+                    ) ORDER BY ${tagToTransaction.createdAt} ASC),'[]'::json) AS "data"
+                FROM
+                    ${tagToTransaction}
+                LEFT JOIN
+                    ${tag} ON ${tagToTransaction.tagId} = ${tag.id}
+                WHERE
+                    ${tagToTransaction.transactionId} = ${transaction.id}
+            )`
         })
         .from(transaction)
         .leftJoin(label, eq(label.id, transaction.labelId))

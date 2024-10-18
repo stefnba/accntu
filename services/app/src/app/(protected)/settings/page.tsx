@@ -27,7 +27,13 @@ const navItems: TNavItem[] = [
     {
         title: 'Labels',
         href: '/settings/label',
-        description: 'Manage label to categorize your transactions.',
+        description: 'Manage labels to categorize your transactions.',
+        avatar: BiLabel
+    },
+    {
+        title: 'Tags',
+        href: '/settings/tag',
+        description: 'Manage tags to further categorize your transactions.',
         avatar: BiLabel
     }
 ];

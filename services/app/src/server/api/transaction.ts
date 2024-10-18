@@ -10,12 +10,14 @@ import {
 } from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
 import { db } from '@/server/db/client';
-import { transaction } from '@db/schema';
+import { InsertTagToTransactionSchema, transaction } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
 import { listFilterOptions } from '@server/actions/transaction-filter';
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
+
+import { AddTagToTransactionSchema, addTagToTransaction } from '../actions/tag';
 
 const app = new Hono()
     .get('/', zValidator('query', ListTransactionSchema), async (c) => {
@@ -89,6 +91,31 @@ const app = new Hono()
             return c.json(data, 201);
         }
     )
+    .post(
+        '/:transactionId/tag',
+        zValidator(
+            'param',
+            AddTagToTransactionSchema.pick({ transactionId: true })
+        ),
+        zValidator(
+            'json',
+            AddTagToTransactionSchema.pick({ tagId: true, name: true })
+        ),
+        async (c) => {
+            const user = getUser(c);
+            const { transactionId } = c.req.valid('param');
+            const { tagId, name } = c.req.valid('json');
+
+            const data = await addTagToTransaction({
+                userId: user.id,
+                transactionId,
+                tagId,
+                name
+            });
+
+            return c.json(data, 201);
+        }
+    )
 
     .get('/:id', zValidator('param', GetTransactionByIdSchema), async (c) => {
         const { id } = c.req.valid('param');
@@ -98,6 +125,11 @@ const app = new Hono()
             where: (fields, { and, eq }) =>
                 and(eq(fields.id, id), eq(fields.userId, user.id)),
             with: {
+                tags: {
+                    with: {
+                        tag: true
+                    }
+                },
                 label: true,
                 account: {
                     with: {

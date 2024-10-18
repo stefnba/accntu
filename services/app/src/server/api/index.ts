@@ -3,6 +3,7 @@ import bankRouter from './bank';
 import connectedRouter from './connected';
 import importRouter from './import';
 import labelRouter from './label';
+import tagRouter from './tag';
 import transactionRouter from './transaction';
 import userRouter from './user';
 
@@ -13,5 +14,6 @@ export {
     userRouter,
     transactionRouter,
     connectedRouter,
-    authRouter
+    authRouter,
+    tagRouter
 };

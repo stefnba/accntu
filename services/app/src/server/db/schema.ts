@@ -489,7 +489,7 @@ export const transactionRelations = relations(transaction, ({ one, many }) => ({
         fields: [transaction.accountId],
         references: [connectedAccount.id]
     }),
-    tags: many(tagToTransaction)
+    tags: many(tagToTransaction, { relationName: 'tags' })
 }));
 export const SelectTransactionSchema = createSelectSchema(transaction);
 export const InsertTransactionSchema = createInsertSchema(transaction).omit({
@@ -524,11 +524,15 @@ export const tag = pgTable(
     })
 );
 export const tagRelations = relations(tag, ({ many }) => ({
-    transactions: many(tagToTransaction)
+    transactions: many(tagToTransaction, { relationName: 'transactions' })
 }));
-export const SelectTagSchema = createSelectSchema(tag);
-export const InsertTagSchema = createInsertSchema(tag).pick({
+export const SelectTagSchema = createSelectSchema(tag).pick({
     id: true,
+    name: true,
+    color: true,
+    createdAt: true
+});
+export const InsertTagSchema = createInsertSchema(tag).pick({
     name: true,
     color: true,
     userId: true
@@ -551,6 +555,22 @@ export const tagToTransaction = pgTable(
         pk: primaryKey({ columns: [t.tagId, t.transactionId] })
     })
 );
+export const tagToTransactionRelations = relations(
+    tagToTransaction,
+    ({ one }) => ({
+        transaction: one(transaction, {
+            fields: [tagToTransaction.transactionId],
+            references: [transaction.id],
+            relationName: 'tags'
+        }),
+        tag: one(tag, {
+            fields: [tagToTransaction.tagId],
+            references: [tag.id],
+            relationName: 'transactions'
+        })
+    })
+);
+
 export const SelectTagToTransactionSchema =
     createSelectSchema(tagToTransaction);
 export const InsertTagToTransactionSchema = createInsertSchema(

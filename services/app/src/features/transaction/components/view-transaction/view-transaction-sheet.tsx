@@ -22,6 +22,8 @@ import { LuCalendar, LuChevronsUpDown, LuMoreVertical } from 'react-icons/lu';
 import { z } from 'zod';
 
 import { TransactionType } from '../table/utils';
+import { AddTransactionTag } from '../tag/add-tag';
+import { TransactionTag } from '../tag/tag';
 import { TransactionNote } from './note';
 
 interface Props {}
@@ -52,7 +54,8 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
         country,
         city,
         createdAt,
-        account
+        account,
+        tags
     } = data;
 
     const dateFormatted = dayjs(data?.date).format('ddd, DD-MMM YYYY');
@@ -65,7 +68,7 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
                 className="p-0 overflow-scroll space-y-4"
                 hideCloseButton={true}
             >
-                <CardHeader className="flex flex-row items-start bg-muted/50 border-b">
+                <CardHeader className="flex flex-row items-start bg-muted/50 border-b pb-4">
                     <div className="grid gap-0.5">
                         <CardTitle className="group flex items-center gap-2 text-lg">
                             {title}
@@ -84,7 +87,40 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
                                 {dateFormatted}
                             </time>
                         </CardDescription>
+                        <dd className=" mt-3 ">
+                            {tags.length > 0 && (
+                                <div className=" space-x-1 flex group">
+                                    {tags.map(({ tag }) => (
+                                        <TransactionTag
+                                            transactionId={transactionId}
+                                            tag={tag}
+                                            key={tag.id}
+                                        />
+                                    ))}
+
+                                    <div className="group-hover:block">
+                                        <AddTransactionTag
+                                            appliedTagIds={tags.map(
+                                                (t) => t.tag.id
+                                            )}
+                                            transactionId={transactionId}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {tags.length === 0 && (
+                                <div>
+                                    <AddTransactionTag
+                                        appliedTagIds={tags.map(
+                                            (t) => t.tag.id
+                                        )}
+                                        transactionId={transactionId}
+                                    />
+                                </div>
+                            )}
+                        </dd>
                     </div>
+
                     <div className="ml-auto flex items-center gap-1">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -220,13 +256,18 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
                                 <dd>Zurich, CH</dd>
                             </div>
                             <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Tags</dt>
-                                <dd className="space-x-1">
-                                    <Badge>Travel</Badge>
-                                    <Badge>Travel</Badge>
-                                    <Badge>Travel</Badge>
-                                    <Badge>Travel</Badge>
-                                </dd>
+                                <dt className="text-muted-foreground">
+                                    Counterparty
+                                </dt>
+                                <dd className="">ddd</dd>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">IBAN</dt>
+                                <dd className="">ddd</dd>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">BIC</dt>
+                                <dd className="">ddd</dd>
                             </div>
                         </dl>
                     </div>

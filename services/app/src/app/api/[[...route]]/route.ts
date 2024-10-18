@@ -4,6 +4,7 @@ import {
     connectedRouter,
     importRouter,
     labelRouter,
+    tagRouter,
     transactionRouter
 } from '@/server/api';
 import user from '@/server/api/user';
@@ -66,7 +67,8 @@ const routes = app
     .route('/connected', connectedRouter)
     .route('/user', user)
     .route('/import', importRouter)
-    .route('/upload', upload);
+    .route('/upload', upload)
+    .route('/tags', tagRouter);
 
 export const GET = handle(app);
 export const POST = handle(app);
