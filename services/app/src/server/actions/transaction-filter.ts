@@ -3,8 +3,15 @@ import {
     FilterTransactionSchema,
     type TTransactionFilterKeys
 } from '@/features/transaction/schema/table-filtering';
-import { connectedAccount, label, transaction } from '@db/schema';
-import { and, eq } from 'drizzle-orm';
+import { db } from '@db';
+import {
+    connectedAccount,
+    label,
+    tag,
+    tagToTransaction,
+    transaction
+} from '@db/schema';
+import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 type TFilterOptions = {
@@ -59,7 +66,22 @@ export const listFilterOptions = async ({
         ),
         type: getFilterOptions(transaction, transaction.type, filter),
         endDate: undefined,
-        startDate: undefined
+        startDate: undefined,
+        tag: db
+            .select({
+                value: tagToTransaction.tagId,
+                label: sql<string>`COALESCE(${tag.name}, 'None')`,
+                count: sql<number>`CAST(count(*) as int)`
+            })
+            .from(tagToTransaction)
+            .leftJoin(
+                transaction,
+                eq(transaction.id, tagToTransaction.transactionId)
+            )
+            .leftJoin(tag, eq(tag.id, tagToTransaction.tagId))
+            .where(filter)
+            .groupBy(tagToTransaction.tagId, tag.name)
+            .orderBy(sql<string>`3 DESC`)
     };
 
     const query = await filterQueries[filterKey];

@@ -1,4 +1,4 @@
-import { transaction } from '@db/schema';
+import { tagToTransaction, transaction } from '@db/schema';
 import { inArrayFilter, inArrayWithNullFilter } from '@db/utils';
 import { between, gte, ilike, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -48,6 +48,9 @@ export const FilterTransactionSchema = z
         ),
         type: MultiSelectFilterSchema.transform((val) =>
             inArrayFilter(transaction.type, val)
+        ),
+        tag: MultiSelectFilterSchema.transform((val) =>
+            inArrayFilter(tagToTransaction.tagId, val)
         )
 
         // date: z

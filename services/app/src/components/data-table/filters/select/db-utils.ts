@@ -34,9 +34,8 @@ export const getFilterOptions = async (
             count: sql<number>`cast(count(*) as int)`
         })
         .from(table)
-        .where(filter)
-
         .leftJoin(joinTable, eq(onCols[0], onCols[1]))
+        .where(filter)
         .groupBy(valueCol, labelCol)
         .orderBy(sql<string>`3 DESC`);
 };
