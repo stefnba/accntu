@@ -140,10 +140,6 @@ export const listTransactions = async ({
         await db
             .select({ count: count() })
             .from(transaction)
-            .leftJoin(
-                tagToTransaction,
-                eq(tagToTransaction.transactionId, transaction.id)
-            )
             .where(filterClause)
     )[0].count;
 
@@ -194,10 +190,10 @@ export const listTransactions = async ({
         })
         .from(transaction)
         .leftJoin(label, eq(label.id, transaction.labelId))
-        .leftJoin(
-            tagToTransaction,
-            eq(tagToTransaction.transactionId, transaction.id)
-        )
+        // .leftJoin(
+        //     tagToTransaction,
+        //     eq(tagToTransaction.transactionId, transaction.id)
+        // )
         .leftJoin(
             connectedAccount,
             eq(connectedAccount.id, transaction.accountId)

@@ -1,3 +1,4 @@
+import { db } from '@/db';
 import { tagToTransaction, transaction } from '@db/schema';
 import { inArrayFilter, inArrayWithNullFilter } from '@db/utils';
 import { between, gte, ilike, lte, sql } from 'drizzle-orm';
@@ -49,9 +50,17 @@ export const FilterTransactionSchema = z
         type: MultiSelectFilterSchema.transform((val) =>
             inArrayFilter(transaction.type, val)
         ),
-        tag: MultiSelectFilterSchema.transform((val) =>
-            inArrayFilter(tagToTransaction.tagId, val)
-        )
+        tag: MultiSelectFilterSchema.transform(async (val) => {
+            const transactionIds = await db.query.tagToTransaction.findMany({
+                columns: { transactionId: true },
+                where: (tagToTransaction) =>
+                    inArrayFilter(tagToTransaction.tagId, val)
+            });
+            return inArrayFilter(
+                transaction.id,
+                transactionIds.map((t) => t.transactionId)
+            );
+        })
 
         // date: z
         //     .discriminatedUnion('period', [
