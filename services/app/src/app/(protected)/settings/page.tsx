@@ -9,6 +9,7 @@ import {
 import { IconType } from 'react-icons';
 import { BiLabel } from 'react-icons/bi';
 import { BsBank } from 'react-icons/bs';
+import { CgHashtag } from 'react-icons/cg';
 
 type TNavItem = {
     title: string;
@@ -33,8 +34,8 @@ const navItems: TNavItem[] = [
     {
         title: 'Tags',
         href: '/settings/tag',
-        description: 'Manage tags to further categorize your transactions.',
-        avatar: BiLabel
+        description: 'Tags your transactions for more detailed categorization.',
+        avatar: CgHashtag
     }
 ];
 
