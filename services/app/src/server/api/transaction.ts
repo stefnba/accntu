@@ -1,23 +1,25 @@
-import { CreateTransactionsSchema } from '@/features/transaction/schema/create-transactions';
-import { GetTransactionByIdSchema } from '@/features/transaction/schema/get-transaction';
-import { ListTransactionSchema } from '@/features/transaction/schema/get-transactions';
-import { TransactionFilterKeysSchema } from '@/features/transaction/schema/table-filtering';
-import { UpdateTransactionSchema } from '@/features/transaction/schema/update-transaction';
-import { UpdateTransactionsSchema } from '@/features/transaction/schema/update-transactions';
 import {
     createTransactions,
     listTransactions
 } from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
-import { db } from '@/server/db/client';
-import { InsertTagToTransactionSchema, transaction } from '@db/schema';
+import { db } from '@db';
+import { transaction } from '@db/schema';
+import { AddTagToTransactionSchema } from '@features/tag/schema';
+import { addTagToTransaction } from '@features/tag/server/actions';
+import {
+    CreateTransactionsSchema,
+    GetTransactionByIdSchema,
+    ListTransactionSchema,
+    TransactionFilterKeysSchema,
+    UpdateTransactionSchema,
+    UpdateTransactionsSchema
+} from '@features/transaction/schema';
 import { zValidator } from '@hono/zod-validator';
 import { listFilterOptions } from '@server/actions/transaction-filter';
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-
-import { AddTagToTransactionSchema, addTagToTransaction } from '../actions/tag';
 
 const app = new Hono()
     .get('/', zValidator('query', ListTransactionSchema), async (c) => {
@@ -93,10 +95,7 @@ const app = new Hono()
     )
     .post(
         '/:transactionId/tag',
-        zValidator(
-            'param',
-            AddTagToTransactionSchema.pick({ transactionId: true })
-        ),
+        zValidator('param', GetTransactionByIdSchema),
         zValidator(
             'json',
             AddTagToTransactionSchema.pick({ tagId: true, name: true })
@@ -118,12 +117,12 @@ const app = new Hono()
     )
 
     .get('/:id', zValidator('param', GetTransactionByIdSchema), async (c) => {
-        const { id } = c.req.valid('param');
+        const { transactionId } = c.req.valid('param');
         const user = getUser(c);
 
         const data = await db.query.transaction.findFirst({
             where: (fields, { and, eq }) =>
-                and(eq(fields.id, id), eq(fields.userId, user.id)),
+                and(eq(fields.id, transactionId), eq(fields.userId, user.id)),
             with: {
                 tags: {
                     with: {
@@ -156,13 +155,16 @@ const app = new Hono()
         async (c) => {
             const user = getUser(c);
             const values = c.req.valid('json');
-            const { id } = c.req.valid('param');
+            const { transactionId } = c.req.valid('param');
 
             const [updatedRecord] = await db
                 .update(transaction)
                 .set({ ...values, updatedAt: new Date() })
                 .where(
-                    and(eq(transaction.id, id), eq(transaction.userId, user.id))
+                    and(
+                        eq(transaction.id, transactionId),
+                        eq(transaction.userId, user.id)
+                    )
                 )
                 .returning();
 

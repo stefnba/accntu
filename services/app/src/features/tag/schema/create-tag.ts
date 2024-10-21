@@ -1,4 +1,4 @@
-import { tag } from '@/db/schema';
+import { tag } from '@db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -11,8 +11,7 @@ import { z } from 'zod';
 export const CreateTagSchema = createInsertSchema(tag).pick({
     userId: true,
     color: true,
-    name: true,
-    description: true
+    name: true
 });
 
-// export type TCreateTagValues = z.input<typeof CreateTagSchema>;
+export type TCreateTagValues = z.input<typeof CreateTagSchema>;
