@@ -1,9 +1,10 @@
+import tagRouter from '@features/tag/server/api';
+
 import authRouter from '../auth/api';
 import bankRouter from './bank';
 import connectedRouter from './connected';
 import importRouter from './import';
 import labelRouter from './label';
-import tagRouter from './tag';
 import transactionRouter from './transaction';
 import userRouter from './user';
 
