@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@db';
 import { tag } from '@db/schema';
 import { CreateTagSchema, GetTagByIdParamSchema } from '@features/tag/schema';
 import { and, eq } from 'drizzle-orm';

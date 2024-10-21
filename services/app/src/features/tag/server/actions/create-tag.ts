@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@db';
 import { tag } from '@db/schema';
 import { type TCreateTagValues } from '@features/tag/schema';
 import { createId } from '@paralleldrive/cuid2';

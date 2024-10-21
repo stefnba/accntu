@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@db';
 import { tagToTransaction, transaction } from '@db/schema';
 import { inArrayFilter, inArrayWithNullFilter } from '@db/utils';
 import { between, gte, ilike, lte, sql } from 'drizzle-orm';

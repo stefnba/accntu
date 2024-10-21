@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@db';
 import { z } from 'zod';
 
 export const GetBanksSchema = z.object({
