@@ -1,3 +1,4 @@
+import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
     AnyPgColumn,
@@ -505,6 +506,7 @@ export const tag = pgTable(
         id: text('id').primaryKey().notNull(),
         name: text('name').notNull(),
         color: text('color'),
+        description: text('description'),
         userId: text('userId')
             .notNull()
             .references(() => user.id, {
@@ -532,21 +534,18 @@ export const SelectTagSchema = createSelectSchema(tag).pick({
     color: true,
     createdAt: true
 });
-export const InsertTagSchema = createInsertSchema(tag).pick({
-    name: true,
-    color: true,
-    userId: true
-});
 
 export const tagToTransaction = pgTable(
     'tag_to_transaction',
     {
         transactionId: text('transactionId')
             .notNull()
-            .references(() => transaction.id),
+            .references(() => transaction.id)
+            .notNull(),
         tagId: text('tagId')
             .notNull()
-            .references(() => tag.id),
+            .references(() => tag.id, { onDelete: 'cascade' })
+            .notNull(),
         createdAt: timestamp('createdAt', { precision: 3, mode: 'string' })
             .defaultNow()
             .notNull()

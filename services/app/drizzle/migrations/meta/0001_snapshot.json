@@ -1,4 +1,6 @@
 {
+  "id": "350fca02-04c7-4d30-8621-86d8c4be32db",
+  "prevId": "881face7-5ba9-4b78-9a4b-533c59cf7036",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -71,7 +73,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.bank_upload_account": {
       "name": "bank_upload_account",
@@ -121,19 +124,20 @@
         "bank_upload_account_bankId_bank_id_fk": {
           "name": "bank_upload_account_bankId_bank_id_fk",
           "tableFrom": "bank_upload_account",
+          "tableTo": "bank",
           "columnsFrom": [
             "bankId"
           ],
-          "tableTo": "bank",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.connected_account": {
       "name": "connected_account",
@@ -195,19 +199,20 @@
         "connected_account_bankId_connected_bank_id_fk": {
           "name": "connected_account_bankId_connected_bank_id_fk",
           "tableFrom": "connected_account",
+          "tableTo": "connected_bank",
           "columnsFrom": [
             "bankId"
           ],
-          "tableTo": "connected_bank",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.connected_bank": {
       "name": "connected_bank",
@@ -250,32 +255,33 @@
         "connected_bank_bankId_bank_id_fk": {
           "name": "connected_bank_bankId_bank_id_fk",
           "tableFrom": "connected_bank",
+          "tableTo": "bank",
           "columnsFrom": [
             "bankId"
           ],
-          "tableTo": "bank",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         },
         "connected_bank_userId_user_id_fk": {
           "name": "connected_bank_userId_user_id_fk",
           "tableFrom": "connected_bank",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.label": {
       "name": "label",
@@ -363,45 +369,46 @@
         "label_userId_user_id_fk": {
           "name": "label_userId_user_id_fk",
           "tableFrom": "label",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         },
         "label_parentId_label_id_fk": {
           "name": "label_parentId_label_id_fk",
           "tableFrom": "label",
+          "tableTo": "label",
           "columnsFrom": [
             "parentId"
           ],
-          "tableTo": "label",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "label_firstParentId_label_id_fk": {
           "name": "label_firstParentId_label_id_fk",
           "tableFrom": "label",
+          "tableTo": "label",
           "columnsFrom": [
             "firstParentId"
           ],
-          "tableTo": "label",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.login": {
       "name": "login",
@@ -472,6 +479,7 @@
       },
       "indexes": {
         "identifier_idx": {
+          "name": "identifier_idx",
           "columns": [
             {
               "expression": "identifier",
@@ -480,30 +488,30 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "identifier_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "login_userId_user_id_fk": {
           "name": "login_userId_user_id_fk",
           "tableFrom": "login",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.oauth_account": {
       "name": "oauth_account",
@@ -540,19 +548,20 @@
         "oauth_account_userId_user_id_fk": {
           "name": "oauth_account_userId_user_id_fk",
           "tableFrom": "oauth_account",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.session": {
       "name": "session",
@@ -582,19 +591,20 @@
         "session_userId_user_id_fk": {
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.tag": {
       "name": "tag",
@@ -614,6 +624,12 @@
         },
         "color": {
           "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -640,6 +656,7 @@
       },
       "indexes": {
         "tag_name_userId_index": {
+          "name": "tag_name_userId_index",
           "columns": [
             {
               "expression": "name",
@@ -654,30 +671,30 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "tag_name_userId_index",
           "isUnique": true,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "tag_userId_user_id_fk": {
           "name": "tag_userId_user_id_fk",
           "tableFrom": "tag",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.tag_to_transaction": {
       "name": "tag_to_transaction",
@@ -708,28 +725,28 @@
         "tag_to_transaction_transactionId_transaction_id_fk": {
           "name": "tag_to_transaction_transactionId_transaction_id_fk",
           "tableFrom": "tag_to_transaction",
+          "tableTo": "transaction",
           "columnsFrom": [
             "transactionId"
           ],
-          "tableTo": "transaction",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "tag_to_transaction_tagId_tag_id_fk": {
           "name": "tag_to_transaction_tagId_tag_id_fk",
           "tableFrom": "tag_to_transaction",
+          "tableTo": "tag",
           "columnsFrom": [
             "tagId"
           ],
-          "tableTo": "tag",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -741,7 +758,8 @@
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.transaction": {
       "name": "transaction",
@@ -910,6 +928,7 @@
       },
       "indexes": {
         "transaction_userId_key_isDeleted_key": {
+          "name": "transaction_userId_key_isDeleted_key",
           "columns": [
             {
               "expression": "userId",
@@ -930,69 +949,69 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "transaction_userId_key_isDeleted_key",
           "isUnique": true,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "transaction_userId_user_id_fk": {
           "name": "transaction_userId_user_id_fk",
           "tableFrom": "transaction",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "transaction_accountId_connected_account_id_fk": {
           "name": "transaction_accountId_connected_account_id_fk",
           "tableFrom": "transaction",
+          "tableTo": "connected_account",
           "columnsFrom": [
             "accountId"
           ],
-          "tableTo": "connected_account",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "transaction_importFileId_import_file_id_fk": {
           "name": "transaction_importFileId_import_file_id_fk",
           "tableFrom": "transaction",
+          "tableTo": "import_file",
           "columnsFrom": [
             "importFileId"
           ],
-          "tableTo": "import_file",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "transaction_labelId_label_id_fk": {
           "name": "transaction_labelId_label_id_fk",
           "tableFrom": "transaction",
+          "tableTo": "label",
           "columnsFrom": [
             "labelId"
           ],
-          "tableTo": "label",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.import": {
       "name": "import",
@@ -1053,32 +1072,33 @@
         "import_userId_user_id_fk": {
           "name": "import_userId_user_id_fk",
           "tableFrom": "import",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "import_accountId_connected_account_id_fk": {
           "name": "import_accountId_connected_account_id_fk",
           "tableFrom": "import",
+          "tableTo": "connected_account",
           "columnsFrom": [
             "accountId"
           ],
-          "tableTo": "connected_account",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.import_file": {
       "name": "import_file",
@@ -1151,19 +1171,20 @@
         "import_file_importId_import_id_fk": {
           "name": "import_file_importId_import_id_fk",
           "tableFrom": "import_file",
+          "tableTo": "import",
           "columnsFrom": [
             "importId"
           ],
-          "tableTo": "import",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.user": {
       "name": "user",
@@ -1249,6 +1270,7 @@
       },
       "indexes": {
         "user_email_key": {
+          "name": "user_email_key",
           "columns": [
             {
               "expression": "email",
@@ -1257,16 +1279,16 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "user_email_key",
           "isUnique": true,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.user_setting": {
       "name": "user_setting",
@@ -1303,6 +1325,7 @@
       },
       "indexes": {
         "user_setting_userId_key": {
+          "name": "user_setting_userId_key",
           "columns": [
             {
               "expression": "userId",
@@ -1311,30 +1334,30 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "user_setting_userId_key",
           "isUnique": true,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "user_setting_userId_user_id_fk": {
           "name": "user_setting_userId_user_id_fk",
           "tableFrom": "user_setting",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "cascade",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "public.verification_token": {
       "name": "verification_token",
@@ -1376,7 +1399,8 @@
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {
@@ -1439,12 +1463,11 @@
     }
   },
   "schemas": {},
+  "sequences": {},
+  "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "881face7-5ba9-4b78-9a4b-533c59cf7036",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "sequences": {}
+    "tables": {}
+  }
 }
