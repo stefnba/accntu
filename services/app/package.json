@@ -19,7 +19,7 @@
     "dependencies": {
         "@aws-sdk/client-s3": "^3.540.0",
         "@aws-sdk/s3-request-presigner": "^3.540.0",
-        "@hono/zod-validator": "^0.2.1",
+        "@hono/zod-validator": "^0.4.1",
         "@hookform/resolvers": "^3.3.4",
         "@lucia-auth/adapter-drizzle": "^1.0.7",
         "@lucia-auth/adapter-prisma": "^4.0.1",
@@ -52,9 +52,9 @@
         "dotenv": "^16.4.5",
         "drizzle-orm": "^0.35.1",
         "drizzle-zod": "^0.5.1",
-        "hono": "^4.3.6",
+        "hono": "^4.6.5",
         "input-otp": "^1.2.2",
-        "lucia": "^3.1.1",
+        "lucia": "^3.2.2",
         "lucide-react": "^0.359.0",
         "minimatch": "^9.0.4",
         "next": "^14.2.15",
@@ -75,8 +75,8 @@
         "tailwind-merge": "^2.2.2",
         "tailwindcss-animate": "^1.0.7",
         "winston": "^3.13.0",
-        "zod": "^3.22.4",
-        "zustand": "^4.5.2"
+        "zod": "^3.23.8",
+        "zustand": "^5.0.0"
     },
     "devDependencies": {
         "@tanstack/react-query-devtools": "^5.40.1",
