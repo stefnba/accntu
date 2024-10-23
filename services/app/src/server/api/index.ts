@@ -1,4 +1,4 @@
-import tagRouter from '@features/tag/server/api';
+import tagRouter from '@features/tag/server/api/routes';
 
 import authRouter from '../auth/api';
 import bankRouter from './bank';

@@ -11,20 +11,24 @@ export const useCreateTag = () => {
     const queryClient = useQueryClient();
 
     const q = useMutation<
-        InferResponseType<typeof query>,
+        InferResponseType<typeof query, 201>,
         Error,
         InferRequestType<typeof query>['json']
     >({
         mutationFn: async (values) => {
-            const response = await query({
+            const res = await query({
                 json: values
             });
 
-            if (!response.ok) throw new Error(response.statusText);
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message);
+            }
 
-            return response.json();
+            return res.json();
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            const a = data.id;
             successToast('Tag has been created');
             queryClient.invalidateQueries({ queryKey: ['tags'] });
             handleClose();

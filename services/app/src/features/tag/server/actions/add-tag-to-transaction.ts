@@ -1,7 +1,6 @@
 import { db } from '@db';
 import { tagToTransaction } from '@db/schema';
-import { AddTagToTransactionSchema } from '@features/tag/schema';
-import { z } from 'zod';
+import { TAddTagToTransactionValues } from '@features/tag/schema';
 
 import { createTag } from './create-tag';
 import { getTagByName } from './get-tag';
@@ -15,7 +14,7 @@ export const addTagToTransaction = async ({
     transactionId,
     name,
     userId
-}: z.infer<typeof AddTagToTransactionSchema>) => {
+}: TAddTagToTransactionValues & { userId: string }) => {
     let currentTagId: string | undefined = tagId;
 
     // check if tag exists, otherwise create it
@@ -28,7 +27,7 @@ export const addTagToTransaction = async ({
             currentTagId = recordWithName.id;
         } else {
             console.log('creating tag');
-            const newTag = await createTag({ userId, name });
+            const newTag = await createTag({ userId, values: { name } });
             if (!newTag) throw new Error('Not created');
 
             currentTagId = newTag.id;

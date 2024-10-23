@@ -3,13 +3,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DataTableColumnHeader } from '@/components/ui/data-table';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuRadioGroup,
     DropdownMenuSeparator,
     DropdownMenuShortcut,
     DropdownMenuSub,
@@ -28,13 +26,13 @@ import { LabelSelectCommand } from '@/features/label/components/label-select';
 import { TGetTransactionsResponse } from '@/features/transaction/api/get-transactions';
 import { useUpdateTransaction } from '@/features/transaction/api/update-transaction';
 import { storeViewUpdateTransactionSheet } from '@/features/transaction/store/view-update-transaction-sheet';
-import { ColumnDef, Row } from '@tanstack/react-table';
-import dayjs from 'dayjs';
+import { ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import { HiOutlineEye } from 'react-icons/hi';
 import { LuFileEdit, LuTags } from 'react-icons/lu';
 import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
 
+import { TransactionTag } from '../tag/tag';
 import { TransactionTableSortableColumnHeader } from './header';
 import { Amount, Date, TransactionType } from './utils';
 
@@ -150,6 +148,26 @@ export const columns: ColumnDef<TRow>[] = [
         // ),
         header: 'Label',
         enableSorting: true
+    },
+    {
+        accessorKey: 'tags',
+        header: 'Tags',
+        cell: ({ row }) => {
+            const { tags, id: transactionId } = row.original;
+
+            return (
+                <div className="flex space-x-1">
+                    {tags.slice(0, 3).map((tag) => (
+                        <TransactionTag
+                            transactionId={transactionId}
+                            tag={tag}
+                            key={tag.id}
+                        />
+                    ))}
+                    {tags.length > 3 && <span>...</span>}
+                </div>
+            );
+        }
     },
     {
         accessorKey: 'type',

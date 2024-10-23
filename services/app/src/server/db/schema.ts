@@ -528,12 +528,6 @@ export const tag = pgTable(
 export const tagRelations = relations(tag, ({ many }) => ({
     transactions: many(tagToTransaction, { relationName: 'transactions' })
 }));
-export const SelectTagSchema = createSelectSchema(tag).pick({
-    id: true,
-    name: true,
-    color: true,
-    createdAt: true
-});
 
 export const tagToTransaction = pgTable(
     'tag_to_transaction',

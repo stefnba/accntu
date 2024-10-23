@@ -1,24 +1,24 @@
 import { db } from '@db';
 import { tag } from '@db/schema';
-import { CreateTagSchema, GetTagByIdParamSchema } from '@features/tag/schema';
+import {
+    type TGetTagByIdParam,
+    type TUpdateTagValues
+} from '@features/tag/schema';
 import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
-
-const SchemaWithoutUser = CreateTagSchema.omit({ userId: true });
 
 /**
- * Update a tag.
+ * Update a tag
  */
 export const updateTag = async ({
     filter,
     values
 }: {
-    filter: z.infer<typeof GetTagByIdParamSchema>;
-    values: z.infer<typeof SchemaWithoutUser>;
+    filter: TGetTagByIdParam & { userId: string };
+    values: TUpdateTagValues;
 }) => {
     const [data] = await db
         .update(tag)
-        .set(values)
+        .set({ ...values, updatedAt: new Date().toDateString() })
         .where(and(eq(tag.id, filter.id), eq(tag.userId, filter.userId)))
         .returning();
 

@@ -1,3 +1,4 @@
+import { Tag } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,10 +17,8 @@ import {
 } from '@/components/ui/popover';
 import { useGetTags } from '@/features/tag/api/get-tags';
 import { useAddTagToTransaction } from '@/features/transaction/api/add-tag';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { LuPlus } from 'react-icons/lu';
-import { z } from 'zod';
 
 interface Props {
     transactionId: string;
@@ -47,10 +46,7 @@ export const AddTransactionTag: React.FC<Props> = ({
                     size="sm"
                     className="m-0 p-0 h-3"
                 >
-                    <Badge
-                        // onClick={() => handleAddTag({ name: 'dldld' })}
-                        className="rounded-md flex items-center cursor-pointer px-2"
-                    >
+                    <Badge className="rounded-md flex items-center cursor-pointer px-2">
                         <LuPlus className="mr-1 ml-0 size-3" />
                         Add Tag
                     </Badge>
@@ -63,24 +59,31 @@ export const AddTransactionTag: React.FC<Props> = ({
                         onValueChange={setSearchValue}
                     />
                     <CommandList>
-                        <CommandEmpty>
-                            <div
-                                onClick={() => {
-                                    mutate({
-                                        transactionId,
-                                        name: searchValue
-                                    });
-                                    setOpen(false);
-                                    setSearchValue('');
-                                }}
-                            >
-                                Add {searchValue}
-                            </div>
-                        </CommandEmpty>
+                        {!searchValue && tags.length === 0 && (
+                            <CommandEmpty>No tags found</CommandEmpty>
+                        )}
+
+                        {searchValue && tags.length === 0 && (
+                            <CommandEmpty>
+                                <div
+                                    onClick={() => {
+                                        mutate({
+                                            transactionId,
+                                            name: searchValue
+                                        });
+                                        setOpen(false);
+                                        setSearchValue('');
+                                    }}
+                                >
+                                    Add {searchValue}
+                                </div>
+                            </CommandEmpty>
+                        )}
                         <CommandGroup>
                             {searchValue && (
                                 <>
                                     <CommandItem
+                                        className="cursor-pointer"
                                         onSelect={() => {
                                             mutate({
                                                 transactionId,
@@ -90,13 +93,14 @@ export const AddTransactionTag: React.FC<Props> = ({
                                             setSearchValue('');
                                         }}
                                     >
-                                        Add '{searchValue}'
+                                        Create &apos;{searchValue}&apos;
                                     </CommandItem>
                                     <CommandSeparator className="my-2" />
                                 </>
                             )}
                             {tags.map((tag) => (
                                 <CommandItem
+                                    className="flex items-center cursor-pointer"
                                     key={tag.id}
                                     value={tag.id}
                                     onSelect={() => {
@@ -107,6 +111,12 @@ export const AddTransactionTag: React.FC<Props> = ({
                                         setOpen(false);
                                     }}
                                 >
+                                    <Tag
+                                        style={{
+                                            color: tag.color || 'black'
+                                        }}
+                                        className="mr-2 text-white font-bold size-4 p-0 m-0"
+                                    />
                                     {tag.name}
                                 </CommandItem>
                             ))}

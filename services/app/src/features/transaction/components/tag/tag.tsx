@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRemoveTagFromTransaction } from '@/features/transaction/api/remove-tag';
-import { SelectTagSchema } from '@/server/db/schema';
+import { SelectTagSchema } from '@features/tag/schema/get-tag';
 import { X } from 'lucide-react';
 import { z } from 'zod';
 

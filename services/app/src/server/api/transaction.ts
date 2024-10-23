@@ -116,38 +116,45 @@ const app = new Hono()
         }
     )
 
-    .get('/:id', zValidator('param', GetTransactionByIdSchema), async (c) => {
-        const { transactionId } = c.req.valid('param');
-        const user = getUser(c);
+    .get(
+        '/:transactionId',
+        zValidator('param', GetTransactionByIdSchema),
+        async (c) => {
+            const { transactionId } = c.req.valid('param');
+            const user = getUser(c);
 
-        const data = await db.query.transaction.findFirst({
-            where: (fields, { and, eq }) =>
-                and(eq(fields.id, transactionId), eq(fields.userId, user.id)),
-            with: {
-                tags: {
-                    with: {
-                        tag: true
-                    }
-                },
-                label: true,
-                account: {
-                    with: {
-                        bank: {
-                            with: {
-                                bank: true
+            const data = await db.query.transaction.findFirst({
+                where: (fields, { and, eq }) =>
+                    and(
+                        eq(fields.id, transactionId),
+                        eq(fields.userId, user.id)
+                    ),
+                with: {
+                    tags: {
+                        with: {
+                            tag: true
+                        }
+                    },
+                    label: true,
+                    account: {
+                        with: {
+                            bank: {
+                                with: {
+                                    bank: true
+                                }
                             }
                         }
                     }
                 }
+            });
+
+            if (!data) {
+                return c.json({ error: 'Not Found' }, 404);
             }
-        });
 
-        if (!data) {
-            return c.json({ error: 'Not Found' }, 404);
+            return c.json(data);
         }
-
-        return c.json(data);
-    })
+    )
     .patch(
         '/:id/update',
         zValidator('json', UpdateTransactionSchema),

@@ -3,11 +3,10 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { storeViewUpdateTagSheet } from '@/features/tag/store/crud-tag-sheet';
 import { cn } from '@/lib/utils';
-import { SelectTagSchema } from '@db/schema';
-import { z } from 'zod';
+import { TSelectTag } from '@features/tag/schema/get-tag';
 
 interface Props {
-    tag: z.infer<typeof SelectTagSchema>;
+    tag: TSelectTag;
 }
 
 /**
@@ -18,7 +17,10 @@ export const TagCard: React.FC<Props> = ({ tag }) => {
 
     return (
         <Card
-            style={{ backgroundColor: tag.color || 'transparent' }}
+            style={{
+                backgroundColor: tag.color || 'transparent',
+                borderColor: tag.color || ''
+            }}
             className="hover:shadow-md cursor-pointer hover:scale-[1.01] h-full"
             onClick={() => handleOpen({ id: tag.id })}
         >

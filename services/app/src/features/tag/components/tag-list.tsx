@@ -1,7 +1,6 @@
 'use client';
 
 import { useGetTags } from '@/features/tag/api/get-tags';
-import { storeViewUpdateTagSheet } from '@/features/tag/store/crud-tag-sheet';
 
 import { TagCard } from './tag-card';
 
@@ -10,7 +9,6 @@ import { TagCard } from './tag-card';
  */
 export const ListTags = () => {
     const { data, isLoading } = useGetTags();
-    const { handleOpen } = storeViewUpdateTagSheet();
 
     if (isLoading) return <div>Loading...</div>;
 

@@ -4,7 +4,6 @@ import { inArrayFilter, queryBuilder } from '@/server/db/utils';
 import { db } from '@db';
 import {
     InsertTransactionSchema,
-    SelectTagSchema,
     bank,
     connectedAccount,
     connectedBank,
@@ -15,6 +14,7 @@ import {
     transactionImport,
     transactionImportFile
 } from '@db/schema';
+import { SelectTagSchema } from '@features/tag/schema/get-tag';
 import { createId } from '@paralleldrive/cuid2';
 import { getTableColumns, sql } from 'drizzle-orm';
 import { and, count, eq } from 'drizzle-orm';
@@ -24,7 +24,8 @@ const TagSchema = SelectTagSchema.pick({
     id: true,
     name: true,
     color: true,
-    createdAt: true
+    createdAt: true,
+    description: true
 });
 
 /**
@@ -172,11 +173,12 @@ export const listTransactions = async ({
                 bankLogo: bank.logo,
                 bankCountry: bank.country
             },
-            tags: sql<(typeof TagSchema)[]>`(
+            tags: sql<z.infer<typeof TagSchema>[]>`(
                 SELECT
                     coalesce(json_agg(json_build_object(
                         'id', ${tag.id},
                         'name', ${tag.name},
+                        'description', ${tag.description},
                         'color', ${tag.color},
                         'createdAt', ${tagToTransaction.createdAt}
                     ) ORDER BY ${tagToTransaction.createdAt} ASC),'[]'::json) AS "data"
