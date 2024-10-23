@@ -36,6 +36,7 @@
             "@auth": ["./src/server/auth"],
             "@auth/*": ["./src/server/auth/*"],
             "@/logger": ["./src/server/lib/logging/logger"],
+            "@server": ["./src/server/index.ts"],
             "@server/*": ["./src/server/*"]
         }
     },
