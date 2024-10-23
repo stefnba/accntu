@@ -11,6 +11,7 @@ export const validationError = createMiddleware(async (c, next) => {
     if (c.res.status < 400) {
         return;
     }
+    return;
 
     const status = c.res.status as StatusCode;
     const res = await c.res.json();

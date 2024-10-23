@@ -1,7 +1,7 @@
-import { logger } from '../logging/logger';
+import { logger } from '@logger';
 
-export class CustomError extends Error {
-    constructor(message: string) {
+export class ActionError extends Error {
+    constructor(message: string, error?: Error) {
         super(message);
 
         // needed for CustomError instanceof Error => true

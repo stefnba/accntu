@@ -7,6 +7,7 @@ import {
     UpdateTagSchema
 } from '@features/tag/schema';
 import {
+    DuplicateTagError,
     createTag,
     deleteTag,
     getTagById,
@@ -16,15 +17,9 @@ import {
 } from '@features/tag/server/actions/';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 
-import { HonoApiError } from './errors';
-
-enum TagCreateError {
-    TEST = 'TEST',
-    NEIN = 'TESSSSDF'
-}
+import { createTagExceptions } from './errors';
 
 const app = new Hono()
     .get(
@@ -83,27 +78,11 @@ const app = new Hono()
                 return c.json(data, 201);
             })
             .catch((e) => {
-                if (1 === 1) {
-                    return c.json(new HonoApiError('NEIN').returnError(), 400);
+                if (e instanceof DuplicateTagError) {
+                    return createTagExceptions.json(c, 'DUPLICATE');
                 }
-                return c.json(new HonoApiError('NEIN').returnError(), 400);
 
-                // if (e instanceof HTTPException) {
-                //     return c.json(
-                //         {
-                //             message: e.message,
-                //             error: 'HEY'
-                //         },
-                //         400
-                //     );
-                // }
-                // return c.json(
-                //     {
-                //         message: 'Tag could not be created',
-                //         error: 'PASSS'
-                //     },
-                //     400
-                // );
+                return createTagExceptions.json(c, 'FAILURE_TO_CREATE');
             });
     })
     .delete(

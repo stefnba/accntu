@@ -6,6 +6,8 @@ import { InferRequestType, InferResponseType } from 'hono';
 
 const query = client.api.tags.create.$post;
 
+type aa = InferResponseType<typeof query, 400>;
+
 export const useCreateTag = () => {
     const { handleClose } = storeViewUpdateTagSheet();
     const queryClient = useQueryClient();
@@ -28,7 +30,6 @@ export const useCreateTag = () => {
             return res.json();
         },
         onSuccess: (data) => {
-            const a = data.id;
             successToast('Tag has been created');
             queryClient.invalidateQueries({ queryKey: ['tags'] });
             handleClose();

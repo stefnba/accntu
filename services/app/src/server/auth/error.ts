@@ -1,5 +1,5 @@
-import { logger } from '@/logger';
-import { CustomError } from '@server/lib/error';
+import { logger } from '@logger';
+import { ActionError } from '@server/lib/error';
 
 type TAuthError =
     | {
@@ -11,7 +11,7 @@ type TAuthError =
 /**
  * AuthError for invalid authentication like wrong password, OTP code.
  */
-export class AuthError extends CustomError {
+export class AuthError extends ActionError {
     internalMessage: string;
     extra?: Record<string, any>;
 

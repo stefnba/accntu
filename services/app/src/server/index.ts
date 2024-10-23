@@ -33,21 +33,27 @@ app.use(logger);
 app.use(validationError);
 
 app.use(logger);
-app.onError((err, c) => {
+app.onError(async (err, c) => {
     // todo logging
 
-    console.log('Error', err);
+    // console.log('Error', err);
 
     if (err instanceof HTTPException) {
-        console.log('HTTPException', err);
+        const res = err.getResponse();
+        console.log('HTTPException');
+        console.log('HTTPException', await res.json());
         return c.json({ error: err.message }, err.status);
+        // const json = await res.json();
+        // console.log('HTTPException', json);
+        // return c.json(res.body, err.status);
+        // // return c.json({ error: err.message }, err.status);
     }
     if (err instanceof AuthError) {
         return c.json({ error: err.message }, 401);
     }
     return c.json(
         {
-            error: 'Internal error'
+            error: '1Internal error'
         },
         500
     );
