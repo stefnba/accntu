@@ -241,7 +241,7 @@ const TransactionAction = ({ id }: { id: string }) => {
     const { handleOpen } = storeViewUpdateTransactionSheet();
     const [open, setOpen] = useState(false);
 
-    const { mutate } = useUpdateTransaction({ id });
+    const { mutate } = useUpdateTransaction({ transactionId: id });
     return (
         <div className="flex justify-end">
             <DropdownMenu open={open} onOpenChange={setOpen}>

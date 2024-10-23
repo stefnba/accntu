@@ -32,10 +32,10 @@ export const ViewTransactionSheet: React.FC<Props> = () => {
     const transactionId = storeViewUpdateTransactionSheet((state) => state.id);
     const { isOpen, handleClose } = storeViewUpdateTransactionSheet();
 
-    const { isLoading, data } = useGetTransaction({ id: transactionId });
+    const { isLoading, data } = useGetTransaction({ transactionId });
 
     const { mutate: updateTransaction } = useUpdateTransaction({
-        id: transactionId || ''
+        transactionId: transactionId || ''
     });
 
     if (!data || !transactionId) return null;

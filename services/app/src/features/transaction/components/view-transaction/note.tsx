@@ -13,7 +13,7 @@ interface Props {
 export const TransactionNote: React.FC<Props> = ({ note, transactionId }) => {
     const [isEditing, setIsEditing] = useState(false);
     const { mutateAsync: updateTransactionMutate } = useUpdateTransaction({
-        id: transactionId
+        transactionId
     });
 
     const form = useForm(UpdateTransactionSchema, { defaultValues: { note } });

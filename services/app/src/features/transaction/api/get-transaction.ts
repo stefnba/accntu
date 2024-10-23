@@ -2,18 +2,20 @@ import { client } from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 
-const query = client.api.transactions[':id'].$get;
+const query = client.api.transactions[':transactionId'].$get;
 
 type TGetTransactionsParams = InferRequestType<typeof query>['param'];
 export type TGetTransactionsResult = InferResponseType<typeof query, 200>;
 
-export const useGetTransaction = ({ id }: Partial<TGetTransactionsParams>) => {
+export const useGetTransaction = ({
+    transactionId
+}: Partial<TGetTransactionsParams>) => {
     const q = useQuery({
-        enabled: !!id,
-        queryKey: ['transaction', id],
+        enabled: !!transactionId,
+        queryKey: ['transaction', transactionId],
         queryFn: async () => {
             const res = await query({
-                param: { id: id! }
+                param: { transactionId: transactionId! }
             });
 
             if (!res.ok) throw new Error(res.statusText);

@@ -4,9 +4,13 @@ import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
 
-const query = client.api.transactions[':id'].update.$patch;
+const query = client.api.transactions[':transactionId'].update.$patch;
 
-export const useUpdateTransaction = ({ id }: { id: string }) => {
+export const useUpdateTransaction = ({
+    transactionId
+}: {
+    transactionId: string;
+}) => {
     const queryClient = useQueryClient();
 
     const q = useMutation<
@@ -18,7 +22,7 @@ export const useUpdateTransaction = ({ id }: { id: string }) => {
             const response = await query({
                 json: values,
                 param: {
-                    id
+                    transactionId
                 }
             });
 
@@ -31,7 +35,7 @@ export const useUpdateTransaction = ({ id }: { id: string }) => {
 
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             queryClient.invalidateQueries({
-                queryKey: ['transaction', id]
+                queryKey: ['transaction', transactionId]
             });
         },
         onError: (error) => {

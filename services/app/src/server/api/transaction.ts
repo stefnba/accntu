@@ -156,7 +156,7 @@ const app = new Hono()
         }
     )
     .patch(
-        '/:id/update',
+        '/:transactionId/update',
         zValidator('json', UpdateTransactionSchema),
         zValidator('param', GetTransactionByIdSchema),
         async (c) => {

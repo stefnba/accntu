@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { z } from 'zod';
 
 interface Props {
-    tag: z.infer<typeof SelectTagSchema>;
+    tag: Omit<z.infer<typeof SelectTagSchema>, 'transactionCount'>;
     transactionId: string;
 }
 
