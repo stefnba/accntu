@@ -15,7 +15,7 @@ export const useCreateImport = () => {
     const queryClient = useQueryClient();
 
     const q = useMutation<
-        InferResponseType<typeof query>,
+        InferResponseType<typeof query, 201>,
         Error,
         InferRequestType<typeof query>['json']
     >({

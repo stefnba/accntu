@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 
 const query = client.api.transactions.$get;
 
-export type TGetTransactionsResponse = InferResponseType<typeof query>;
+export type TGetTransactionsResponse = InferResponseType<typeof query, 200>;
 
 export const useGetTransactions = () => {
     /* Pagination */
