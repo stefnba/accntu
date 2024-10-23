@@ -1,5 +1,5 @@
 {
-  "id": "350fca02-04c7-4d30-8621-86d8c4be32db",
+  "id": "57add5fc-f87d-484d-b57f-b3f3aace3412",
   "prevId": "881face7-5ba9-4b78-9a4b-533c59cf7036",
   "version": "7",
   "dialect": "postgresql",
@@ -639,6 +639,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "transactionCount": {
+          "name": "transactionCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",

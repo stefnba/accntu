@@ -52,10 +52,10 @@ export const AddTransactionTag: React.FC<Props> = ({
                     </Badge>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 group mt-1" align="start">
+            <PopoverContent className="w-[260px] p-0 group mt-1" align="start">
                 <Command shouldFilter={false}>
                     <CommandInput
-                        placeholder="Search framework..."
+                        placeholder="Search or start typing..."
                         onValueChange={setSearchValue}
                     />
                     <CommandList>

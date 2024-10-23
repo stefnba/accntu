@@ -21,7 +21,8 @@ export const SelectTagSchema = createSelectSchema(tag).pick({
     name: true,
     color: true,
     createdAt: true,
-    description: true
+    description: true,
+    transactionCount: true
 });
 
 export type TSelectTag = z.infer<typeof SelectTagSchema>;

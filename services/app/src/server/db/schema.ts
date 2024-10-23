@@ -1,4 +1,3 @@
-import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
     AnyPgColumn,
@@ -513,6 +512,7 @@ export const tag = pgTable(
                 onDelete: 'restrict',
                 onUpdate: 'cascade'
             }),
+        transactionCount: integer('transactionCount'),
         createdAt: timestamp('createdAt', { precision: 3, mode: 'string' })
             .defaultNow()
             .notNull(),

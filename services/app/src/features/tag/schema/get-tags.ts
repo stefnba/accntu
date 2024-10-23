@@ -4,7 +4,11 @@ import { SelectTagSchema } from './get-tag';
 
 export const GetTagsParamSchema = z.object({
     userId: z.string(),
-    exclude: z.array(z.string()).optional(),
+    exclude: z
+        .union([z.array(z.string()), z.string()])
+        .transform((v) => (Array.isArray(v) ? v : [v]))
+        .optional(),
+    // .transform((v) => (Array.isArray(v) ? v : [v])),
     search: z.string().optional()
 });
 

@@ -3,6 +3,8 @@ import { tag, tagToTransaction } from '@db/schema';
 import { and, count, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { updateTagTransactionCount } from './add-tag-to-transaction';
+
 export const TagAndTransactionSchema = z.object({
     tagId: z.string(),
     transactionId: z.string()
@@ -14,7 +16,7 @@ export const TagAndTransactionSchema = z.object({
 export const removeTagFromTransaction = async (
     data: z.infer<typeof TagAndTransactionSchema>
 ) => {
-    const remove = await db
+    await db
         .delete(tagToTransaction)
         .where(
             and(
@@ -32,5 +34,7 @@ export const removeTagFromTransaction = async (
 
     if (remaining.count === 0) {
         await db.delete(tag).where(eq(tag.id, data.tagId));
+    } else {
+        await updateTagTransactionCount(data.tagId);
     }
 };

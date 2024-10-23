@@ -1,6 +1,7 @@
 import { db } from '@db';
-import { tagToTransaction } from '@db/schema';
+import { tag, tagToTransaction } from '@db/schema';
 import { TAddTagToTransactionValues } from '@features/tag/schema';
+import { count, eq } from 'drizzle-orm';
 
 import { createTag } from './create-tag';
 import { getTagByName } from './get-tag';
@@ -26,7 +27,6 @@ export const addTagToTransaction = async ({
         if (recordWithName) {
             currentTagId = recordWithName.id;
         } else {
-            console.log('creating tag');
             const newTag = await createTag({ userId, values: { name } });
             if (!newTag) throw new Error('Not created');
 
@@ -40,9 +40,20 @@ export const addTagToTransaction = async ({
             .insert(tagToTransaction)
             .values({ tagId: currentTagId, transactionId })
             .returning();
+
+        await updateTagTransactionCount(currentTagId);
     }
 
     return {
         success: true
     };
+};
+
+export const updateTagTransactionCount = async (tagId: string) => {
+    // update transaction count
+    const [{ count: transactionCount }] = await db
+        .select({ count: count() })
+        .from(tagToTransaction)
+        .where(eq(tagToTransaction.tagId, tagId));
+    await db.update(tag).set({ transactionCount }).where(eq(tag.id, tagId));
 };
