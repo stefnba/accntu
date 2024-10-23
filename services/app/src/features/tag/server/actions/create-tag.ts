@@ -1,3 +1,4 @@
+import { colorSelection } from '@/lib/constants';
 import { ActionError } from '@/server/lib/error';
 import { db } from '@db';
 import { tag } from '@db/schema';
@@ -33,9 +34,18 @@ export const createTag = async ({
     userId: string;
 }) => {
     try {
+        let { color } = values;
+
+        if (!color) {
+            color =
+                colorSelection[
+                    Math.floor(Math.random() * colorSelection.length)
+                ].value;
+        }
+
         const [newTag] = await db
             .insert(tag)
-            .values({ ...values, userId, id: createId() })
+            .values({ ...values, color, userId, id: createId() })
             .returning();
         return newTag;
     } catch (error: any) {
