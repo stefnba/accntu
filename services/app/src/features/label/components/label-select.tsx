@@ -203,8 +203,6 @@ export const LabelSelectCommand: React.FC<LabelSelectCommandProps> = ({
                     {labels.map((l) => {
                         const { name, level, parentLabel, rootParent } = l;
 
-                        console.log(11, level);
-
                         const labelName = () => {
                             if (level === 0) {
                                 return name;

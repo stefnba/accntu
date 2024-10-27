@@ -7,6 +7,13 @@ import {
     useForm
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
+import {
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel
+} from '@/components/ui/form';
+import { LabelSelectCommand } from '@/features/label/components/label-select';
 import { UpdateTransactionsSchema } from '@/features/transaction/schema/update-transactions';
 import { storeTransactionTableRowSelection } from '@/features/transaction/store/table-row-selection';
 import { cn } from '@/lib/utils';
@@ -27,11 +34,11 @@ const updateableFields = [
     {
         label: 'Type',
         key: 'type'
+    },
+    {
+        label: 'Label',
+        key: 'label'
     }
-    // {
-    //     label: 'Label',
-    //     key: 'label'
-    // },
     // {
     //     label: 'Note',
     //     key: 'note'
@@ -69,7 +76,10 @@ export const TransactionUpdateForm: React.FC<Props> = () => {
 
     const formUpdateFields = {
         title: <FormInput label="Title" form={form} name="values.title" />,
-        note: <FormTextarea label="Note" form={form} name="values.note" />
+        note: <FormTextarea label="Note" form={form} name="values.note" />,
+        label: (
+            <FormTextarea label="NotLabele" form={form} name="values.labelId" />
+        )
     };
 
     return (
@@ -135,6 +145,30 @@ export const TransactionUpdateForm: React.FC<Props> = () => {
                         ]}
                     />
                 )}
+
+                {/* Label */}
+                {updateFields.includes('label') && (
+                    <FormField
+                        control={form.control}
+                        name="values.labelId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Label</FormLabel>
+                                <FormControl>
+                                    <LabelSelectCommand
+                                        handleSelect={(s) => {
+                                            form.setValue('values.labelId', s, {
+                                                shouldValidate: true
+                                            });
+                                        }}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                )}
+
+                {/* Note */}
 
                 {updateFields.length > 0 && (
                     <FormSubmit className="mt-8" form={form}>

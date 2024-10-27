@@ -1,21 +1,17 @@
 import { FilterTransactionSchema } from '@/features/transaction/schema/table-filtering';
 import { PaginationTransactionSchema } from '@/features/transaction/schema/table-pagination';
-import { inArrayFilter, queryBuilder } from '@/server/db/utils';
+import { queryBuilder } from '@/server/db/utils';
 import { db } from '@db';
 import {
-    InsertTransactionSchema,
     bank,
     connectedAccount,
     connectedBank,
     label,
     tag,
     tagToTransaction,
-    transaction,
-    transactionImport,
-    transactionImportFile
+    transaction
 } from '@db/schema';
 import { SelectTagSchema } from '@features/tag/schema/get-tag';
-import { createId } from '@paralleldrive/cuid2';
 import { getTableColumns, sql } from 'drizzle-orm';
 import { and, count, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -27,97 +23,6 @@ const TagSchema = SelectTagSchema.pick({
     createdAt: true,
     description: true
 });
-
-/**
- * Create new transaction records.
- */
-export const createTransactions = async ({
-    values,
-    importFileId,
-    accountId,
-    userId
-}: {
-    values: z.infer<typeof InsertTransactionSchema>[];
-    importFileId: string;
-    accountId: string;
-    userId: string;
-}) => {
-    // create transaction records
-    const newTransactions = await db
-        .insert(transaction)
-        .values(
-            values.map((transaction) => ({
-                ...transaction,
-                id: createId(),
-                accountId,
-                userId,
-                importFileId
-            }))
-        )
-        .returning()
-        .onConflictDoNothing();
-
-    // update import file
-    const [importFileRecord] = await db
-        .update(transactionImportFile)
-        .set({
-            importedAt: new Date(),
-            transactionCount: values.length,
-            importedTransactionCount: newTransactions.length,
-            updatedAt: new Date()
-        })
-        .where(and(eq(transactionImportFile.id, importFileId)))
-        .returning();
-
-    if (!importFileRecord) {
-        throw new Error('Import file not found');
-    }
-
-    const importRecord = await db.query.transactionImport.findFirst({
-        where: (fields, { eq, and }) =>
-            and(
-                eq(fields.id, importFileRecord.importId),
-                eq(fields.userId, userId)
-            )
-    });
-
-    if (!importRecord) {
-        throw new Error('Import not found');
-    }
-
-    const currentFileCount = importRecord.importedFileCount || 0;
-    const currentTransactionCount = importRecord.importedTransactionCount || 0;
-
-    if (currentFileCount + 1 > (importRecord.fileCount || 0)) {
-        throw new Error('Import file count exceeded');
-    }
-
-    // update import record
-    const [updatedImportRecord] = await db
-        .update(transactionImport)
-        .set({
-            importedFileCount: currentFileCount + 1,
-            importedTransactionCount:
-                currentTransactionCount + newTransactions.length,
-            successAt:
-                currentFileCount + 1 === importRecord.fileCount
-                    ? new Date()
-                    : null
-        })
-        .where(
-            and(
-                eq(transactionImport.id, importFileRecord.importId),
-                eq(transactionImport.userId, userId)
-            )
-        )
-        .returning();
-
-    return {
-        transactions: newTransactions,
-        allImported: updatedImportRecord.successAt !== null,
-        importId: importRecord.id
-    };
-};
 
 /**
  * List transaction records with pagination, ordering, filtering.
@@ -217,23 +122,4 @@ export const listTransactions = async ({
         count: transactionCount,
         transactions: await transactions
     };
-};
-
-export const updateTransactions = async (
-    data: any,
-    id: string,
-    userId: string
-) => {
-    await db
-        .update(transaction)
-        .set(data)
-        .where(
-            and(
-                eq(transaction.userId, userId),
-                Array.isArray(id)
-                    ? inArrayFilter(transaction.id, id)
-                    : eq(transaction.id, id)
-            )
-        )
-        .returning();
 };

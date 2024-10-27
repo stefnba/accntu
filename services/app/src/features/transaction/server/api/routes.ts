@@ -1,7 +1,3 @@
-import {
-    createTransactions,
-    listTransactions
-} from '@/server/actions/transaction';
 import { getUser } from '@/server/auth';
 import { db } from '@db';
 import { transaction } from '@db/schema';
@@ -15,8 +11,13 @@ import {
     UpdateTransactionSchema,
     UpdateTransactionsSchema
 } from '@features/transaction/schema';
+import {
+    createTransactions,
+    getTransactionById,
+    listTransactions
+} from '@features/transaction/server/actions';
+import { listFilterOptions } from '@features/transaction/server/actions';
 import { zValidator } from '@hono/zod-validator';
-import { listFilterOptions } from '@server/actions/transaction-filter';
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -115,7 +116,6 @@ const app = new Hono()
             return c.json(data, 201);
         }
     )
-
     .get(
         '/:transactionId',
         zValidator('param', GetTransactionByIdSchema),
@@ -123,29 +123,9 @@ const app = new Hono()
             const { transactionId } = c.req.valid('param');
             const user = getUser(c);
 
-            const data = await db.query.transaction.findFirst({
-                where: (fields, { and, eq }) =>
-                    and(
-                        eq(fields.id, transactionId),
-                        eq(fields.userId, user.id)
-                    ),
-                with: {
-                    tags: {
-                        with: {
-                            tag: true
-                        }
-                    },
-                    label: true,
-                    account: {
-                        with: {
-                            bank: {
-                                with: {
-                                    bank: true
-                                }
-                            }
-                        }
-                    }
-                }
+            const data = await getTransactionById({
+                transactionId,
+                userId: user.id
             });
 
             if (!data) {
