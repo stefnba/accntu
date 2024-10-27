@@ -33,10 +33,6 @@ export function TransactionTableFilterBar({}: Props) {
             />
             <TransactionTableSelectFilter filterKey="tag" filterLabel="Tag" />
             <TransactionTableSelectFilter
-                filterKey="label"
-                filterLabel="Label"
-            />
-            <TransactionTableSelectFilter
                 filterKey="account"
                 filterLabel="Account"
             />
