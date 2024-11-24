@@ -1,10 +1,13 @@
 'use client';
+
+import { cn } from '@/lib/utils';
+
 import routes from '../routes';
-import SidebarNavItem from './NavItem';
+import SidebarNavItem from './nav-item';
 
 const SidebarMenu = () => {
     return (
-        <div className="flex flex-col space-y-2 px-3">
+        <div className={cn('space-y-[12px] mx-4 box-content my-8 flex-grow')}>
             {routes.map((route) => (
                 <SidebarNavItem
                     key={route.href}

@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 
-type SidebarStore = {
+type State = {
     isOpen: boolean;
-    onOpen: () => void;
-    onClose: () => void;
 };
 
-export const useSidebar = create<SidebarStore>((set) => ({
+type Action = {
+    handleToggle: () => void;
+};
+
+export const useSidebar = create<State & Action>((set) => ({
     isOpen: true,
-    onOpen: () => set({ isOpen: true }),
-    onClose: () => set({ isOpen: false })
+    handleToggle: () => set((state) => ({ isOpen: !state.isOpen }))
 }));

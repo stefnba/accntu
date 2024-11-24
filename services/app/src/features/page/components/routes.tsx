@@ -1,5 +1,4 @@
-'use client';
-
+// 'use client';
 import {
     LuCreditCard,
     LuImport,
@@ -31,7 +30,7 @@ const routes = [
     },
     {
         icon: LuSettings,
-        label: 'Settings',
+        label: 'Admin',
         href: '/settings'
     }
 ];

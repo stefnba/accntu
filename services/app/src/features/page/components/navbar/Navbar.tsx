@@ -1,15 +1,12 @@
 import NavbarMenu from './Menu';
-import Logo from './Logo';
 import Search from './Search';
-import { SidebarToggle } from './SidebarToggle';
 
 const Navbar = () => {
     return (
-        <div className="fixed inset-y-0 z-50 flex h-[75px] w-full items-center justify-center border-b bg-white px-4 shadow-sm">
-            <SidebarToggle />
-            <Logo />
-            {/* <Search /> */}
-            <NavbarMenu />
+        <div className="pl-9 md:block hidden absolute right-10 top-4 ">
+            <div className="flex z-50">
+                <NavbarMenu />
+            </div>
         </div>
     );
 };

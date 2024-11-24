@@ -1,12 +1,15 @@
 import { redirect } from 'next/navigation';
 
-import Navbar from '@/features/page/components/navbar/Navbar';
-import Sidebar from '@/features/page/components/sidebar/Sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { LOGIN_URL } from '@/lib/auth/routes';
 import { ModalProvider } from '@/providers/modal';
 import { SessionProvider } from '@/providers/session';
 import { SheetProvider } from '@/providers/sheet';
 import { validateRequest } from '@/server/auth/next/authenticate';
+import Navbar from '@features/page/components/navbar/navbar';
+import { SidebarTogglMobile } from '@features/page/components/navbar/toggle';
+import { AppSidebar } from '@features/page/components/sidebar/app-sidebar';
+import Sidebar from '@features/page/components/sidebar/sidebar';
 
 interface Props {
     children: React.ReactNode;
@@ -21,15 +24,20 @@ export default async function ProtectedLayout({ children }: Readonly<Props>) {
 
     return (
         <SessionProvider session={session}>
-            <ModalProvider />
-            <SheetProvider />
-            <div className="flex h-full pt-[104px]">
-                <Navbar />
-                <Sidebar />
-                <main className="top-[104px] w-full overflow-y-scroll px-6">
-                    {children}
-                </main>
-            </div>
+            <SidebarProvider>
+                <SidebarTogglMobile />
+                <ModalProvider />
+                <SheetProvider />
+                <div className="w-screen flex h-screen max-h-screen">
+                    <Sidebar collapsible="icon" />
+                    <AppSidebar />
+
+                    <Navbar />
+                    <main className=" h-screen overflow-y-auto max-h-screen md:px-10 px-5 w-full">
+                        {children}
+                    </main>
+                </div>
+            </SidebarProvider>
         </SessionProvider>
     );
 }

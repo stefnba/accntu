@@ -6,7 +6,7 @@ export default async function Home() {
     const user = await getUser();
 
     return (
-        <div>
+        <>
             <PageHeader title="Home" />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <StatsCard></StatsCard>
@@ -14,6 +14,6 @@ export default async function Home() {
                 <StatsCard></StatsCard>
                 <StatsCard></StatsCard>
             </div>
-        </div>
+        </>
     );
 }
