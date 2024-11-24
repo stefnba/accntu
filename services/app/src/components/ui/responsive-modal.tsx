@@ -2,7 +2,9 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { useMedia } from 'react-use';
+import { useIsMobile } from '@hooks/mobile-screen';
+
+// import { useMedia } from 'react-use';
 
 interface Props {
     open: boolean;
@@ -15,9 +17,9 @@ export const ResponsiveModal: React.FC<Props> = ({
     open,
     onOpenChange
 }) => {
-    const isDesktop = useMedia('(min-width: 768px)', true);
+    const isMobile = useIsMobile();
 
-    if (isDesktop) {
+    if (!isMobile) {
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="w-full sm:max-w-lg p-4 border-none overflow-y-auto max-h-[85vh]">
@@ -29,7 +31,7 @@ export const ResponsiveModal: React.FC<Props> = ({
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="mx-4 pb-4 px-4">
+            <DrawerContent className="pb-4 px-4">
                 <div className="overflow-y-auto hide-scrollbar max-h-[85vh] pt-4">
                     {children}
                 </div>
