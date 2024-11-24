@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { LOGIN_URL } from '@/lib/auth/routes';
 import { ModalProvider } from '@/providers/modal';
 import { SessionProvider } from '@/providers/session';
@@ -9,7 +9,6 @@ import { validateRequest } from '@/server/auth/next/authenticate';
 import Navbar from '@features/page/components/navbar/navbar';
 import { SidebarTogglMobile } from '@features/page/components/navbar/toggle';
 import { AppSidebar } from '@features/page/components/sidebar/app-sidebar';
-import Sidebar from '@features/page/components/sidebar/sidebar';
 
 interface Props {
     children: React.ReactNode;
@@ -29,7 +28,6 @@ export default async function ProtectedLayout({ children }: Readonly<Props>) {
                 <ModalProvider />
                 <SheetProvider />
                 <div className="w-screen flex h-screen max-h-screen">
-                    <Sidebar collapsible="icon" />
                     <AppSidebar />
 
                     <Navbar />

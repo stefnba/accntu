@@ -4,7 +4,7 @@ import Link from 'next/link';
 const Logo = () => {
     return (
         <Link className="flex items-center h-9" href="/">
-            <div className="text-slate-500 gap-2 font-medium flex items-center text-md leading-6 md:ml-[26px] mx-auto">
+            <div className="text-sidebar-foreground gap-2 font-medium flex items-center ml-[10px] text-md leading-6">
                 <Image
                     className="[&>img]:shrink-0"
                     src="/images/logo.png"
@@ -12,7 +12,7 @@ const Logo = () => {
                     height={24}
                     alt="logo"
                 />
-                <span className="delay-200 ease-linear group-data-[collapsible=icon]:hidden">
+                <span className="text-sidebar-primary delay-200 ease-linear group-data-[collapsible=icon]:hidden">
                     accntu
                 </span>
             </div>

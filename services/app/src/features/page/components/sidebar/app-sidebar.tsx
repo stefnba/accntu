@@ -40,6 +40,7 @@ export function AppSidebar() {
                             {routes.map((r) => (
                                 <SidebarMenuItem key={r.href}>
                                     <SidebarMenuButton
+                                        tooltip={r.label}
                                         isActive={
                                             (pathname === '/' &&
                                                 r.href === '/') ||
