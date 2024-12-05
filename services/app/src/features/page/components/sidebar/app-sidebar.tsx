@@ -119,6 +119,9 @@ const AppSidebarSubMenu: React.FC<AppSidebarSubMenuProps> = ({
                                 getParentPathname(currentPathname) ===
                                 parentRoute.href
                             }
+                            className={cn(
+                                isOpen && 'bg-primary/40 text-primary'
+                            )}
                         >
                             <parentRoute.icon />
                             <span>{parentRoute.label}</span>
@@ -129,6 +132,7 @@ const AppSidebarSubMenu: React.FC<AppSidebarSubMenuProps> = ({
                     align="start"
                     side="right"
                     className="min-w-48"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
                 >
                     <DropdownMenuLabel className="pl-3">
                         {parentRoute.label}
