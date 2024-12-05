@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 const Logo = () => {
     return (
         <Link className="flex items-center h-9" href="/">

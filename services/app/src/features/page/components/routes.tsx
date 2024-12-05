@@ -1,4 +1,5 @@
-// 'use client';
+'use client';
+
 import {
     LuCreditCard,
     LuImport,
@@ -7,7 +8,14 @@ import {
     LuWallet
 } from 'react-icons/lu';
 
-const routes = [
+export type Route = {
+    icon: React.ElementType;
+    label: string;
+    href: string;
+    routes?: Route[];
+};
+
+const routes: Route[] = [
     {
         icon: LuLayoutDashboard,
         label: 'Dashboard',
@@ -31,7 +39,24 @@ const routes = [
     {
         icon: LuSettings,
         label: 'Admin',
-        href: '/settings'
+        href: '/settings',
+        routes: [
+            {
+                icon: LuSettings,
+                label: 'Bank Accounts',
+                href: '/account'
+            },
+            {
+                icon: LuSettings,
+                label: 'Labels',
+                href: '/label'
+            },
+            {
+                icon: LuSettings,
+                label: 'Tags',
+                href: '/tag'
+            }
+        ]
     }
 ];
 
