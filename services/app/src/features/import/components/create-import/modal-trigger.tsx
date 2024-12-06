@@ -12,7 +12,7 @@ export const CreateImportModalTrigger = () => {
 
     return (
         <Button size="sm" onClick={() => handleOpen()}>
-            <LuPlus className="mr-2 size-4" />
+            <LuPlus className="md:mr-2 size-4" />
             Add Import
         </Button>
     );
