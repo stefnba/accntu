@@ -5,7 +5,11 @@ export const MultiFactorAuthSection = () => {
         <>
             <AccountCustomSection
                 title="Multi-Factor Authentication"
-                action={<>Coming Soon...</>}
+                action={
+                    <div className="text-sm text-muted-foreground">
+                        Coming Soon...
+                    </div>
+                }
             />
         </>
     );

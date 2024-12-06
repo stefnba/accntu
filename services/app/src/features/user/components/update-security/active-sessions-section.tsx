@@ -1,10 +1,10 @@
 import { AccountCustomSection } from '@/features/user/components/update-section';
 
-export const ChangePasswordSection = () => {
+export const ActiveSessionsSection = () => {
     return (
         <>
             <AccountCustomSection
-                title="Change Password"
+                title="Active Sessions"
                 action={
                     <div className="text-sm text-muted-foreground">
                         Coming Soon...
