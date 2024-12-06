@@ -133,6 +133,7 @@ const AppSidebarSubMenu: React.FC<AppSidebarSubMenuProps> = ({
                     side="right"
                     className="min-w-48"
                     onCloseAutoFocus={(e) => e.preventDefault()}
+                    onMouseLeave={() => setOpen(false)}
                 >
                     <DropdownMenuLabel className="pl-3">
                         {parentRoute.label}
