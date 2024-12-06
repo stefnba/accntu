@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { HeaderActionButton } from '@/components/page/header';
 import { storeCreateImportModal } from '@/features/import/store/create-import-modal';
 import { LuPlus } from 'react-icons/lu';
 
@@ -11,9 +11,10 @@ export const CreateImportModalTrigger = () => {
     const { handleOpen } = storeCreateImportModal();
 
     return (
-        <Button size="sm" onClick={() => handleOpen()}>
-            <LuPlus className="md:mr-2 size-4" />
-            Add Import
-        </Button>
+        <HeaderActionButton
+            label="Add Import"
+            icon={LuPlus}
+            onClick={handleOpen}
+        />
     );
 };
