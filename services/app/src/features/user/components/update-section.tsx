@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 
@@ -18,22 +19,19 @@ export const AccountCustomSection = ({
     content: Content
 }: Props) => {
     return (
-        <div className="mr-6">
+        <div className="w-full">
             <div className="my-6 flex content-center">
                 <div className="my-auto">
-                    <div className="text-lg font-semibold">{title}</div>
+                    <Label size="lg">{title}</Label>
                     {subTitle && (
-                        <p className="text-md text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                             {subTitle}
                         </p>
                     )}
                 </div>
-                <div className="my-auto ml-auto cursor-pointer text-primary">
-                    {Action}
-                </div>
+                <div className="my-auto ml-auto">{Action}</div>
             </div>
             {Content && <div className="my-6">{Content}</div>}
-            <Separator />
         </div>
     );
 };
@@ -56,7 +54,11 @@ export const AccountCollapsibleSection: React.FC<
             subTitle={subTitle}
             content={<ContentRender />}
             action={
-                <Button variant="outline" onClick={() => onOpenChange(!isOpen)}>
+                <Button
+                    variant="link"
+                    className="text-primary"
+                    onClick={() => onOpenChange(!isOpen)}
+                >
                     {!isOpen ? 'Update' : 'Cancel'}
                 </Button>
             }

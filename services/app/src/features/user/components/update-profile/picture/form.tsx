@@ -24,9 +24,9 @@ export const UpdateUserImageForm: React.FC<Props> = () => {
     };
 
     return (
-        <Form form={form} onSubmit={handleSubmit}>
+        <Form form={form} onSubmit={handleSubmit} className="mt-4">
             {image && (
-                <div className="w-full ">
+                <div className="w-full">
                     <div className="flex justify-center">
                         <Avatar>
                             <AvatarImage
@@ -60,7 +60,7 @@ export const UpdateUserImageForm: React.FC<Props> = () => {
                             className="flex-1"
                             // onClick={() => form.handleSubmit(execute)}
                         >
-                            Save Picture
+                            Update Picture
                         </Button>
                     </div>
                 </div>

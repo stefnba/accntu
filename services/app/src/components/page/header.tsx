@@ -19,10 +19,8 @@ export const PageHeader = ({
     return (
         <div className="mx-auto mt-2 mb-6 flex items-center">
             <div className="">
-                <Breadcrumbs breadcrumbs={breadcrumbs} />
-                <h1 className="text-3xl font-semibold tracking-tight">
-                    {title}
-                </h1>
+                {/* <Breadcrumbs breadcrumbs={breadcrumbs} /> */}
+                <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
                 {subTitle && (
                     <p className="text-muted-foreground">{subTitle}</p>
                 )}

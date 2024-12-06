@@ -1,8 +1,9 @@
 import { PageHeader } from '@/components/page/header';
-import { UpdateEmailSection } from '@/features/user/components/update-profile/update-email';
-import { UpdateUserImageSection } from '@/features/user/components/update-profile/update-image';
-import { UpdateNameSection } from '@/features/user/components/update-profile/update-name';
+import { Separator } from '@/components/ui/separator';
 import { getUser } from '@auth/next';
+import { UpdateEmailSection } from '@features/user/components/update-profile/email/section';
+import { UpdateNameSection } from '@features/user/components/update-profile/name/section';
+import { UpdateUserImageSection } from '@features/user/components/update-profile/picture/profile-picture';
 
 const ProfilePage = async () => {
     const user = await getUser();
@@ -24,14 +25,16 @@ const ProfilePage = async () => {
                 subTitle="Provide personal details and how we can reach you"
             />
 
-            <UpdateUserImageSection />
-
-            <div className="max-w-4xl">
+            <div className="max-w-2xl">
+                <UpdateUserImageSection />
+                <Separator />
                 <UpdateNameSection
                     firstName={user.firstName}
                     lastName={user.lastName}
                 />
+                <Separator />
                 <UpdateEmailSection email={user.email || ''} />
+                <Separator />
             </div>
         </>
     );

@@ -1,14 +1,14 @@
 'use client';
 
 import { Form, FormInput, FormSubmit, useForm } from '@/components/form';
+import { useUserUpdateModal } from '@/features/user/hooks/user-update-modal';
 import { UpdateUserSchema } from '@/features/user/schema/update-user';
+import { useUpdateUser } from '@features/user/api/update-user';
 import { z } from 'zod';
 
-import { useUpdateUser } from '../../api/update-user';
-
 interface Props {
-    firstName?: string | null;
-    lastName?: string | null;
+    firstName: string | null;
+    lastName: string | null;
 }
 
 export const UpdateNameForm: React.FC<Props> = ({ firstName, lastName }) => {
@@ -21,18 +21,23 @@ export const UpdateNameForm: React.FC<Props> = ({ firstName, lastName }) => {
     });
 
     const { mutate: updateUserMutate } = useUpdateUser('name');
+    const { handleClose } = useUserUpdateModal();
 
     const handleSubmit = (values: z.infer<typeof UpdateUserSchema>) => {
-        updateUserMutate(values);
+        updateUserMutate(values, {
+            onSuccess: () => {
+                handleClose();
+            }
+        });
     };
 
     return (
         <Form onSubmit={handleSubmit} form={form}>
-            <div className="flex space-x-6 w-full">
+            <div className="w-full flex-col gap-4 flex">
                 <FormInput name="firstName" label="First Name" form={form} />
                 <FormInput name="lastName" label="Last Name" form={form} />
+                <FormSubmit form={form}>Update</FormSubmit>
             </div>
-            <FormSubmit form={form}>Save Changes</FormSubmit>
         </Form>
     );
 };

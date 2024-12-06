@@ -1,5 +1,4 @@
 import { errorToast, successToast } from '@/components/toast';
-import { storeUpdateUserNameCollapsible } from '@/features/user/store/update-user-name-collapsible';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
@@ -7,8 +6,6 @@ import { InferRequestType, InferResponseType } from 'hono';
 const query = client.api.user.update.$patch;
 
 export const useUpdateUser = (section: 'name' | 'apparence') => {
-    const { handleClose: handleUserNameCollapsibleClose } =
-        storeUpdateUserNameCollapsible();
     const queryClient = useQueryClient();
 
     const q = useMutation<
@@ -28,7 +25,6 @@ export const useUpdateUser = (section: 'name' | 'apparence') => {
         onSuccess: () => {
             if (section === 'name') {
                 successToast('Your name has been updated');
-                handleUserNameCollapsibleClose();
             }
 
             if (section === 'apparence') {

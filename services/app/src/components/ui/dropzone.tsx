@@ -35,10 +35,10 @@ export default function Dropzone({
             >
                 <input name={name} id={name} {...inputProps()} />
                 {showIcon && (
-                    <LuUpload className=" h-8 w-8 text-gray-500 dark:text-gray-400" />
+                    <LuUpload className="size-6 text-gray-500 dark:text-gray-400" />
                 )}
                 {title && (
-                    <p className="mb-2 mt-6 text-gray-500 dark:text-gray-400">
+                    <p className="mb-2 mt-4 text-gray-500 dark:text-gray-400 text-sm">
                         {isDragActive ? 'Drop your files here' : title}
                     </p>
                 )}
