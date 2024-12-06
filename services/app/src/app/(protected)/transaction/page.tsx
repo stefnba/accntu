@@ -5,9 +5,9 @@ interface Props {}
 
 export default async function Transaction({}: Props) {
     return (
-        <div>
+        <>
             <PageHeader title="Transactions" />
             <TransactionTable />
-        </div>
+        </>
     );
 }
