@@ -44,7 +44,7 @@ export default async function LabelListPage() {
         <div>
             <PageHeader title="Settings" />
 
-            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {navItems.map(({ description, href, title, avatar }) => (
                     <NavCard
                         key={href}
