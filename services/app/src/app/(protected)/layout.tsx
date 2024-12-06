@@ -1,13 +1,13 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTriggerMobile } from '@/components/ui/sidebar';
 import { LOGIN_URL } from '@/lib/auth/routes';
 import { ModalProvider } from '@/providers/modal';
 import { SessionProvider } from '@/providers/session';
 import { SheetProvider } from '@/providers/sheet';
 import { validateRequest } from '@/server/auth/next/authenticate';
 import Navbar from '@features/page/components/navbar/navbar';
-import { SidebarTogglMobile } from '@features/page/components/navbar/toggle';
 import { AppSidebar } from '@features/page/components/sidebar/app-sidebar';
 
 interface Props {
@@ -21,17 +21,25 @@ export default async function ProtectedLayout({ children }: Readonly<Props>) {
         redirect(LOGIN_URL);
     }
 
+    const cookieStore = cookies();
+    const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
+
     return (
         <SessionProvider session={session}>
-            <SidebarProvider>
-                <SidebarTogglMobile />
+            <SidebarProvider defaultOpen={defaultOpen}>
                 <ModalProvider />
                 <SheetProvider />
-                <div className="w-screen flex h-screen max-h-screen">
-                    <AppSidebar />
 
+                {/* Sidebar */}
+                <SidebarTriggerMobile />
+                <AppSidebar />
+
+                {/* Main */}
+                <div className="w-screen h-screen max-h-screen">
                     <Navbar />
-                    <main className=" h-screen overflow-y-auto max-h-screen md:px-10 px-5 w-full">
+
+                    {/* Content */}
+                    <main className="overflow-y-auto max-h-screen py-2 md:px-6 px-5 w-full">
                         {children}
                     </main>
                 </div>
