@@ -3,7 +3,8 @@ import { Inter as FontSans } from 'next/font/google';
 
 import { QueryProvider } from '@/providers/query';
 import { ThemeProvider } from '@/providers/theme';
-import { cn } from '@/utils';
+import { cn } from '@lib/utils';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from 'react-hot-toast';
 
 import './globals.css';
@@ -32,15 +33,17 @@ export default function RootLayout({
                 )}
             >
                 <QueryProvider>
-                    <ThemeProvider
-                        attribute="class"
-                        defaultTheme="system"
-                        enableSystem
-                        disableTransitionOnChange
-                    >
-                        {children}
-                        <Toaster />
-                    </ThemeProvider>
+                    <NuqsAdapter>
+                        <ThemeProvider
+                            attribute="class"
+                            defaultTheme="system"
+                            enableSystem
+                            disableTransitionOnChange
+                        >
+                            {children}
+                            <Toaster />
+                        </ThemeProvider>
+                    </NuqsAdapter>
                 </QueryProvider>
             </body>
         </html>
