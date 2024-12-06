@@ -1,5 +1,5 @@
-import NavbarMenu from './Menu';
 import Search from './Search';
+import NavbarMenu from './menu';
 
 const Navbar = () => {
     return (
