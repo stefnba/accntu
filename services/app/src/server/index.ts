@@ -5,9 +5,9 @@ import {
     importRouter,
     labelRouter,
     tagRouter,
-    transactionRouter
+    transactionRouter,
+    userRouter
 } from '@server/api';
-import user from '@server/api/user';
 import { AuthError } from '@server/auth/error';
 import { authMiddleware } from '@server/auth/middleware';
 import upload from '@server/lib/upload/api';
@@ -77,7 +77,7 @@ const routes = app
     .route('/labels', labelRouter)
     .route('/banks', bankRouter)
     .route('/connected', connectedRouter)
-    .route('/user', user)
+    .route('/user', userRouter)
     .route('/import', importRouter)
     .route('/upload', upload)
     .route('/tags', tagRouter);

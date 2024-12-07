@@ -1,7 +1,7 @@
-import { createUser } from '@/server/actions/user';
 import { github } from '@auth/oauth/github';
 import { GitHubEmail, GitHubUser } from '@auth/types/oauth';
 import { db } from '@db';
+import { createUser } from '@features/user/server/actions';
 import { generateState } from 'arctic';
 
 import { createOAuthAccount } from './oauth';

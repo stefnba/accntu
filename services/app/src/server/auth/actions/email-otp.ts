@@ -1,11 +1,11 @@
 'use server';
 
-import { createUser } from '@/server/actions/user';
 import { db, schema as dbSchema } from '@/server/db/client';
 import { logger } from '@/server/lib/logging/logger';
 import { EMAIL_OTP_LOGIN } from '@auth/config';
 import { AuthError } from '@auth/error';
 import { generateEmailOTP } from '@auth/utils';
+import { createUser } from '@features/user/server/actions';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { TimeSpan, createDate } from 'oslo';

@@ -1,7 +1,7 @@
 import { UpdateUserSchema } from '@/features/user/schema/update-user';
 import { getUser } from '@/server/auth';
+import { findUser, updateUser } from '@features/user/server/actions';
 import { zValidator } from '@hono/zod-validator';
-import { findUser, updateUser } from '@server/actions/user';
 import { Hono } from 'hono';
 
 const app = new Hono()
