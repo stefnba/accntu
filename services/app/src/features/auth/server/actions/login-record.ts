@@ -1,10 +1,7 @@
+import { createLoginAttemptCookie } from '@/features/auth/server/cookies/login-record';
 import { logger } from '@/server/lib/logging/logger';
-import {
-    createLoginAttemptCookie,
-    getLoginAttemptCookie
-} from '@auth/cookies/login-record';
 import { db } from '@db';
-import { InsertLoginSchema, LoginMethodSchema, login, user } from '@db/schema';
+import { InsertLoginSchema, login, user } from '@db/schema';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { Context } from 'hono';

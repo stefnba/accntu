@@ -1,7 +1,7 @@
-import { MAX_FAILED_LOGIN_ATTEMPTS } from '@auth/config';
-import { AuthError } from '@auth/error';
 import { db } from '@db';
 import { SelectUserSchema, user } from '@db/schema';
+import { MAX_FAILED_LOGIN_ATTEMPTS } from '@features/auth/server/config';
+import { AuthError } from '@features/auth/server/error';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 

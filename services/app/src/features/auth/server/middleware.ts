@@ -1,8 +1,8 @@
+import { lucia } from '@features/auth/server/lucia';
 import { getCookie } from 'hono/cookie';
 import { createMiddleware } from 'hono/factory';
 
 import { PUBLIC_API_ROUTES } from './config';
-import { lucia } from './lucia';
 import { isUrlMatch } from './utils';
 
 export const authMiddleware = createMiddleware(async (c, next) => {

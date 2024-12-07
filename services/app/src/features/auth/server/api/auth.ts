@@ -1,4 +1,4 @@
-import { invalidateSession } from '@auth/authenticate';
+import { invalidateSession } from '@features/auth/server/actions/authenticate';
 import { Hono } from 'hono';
 
 const app = new Hono().post('/logout', async (c) => {

@@ -1,4 +1,4 @@
-import { EMAIL_OTP_LOGIN } from '@auth/config';
+import { EMAIL_OTP_LOGIN } from '@features/auth/server/config';
 import { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 

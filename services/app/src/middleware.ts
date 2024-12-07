@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import * as authRoutes from '@/lib/auth/routes';
-import { isUrlMatch } from '@auth/utils';
-import { AUTH_COOKIE_NAME } from '@server/auth/config';
+import { AUTH_COOKIE_NAME } from '@features/auth/server/config';
+import { isUrlMatch } from '@features/auth/server/utils';
 
 export const middleware = async (request: NextRequest) => {
     const { nextUrl } = request;

@@ -2,9 +2,9 @@
 
 import { db, schema as dbSchema } from '@/server/db/client';
 import { logger } from '@/server/lib/logging/logger';
-import { EMAIL_OTP_LOGIN } from '@auth/config';
-import { AuthError } from '@auth/error';
-import { generateEmailOTP } from '@auth/utils';
+import { EMAIL_OTP_LOGIN } from '@features/auth/server/config';
+import { AuthError } from '@features/auth/server/error';
+import { generateEmailOTP } from '@features/auth/server/utils';
 import { createUser } from '@features/user/server/actions';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';

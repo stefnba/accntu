@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page/header';
 import { StatsCard } from '@/components/ui/stats';
-import { getUser } from '@server/auth/next/authenticate';
+import { getUser } from '@/features/auth/server/next/authenticate';
 
 export default async function Home() {
     const user = await getUser();

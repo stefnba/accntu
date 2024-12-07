@@ -1,7 +1,7 @@
 import { deleteImport } from '@/server/actions/import';
-import { getUser } from '@/server/auth';
 import { db } from '@db';
 import { InsertTransactionImportSchema, transactionImport } from '@db/schema';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import { createId } from '@paralleldrive/cuid2';
 import { Hono } from 'hono';

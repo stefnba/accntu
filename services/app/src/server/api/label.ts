@@ -1,7 +1,7 @@
 import { createLabel } from '@/server/actions/label';
-import { getUser } from '@/server/auth';
 import { db } from '@db';
 import { InsertLabelSchema, label } from '@db/schema';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, sql } from 'drizzle-orm';
 import { getTableColumns } from 'drizzle-orm';

@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page/header';
 import { Separator } from '@/components/ui/separator';
-import { getUser } from '@auth/next';
+import { getUser } from '@/features/auth/server/next';
 import { UpdateEmailSection } from '@features/user/components/update-profile/email/section';
 import { UpdateNameSection } from '@features/user/components/update-profile/name/section';
 import { UpdateUserImageSection } from '@features/user/components/update-profile/picture/profile-picture';

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { lucia } from '@server/auth';
+import { lucia } from '@features/auth/server/lucia';
 import { cache } from 'react';
 
 import { getSessionIdFromCookie } from './utils';

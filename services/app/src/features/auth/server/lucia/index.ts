@@ -1,9 +1,9 @@
 import { db } from '@db';
 import { UserRoleSchema, session, user } from '@db/schema';
+import { AUTH_COOKIE_NAME } from '@features/auth/server/config';
 import { Lucia } from 'lucia';
 import { z } from 'zod';
 
-import { AUTH_COOKIE_NAME } from '../config';
 import { CustomDrizzlePostgreSQLAdapter } from './db-adapter';
 
 const adapter = new CustomDrizzlePostgreSQLAdapter(db, session, user);

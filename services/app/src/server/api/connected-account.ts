@@ -3,8 +3,8 @@ import {
     getConnectedAccount,
     getConnectedAccounts
 } from '@/server/actions/connected-account';
-import { getUser } from '@/server/auth';
 import { InsertConnectedAccountSchema } from '@db/schema';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';

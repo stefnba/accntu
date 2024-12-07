@@ -1,5 +1,5 @@
-import { IOAuthProvider } from '@auth/types/oauth';
 import { OAuthProviderSchema } from '@db/schema';
+import type { IOAuthProvider } from '@features/auth/server/oauth/types';
 import { GitHub } from 'arctic';
 
 const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;

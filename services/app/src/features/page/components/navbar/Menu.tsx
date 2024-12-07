@@ -11,7 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { getUser } from '@auth/next';
+import { getUser } from '@/features/auth/server/next';
 import {
     BadgeCheck,
     Bell,

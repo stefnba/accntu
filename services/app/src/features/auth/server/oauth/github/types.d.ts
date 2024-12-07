@@ -11,9 +11,3 @@ export interface GitHubEmail {
     verified: boolean;
     visibility?: string;
 }
-
-export interface IOAuthProvider<P> {
-    providerId: OAuthProvider;
-    provider: P;
-    cookieName: string;
-}

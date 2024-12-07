@@ -1,6 +1,6 @@
 import { createConnectedBank } from '@/server/actions/connected-bank';
-import { getUser } from '@/server/auth';
 import { db } from '@db/client';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq } from 'drizzle-orm';
 import { Hono } from 'hono';

@@ -1,14 +1,14 @@
+import { getLoginAttemptCookie } from '@/features/auth/server/cookies/login-record';
 import {
     makeLoginAttemptSuccess,
     recordLoginAttempt
-} from '@auth/actions/login-record';
+} from '@features/auth/server/actions';
+import { createSession } from '@features/auth/server/actions/authenticate';
 import {
     initiateGitHubOAuth,
     verifyGitHubOAuth
-} from '@auth/actions/oauth/github';
-import { createSession } from '@auth/authenticate';
-import { getLoginAttemptCookie } from '@auth/cookies/login-record';
-import { github } from '@auth/oauth/github';
+} from '@features/auth/server/oauth/github/actions';
+import { github } from '@features/auth/server/oauth/github/provider';
 import { zValidator } from '@hono/zod-validator';
 import { OAuth2RequestError } from 'arctic';
 import { Hono } from 'hono';
@@ -89,7 +89,5 @@ const app = new Hono()
             }
         }
     );
-// .get('/google/init', (c) => c.json('Logout'))
-// .post('/google/verify', (c) => c.json('Login', 201));
 
 export default app;

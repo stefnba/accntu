@@ -1,6 +1,7 @@
-import { EMAIL_OTP_LOGIN } from '@auth/config';
 import { minimatch } from 'minimatch';
 import { alphabet, generateRandomString } from 'oslo/crypto';
+
+import { EMAIL_OTP_LOGIN } from './config';
 
 /**
  * Generate a random string of numbers that can be used as an email OTP.

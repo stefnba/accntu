@@ -1,24 +1,14 @@
-import { github } from '@auth/oauth/github';
-import { GitHubEmail, GitHubUser } from '@auth/types/oauth';
 import { db } from '@db';
+import { createOAuthAccount } from '@features/auth/server/oauth/actions/create-account';
+import { github } from '@features/auth/server/oauth/github/provider';
+import type {
+    GitHubEmail,
+    GitHubUser
+} from '@features/auth/server/oauth/github/types';
 import { createUser } from '@features/user/server/actions';
 import { generateState } from 'arctic';
 
-import { createOAuthAccount } from './oauth';
-
 const { provider, providerId } = github;
-
-/**
- * Redirect the user to the GitHub OAuth page.
- */
-export const initiateGitHubOAuth = async () => {
-    const state = generateState();
-    const url = await provider.createAuthorizationURL(state, {
-        scopes: ['user:email']
-    });
-
-    return { url: url.toString(), state };
-};
 
 /**
  * Callback to verify the GitHub OAuth response.

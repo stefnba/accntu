@@ -1,4 +1,4 @@
-import { EMAIL_OTP_LOGIN } from '@auth/config';
+import { EMAIL_OTP_LOGIN } from '@features/auth/server/config';
 import * as z from 'zod';
 
 export const SendOTPSchema = z.object({

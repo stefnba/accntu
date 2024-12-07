@@ -1,4 +1,4 @@
-import { getUser } from '@/server/auth';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 

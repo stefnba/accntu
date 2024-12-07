@@ -1,3 +1,5 @@
+import { AuthError } from '@features/auth/server/error';
+import { authMiddleware } from '@features/auth/server/middleware';
 import {
     authRouter,
     bankRouter,
@@ -8,8 +10,6 @@ import {
     transactionRouter,
     userRouter
 } from '@server/api';
-import { AuthError } from '@server/auth/error';
-import { authMiddleware } from '@server/auth/middleware';
 import upload from '@server/lib/upload/api';
 import { logger } from '@server/middleware/logging';
 import { validationError } from '@server/middleware/validation';

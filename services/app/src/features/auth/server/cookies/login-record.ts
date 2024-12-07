@@ -1,4 +1,4 @@
-import { LOGIN_ATTEMPT_COOKIE_NAME } from '@auth/config';
+import { LOGIN_ATTEMPT_COOKIE_NAME } from '@features/auth/server/config';
 import { boolean } from 'drizzle-orm/mysql-core';
 import { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';

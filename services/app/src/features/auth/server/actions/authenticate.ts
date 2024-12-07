@@ -1,11 +1,8 @@
-import { cookies } from 'next/headers';
-
+import { lucia } from '@features/auth/server/lucia';
 import { Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { HTTPException } from 'hono/http-exception';
 import { User } from 'lucia';
-
-import { lucia } from './lucia';
 
 /**
  * Get the user object from the Hono context.

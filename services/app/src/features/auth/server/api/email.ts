@@ -1,19 +1,20 @@
 import { SendOTPSchema, VerifyOTPSchema } from '@/features/auth/schema/otp';
-import { requestEmailOTP, verifyEmailOTP } from '@auth/actions/email-otp';
-import {
-    makeLoginAttemptSuccess,
-    recordLoginAttempt
-} from '@auth/actions/login-record';
-import { createSession } from '@auth/authenticate';
-import { EMAIL_OTP_LOGIN } from '@auth/config';
 import {
     createEmailOtpCookie,
     deleteEmailOtpCookie,
     getEmailOtpCookie
-} from '@auth/cookies/email-otp';
-import { getLoginAttemptCookie } from '@auth/cookies/login-record';
-import { AuthError } from '@auth/error';
+} from '@/features/auth/server/cookies/email-otp';
+import { getLoginAttemptCookie } from '@/features/auth/server/cookies/login-record';
 import { db } from '@db';
+import {
+    makeLoginAttemptSuccess,
+    recordLoginAttempt,
+    requestEmailOTP,
+    verifyEmailOTP
+} from '@features/auth/server/actions';
+import { createSession } from '@features/auth/server/actions/authenticate';
+import { EMAIL_OTP_LOGIN } from '@features/auth/server/config';
+import { AuthError } from '@features/auth/server/error';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 

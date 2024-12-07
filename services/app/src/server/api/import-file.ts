@@ -1,10 +1,10 @@
 import { deleteImportFile } from '@/server/actions/import';
-import { getUser } from '@/server/auth';
 import { db } from '@db';
 import {
     InsertTransactionImportFileSchema,
     transactionImportFile
 } from '@db/schema';
+import { getUser } from '@features/auth/server';
 import { zValidator } from '@hono/zod-validator';
 import {
     SignedS3UrlInputSchema,
