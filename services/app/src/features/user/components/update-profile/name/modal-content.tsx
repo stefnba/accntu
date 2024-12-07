@@ -3,18 +3,19 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
+import { useGetUser } from '@/features/user/api/get-user';
 
 import { UpdateNameForm } from './form';
 
-interface Props {
-    firstName: string;
-    lastName: string;
-}
+interface Props {}
 
-export const UpdateProfileNameModalContent: React.FC<Props> = ({
-    firstName,
-    lastName
-}) => {
+export const UpdateProfileNameModalContent: React.FC<Props> = ({}) => {
+    const { data: user } = useGetUser();
+
+    if (!user) {
+        return <div>No User</div>;
+    }
+
     return (
         <>
             <DialogHeader>
@@ -24,7 +25,10 @@ export const UpdateProfileNameModalContent: React.FC<Props> = ({
                 </DialogDescription>
             </DialogHeader>
             <div className="mx-1">
-                <UpdateNameForm firstName={firstName} lastName={lastName} />
+                <UpdateNameForm
+                    firstName={user.firstName}
+                    lastName={user.lastName}
+                />
             </div>
         </>
     );

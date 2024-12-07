@@ -1,6 +1,7 @@
 'use client';
 
 import { Form, FormInput, FormSubmit, useForm } from '@/components/form';
+import { successToast } from '@/components/toast';
 import { useUserUpdateModal } from '@/features/user/hooks/user-update-modal';
 import { UpdateUserSchema } from '@/features/user/schema/update-user';
 import { useUpdateUser } from '@features/user/api/update-user';
@@ -26,6 +27,7 @@ export const UpdateNameForm: React.FC<Props> = ({ firstName, lastName }) => {
     const handleSubmit = (values: z.infer<typeof UpdateUserSchema>) => {
         updateUserMutate(values, {
             onSuccess: () => {
+                successToast('Name updated');
                 handleClose();
             }
         });

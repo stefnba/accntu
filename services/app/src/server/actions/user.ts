@@ -50,29 +50,37 @@ export const createUser = async (
  * @returns public user fields.
  */
 export const updateUser = async (id: string, values: TUserUpdateValues) => {
-    const { settings, ...updateValues } = values;
+    const { settings: settingValues, ...updateValues } = values;
 
-    // if (settings) {
-    //     const [{ userId, ...updatedSettings }] = await db
-    //         .update(userSetting)
-    //         .set(settings)
-    //         .where(eq(user.id, id))
-    //         .returning();
-    // }
+    try {
+        let updatedSettings = settingValues;
 
-    const [updatedUser] = await db
-        .update(user)
-        .set({ ...updateValues, updatedAt: new Date() })
-        .where(eq(user.id, id))
-        .returning({
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            image: user.image
-        });
+        if (settingValues && Object.keys(settingValues).length > 0) {
+            const [{ userId, ...updatedS }] = await db
+                .update(userSetting)
+                .set(settingValues)
+                .where(eq(userSetting.userId, id))
+                .returning();
 
-    return updatedUser;
+            updatedSettings = updatedS;
+        }
+
+        const [updatedUser] = await db
+            .update(user)
+            .set({ ...updateValues, updatedAt: new Date() })
+            .where(eq(user.id, id))
+            .returning({
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                image: user.image
+            });
+
+        return { ...updatedUser, settings: updatedSettings };
+    } catch (e) {
+        console.log(e);
+    }
 };
 
 /**

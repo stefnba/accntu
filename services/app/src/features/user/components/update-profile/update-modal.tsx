@@ -11,12 +11,7 @@ export const UpdateUserModal: React.FC<Props> = ({}) => {
 
     return (
         <ResponsiveModal open={isOpen} onOpenChange={handleClose}>
-            {type === 'name' && (
-                <UpdateProfileNameModalContent
-                    firstName="dddd"
-                    lastName="ddd"
-                />
-            )}
+            {type === 'name' && <UpdateProfileNameModalContent />}
 
             {type === 'picture' && <UpdateProfilePictureModalContent />}
         </ResponsiveModal>

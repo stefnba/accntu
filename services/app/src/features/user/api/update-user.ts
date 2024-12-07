@@ -23,15 +23,7 @@ export const useUpdateUser = (section: 'name' | 'apparence') => {
             return response.json();
         },
         onSuccess: () => {
-            if (section === 'name') {
-                successToast('Your name has been updated');
-            }
-
-            if (section === 'apparence') {
-                successToast('Theme has been updated');
-            }
-
-            // queryClient.invalidateQueries({ queryKey: ['labels'] });
+            queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error) => {
             errorToast(error.message);

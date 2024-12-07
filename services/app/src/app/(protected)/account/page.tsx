@@ -37,8 +37,8 @@ const navItems: TNavItem[] = [
         avatar: LuBell
     },
     {
-        title: 'Apparence',
-        href: 'account/apparance',
+        title: 'Appearance',
+        href: 'account/appearance',
         description:
             'Customize the appearance of the app - switch between day and night themes.',
         avatar: LuSun

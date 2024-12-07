@@ -1,3 +1,5 @@
+'use client';
+
 import {
     Select,
     SelectContent,
@@ -6,18 +8,19 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { AccountCustomSection } from '@/features/user/components/update-section';
+import { useSession } from '@/hooks/session';
 
-const ThemeSelect = () => {
+const LanguageSelect = () => {
+    const { user } = useSession();
+
     return (
-        <Select>
+        <Select value={user?.settings.language || 'EN'}>
             <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Coming Soon..." />
+                <SelectValue />
             </SelectTrigger>
-            {/* <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-            </SelectContent> */}
+            <SelectContent>
+                <SelectItem value="EN">English</SelectItem>
+            </SelectContent>
         </Select>
     );
 };
@@ -26,9 +29,8 @@ export const SettingsLanguageSection = () => {
     return (
         <>
             <AccountCustomSection
-                // subTitle="asdfksf"
                 title="Language"
-                action={<ThemeSelect />}
+                action={<LanguageSelect />}
             />
         </>
     );

@@ -1,11 +1,11 @@
 import { PageHeader } from '@/components/page/header';
 import { UpdateThemeForm } from '@/features/user/components/update-apparence/update-theme-form';
 
-const ApparancePage = async () => {
+const AppearancePage = async () => {
     return (
         <>
             <PageHeader
-                title="Apparance"
+                title="Appearance"
                 breadcrumbs={[
                     {
                         href: '/account',
@@ -13,7 +13,7 @@ const ApparancePage = async () => {
                     },
                     {
                         href: 'profile',
-                        page: 'Apparance'
+                        page: 'Appearance'
                     }
                 ]}
                 subTitle="Customize the appearance of the app - switch between light and dark themes.    "
@@ -25,4 +25,4 @@ const ApparancePage = async () => {
     );
 };
 
-export default ApparancePage;
+export default AppearancePage;

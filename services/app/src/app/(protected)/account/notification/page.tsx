@@ -15,7 +15,7 @@ const NotificationPage = () => {
                         page: 'Notification'
                     }
                 ]}
-                subTitle="Manage your account settings"
+                subTitle="Choose notification preferences and how you want to be contacted"
             />
         </>
     );
