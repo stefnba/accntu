@@ -28,10 +28,7 @@ const ProfilePage = async () => {
             <div className="max-w-2xl">
                 <UpdateUserImageSection />
                 <Separator />
-                <UpdateNameSection
-                    firstName={user.firstName}
-                    lastName={user.lastName}
-                />
+                <UpdateNameSection />
                 <Separator />
                 <UpdateEmailSection email={user.email || ''} />
                 <Separator />
