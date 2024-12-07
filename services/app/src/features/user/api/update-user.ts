@@ -22,8 +22,10 @@ export const useUpdateUser = (section: 'name' | 'apparence') => {
 
             return response.json();
         },
-        onSuccess: () => {
+
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
+            window.dispatchEvent(new Event('user:updated'));
         },
         onError: (error) => {
             errorToast(error.message);

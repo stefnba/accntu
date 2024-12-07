@@ -1,3 +1,1 @@
-import { getUser } from './authenticate';
-
-export { getUser };
+export { getUser, getSession } from './authenticate';

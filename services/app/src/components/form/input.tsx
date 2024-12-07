@@ -53,10 +53,10 @@ export function FormInput<TFieldValues extends FieldValues>({
                                 placeholder={placeholder}
                                 {...field}
                                 disabled={form.formState.isSubmitting}
-                                onBlur={async () => {
-                                    console.log(await form.trigger(name));
-                                    console.log(await form.trigger());
-                                }}
+                                // onBlur={async () => {
+                                //     console.log(await form.trigger(name));
+                                //     console.log(await form.trigger());
+                                // }}
                             />
                         </div>
                     </FormControl>

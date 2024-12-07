@@ -1,6 +1,13 @@
 export const AUTH_COOKIE_NAME = 'auth_session';
 
 /**
+ * Cookie to save public user info that is accessible on frontend through <SessionProvier />
+ */
+export const SESSION_USER = {
+    COOKIE_NAME: 'session:user'
+};
+
+/**
  * The name of the cookie that stores the login token used to identify a login attempt.
  */
 export const LOGIN_ATTEMPT_COOKIE_NAME = 'login_attempt_token';

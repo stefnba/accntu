@@ -1,8 +1,11 @@
+import { findUser } from '@/features/user/server/actions';
 import { lucia } from '@features/auth/server/lucia';
 import { Context } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { HTTPException } from 'hono/http-exception';
 import { User } from 'lucia';
+
+import { SESSION_USER } from '../config';
 
 /**
  * Get the user object from the Hono context.
@@ -33,6 +36,19 @@ export const createSession = async (
 
     const { httpOnly, path, secure, maxAge } = sessionCookie.attributes;
 
+    // session user cookie
+    const user = await findUser(userId);
+    if (user) {
+        setCookie(c, SESSION_USER.COOKIE_NAME, JSON.stringify(user), {
+            path,
+            secure,
+            httpOnly,
+            maxAge,
+            sameSite: 'Lax'
+        });
+    }
+
+    // session id cookie
     setCookie(c, sessionCookie.name, sessionCookie.value, {
         path,
         secure,
@@ -53,6 +69,9 @@ export const invalidateSession = async (c: Context): Promise<void> => {
     if (sessionId) {
         await lucia.invalidateSession(sessionId);
     }
+
+    // remove session user cookie
+    deleteCookie(c, SESSION_USER.COOKIE_NAME);
 
     c.header('Set-Cookie', lucia.createBlankSessionCookie().serialize(), {
         append: true

@@ -2,15 +2,15 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle
-} from '@/components/ui/dialog';
-import { useGetUser } from '@/features/user/api/get-user';
+} from '@components/ui/dialog';
+import { useSession } from '@features/auth/hooks/session';
 
 import { UpdateNameForm } from './form';
 
 interface Props {}
 
 export const UpdateProfileNameModalContent: React.FC<Props> = ({}) => {
-    const { data: user } = useGetUser();
+    const { user } = useSession();
 
     if (!user) {
         return <div>No User</div>;

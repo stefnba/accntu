@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getUser } from '@/features/auth/server/next';
+import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
+import { getUser } from '@features/auth/server/next';
 
 import { UpdateUserImageTrigger } from './modal-trigger';
 
@@ -9,7 +9,7 @@ export const UpdateUserImageSection = async () => {
     return (
         <div className="w-28 text-center">
             <Avatar className="size-28">
-                <AvatarImage src={user.image || ''} />
+                <AvatarImage src={user.image || undefined} />
                 <AvatarFallback></AvatarFallback>
             </Avatar>
 

@@ -2,10 +2,10 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { SidebarProvider, SidebarTriggerMobile } from '@/components/ui/sidebar';
+import { SessionProvider } from '@/features/auth/providers/session';
 import { validateRequest } from '@/features/auth/server/next/authenticate';
 import { LOGIN_URL } from '@/lib/auth/routes';
 import { ModalProvider } from '@/providers/modal';
-import { SessionProvider } from '@/providers/session';
 import { SheetProvider } from '@/providers/sheet';
 import Navbar from '@features/page/components/navbar/navbar';
 import { AppSidebar } from '@features/page/components/sidebar/app-sidebar';
