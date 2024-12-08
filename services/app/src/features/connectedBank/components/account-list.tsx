@@ -1,12 +1,12 @@
 'use client';
 
-import { useGetConnectedBanks } from '@/features/connectedBank/api/get-connected-banks';
-import { BankCard } from '@/features/connectedBank/components/bank-card';
-import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
+import { useGetConnectedBanks } from '@features/connectedBank/api/get-connected-banks';
+import { BankCard } from '@features/connectedBank/components/bank-card';
+import { useViewUpdateBankAccountSheet } from '@features/connectedBank/hooks/view-update-account-sheet';
 
 export const ListConnectedBanks = () => {
     const { data, isLoading } = useGetConnectedBanks();
-    const { handleOpen } = storeUpdateConnectedBankSheet();
+    const { handleOpen } = useViewUpdateBankAccountSheet();
 
     if (isLoading) return <div>Loading...</div>;
 

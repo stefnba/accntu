@@ -2,13 +2,15 @@
 
 import { Form, FormSubmit, useForm } from '@/components/form';
 import { FormSwitch } from '@/components/form/switch';
+import { successToast } from '@/components/toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { useGetBank } from '@/features/bank/api';
 import { useCreateConnectedBank } from '@/features/connectedBank/api/create-connected-bank';
 import { ConnectedAccountCard } from '@/features/connectedBank/components/account-card';
+import { useCreateBankAccountModal } from '@/features/connectedBank/hooks/create-account-modal';
 import { CreateAccountSchema } from '@/features/connectedBank/schema/create-connected-bank';
-import { storeBankAccountCreate } from '@/features/connectedBank/store/account-create-modal';
 import { useEffect } from 'react';
 import { z } from 'zod';
 
@@ -21,11 +23,12 @@ const accountTypeMapping = {
 interface Props {}
 
 export const AccountSelection: React.FC<Props> = () => {
-    const { bank: bankId, goBack } = storeBankAccountCreate();
+    const { bankId, handleOpen, setBankId, handleClose } =
+        useCreateBankAccountModal();
 
     const { mutate: connectedBankMutate } = useCreateConnectedBank();
 
-    const { data: bank } = useGetBank({ id: bankId });
+    const { data: bank } = useGetBank({ id: bankId || undefined });
 
     const bankAccountsForForm =
         bank?.accounts.map((account) => ({
@@ -35,7 +38,7 @@ export const AccountSelection: React.FC<Props> = () => {
 
     const form = useForm(CreateAccountSchema, {
         defaultValues: {
-            bankId,
+            bankId: bankId || undefined,
             accounts: bankAccountsForForm
         }
     });
@@ -57,7 +60,13 @@ export const AccountSelection: React.FC<Props> = () => {
     }
 
     const handleSubmit = (values: z.infer<typeof CreateAccountSchema>) => {
-        connectedBankMutate(values);
+        connectedBankMutate(values, {
+            onSuccess: () => {
+                handleClose();
+                setBankId(null);
+                successToast('Account has been created');
+            }
+        });
     };
 
     return (
@@ -80,7 +89,7 @@ export const AccountSelection: React.FC<Props> = () => {
             </div>
 
             {/* Accounts */}
-            <div className="font-semibold ">Account Types</div>
+            <Label className="">Account Types</Label>
             <p className="mb-4 text-sm text-muted-foreground">
                 Toggle the account types you want to register for {bank.name}
             </p>
@@ -106,7 +115,10 @@ export const AccountSelection: React.FC<Props> = () => {
                 </FormSubmit>
             </Form>
             <Button
-                onClick={() => goBack()}
+                onClick={() => {
+                    handleOpen('bank-selection');
+                    setBankId(null);
+                }}
                 variant="outline"
                 className="w-full my-2"
             >

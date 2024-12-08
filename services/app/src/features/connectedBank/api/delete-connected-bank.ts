@@ -26,7 +26,7 @@ export const useDeleteConnectedBank = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['connected-banks'] });
-            successToast('Account has been deleted');
+
             handleClose();
         },
         onError: (error) => {

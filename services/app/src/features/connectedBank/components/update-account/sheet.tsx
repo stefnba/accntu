@@ -1,3 +1,6 @@
+'use client';
+
+import { errorToast, successToast } from '@/components/toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,23 +12,25 @@ import {
 } from '@/components/ui/sheet';
 import { useDeleteConnectedBank } from '@/features/connectedBank/api/delete-connected-bank';
 import { useGetConnectedBank } from '@/features/connectedBank/api/get-connected-bank';
-import { storeUpdateConnectedBankSheet } from '@/features/connectedBank/store/update-bank-sheet';
 import { countries } from '@/lib/constants';
+import { useViewUpdateBankAccountSheet } from '@features/connectedBank/hooks/view-update-account-sheet';
 import { LuTrash } from 'react-icons/lu';
 
 import { ConnectedAccountCard } from '../account-card';
 
-export const UpdateConnectedBankSheet = () => {
-    const { isOpen, handleClose, id } = storeUpdateConnectedBankSheet();
+export const ViewUpdateConnectedBankSheet = () => {
+    const { isOpen, handleClose, bankId } = useViewUpdateBankAccountSheet();
 
-    const { data: connectedBank, isLoading } = useGetConnectedBank({ id });
+    const { data: connectedBank, isLoading } = useGetConnectedBank({
+        id: bankId || undefined
+    });
     const { mutate: deleteConnectedBank } = useDeleteConnectedBank();
 
     if (!connectedBank) return null;
 
     const { bank, accounts } = connectedBank;
 
-    if (!id) return <div>Bank not found</div>;
+    if (!bankId) return <div>Bank not found</div>;
 
     return (
         <Sheet open={isOpen} onOpenChange={handleClose}>
@@ -97,15 +102,35 @@ export const UpdateConnectedBankSheet = () => {
                     Edit
                 </Button> */}
 
-                <div className="mt-10">
+                <div className="mt-10 gap-2 flex flex-col">
                     <Button
                         size="sm"
                         variant="destructive"
                         className="w-full mt-2"
-                        onClick={() => deleteConnectedBank({ id })}
+                        onClick={() =>
+                            deleteConnectedBank(
+                                { id: bankId },
+                                {
+                                    onSuccess: () => {
+                                        successToast(
+                                            'Account has been deleted'
+                                        );
+                                        handleClose();
+                                    }
+                                }
+                            )
+                        }
                     >
                         <LuTrash className="size-4 mr-2" />
                         Delete
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleClose}
+                    >
+                        Close
                     </Button>
                 </div>
             </SheetContent>

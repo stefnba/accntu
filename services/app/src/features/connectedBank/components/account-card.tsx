@@ -4,6 +4,7 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { TBankResponse } from '@/features/bank/api/get-bank';
 import { ConnectedAccountTypeSchema } from '@db/schema';
 import { LuBanknote, LuCreditCard, LuPiggyBank } from 'react-icons/lu';
@@ -50,12 +51,10 @@ export const ConnectedAccountCard: React.FC<{
 
             <div>
                 <CardHeader className="m-0 p-0">
-                    <CardTitle className="text-lg font-semibold">
-                        {name}
-                    </CardTitle>
+                    <Label size="lg">{name}</Label>
                     {description && (
                         <CardDescription className="mt-[-6px] p-0">
-                            asdfasdfsaf
+                            {description}
                         </CardDescription>
                         // <div className="text-sm text-muted-foreground mt-[-4px]">
                         //     This is a test account

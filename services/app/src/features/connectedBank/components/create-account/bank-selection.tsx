@@ -3,14 +3,19 @@
 import { Input } from '@/components/ui/input';
 import { useGetBanks } from '@/features/bank/api';
 import { BankCard } from '@/features/connectedBank/components/bank-card';
-import { storeBankAccountCreate } from '@/features/connectedBank/store/account-create-modal';
+import { useCreateBankAccountModal } from '@/features/connectedBank/hooks/create-account-modal';
+import {
+    DialogDescription,
+    DialogHeader,
+    DialogTitle
+} from '@components/ui/dialog';
 import { Search } from 'lucide-react';
 import React from 'react';
 
 interface Props {}
 
 export const BankSelection: React.FC<Props> = () => {
-    const { setBank, setStep } = storeBankAccountCreate();
+    const { setBankId, handleOpen } = useCreateBankAccountModal();
 
     const { data, error } = useGetBanks();
 
@@ -19,15 +24,20 @@ export const BankSelection: React.FC<Props> = () => {
     }
 
     const handleCardClick = (id: string) => {
-        setBank(id);
-        setStep('account-selection');
+        setBankId(id);
+        handleOpen('account-selection');
     };
 
     return (
-        <div>
-            {/* <div className="mt-4 mb-2 text-2xl font-semibold">Providers</div> */}
-            <div className="relative mb-4">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <>
+            <DialogHeader>
+                <DialogTitle>Add Bank Account</DialogTitle>
+                <DialogDescription>
+                    Click on a bank provider to continue
+                </DialogDescription>
+            </DialogHeader>
+            <div className="relative mb-4 flex items-center">
+                <Search className="size-4 left-2 absolute text-muted-foreground" />
                 <Input placeholder="Search" className="pl-8" />
             </div>
             <div className="py-2 grid md:grid-cols-2 grid-cols-1 gap-4">
@@ -45,6 +55,6 @@ export const BankSelection: React.FC<Props> = () => {
                     </div>
                 ))}
             </div>
-        </div>
+        </>
     );
 };
