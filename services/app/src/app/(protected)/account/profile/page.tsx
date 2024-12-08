@@ -4,6 +4,7 @@ import { getUser } from '@/features/auth/server/next';
 import { UpdateEmailSection } from '@features/user/components/update-profile/email/section';
 import { UpdateNameSection } from '@features/user/components/update-profile/name/section';
 import { UpdateUserImageSection } from '@features/user/components/update-profile/picture/profile-picture';
+import { UpdateUserModal } from '@features/user/components/update-profile/update-modal';
 
 const ProfilePage = async () => {
     const user = await getUser();
@@ -33,6 +34,8 @@ const ProfilePage = async () => {
                 <UpdateEmailSection email={user.email || ''} />
                 <Separator />
             </div>
+
+            <UpdateUserModal />
         </>
     );
 };

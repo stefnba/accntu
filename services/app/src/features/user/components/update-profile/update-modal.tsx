@@ -1,3 +1,5 @@
+'use client';
+
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { useUserUpdateModal } from '@features/user/hooks/user-update-modal';
 
@@ -12,7 +14,6 @@ export const UpdateUserModal: React.FC<Props> = ({}) => {
     return (
         <ResponsiveModal open={isOpen} onOpenChange={handleClose}>
             {type === 'name' && <UpdateProfileNameModalContent />}
-
             {type === 'picture' && <UpdateProfilePictureModalContent />}
         </ResponsiveModal>
     );

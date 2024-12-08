@@ -2,7 +2,6 @@
 
 import { CreateConnectedBankModal } from '@/features/connectedBank/components/create-account/modal';
 import { CreateImportModal } from '@/features/import/components/create-import/modal';
-import { UpdateUserModal } from '@/features/user/components/update-profile/update-modal';
 import { useMountedState } from 'react-use';
 
 export const ModalProvider = () => {
@@ -12,7 +11,6 @@ export const ModalProvider = () => {
     return (
         <>
             <CreateConnectedBankModal />
-            <UpdateUserModal />
             <CreateImportModal />
         </>
     );
