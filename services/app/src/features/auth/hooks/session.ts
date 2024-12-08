@@ -3,12 +3,16 @@
 import { SessionContext } from '@features/auth/providers/session';
 import { useContext } from 'react';
 
-export const useSession = () => {
+export const useSessionUser = () => {
     const sessionContext = useContext(SessionContext);
 
     if (!sessionContext) {
-        throw new Error('useSession must be used within a <SessionProvider />');
+        throw new Error(
+            'useSessionUser must be used within a <SessionUserProvider />'
+        );
     }
 
-    return sessionContext;
+    return {
+        user: sessionContext
+    };
 };

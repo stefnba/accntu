@@ -4,7 +4,7 @@ import {
     InsertTransactionImportFileSchema,
     transactionImportFile
 } from '@db/schema';
-import { getUser } from '@features/auth/server';
+import { getUser } from '@features/auth/server/hono';
 import { zValidator } from '@hono/zod-validator';
 import {
     SignedS3UrlInputSchema,

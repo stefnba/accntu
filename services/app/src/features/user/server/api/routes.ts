@@ -1,6 +1,6 @@
 import { UpdateUserSchema } from '@/features/user/schema/update-user';
-import { getUser } from '@features/auth/server';
 import { SESSION_USER } from '@features/auth/server/config';
+import { getUser } from '@features/auth/server/hono';
 import { findUser, updateUser } from '@features/user/server/actions';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';

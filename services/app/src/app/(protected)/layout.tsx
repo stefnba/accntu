@@ -1,10 +1,8 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 import { SidebarProvider, SidebarTriggerMobile } from '@/components/ui/sidebar';
-import { SessionProvider } from '@/features/auth/providers/session';
-import { validateRequest } from '@/features/auth/server/next/authenticate';
-import { LOGIN_URL } from '@/lib/auth/routes';
+import { SessionUserProvider } from '@/features/auth/providers/session';
+import { getUser } from '@/features/auth/server/next/';
 import { ModalProvider } from '@/providers/modal';
 import { SheetProvider } from '@/providers/sheet';
 import Navbar from '@features/page/components/navbar/navbar';
@@ -15,17 +13,13 @@ interface Props {
 }
 
 export default async function ProtectedLayout({ children }: Readonly<Props>) {
-    const session = await validateRequest();
+    const user = await getUser();
 
-    if (!session.session || !session.user) {
-        redirect(LOGIN_URL);
-    }
-
+    // cookie for sidebar default state
     const cookieStore = cookies();
     const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
-
     return (
-        <SessionProvider session={session}>
+        <SessionUserProvider sessionUser={user}>
             <SidebarProvider defaultOpen={defaultOpen}>
                 <ModalProvider />
                 <SheetProvider />
@@ -44,6 +38,6 @@ export default async function ProtectedLayout({ children }: Readonly<Props>) {
                     </main>
                 </div>
             </SidebarProvider>
-        </SessionProvider>
+        </SessionUserProvider>
     );
 }

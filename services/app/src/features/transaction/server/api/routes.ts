@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { transaction } from '@db/schema';
-import { getUser } from '@features/auth/server';
+import { getUser } from '@features/auth/server/hono';
 import { AddTagToTransactionSchema } from '@features/tag/schema';
 import { addTagToTransaction } from '@features/tag/server/actions';
 import {

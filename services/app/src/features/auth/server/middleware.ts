@@ -1,10 +1,16 @@
-import { lucia } from '@features/auth/server/lucia';
+import { cookies } from 'next/headers';
+
+import { logout } from '@features/auth/server/hono/actions/authenticate';
 import { getCookie } from 'hono/cookie';
 import { createMiddleware } from 'hono/factory';
 
-import { PUBLIC_API_ROUTES } from './config';
+import { validateSessionToken } from './actions/session';
+import { PUBLIC_API_ROUTES, SESSION_COOKIE } from './config';
 import { isUrlMatch } from './utils';
 
+/**
+ * Hono middleware for handling auth requests..
+ */
 export const authMiddleware = createMiddleware(async (c, next) => {
     const { path } = c.req;
 
@@ -13,28 +19,27 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         return next();
     }
 
-    const sessionId = getCookie(c, lucia.sessionCookieName) ?? null;
+    const sessionToken =
+        cookies().get(SESSION_COOKIE.COOKIE_NAME)?.value ?? null;
 
-    if (!sessionId) {
+    if (!sessionToken) {
         return c.text('Unauthorized', 401);
     }
-    const { session, user } = await lucia.validateSession(sessionId);
+    const { session, user } = await validateSessionToken(sessionToken);
 
-    if (session && session.fresh) {
-        c.header(
-            'Set-Cookie',
-            lucia.createSessionCookie(session.id).serialize(),
-            {
-                append: true
-            }
-        );
-    }
+    // todo
+    // if (session && session.fresh) {
+    //     c.header(
+    //         'Set-Cookie',
+    //         lucia.createSessionCookie(session.id).serialize(),
+    //         {
+    //             append: true
+    //         }
+    //     );
+    // }
 
     if (!session) {
-        console.log('No session found');
-        c.header('Set-Cookie', lucia.createBlankSessionCookie().serialize(), {
-            append: true
-        });
+        logout(c);
         return c.text('Unauthorized', 401);
     }
 

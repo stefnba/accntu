@@ -6,7 +6,6 @@ import type {
     GitHubUser
 } from '@features/auth/server/oauth/github/types';
 import { createUser } from '@features/user/server/actions';
-import { generateState } from 'arctic';
 
 const { provider, providerId } = github;
 

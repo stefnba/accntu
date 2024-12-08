@@ -1,5 +1,3 @@
-// import Logo from '@/app/(root)/_components/navbar/Logo';
-
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
         <div className="flex h-screen w-full flex-col">

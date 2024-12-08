@@ -12,9 +12,9 @@ import {
     requestEmailOTP,
     verifyEmailOTP
 } from '@features/auth/server/actions';
-import { createSession } from '@features/auth/server/actions/authenticate';
 import { EMAIL_OTP_LOGIN } from '@features/auth/server/config';
 import { AuthError } from '@features/auth/server/error';
+import { login } from '@features/auth/server/hono/actions/authenticate';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
@@ -73,6 +73,7 @@ const app = new Hono()
 
         return c.json({ success: true }, 201);
     })
+    /**  */
     .post('/verify', zValidator('json', VerifyOTPSchema), async (c) => {
         const { code } = c.req.valid('json');
 
@@ -96,8 +97,8 @@ const app = new Hono()
             // if verification was successful, mark the login attempt as successful
             await makeLoginAttemptSuccess({ id: loginAttemptToken, userId });
 
-            // create session if verification was successful
-            await createSession(c, userId);
+            // login user if verification was successful
+            await login(c, userId);
 
             return c.json(
                 {

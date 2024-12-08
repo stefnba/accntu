@@ -4,7 +4,7 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useLogout } from '@/features/auth/api/logout';
 import { LogOut } from 'lucide-react';
 
-const Logout = () => {
+export const LogoutButton = () => {
     const { mutate } = useLogout();
 
     return (
@@ -14,5 +14,3 @@ const Logout = () => {
         </DropdownMenuItem>
     );
 };
-
-export default Logout;

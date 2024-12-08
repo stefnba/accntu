@@ -3,7 +3,7 @@ import {
     makeLoginAttemptSuccess,
     recordLoginAttempt
 } from '@features/auth/server/actions';
-import { createSession } from '@features/auth/server/actions/authenticate';
+import { login } from '@features/auth/server/hono/actions/authenticate';
 import {
     initiateGitHubOAuth,
     verifyGitHubOAuth
@@ -70,8 +70,8 @@ const app = new Hono()
                     userId
                 });
 
-                // create session
-                await createSession(c, userId);
+                // login user via Hono
+                await login(c, userId);
 
                 return c.redirect('/', 301);
             } catch (e) {

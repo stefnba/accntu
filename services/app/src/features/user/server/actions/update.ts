@@ -1,7 +1,10 @@
 import type { TUserUpdateValues } from '@/features/user/schema/update-user';
 import { db } from '@db';
 import { user, userSetting } from '@db/schema';
+import { User } from '@features/user/schema/get-user';
 import { eq } from 'drizzle-orm';
+
+import { findUser } from './get';
 
 /**
  * Update user record together with userSettings fields.
@@ -9,36 +12,29 @@ import { eq } from 'drizzle-orm';
  * @param values values to be updated.
  * @returns public user fields.
  */
-export const updateUser = async (id: string, values: TUserUpdateValues) => {
+export const updateUser = async (
+    userId: string,
+    values: TUserUpdateValues
+): Promise<User> => {
     const { settings: settingValues, ...updateValues } = values;
 
     try {
-        let updatedSettings = settingValues;
-
         if (settingValues && Object.keys(settingValues).length > 0) {
-            const [{ userId, ...updatedS }] = await db
+            await db
                 .update(userSetting)
                 .set(settingValues)
-                .where(eq(userSetting.userId, id))
-                .returning();
-
-            updatedSettings = updatedS;
+                .where(eq(userSetting.userId, userId));
         }
 
-        const [updatedUser] = await db
+        await db
             .update(user)
             .set({ ...updateValues, updatedAt: new Date() })
-            .where(eq(user.id, id))
-            .returning({
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                image: user.image
-            });
+            .where(eq(user.id, userId));
 
-        return { ...updatedUser, settings: updatedSettings };
-    } catch (e) {
-        console.log(e);
+        const updatedUser = await findUser(userId);
+
+        return updatedUser;
+    } catch (e: any) {
+        throw new Error(e);
     }
 };

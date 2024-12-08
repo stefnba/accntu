@@ -1,4 +1,4 @@
-import { getUser } from '@features/auth/server';
+import { getUser } from '@features/auth/server/hono';
 import {
     CreateTagSchema,
     GetTagByIdParamSchema,

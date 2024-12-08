@@ -1,10 +1,10 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useSession } from '@features/auth/hooks/session';
+import { useSessionUser } from '@features/auth/hooks/session';
 
 export const DropdownMenuUser = () => {
-    const { user } = useSession();
+    const { user } = useSessionUser();
 
     return (
         <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

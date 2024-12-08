@@ -8,10 +8,10 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { AccountCustomSection } from '@/features/user/components/update-section';
-import { useSession } from '@features/auth/hooks/session';
+import { useSessionUser } from '@features/auth/hooks/session';
 
 const LanguageSelect = () => {
-    const { user } = useSession();
+    const { user } = useSessionUser();
 
     return (
         <Select defaultValue={user?.settings.language || undefined}>

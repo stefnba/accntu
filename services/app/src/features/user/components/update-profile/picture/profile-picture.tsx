@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
-import { getUser } from '@features/auth/server/next';
+import { getUser } from '@features/auth/server/next/actions/authenticate';
 
 import { UpdateUserImageTrigger } from './modal-trigger';
 

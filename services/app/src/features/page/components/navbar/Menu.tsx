@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Lock, Settings, User } from 'lucide-react';
 
-import Logout from './Logout';
 import { DropdownMenuUser } from './dropdown-menu-user';
+import { LogoutButton } from './logout-button';
 import { NavbarUserImage } from './user-image';
 
 const NavbarMenu = async () => {
@@ -56,7 +56,7 @@ const NavbarMenu = async () => {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <Logout />
+                        <LogoutButton />
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

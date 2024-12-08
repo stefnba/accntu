@@ -1,10 +1,15 @@
-export const AUTH_COOKIE_NAME = 'auth_session';
+export const SESSION_COOKIE = {
+    COOKIE_NAME: 'session:token',
+    EXPIRATION: 60 * 60 * 24 * 30, // 30 days, defined in minutes
+    REFRESH: 60 * 60 * 24 * 15 // 15 days, defined in minutes
+};
 
 /**
  * Cookie to save public user info that is accessible on frontend through <SessionProvier />
  */
 export const SESSION_USER = {
-    COOKIE_NAME: 'session:user'
+    COOKIE_NAME: 'session:user',
+    EXPIRATION: SESSION_COOKIE.EXPIRATION
 };
 
 /**

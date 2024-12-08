@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { errorToast } from '@/components/toast';
 import { client } from '@/lib/api/client';
 import { useMutation } from '@tanstack/react-query';
-import { InferRequestType, InferResponseType } from 'hono';
+import { InferResponseType } from 'hono';
 
 const query = client.api.auth.logout.$post;
 

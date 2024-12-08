@@ -4,7 +4,7 @@ import {
     getConnectedAccounts
 } from '@/server/actions/connected-account';
 import { InsertConnectedAccountSchema } from '@db/schema';
-import { getUser } from '@features/auth/server';
+import { getUser } from '@features/auth/server/hono';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';

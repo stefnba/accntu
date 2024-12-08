@@ -1,4 +1,4 @@
-import { errorToast, successToast } from '@/components/toast';
+import { errorToast } from '@/components/toast';
 import { client } from '@/lib/api/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { InferRequestType, InferResponseType } from 'hono';
@@ -23,7 +23,7 @@ export const useUpdateUser = (section: 'name' | 'apparence') => {
             return response.json();
         },
 
-        onSuccess: (data) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             window.dispatchEvent(new Event('user:updated'));
         },
