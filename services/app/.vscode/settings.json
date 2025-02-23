@@ -13,7 +13,9 @@
     "[markdown]": {
         "editor.formatOnSave": false
     },
-    "[prisma]": {
-        "editor.defaultFormatter": "Prisma.prisma"
-    }
+    "tailwindCSS.experimental.classRegex": [
+        ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+        ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+    ],
+    "tailwindCSS.colorDecorators": true
 }

@@ -21,5 +21,7 @@
         "^[./]"
     ],
     "importOrderSeparation": true,
-    "importOrderSortSpecifiers": true
+    "importOrderSortSpecifiers": true,
+    "tailwindStylesheet": "./src/app/globals.css",
+    "tailwindFunctions": ["clsx", "cva", "cn"]
 }
