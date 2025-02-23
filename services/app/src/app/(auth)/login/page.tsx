@@ -16,11 +16,13 @@ const Login = async () => {
 
             <LoginRegisterForm type="login" />
 
-            <p className="mt-8 px-8 text-center text-sm text-muted-foreground">
-                If you don&apos;t have an account yet, you can register{' '}
+            <p className="mt-8 px-8 text-center text-sm">
+                <span className="text-muted-foreground">
+                    If you don&apos;t have an account yet, you can register{' '}
+                </span>
                 <Link
                     href="/register"
-                    className="underline underline-offset-4 hover:text-primary"
+                    className="underline underline-offset-4 hover:text-primary text-primary"
                 >
                     here
                 </Link>
