@@ -1,5 +1,7 @@
 import { boolean, pgEnum, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from 'zod';
+
 export const userRole = pgEnum('user_role', ['admin', 'user']);
 export const userTheme = pgEnum('user_theme', ['light', 'dark', 'system']);
 export const userLanguage = pgEnum('user_language', ['en']);
@@ -18,7 +20,19 @@ export const user = pgTable('user', {
     role: userRole().notNull().default('user'),
 });
 export const SelectUserSchema = createSelectSchema(user);
-export const InsertUserSchema = createInsertSchema(user);
+export const InsertUserSchema = createInsertSchema(user).pick({
+    firstName: true,
+    lastName: true,
+    email: true,
+});
+export const UpdateUserSchema = createUpdateSchema(user).pick({
+    firstName: true,
+    lastName: true,
+    image: true,
+});
+export type TUserUpdateParams = z.infer<typeof UpdateUserSchema>;
+export type TUserCreateParams = z.infer<typeof InsertUserSchema>;
+export type TUser = z.infer<typeof SelectUserSchema>;
 
 export const userSettings = pgTable('user_settings', {
     userId: text()
@@ -31,3 +45,9 @@ export const userSettings = pgTable('user_settings', {
 });
 export const SelectUserSettingsSchema = createSelectSchema(userSettings);
 export const InsertUserSettingsSchema = createInsertSchema(userSettings);
+export const UpdateUserSettingsSchema = createUpdateSchema(userSettings).pick({
+    theme: true,
+    currency: true,
+    language: true,
+    timezone: true,
+});
