@@ -1,8 +1,6 @@
-import { UseMutationOptions } from '@tanstack/react-query';
+import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
-
-import { useMutation } from '@tanstack/react-query';
 
 /**
  * Creates a type-safe mutation hook for a Hono endpoint
@@ -13,17 +11,23 @@ import { useMutation } from '@tanstack/react-query';
 export function createMutation<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 201 | 204,
->(endpoint: TEndpoint) {
+>(endpoint: TEndpoint, queryKey?: string | string[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
+    type TResponseError = InferResponseType<typeof endpoint, 400 | 500 | 404>;
 
-    return (options?: Omit<UseMutationOptions<TResponse, Error, TParams>, 'mutationFn'>) => {
-        return useMutation<TResponse, Error, TParams>({
+    return (
+        options?: Omit<UseMutationOptions<TResponse, TResponseError, TParams>, 'mutationFn'>
+    ) => {
+        const queryClient = useQueryClient();
+        return useMutation<TResponse, TResponseError, TParams>({
             mutationFn: async (variables) => {
                 const response = await endpoint(variables);
+
                 if (!response.ok) {
-                    throw new Error(response.statusText || 'Request failed');
+                    return options?.onError?.(await response.json(), variables, undefined);
                 }
+                queryClient.invalidateQueries({ queryKey: queryKey });
                 return response.json();
             },
             ...options,

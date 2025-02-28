@@ -1,9 +1,8 @@
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
-export const useUserProfile = createQuery(apiClient.user[':id'].$get, 'userProfile');
-
-export const useListUsers = createQuery(apiClient.user.$get, 'listUsers');
-
-export const useCreateUser = createMutation(apiClient.user.$post);
-
-export const useUpdateUser = createMutation(apiClient.user[':id'].$patch);
+export const useUserEndpoints = {
+    create: createMutation(apiClient.user.$post, ['users']),
+    update: createMutation(apiClient.user[':id'].$patch, ['users']),
+    list: createQuery(apiClient.user.$get, ['users']),
+    get: createQuery(apiClient.user[':id'].$get, ['userProfile']),
+};

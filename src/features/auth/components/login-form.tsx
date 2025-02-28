@@ -1,39 +1,44 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useCreateUser, useListUsers, useUpdateUser, useUserProfile } from '@/features/auth/api';
+import { useUserEndpoints } from '@/features/auth/api';
 
 export function LoginForm() {
-    const { data, isLoading } = useUserProfile({ param: { id: '1' } });
-    const { data: users, isLoading: isLoadingUsers } = useListUsers({});
-    const { mutate: createUser, isPending: isCreatingUser } = useCreateUser({
+    const { data, isLoading } = useUserEndpoints.get({ param: { id: '1' } });
+    const { data: users, isLoading: isLoadingUsers } = useUserEndpoints.list({});
+    const { mutate: createUser, isPending: isCreatingUser } = useUserEndpoints.create({
         onSuccess: (data) => {
-            alert(data.id);
+            alert(data.status);
         },
         onError: (error) => {
-            console.error(error);
+            alert(error.error);
         },
     });
-    const { mutate: updateUser, isPending: isUpdatingUser } = useUpdateUser({
+    const { mutate: updateUser, isPending: isUpdatingUser } = useUserEndpoints.update({
         onSuccess: (data) => {
             alert(data);
         },
         onError: (error) => {
-            console.error(error);
+            console.log(error);
         },
     });
     if (isLoading) return <div>Loading...</div>;
 
     return (
         <div>
-            LoginForm {JSON.stringify(users)}
+            LoginForm{' '}
+            {users?.map((user) => (
+                <div key={user.id}>
+                    {user.firstName} {user.lastName} {user.email}
+                </div>
+            ))}
             <Button
                 onClick={() =>
                     createUser({
                         json: {
                             firstName: 'John',
                             lastName: 'Doe',
-                            email: 'john.doe@example.com',
+                            email: 'dddd',
                         },
                     })
                 }
