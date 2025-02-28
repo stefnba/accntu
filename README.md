@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Accntu - Personal Finance Manager
+
+A modern web application for managing and analyzing personal finances across multiple bank accounts and credit cards.
+
+## Features
+
+- Import transactions from CSV files with support for different bank formats
+- API integration for supported banks
+- Transaction management and categorization
+- Financial analytics dashboard
+- Multi-account support
+- Secure authentication with multiple providers
+
+## Tech Stack
+
+- **Framework:** Next.js 15
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS 4
+- **UI Components:** shadcn/ui
+- **State Management:** Zustand, nuqs
+- **Database:** PostgreSQL with Drizzle ORM
+- **API:** Hono
+- **Authentication:** Custom implementation with social providers
+- **Package Manager:** Bun
+- **Deployment:** Docker with Coolify
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+   ```bash
+   git clone https://github.com/yourusername/accntu.git
+   cd accntu
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+3. Copy the environment variables:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Update the environment variables in `.env` with your configuration
+
+5. Start the development server:
+
+   ```bash
+   bun dev
+   ```
+
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Database Setup
+
+1. Start the database:
+
+   ```bash
+   docker-compose up -d db
+   ```
+
+2. Run migrations:
+   ```bash
+   bun db:push
+   ```
+
+## Development
+
+- `bun dev` - Start the development server
+- `bun build` - Build the production application
+- `bun start` - Start the production server
+- `bun test` - Run tests
+- `bun db:push` - Push database changes
+- `bun db:studio` - Open Drizzle Studio
+
+## Docker Deployment
+
+1. Build the image:
+
+   ```bash
+   docker-compose build
+   ```
+
+2. Start the services:
+   ```bash
+   docker-compose up -d
+   ```
+
+## Project Structure
+
+```
+src/
+├── app/              # Next.js app router pages
+├── components/       # Reusable UI components
+├── features/         # Feature-based modules
+│   ├── auth/        # Authentication
+│   ├── accounts/    # Account management
+│   ├── transactions/# Transaction management
+│   └── dashboard/   # Analytics dashboard
+├── lib/             # Shared utilities
+└── types/           # TypeScript type definitions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Contributing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## License
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
