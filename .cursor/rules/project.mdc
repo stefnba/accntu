@@ -1,6 +1,7 @@
 ---
 description: General project rules
 globs: 
+alwaysApply: false
 ---
 
 
@@ -28,33 +29,45 @@ You are a Senior Developer and an Expert in ReactJS, NextJS, JavaScript, TypeScr
 - Use lowercase with dashes for directory names (e.g., `components/auth-wizard`).
 
 ```
-src/
-├── app/             # Next.js app router (only pages)
-├── server/          # Hono Backend
-│   ├── api/[feature].ts         # Backend Hono routes
-│   ├── features/    # Backend-specific feature-based logic
-│   │   ├── [feature]/
-│   │   │   ├── routes/     # API routes for the feature
-│   │   │   ├── services/   # Business logic for this feature
-│   │   │   ├── queries/    # Database queries using Drizzle ORM
-│   │   │   ├── schemas/    # Zod validation schemas
-│   │   │   ├── types.ts    # Type definitions
-│   ├── db/                 # Database schema, ORM utils, db client
-│   ├── lib/                # Backend utilities (logging, middleware, helpers)
-├── features/        # Feature-based frontend modules
-│   ├── [feature]/
-│   │   ├── hooks/       # Feature-specific React hooks
-│   │   ├── components/  # Feature-specific UI components
-│   │   ├── store/       # Zustand/Nuqs state management
-│   │   ├── api/         # TanStack Query API hooks
-│   │   ├── schemas/     # Zod validation schemas
-│   │   ├── types.ts     # Type definitions
-├── components/       # Shared UI components
-│   ├── ui/          # Reusable UI elements (modals, buttons, inputs, tables)
-│   ├── layout/      # Layout-related components (headers, sidebars)
-├── lib/             # Shared utilities, API clients, config
-└── styles/          # Tailwind global styles, custom CSS
-
+project-root/
+└── drizzle/                      # Drizzle 
+    ├── migrations/               # Database migrations
+└── src/                          # Code directory
+    ├── app/                      # Next.js App Router (only pages)
+    │   ├── api/                  # API routes (entry points to Hono)
+    │   ├── [feature]/            # Feature-specific pages
+    │   ├── layout.tsx            # Root layout
+    │   └── page.tsx              # Home page
+    ├── hooks/                    # Hooks used for entire project, e.g. UseIsMobile
+    ├── providers/                # Providers used for entire project, e.g. ThemeProvider, QueryProvider
+    ├── features/                 # Client-side feature-based organization
+    │   ├── [feature]/            # Feature-related
+    │   │   ├── components/       # Feature UI components
+    │   │   ├── hooks/            # Feature hooks
+    │   │   ├── schemas/          # Feature schemas
+        │   ├── store/            # Zustand/Nuqs state management
+    │   │   ├── api/              # TanStack Query API hooks
+    │   │   └── utils/            # Feature utilities
+    │   └── shared/               # Shared components and utilities
+    ├── server/                   # Server-side code
+    │   ├── db/                   # Database configuration
+    │   │   ├── schemas/          # Drizzle schema
+    │   │   └── index.ts          # DB client
+    │   ├── features/             # Feature-based server organization
+    │   │   └── [feature]/        # Feature
+    │   │       ├── routes.ts     # Feature routes
+    │   │       ├── queries.ts    # Database queries using Drizzle ORM
+    │   │       ├── services.ts   # Feature Business logic
+    │   │       └── utils.ts      # Feature utilities
+    │   │       └── schemas.ts    # Zod validation schemas
+    │   ├── lib/                  # Server-side shared libraries
+    │   ├── middleware/           # Shared middleware
+    │   ├── utils/                # Shared server utilities
+    │   └── index.ts              # Main Hono API setup
+    └── lib/                      # Shared libraries (client-side)
+    └── components/               # Shared UI components
+        │   ├── ui/               # Reusable UI elements (modals, buttons, inputs, tables)
+        │   ├── layout/           # Layout-related components (headers, sidebars)
 ```
 
 ### **Component Structure**
