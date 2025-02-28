@@ -2,24 +2,25 @@
 
 import { Button } from '@/components/ui/button';
 import { useUserEndpoints } from '@/features/auth/api';
+import toast from 'react-hot-toast';
 
 export function LoginForm() {
     const { data, isLoading } = useUserEndpoints.get({ param: { id: '1' } });
     const { data: users, isLoading: isLoadingUsers } = useUserEndpoints.list({});
     const { mutate: createUser, isPending: isCreatingUser } = useUserEndpoints.create({
         onSuccess: (data) => {
-            alert(data.status);
+            toast.success('User created successfully');
         },
         onError: (error) => {
-            alert(error.error);
+            toast.error(error.error);
         },
     });
     const { mutate: updateUser, isPending: isUpdatingUser } = useUserEndpoints.update({
         onSuccess: (data) => {
-            alert(data);
+            toast.success('User updated successfully');
         },
         onError: (error) => {
-            console.log(error);
+            toast.error(error.error);
         },
     });
     if (isLoading) return <div>Loading...</div>;
@@ -38,7 +39,7 @@ export function LoginForm() {
                         json: {
                             firstName: 'John',
                             lastName: 'Doe',
-                            email: 'dddd',
+                            email: 'dddddkd',
                         },
                     })
                 }
