@@ -5,18 +5,21 @@ import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
 import { GitHubEmail, GitHubUser } from './oauth';
+import { OTPVerifySchema } from './schemas';
 import {
     authenticateUser,
     authenticateWithSocial,
     clearSessionCookie,
     createSession,
     deleteSession,
+    getOTPTokenFromCookie,
     getSessionFromCookie,
     loginWithOTP,
     registerUser,
+    setOTPTokenCookie,
     setSessionCookie,
     validateSession,
-    verifyOTP,
+    verifyOTPWithToken,
 } from './services';
 
 // Validation schemas
@@ -27,11 +30,6 @@ const LoginSchema = z.object({
 const SignupSchema = z.object({
     email: z.string().email(),
     name: z.string(),
-});
-
-const OTPVerifySchema = z.object({
-    email: z.string().email(),
-    token: z.string().length(6),
 });
 
 const SocialLoginSchema = z.object({
@@ -48,14 +46,15 @@ const app = new Hono()
         try {
             const { email } = c.req.valid('json');
 
-            console.log('email', email);
-
             // Generate OTP for user
             const result = await loginWithOTP(email);
 
             if (!result) {
                 return c.json({ error: 'Failed to generate OTP' }, 500);
             }
+
+            // Set token in HTTP-only cookie
+            setOTPTokenCookie(c, result.token);
 
             // In a real app, you would send the OTP via email
             // For development, return it in the response
@@ -77,20 +76,27 @@ const app = new Hono()
     // Verify OTP and login
     .post('/verify-otp', zValidator('json', OTPVerifySchema), async (c) => {
         try {
-            const { email, token } = c.req.valid('json');
+            const { code } = c.req.valid('json');
 
-            // Find user
-            const user = await authenticateUser(email);
+            // Get token from cookie
+            const token = getOTPTokenFromCookie(c);
+
+            if (!token) {
+                return c.json({ error: 'OTP session expired or invalid' }, 401);
+            }
+
+            // Verify OTP with token
+            const verification = await verifyOTPWithToken(token, code);
+
+            if (!verification.valid || !verification.email) {
+                return c.json({ error: 'Invalid or expired OTP' }, 401);
+            }
+
+            // Find user by email
+            const user = await authenticateUser(verification.email);
 
             if (!user) {
                 return c.json({ error: 'User not found' }, 404);
-            }
-
-            // Verify OTP
-            const isValid = await verifyOTP(user.id, token);
-
-            if (!isValid) {
-                return c.json({ error: 'Invalid or expired OTP' }, 401);
             }
 
             // Create session
@@ -205,7 +211,7 @@ const app = new Hono()
         const url = github.createAuthorizationURL(state, ['user:email']);
         return c.json({ url: url.toString(), state });
     })
-    .get('/github/callback', async (c) => {
+    .post('/github/callback', async (c) => {
         try {
             const code = c.req.query('code');
             const state = c.req.query('state');
@@ -280,7 +286,7 @@ const app = new Hono()
         const state = generateState();
         setCookie(c, `google_oauth_state_${state}`, state, { maxAge: 60 * 10 }); // 10 minutes
     })
-    .get('/google/callback', async (c) => {})
+    .post('/google/callback', async (c) => {})
 
     // Apple auth routes
     .get('/apple/authorize', async (c) => {})

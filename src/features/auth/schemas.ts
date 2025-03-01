@@ -1,12 +1,19 @@
 import { createFormSchema } from '@/hooks/use-form';
+import { OTPVerifySchema } from '@/server/features/auth/schemas';
 import { z } from 'zod';
+
+export { OTPVerifySchema };
+
+export const OTPVerifyFormSchema = createFormSchema(OTPVerifySchema, {
+    code: '',
+});
 
 export const loginEmailSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
 });
 
 export const loginEmailFormSchema = createFormSchema(loginEmailSchema, {
-    email: '',
+    email: 's2@s2.com',
 });
 
 export const signupEmailSchema = loginEmailSchema.extend({

@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, primaryKey, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { user } from './user';
@@ -48,17 +48,26 @@ export const authAccount = pgTable(
 );
 
 // Verification token table for OTP and email verification
-export const verificationToken = pgTable('verification_token', {
-    id: text().primaryKey(),
-    token: varchar({ length: 6 }).notNull(),
-    userId: text()
-        .notNull()
-        .references(() => user.id, { onDelete: 'cascade' }),
-    type: optType().notNull(),
-    expiresAt: timestamp({ mode: 'date' }).notNull(),
-    createdAt: timestamp({ mode: 'date' }).notNull().defaultNow(),
-    usedAt: timestamp({ mode: 'date' }),
-});
+export const verificationToken = pgTable(
+    'verification_token',
+    {
+        token: text().notNull(),
+        userId: text().references(() => user.id, { onDelete: 'cascade' }),
+        email: text(),
+        type: optType().notNull(),
+        expiresAt: timestamp({ mode: 'date' }).notNull(),
+        createdAt: timestamp({ mode: 'date' }).notNull().defaultNow(),
+        usedAt: timestamp({ mode: 'date' }),
+        attempts: integer().default(0),
+        tokenHash: text(), // For storing hashed OTP
+    },
+    (table) => {
+        return {
+            // Use token as primary key since it should be unique
+            pk: primaryKey({ columns: [table.token] }),
+        };
+    }
+);
 
 // Schemas for type safety
 export const SelectSessionSchema = createSelectSchema(session);

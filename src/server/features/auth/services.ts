@@ -5,7 +5,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { AUTH_COOKIE_NAME, COOKIE_OPTIONS } from './constants';
 import * as queries from './queries';
 import { User } from './schemas';
-import { generateOTP } from './utils';
+import { generateOTP, generateSecureToken, hashOTP, verifyOTP as verifyOTPHash } from './utils';
 
 export type Provider = 'email' | 'github' | 'google';
 
@@ -230,7 +230,7 @@ export const createOTP = async (userId: string, type: OptType = 'login'): Promis
         expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
         // Store in database
-        await queries.createVerificationToken(createId(), otp, userId, type, expiresAt);
+        await queries.createVerificationToken(otp, userId, type, expiresAt);
 
         return otp;
     } catch (error) {
@@ -258,7 +258,7 @@ export const verifyOTP = async (
         }
 
         // Mark as used
-        await queries.markTokenAsUsed(tokenData.id);
+        await queries.markTokenAsUsed(token);
 
         return true;
     } catch (error) {
@@ -270,7 +270,7 @@ export const verifyOTP = async (
 // Email OTP Login
 export const loginWithOTP = async (
     email: string
-): Promise<{ userId: string; otp: string } | null> => {
+): Promise<{ userId: string; otp: string; token: string } | null> => {
     try {
         // Find or create user
         let user = await authenticateUser(email);
@@ -283,15 +283,85 @@ export const loginWithOTP = async (
             }
         }
 
-        // Create OTP
-        const otp = await createOTP(user.id);
+        // Generate OTP and secure token
+        const otp = generateOTP(6);
+        const token = generateSecureToken();
+        const otpHash = hashOTP(otp, email); // Use email as salt for additional security
+
+        // Set expiration (10 minutes)
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+        // Store token in database
+        await queries.createEmailVerificationToken(token, email, otpHash, 'login', expiresAt);
 
         return {
             userId: user.id,
             otp,
+            token, // Return token to be stored in cookie
         };
     } catch (error) {
         console.error('Error with OTP login:', error);
         return null;
+    }
+};
+
+// Set OTP token cookie
+export const setOTPTokenCookie = (c: Context, token: string): void => {
+    setCookie(c, 'otp_token', token, {
+        ...COOKIE_OPTIONS,
+        maxAge: 10 * 60, // 10 minutes
+    });
+};
+
+// Get OTP token from cookie
+export const getOTPTokenFromCookie = (c: Context): string | undefined => {
+    return getCookie(c, 'otp_token');
+};
+
+// Clear OTP token cookie
+export const clearOTPTokenCookie = (c: Context): void => {
+    deleteCookie(c, 'otp_token', { path: '/' });
+};
+
+// Verify OTP with token
+export const verifyOTPWithToken = async (
+    token: string,
+    otpCode: string
+): Promise<{ valid: boolean; email?: string }> => {
+    try {
+        // Find token
+        const tokenData = await queries.getVerificationTokenByToken(token);
+
+        if (!tokenData) {
+            return { valid: false };
+        }
+
+        // Check if token is expired
+        if (new Date() > tokenData.expiresAt || tokenData.usedAt) {
+            return { valid: false };
+        }
+
+        // Check if too many attempts
+        if (tokenData.attempts && tokenData.attempts >= 5) {
+            return { valid: false };
+        }
+
+        // Increment attempts
+        await queries.incrementVerificationTokenAttempts(token);
+
+        // Verify OTP
+        const isValid = verifyOTPHash(otpCode, tokenData.tokenHash || '', tokenData.email || '');
+
+        if (isValid) {
+            // Mark token as used
+            await queries.markTokenAsUsed(token);
+            return { valid: true, email: tokenData.email || '' };
+        }
+
+        return { valid: false };
+    } catch (error) {
+        console.error('Error verifying OTP:', error);
+        return { valid: false };
     }
 };

@@ -15,6 +15,9 @@ import { useAuth } from '@/hooks';
 import { useZodForm } from '@/hooks/use-form';
 import { cn } from '@/lib/utils';
 
+/*
+    Social Auth
+*/
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     const { loginWithOauth, isLoading } = useAuth();
 
@@ -56,6 +59,9 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     );
 };
 
+/*
+    Email Auth
+*/
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     const { loginWithEmail, signupWithEmail, isLoading, authMethod } = useAuth();
     const isLogin = action === 'Login';
@@ -66,7 +72,6 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             register,
             handleSubmit,
             formState: { errors },
-            isSubmitting,
             submitError,
         } = useZodForm({
             schema: loginEmailFormSchema.schema,

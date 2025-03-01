@@ -10,14 +10,15 @@ import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
 // Define auth context type
 type AuthContextType = {
     user: User | null;
-    session: Session | null;
+
     isLoading: boolean;
     isAuthenticated: boolean;
     loginWithEmail: (email: string) => Promise<void>;
     signupWithEmail: (email: string, name: string) => Promise<void>;
+    verifyOtp: (otp: string) => Promise<void>;
     logout: () => Promise<void>;
     loginWithOauth: (provider: SocialProvider) => Promise<void>;
-    verifyOauth: (provider: SocialProvider) => Promise<void>;
+    verifyOauth: (provider: SocialProvider, code: string, state?: string | null) => Promise<void>;
     authMethod: SocialProvider | 'email' | undefined;
 };
 
@@ -33,14 +34,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [authMethod, setAuthMethod] = useState<SocialProvider | 'email'>();
 
     // Auth endpoints
-    const { data: userMe, isLoading: isLoadingUser } = useAuthEndpoints.me({});
+    const { data: userMe } = useAuthEndpoints.me({});
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
-    const { mutate: loginWithEmailMutate } = useAuthEndpoints.loginWithEmail();
+    const { mutate: loginWithEmailMutate } = useAuthEndpoints.requestOtp();
+    const { mutate: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp();
     const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail();
     const { mutate: loginWithGithubMutate } = useAuthEndpoints.loginWithGithub();
     const { mutate: loginWithGoogleMutate } = useAuthEndpoints.loginWithGoogle();
@@ -71,7 +73,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             },
             {
                 onSuccess: (data) => {
-                    // todo: forward to verify-otp
+                    console.log('Login success', data);
+                    // forward to verify-otp
+                    router.push('/auth/verify-otp');
                 },
                 onError: (error) => {
                     console.error('Login failed:', error);
@@ -93,8 +97,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 json: { email, name },
             },
             {
-                onSuccess: (data) => {
-                    // todo: forward to verify-otp
+                onSuccess: () => {
+                    // forward to verify-otp
+                    router.push('/auth/verify-otp');
                 },
                 onError: (error) => {
                     console.error('Signup failed:', error);
@@ -162,12 +167,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }, []);
 
-    const verifyOauth = useCallback(async (provider: SocialProvider) => {
-        if (provider === 'github') {
-            // todo: verify github auth
-        } else if (provider === 'google') {
-            // todo: verify google auth
-        }
+    const verifyOauth = useCallback(
+        async (provider: SocialProvider, code: string, state?: string | null) => {
+            setIsLoading(true);
+            setAuthMethod(provider);
+
+            try {
+                if (provider === 'github') {
+                    // Use the verifyGithub endpoint
+                    const { mutateAsync: verifyGithubMutate } = useAuthEndpoints.verifyGithub();
+                    const response = await verifyGithubMutate({
+                        query: { code, state },
+                    });
+
+                    // Handle the response safely
+                    if (response && typeof response === 'object') {
+                        // Type assertion after validation
+                        const authResponse = response as { user: User; session: Session };
+                        setUser(authResponse.user);
+
+                        router.push('/dashboard');
+                    }
+                } else if (provider === 'google') {
+                    // Use the verifyGoogle endpoint
+                    const { mutateAsync: verifyGoogleMutate } = useAuthEndpoints.verifyGoogle();
+                    const response = await verifyGoogleMutate({
+                        query: { code, state },
+                    });
+
+                    // Handle the response safely
+                    if (response && typeof response === 'object') {
+                        // Type assertion after validation
+                        const authResponse = response as { user: User; session: Session };
+                        setUser(authResponse.user);
+
+                        router.push('/dashboard');
+                    }
+                }
+            } catch (error) {
+                console.error(`${provider} verification failed:`, error);
+                router.push(`/login?error=${provider}_verification_failed`);
+            } finally {
+                setIsLoading(false);
+                setAuthMethod(undefined);
+            }
+        },
+        [router]
+    );
+
+    const verifyOtp = useCallback(async (code: string) => {
+        setIsLoading(true);
+        verifyEmailLoginMutate(
+            {
+                json: { code },
+            },
+            {
+                onSettled: () => {
+                    setIsLoading(false);
+                },
+                onSuccess: (data) => {
+                    setUser(data.user);
+                    // setSession(data.session);
+                    router.push('/dashboard');
+                },
+            }
+        );
     }, []);
 
     // Memoize the context value to prevent unnecessary re-renders
@@ -175,16 +239,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         () => ({
             user,
             isLoading,
-            isAuthenticated: !!user && !!session,
+            isAuthenticated: !!user,
             loginWithEmail,
             authMethod,
             signupWithEmail,
             logout,
             loginWithOauth,
             verifyOauth,
-            session,
+            verifyOtp,
         }),
-        [user, session, authMethod]
+        [user, authMethod]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

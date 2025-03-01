@@ -1,7 +1,7 @@
 import { db } from '@/server/db';
 import { authAccount, OptType, session, verificationToken } from '@/server/db/schemas/auth';
 import { user } from '@/server/db/schemas/user';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 // Session queries
 
@@ -160,20 +160,18 @@ export const getAccountByUserIdAndProvider = async (
 
 /**
  * Create a verification token
- * @param tokenId - The ID of the token
  * @param token - The token to create
  * @param userId - The ID of the user
  * @param type - The type of token to create
+ * @param expiresAt - The expiration date of the token
  */
 export const createVerificationToken = async (
-    tokenId: string,
     token: string,
     userId: string,
     type: OptType,
     expiresAt: Date
 ) => {
     return db.insert(verificationToken).values({
-        id: tokenId,
         token,
         userId,
         type,
@@ -205,11 +203,79 @@ export const getVerificationToken = async (userId: string, token: string, type: 
 
 /**
  * Mark a verification token as used
- * @param tokenId - The ID of the token to mark as used
+ * @param token - The token to mark as used
  */
-export const markTokenAsUsed = async (tokenId: string) => {
+export const markTokenAsUsed = async (token: string) => {
     return db
         .update(verificationToken)
         .set({ usedAt: new Date() })
-        .where(eq(verificationToken.id, tokenId));
+        .where(eq(verificationToken.token, token));
+};
+
+/**
+ * Create a verification token for email OTP
+ * @param token - Secure random token
+ * @param email - User's email
+ * @param otpHash - Hashed OTP code
+ * @param type - Token type
+ * @param expiresAt - Expiration date
+ */
+export const createEmailVerificationToken = async (
+    token: string,
+    email: string,
+    otpHash: string,
+    type: OptType,
+    expiresAt: Date
+) => {
+    return db.insert(verificationToken).values({
+        token,
+        email,
+        tokenHash: otpHash,
+        type,
+        expiresAt,
+    });
+};
+
+/**
+ * Get a verification token by token string
+ * @param token - The token string
+ */
+export const getVerificationTokenByToken = async (token: string) => {
+    const result = await db
+        .select()
+        .from(verificationToken)
+        .where(eq(verificationToken.token, token))
+        .limit(1);
+
+    return result[0] || null;
+};
+
+/**
+ * Update verification token attempts counter
+ * @param token - The token
+ */
+export const incrementVerificationTokenAttempts = async (token: string) => {
+    return db
+        .update(verificationToken)
+        .set({
+            attempts: sql`${verificationToken.attempts} + 1`,
+        })
+        .where(eq(verificationToken.token, token));
+};
+
+/**
+ * Delete expired verification tokens
+ * @remarks This should be run periodically to clean up the database
+ * @todo Implement a scheduled job to clean up expired tokens
+ */
+export const deleteExpiredVerificationTokens = async () => {
+    const now = new Date();
+    return db
+        .delete(verificationToken)
+        .where(
+            and(
+                sql`${verificationToken.usedAt} IS NOT NULL`,
+                sql`${verificationToken.expiresAt} < ${now}`
+            )
+        );
 };
