@@ -4,8 +4,8 @@ import { HTTPException } from 'hono/http-exception';
 import { logger } from 'hono/logger';
 import { timing } from 'hono/timing';
 
+import authRoutes from '@/server/features/auth/routes';
 import userRoutes from '@/server/features/user/routes';
-// export const runtime = 'edge';
 
 const app = new Hono().basePath('/api');
 
@@ -25,7 +25,7 @@ app.onError((err, c) => {
     return c.json({ error: message }, 500);
 });
 
-const routes = app.route('/user', userRoutes);
+const routes = app.route('/user', userRoutes).route('/auth', authRoutes);
 
 export type AppType = typeof routes;
 export { app };

@@ -2,19 +2,10 @@
 
 import { useAuthEndpoints } from '@/features/auth/api';
 import { SocialProvider } from '@/features/auth/schemas';
+import { Session, User } from '@/server/features/auth/schemas';
+import { useRouter } from 'next/navigation';
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-
-export type User = {
-    id: string;
-    email: string;
-    name?: string;
-};
-
-export type Session = {
-    id: string;
-    expiresAt: Date;
-};
 
 // Define auth context type
 type AuthContextType = {
@@ -25,7 +16,8 @@ type AuthContextType = {
     loginWithEmail: (email: string) => Promise<void>;
     signupWithEmail: (email: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
-    loginWithSocial: (provider: SocialProvider) => Promise<void>;
+    loginWithOauth: (provider: SocialProvider) => Promise<void>;
+    verifyOauth: (provider: SocialProvider) => Promise<void>;
     authMethod: SocialProvider | 'email' | undefined;
 };
 
@@ -38,35 +30,30 @@ type AuthProviderProps = {
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
+    const router = useRouter();
+
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [authMethod, setAuthMethod] = useState<SocialProvider | 'email'>();
 
     // Auth endpoints
     const { data: userMe, isLoading: isLoadingUser } = useAuthEndpoints.me({});
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
-    const { mutate: loginWithEmailMutate } = useAuthEndpoints.loginWithEmail({});
-    const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail({});
-    const { mutate: loginWithGithubMutate } = useAuthEndpoints.loginWithSocial('github');
-    const { mutate: loginWithGoogleMutate } = useAuthEndpoints.loginWithSocial('google');
+    const { mutate: loginWithEmailMutate } = useAuthEndpoints.loginWithEmail();
+    const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail();
+    const { mutate: loginWithGithubMutate } = useAuthEndpoints.loginWithGithub();
+    const { mutate: loginWithGoogleMutate } = useAuthEndpoints.loginWithGoogle();
 
     // Check if user is logged in on mount
     useEffect(() => {
         const checkAuthStatus = async () => {
-            try {
-                // Fetch the current user from the Hono API endpoint
-                const response = await fetch('/api/auth/me');
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData.user);
-                }
-            } catch (error) {
-                console.error('Failed to restore auth state:', error);
-            } finally {
-                setIsLoading(false);
-            }
+            // todo: check if user is logged in
         };
+
+        if (userMe) {
+            setUser(userMe);
+        }
 
         checkAuthStatus();
     }, []);
@@ -84,7 +71,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             },
             {
                 onSuccess: (data) => {
-                    setUser(data.user);
+                    // todo: forward to verify-otp
                 },
                 onError: (error) => {
                     console.error('Login failed:', error);
@@ -107,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             },
             {
                 onSuccess: (data) => {
-                    setUser(data.user);
+                    // todo: forward to verify-otp
                 },
                 onError: (error) => {
                     console.error('Signup failed:', error);
@@ -134,14 +121,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     // Generic social login function
-    const loginWithSocial = useCallback(async (provider: SocialProvider) => {
+    const loginWithOauth = useCallback(async (provider: SocialProvider) => {
         setIsLoading(true);
         setAuthMethod(provider);
 
         if (provider === 'github') {
             loginWithGithubMutate(
-                {},
                 {
+                    param: {
+                        provider: 'github',
+                    },
+                },
+                {
+                    onSuccess: (data) => {
+                        // forward to github auth page
+                        window.location.href = data.url;
+                    },
                     onSettled: () => {
                         setIsLoading(false);
                         setAuthMethod(undefined);
@@ -150,14 +145,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
             );
         } else if (provider === 'google') {
             loginWithGoogleMutate(
-                {},
                 {
+                    param: { provider },
+                },
+                {
+                    onSuccess: (data) => {
+                        // forward to google auth page
+                        // window.location.href = data.url;
+                    },
                     onSettled: () => {
                         setIsLoading(false);
                         setAuthMethod(undefined);
                     },
                 }
             );
+        }
+    }, []);
+
+    const verifyOauth = useCallback(async (provider: SocialProvider) => {
+        if (provider === 'github') {
+            // todo: verify github auth
+        } else if (provider === 'google') {
+            // todo: verify google auth
         }
     }, []);
 
@@ -171,7 +180,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             authMethod,
             signupWithEmail,
             logout,
-            loginWithSocial,
+            loginWithOauth,
+            verifyOauth,
             session,
         }),
         [user, session, authMethod]

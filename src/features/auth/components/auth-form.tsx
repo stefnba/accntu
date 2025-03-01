@@ -16,10 +16,10 @@ import { useZodForm } from '@/hooks/use-form';
 import { cn } from '@/lib/utils';
 
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { loginWithSocial, isLoading } = useAuth();
+    const { loginWithOauth, isLoading } = useAuth();
 
     const handleSocialLogin = async (provider: SocialProvider) => {
-        await loginWithSocial(provider);
+        await loginWithOauth(provider);
     };
 
     return (
