@@ -1,4 +1,4 @@
-import { QueryProvider, ThemeProvider } from '@/providers';
+import { AuthProvider, QueryProvider, ThemeProvider } from '@/providers';
 import { Inter } from 'next/font/google';
 
 import { Toaster } from 'react-hot-toast';
@@ -17,7 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <QueryProvider>
                     <Toaster />
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                        <main className="">{children}</main>
+                        <AuthProvider>
+                            <main className="">{children}</main>
+                        </AuthProvider>
                     </ThemeProvider>
                 </QueryProvider>
             </body>

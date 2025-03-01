@@ -1,6 +1,6 @@
 import { ThemeToggle } from '@/components/layout/theme-selector';
 import { Button } from '@/components/ui/button';
-
+import Link from 'next/link';
 export default function Home() {
     return (
         <div className="container mx-auto p-4">
@@ -11,6 +11,7 @@ export default function Home() {
             <div className="grid gap-4">
                 <Button>Get Started</Button>
             </div>
+            <Link href="/dashboard">Dashboard</Link>
         </div>
     );
 }

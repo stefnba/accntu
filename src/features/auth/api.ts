@@ -1,8 +1,8 @@
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
-export const useUserEndpoints = {
-    create: createMutation(apiClient.user.$post, ['users']),
-    update: createMutation(apiClient.user[':id'].$patch, ['users']),
-    list: createQuery(apiClient.user.$get, ['users']),
-    get: createQuery(apiClient.user[':id'].$get, ['userProfile']),
+export const useAuthEndpoints = {
+    login: createMutation(apiClient.auth.login.$post, ['auth']),
+    logout: createMutation(apiClient.auth.logout.$post, ['auth']),
+    signup: createMutation(apiClient.auth.signup.$post, ['auth']),
+    me: createQuery(apiClient.auth.me.$get, ['auth']),
 };
