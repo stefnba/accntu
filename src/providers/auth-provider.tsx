@@ -1,23 +1,32 @@
 'use client';
 
 import { useAuthEndpoints } from '@/features/auth/api';
-import { createContext, useCallback, useEffect, useState } from 'react';
+import { SocialProvider } from '@/features/auth/schemas';
 
-// Define user type
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+
 export type User = {
     id: string;
     email: string;
     name?: string;
 };
 
+export type Session = {
+    id: string;
+    expiresAt: Date;
+};
+
 // Define auth context type
 type AuthContextType = {
     user: User | null;
+    session: Session | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    login: (email: string) => Promise<void>;
-    signup: (email: string, name: string) => Promise<void>;
+    loginWithEmail: (email: string) => Promise<void>;
+    signupWithEmail: (email: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
+    loginWithSocial: (provider: SocialProvider) => Promise<void>;
+    authMethod: SocialProvider | 'email' | undefined;
 };
 
 // Create context with a default value
@@ -30,12 +39,17 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [authMethod, setAuthMethod] = useState<SocialProvider | 'email'>();
 
+    // Auth endpoints
     const { data: userMe, isLoading: isLoadingUser } = useAuthEndpoints.me({});
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
-    const { mutate: loginMutate } = useAuthEndpoints.login({});
-    const { mutate: signupMutate } = useAuthEndpoints.signup({});
+    const { mutate: loginWithEmailMutate } = useAuthEndpoints.loginWithEmail({});
+    const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail({});
+    const { mutate: loginWithGithubMutate } = useAuthEndpoints.loginWithSocial('github');
+    const { mutate: loginWithGoogleMutate } = useAuthEndpoints.loginWithSocial('google');
 
     // Check if user is logged in on mount
     useEffect(() => {
@@ -58,14 +72,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     // Login function
-    const login = useCallback(async (email: string, password?: string) => {
+    const loginWithEmail = useCallback(async (email: string) => {
         setIsLoading(true);
+        setAuthMethod('email');
 
-        loginMutate(
+        loginWithEmailMutate(
             {
                 json: {
                     email,
-                    password,
                 },
             },
             {
@@ -77,72 +91,91 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 },
                 onSettled: () => {
                     setIsLoading(false);
+                    setAuthMethod(undefined);
                 },
             }
         );
     }, []);
 
     // Signup function
-    const signup = useCallback(async (email: string, name: string, password?: string) => {
+    const signupWithEmail = useCallback(async (email: string, name: string) => {
         setIsLoading(true);
-        try {
-            // Call the signup API endpoint
-            const response = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+        setAuthMethod('email');
+        signupWithEmailMutate(
+            {
+                json: { email, name },
+            },
+            {
+                onSuccess: (data) => {
+                    setUser(data.user);
                 },
-                body: JSON.stringify({ email, name, password }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Signup failed');
+                onError: (error) => {
+                    console.error('Signup failed:', error);
+                },
+                onSettled: () => {
+                    setIsLoading(false);
+                },
             }
-
-            const data = await response.json();
-            setUser(data.user);
-        } catch (error) {
-            console.error('Signup failed:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
+        );
     }, []);
 
     // Logout function
     const logout = useCallback(async () => {
         setIsLoading(true);
-        try {
-            // Call the logout API endpoint
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-            });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Logout failed');
+        logoutMutate(
+            {},
+            {
+                onSettled: () => {
+                    setIsLoading(false);
+                },
             }
+        );
+    }, []);
 
-            // Clear the user from state
-            setUser(null);
-        } catch (error) {
-            console.error('Logout failed:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
+    // Generic social login function
+    const loginWithSocial = useCallback(async (provider: SocialProvider) => {
+        setIsLoading(true);
+        setAuthMethod(provider);
+
+        if (provider === 'github') {
+            loginWithGithubMutate(
+                {},
+                {
+                    onSettled: () => {
+                        setIsLoading(false);
+                        setAuthMethod(undefined);
+                    },
+                }
+            );
+        } else if (provider === 'google') {
+            loginWithGoogleMutate(
+                {},
+                {
+                    onSettled: () => {
+                        setIsLoading(false);
+                        setAuthMethod(undefined);
+                    },
+                }
+            );
         }
     }, []);
 
     // Memoize the context value to prevent unnecessary re-renders
-    const value = {
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        signup,
-        logout,
-    };
+    const value = useMemo(
+        () => ({
+            user,
+            isLoading,
+            isAuthenticated: !!user && !!session,
+            loginWithEmail,
+            authMethod,
+            signupWithEmail,
+            logout,
+            loginWithSocial,
+            session,
+        }),
+        [user, session, authMethod]
+    );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
