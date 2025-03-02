@@ -1,4 +1,4 @@
-import { createFormSchema } from '@/hooks/use-form';
+import { createFormSchema } from '@/components/form';
 import { OTPVerifySchema } from '@/server/features/auth/schemas';
 import { z } from 'zod';
 
