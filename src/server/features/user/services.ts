@@ -1,5 +1,12 @@
 import { db } from '@/server/db';
-import { SelectUserSchema, TUserCreateParams, TUserUpdateParams, user } from '@/server/db/schemas';
+import {
+    SelectUserSchema,
+    TUser,
+    TUserCreateParams,
+    TUserUpdateParams,
+    user,
+    userSettings,
+} from '@/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { eq } from 'drizzle-orm';
 
@@ -26,15 +33,28 @@ export const getUser = async (id: string) => {
 /**
  * Update a user by ID
  * @param id User ID
- * @param data User data to update
+ * @param data User data to update, this includes the user settings
  * @returns Updated user data or null if not found
  */
-export const updateUser = async (id: string, data: TUserUpdateParams) => {
+export const updateUser = async (id: string, data: TUserUpdateParams): Promise<TUser> => {
     try {
-        const [updatedUser] = await db
+        const { settings, ...userData } = data;
+
+        if (settings) {
+            // Update user settings
+            await db
+                .update(userSettings)
+                .set({
+                    ...settings,
+                })
+                .where(eq(userSettings.userId, id));
+        }
+
+        // Update user data
+        await db
             .update(user)
             .set({
-                ...data,
+                ...userData,
                 updatedAt: new Date(),
             })
             .where(eq(user.id, id))
@@ -45,6 +65,12 @@ export const updateUser = async (id: string, data: TUserUpdateParams) => {
                 image: user.image,
                 updatedAt: user.updatedAt,
             });
+
+        const updatedUser = await getUser(id);
+
+        if (!updatedUser) {
+            throw new Error('Failed to update user');
+        }
 
         return updatedUser;
     } catch (error) {

@@ -19,20 +19,6 @@ export const user = pgTable('user', {
     lastLoginAt: timestamp({ mode: 'date' }),
     role: userRole().notNull().default('user'),
 });
-export const SelectUserSchema = createSelectSchema(user);
-export const InsertUserSchema = createInsertSchema(user).pick({
-    firstName: true,
-    lastName: true,
-    email: true,
-});
-export const UpdateUserSchema = createUpdateSchema(user).pick({
-    firstName: true,
-    lastName: true,
-    image: true,
-});
-export type TUserUpdateParams = z.infer<typeof UpdateUserSchema>;
-export type TUserCreateParams = z.infer<typeof InsertUserSchema>;
-export type TUser = z.infer<typeof SelectUserSchema>;
 
 export const userSettings = pgTable('user_settings', {
     userId: text()
@@ -43,6 +29,8 @@ export const userSettings = pgTable('user_settings', {
     language: userLanguage().notNull().default('en'),
     timezone: text(),
 });
+
+// User Settings
 export const SelectUserSettingsSchema = createSelectSchema(userSettings);
 export const InsertUserSettingsSchema = createInsertSchema(userSettings);
 export const UpdateUserSettingsSchema = createUpdateSchema(userSettings).pick({
@@ -51,3 +39,32 @@ export const UpdateUserSettingsSchema = createUpdateSchema(userSettings).pick({
     language: true,
     timezone: true,
 });
+export const SelectUserSchema = createSelectSchema(user).pick({
+    id: true,
+    firstName: true,
+    lastName: true,
+    email: true,
+    image: true,
+    role: true,
+    createdAt: true,
+    lastLoginAt: true,
+});
+export const SelectUserPrivateSchema = SelectUserSchema;
+export const InsertUserSchema = createInsertSchema(user).pick({
+    firstName: true,
+    lastName: true,
+    email: true,
+    image: true,
+});
+export const UpdateUserSchema = createUpdateSchema(user)
+    .pick({
+        firstName: true,
+        lastName: true,
+        image: true,
+    })
+    .extend({
+        settings: UpdateUserSettingsSchema.optional(),
+    });
+export type TUserUpdateParams = z.infer<typeof UpdateUserSchema>;
+export type TUserCreateParams = z.infer<typeof InsertUserSchema>;
+export type TUser = z.infer<typeof SelectUserSchema>;
