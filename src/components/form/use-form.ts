@@ -38,6 +38,11 @@ export interface UseZodFormReturn<TFormValues extends FieldValues>
     handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
 
     /**
+     * Native React Hook Form handleSubmit for backward compatibility
+     */
+    handleNativeSubit: UseFormReturn<TFormValues>['handleSubmit'];
+
+    /**
      * Whether the form is currently submitting
      */
     isSubmitting: boolean;
@@ -145,6 +150,7 @@ export function useZodForm<TSchema extends z.ZodType<any, any, any>>({
     return {
         ...form,
         handleSubmit,
+        handleNativeSubit: form.handleSubmit,
         isSubmitting,
         isSubmitSuccessful,
         submitError,
