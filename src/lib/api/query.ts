@@ -11,7 +11,7 @@ import { StatusCode } from 'hono/utils/http-status';
 export function createQuery<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 200,
->(endpoint: TEndpoint, defaultQueryKey: string | string[]) {
+>(endpoint: TEndpoint, defaultQueryKey?: string | string[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
 
