@@ -56,6 +56,14 @@ const app = new Hono()
             // Set token in HTTP-only cookie
             setOTPTokenCookie(c, result.token);
 
+            // Set email in a cookie for the verification page
+            setCookie(c, 'auth_email', email, {
+                httpOnly: false, // Allow JavaScript access
+                path: '/',
+                maxAge: 60 * 10, // 10 minutes
+                sameSite: 'Lax',
+            });
+
             // In a real app, you would send the OTP via email
             // For development, return it in the response
             if (process.env.NODE_ENV !== 'production') {
@@ -109,10 +117,18 @@ const app = new Hono()
             // Set session cookie
             setSessionCookie(c, sessionId);
 
+            // Clear the email cookie as it's no longer needed
+            setCookie(c, 'auth_email', '', {
+                httpOnly: false,
+                path: '/',
+                maxAge: 0, // Expire immediately
+                sameSite: 'Lax',
+            });
+
             return c.json({ user });
         } catch (error) {
             console.error('OTP verification error:', error);
-            return c.json({ error: 'Failed to verify OTP' }, 500);
+            return c.json({ error: 'Failed to verify OTP' }, 401);
         }
     })
 
@@ -134,6 +150,17 @@ const app = new Hono()
             if (!result) {
                 return c.json({ error: 'Failed to generate OTP' }, 500);
             }
+
+            // Set token in HTTP-only cookie
+            setOTPTokenCookie(c, result.token);
+
+            // Set email in a cookie for the verification page
+            setCookie(c, 'auth_email', email, {
+                httpOnly: false, // Allow JavaScript access
+                path: '/',
+                maxAge: 60 * 10, // 10 minutes
+                sameSite: 'Lax',
+            });
 
             // In a real app, you would send the OTP via email
             // For development, return it in the response
