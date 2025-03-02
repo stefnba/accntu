@@ -2,17 +2,16 @@
 
 import { GalleryVerticalEnd } from 'lucide-react';
 
+import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+
 import {
     loginEmailFormSchema,
     signupEmailFormSchema,
     SocialProvider,
 } from '@/features/auth/schemas';
 import { useAuth } from '@/hooks';
-import { useZodForm } from '@/hooks/use-form';
 import { cn } from '@/lib/utils';
 
 /*
@@ -68,12 +67,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
     // Login form
     const LoginFormComponent = () => {
-        const {
-            register,
-            handleSubmit,
-            formState: { errors },
-            submitError,
-        } = useZodForm({
+        const form = useForm({
             schema: loginEmailFormSchema.schema,
             defaultValues: loginEmailFormSchema.defaultValues,
             onSubmit: async (data) => {
@@ -90,40 +84,22 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
         return (
             <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        disabled={isLoading}
-                        id="email"
-                        type="email"
-                        placeholder="john@email.com"
-                        {...register('email')}
-                        aria-invalid={errors.email ? 'true' : 'false'}
-                    />
-                    {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-                </div>
-                <Button
-                    onClick={() => handleSubmit()}
-                    type="button"
-                    className="w-full"
-                    disabled={isLoading}
-                >
-                    {authMethod === 'email' ? `${action}...` : action}
-                </Button>
-                {submitError && <p className="text-sm text-red-500">{submitError.message}</p>}
+                <Form form={form} className="grid gap-4">
+                    <FormInput placeholder="Enter your Email" name="email" form={form} />
+                    <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
+                        {authMethod === 'email' ? `${action}...` : action}
+                    </FormSubmitButton>
+                    {form.submitError && (
+                        <p className="text-sm text-red-500">{form.submitError.message}</p>
+                    )}
+                </Form>
             </div>
         );
     };
 
     // Signup form
     const SignupFormComponent = () => {
-        const {
-            register,
-            handleSubmit,
-            formState: { errors },
-            isSubmitting,
-            submitError,
-        } = useZodForm({
+        const form = useForm({
             ...signupEmailFormSchema,
             onSubmit: async (data) => {
                 try {
@@ -139,37 +115,21 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
         return (
             <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                        id="name"
-                        type="text"
-                        placeholder="John"
-                        {...register('name')}
-                        aria-invalid={errors.name ? 'true' : 'false'}
+                <Form form={form} className="grid gap-4">
+                    <FormInput label="Name" placeholder="Enter your Name" name="name" form={form} />
+                    <FormInput
+                        label="Email"
+                        placeholder="Enter your Email"
+                        name="email"
+                        form={form}
                     />
-                    {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@email.com"
-                        {...register('email')}
-                        aria-invalid={errors.email ? 'true' : 'false'}
-                    />
-                    {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-                </div>
-                <Button
-                    onClick={() => handleSubmit()}
-                    type="button"
-                    className="w-full"
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? `${action}...` : action}
-                </Button>
-                {submitError && <p className="text-sm text-red-500">{submitError.message}</p>}
+                    <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
+                        {authMethod === 'email' ? `${action}...` : action}
+                    </FormSubmitButton>
+                    {form.submitError && (
+                        <p className="text-sm text-red-500">{form.submitError.message}</p>
+                    )}
+                </Form>
             </div>
         );
     };
@@ -211,24 +171,23 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
                     <CardDescription>{description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={(e) => e.preventDefault()}>
-                        <div className="flex flex-col gap-6">
-                            <SocialAuth action={action} />
-                            <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                                <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                                    Or continue with
-                                </span>
-                            </div>
-                            <EmailAuth action={action} />
-
-                            <div className="text-center text-sm">
-                                {toggleText}{' '}
-                                <a href={toggleHref} className="underline underline-offset-4">
-                                    {toggleLink}
-                                </a>
-                            </div>
+                    <div className="flex flex-col gap-6">
+                        <SocialAuth action={action} />
+                        <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+                            <span className="relative z-10 bg-background px-2 text-muted-foreground text-sm">
+                                {action === 'Login' && <>Or continue your Email</>}
+                                {action === 'Sign up' && <>Or continue your Name and Email</>}
+                            </span>
                         </div>
-                    </form>
+                        <EmailAuth action={action} />
+
+                        <div className="text-center text-sm">
+                            {toggleText}{' '}
+                            <a href={toggleHref} className="underline underline-offset-4">
+                                {toggleLink}
+                            </a>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
             <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">

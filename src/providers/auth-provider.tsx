@@ -16,7 +16,7 @@ type AuthContextType = {
     loginWithEmail: (email: string) => Promise<void>;
     signupWithEmail: (email: string, name: string) => Promise<void>;
     verifyOtp: (otp: string) => Promise<void>;
-    logout: () => Promise<void>;
+    logout: () => void;
     loginWithOauth: (provider: SocialProvider) => Promise<void>;
     verifyOauth: (provider: SocialProvider, code: string, state?: string | null) => Promise<void>;
     authMethod: SocialProvider | 'email' | undefined;
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data: userMe } = useAuthEndpoints.me({});
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
     const { mutate: loginWithEmailMutate } = useAuthEndpoints.requestOtp();
-    const { mutate: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp();
+    const { mutateAsync: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp();
     const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail();
     const { mutate: loginWithGithubMutate } = useAuthEndpoints.loginWithGithub();
     const { mutate: loginWithGoogleMutate } = useAuthEndpoints.loginWithGoogle();
@@ -73,8 +73,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             },
             {
                 onSuccess: (data) => {
+                    // Email is now stored in a cookie by the server
                     console.log('Login success', data);
-                    // forward to verify-otp
                     router.push('/auth/verify-otp');
                 },
                 onError: (error) => {
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     // Logout function
-    const logout = useCallback(async () => {
+    const logout = useCallback(() => {
         setIsLoading(true);
 
         logoutMutate(
@@ -120,6 +120,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             {
                 onSettled: () => {
                     setIsLoading(false);
+                },
+                onSuccess: () => {
+                    setUser(null);
+                    router.push('/login');
+                },
+                onError: (error) => {
+                    console.error('Logout failed:', error);
                 },
             }
         );
@@ -217,7 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const verifyOtp = useCallback(async (code: string) => {
         setIsLoading(true);
-        verifyEmailLoginMutate(
+        return verifyEmailLoginMutate(
             {
                 json: { code },
             },
@@ -225,13 +232,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 onSettled: () => {
                     setIsLoading(false);
                 },
-                onSuccess: (data) => {
-                    setUser(data.user);
-                    // setSession(data.session);
-                    router.push('/dashboard');
-                },
+                // onSuccess: (data) => {
+                //     console.log('Verify OTP success:', data);
+                //     setUser(data.user);
+                //     // Email cookie is cleared by the server
+                //     router.push('/dashboard');
+                // },
+                // onError: (error) => {
+                //     return Promise.reject(error);
+                // },
             }
-        );
+        )
+            .then((data) => {
+                setUser(data.user);
+                // Email cookie is cleared by the server
+                router.push('/dashboard');
+            })
+            .catch((error) => {
+                console.log('Here, Verify OTP failed:', error);
+                return Promise.reject(error);
+            });
     }, []);
 
     // Memoize the context value to prevent unnecessary re-renders

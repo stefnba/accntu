@@ -2,38 +2,53 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks';
-import { useZodForm } from '@/hooks/use-form';
+
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 import { OTPVerifyFormSchema } from '../schemas';
-type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'>;
 
-export function VerifyOtpForm({ className, ...props }: VerifyOtpFormProps) {
-    const { verifyOtp, isLoading } = useAuth();
+import { Form, FormOTPInput, FormSubmitButton, useForm } from '@/components/form';
 
-    const form = useZodForm({
+type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
+    email?: string;
+};
+
+export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps) {
+    const { verifyOtp, loginWithEmail, isLoading } = useAuth();
+
+    const form = useForm({
         ...OTPVerifyFormSchema,
         onSubmit: async (values) => {
-            await verifyOtp(values.code);
+            await verifyOtp(values.code).catch((error) => {
+                console.log('Hereddddddddddd, Verify OTP failed:', error);
+                form.setError('code', {
+                    message: 'Failed to verify OTP. Please try again.',
+                });
+                form.reset();
+            });
         },
         onError: (errors) => {
             console.error('Form validation errors:', errors);
-            form.reset();
         },
     });
 
-    const { watch, setValue, formState, handleSubmit, isSubmitting } = form;
+    const { watch, formState, handleSubmit, isSubmitting, register } = form;
     const otp = watch('code');
 
-    // Handle API errors
-    const onSubmitWithErrorHandling = async (e?: React.BaseSyntheticEvent) => {
+    const handleResendCode = async () => {
+        if (!email) {
+            toast.error('Email not found. Please return to login page.');
+            return;
+        }
+
         try {
-            await handleSubmit(e);
+            await loginWithEmail(email);
+            form.reset();
+            // Show success message
+            toast.success('Code sent successfully. Please check your email.');
         } catch (err) {
-            form.setError('code', {
-                message: 'Failed to verify OTP. Please try again.',
-            });
+            toast.error('Failed to resend code. Please try again.');
         }
     };
 
@@ -41,56 +56,42 @@ export function VerifyOtpForm({ className, ...props }: VerifyOtpFormProps) {
         <div className={cn('flex flex-col gap-6', className)} {...props}>
             <Card>
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
-                    <CardDescription>
-                        Enter the 6-digit code sent to your email to continue
-                    </CardDescription>
+                    <CardTitle className="text-2xl font-bold">Verify Your Login</CardTitle>
+                    <CardDescription>Please enter the code sent to your Email</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={onSubmitWithErrorHandling} className="flex flex-col gap-4">
+                    <Form form={form} className="flex flex-col gap-4">
+                        <FormOTPInput name="code" form={form} />
+
+                        <FormSubmitButton
+                            className="w-full"
+                            form={form}
+                            disabled={isLoading || isSubmitting || otp.length !== 6}
+                        >
+                            Submit
+                        </FormSubmitButton>
                         {formState.errors.code && (
                             <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
                                 {formState.errors.code.message}
                             </div>
                         )}
+                    </Form>
 
-                        <div className="flex justify-center my-4">
-                            <InputOTP
-                                maxLength={6}
-                                value={otp}
-                                onChange={(value) => setValue('code', value)}
-                                disabled={isLoading || isSubmitting}
-                                className="scale-110"
-                            >
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={0} />
-                                    <InputOTPSlot index={1} />
-                                    <InputOTPSlot index={2} />
-                                </InputOTPGroup>
-
-                                <InputOTPGroup>
-                                    <InputOTPSlot index={3} />
-                                    <InputOTPSlot index={4} />
-                                    <InputOTPSlot index={5} />
-                                </InputOTPGroup>
-                            </InputOTP>
-                        </div>
-
+                    <div className="mt-8 text-center text-sm text-muted-foreground">
+                        <p>Didn&apos;t receive a code?</p>
                         <Button
-                            type="submit"
-                            className="mt-4"
-                            disabled={isLoading || isSubmitting || otp.length !== 6}
+                            className="m-0 p-0"
+                            variant="link"
+                            onClick={handleResendCode}
+                            disabled={isLoading}
                         >
-                            {isLoading || isSubmitting ? 'Verifying...' : 'Verify OTP'}
+                            Resend
                         </Button>
-
-                        <div className="mt-4 text-center text-sm text-muted-foreground">
-                            <p>Didn&apos;t receive a code?</p>
-                            <a href="/auth/login" className="text-primary hover:underline">
-                                Try again
-                            </a>
-                        </div>
-                    </form>
+                        {' or '}
+                        <a href="/auth/login" className="text-primary hover:underline">
+                            return to login
+                        </a>
+                    </div>
                 </CardContent>
             </Card>
         </div>
