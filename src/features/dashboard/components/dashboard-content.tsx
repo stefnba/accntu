@@ -7,22 +7,17 @@ import { useAuth } from '@/hooks';
 export function DashboardContent() {
     const { user, logout } = useAuth();
 
-    const handleLogout = async () => {
-        await logout();
-        window.location.href = '/login';
-    };
-
     return (
         <div className="container mx-auto p-6">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold">Dashboard</h1>
-                <Button onClick={handleLogout}>Logout</Button>
+                <Button onClick={logout}>Logout</Button>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Welcome, {user?.name || 'User'}</CardTitle>
+                        <CardTitle>Welcome, {user?.firstName || 'User'}</CardTitle>
                         <CardDescription>You are logged in as {user?.email}</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -48,7 +43,7 @@ export function DashboardContent() {
                             </div>
                             <div>
                                 <span className="font-medium">Name:</span>{' '}
-                                {user?.name || 'Not provided'}
+                                {user?.firstName || 'Not provided'}
                             </div>
                         </div>
                     </CardContent>
