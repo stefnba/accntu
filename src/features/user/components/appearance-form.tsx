@@ -1,3 +1,5 @@
+'use client';
+
 import { Form, FormSelect, FormSubmitButton, useForm } from '@/components/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserEndpoints } from '@/features/user/api';
