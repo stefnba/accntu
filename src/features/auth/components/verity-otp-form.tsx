@@ -66,7 +66,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
                         <FormSubmitButton
                             className="w-full"
                             form={form}
-                            disabled={isLoading || isSubmitting || otp.length !== 6}
+                            disabled={isLoading || isSubmitting}
                         >
                             Submit
                         </FormSubmitButton>

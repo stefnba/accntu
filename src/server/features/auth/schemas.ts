@@ -17,6 +17,6 @@ export const SessionSchema = z.object({
 export type Session = z.infer<typeof SessionSchema>;
 
 export const OTPVerifySchema = z.object({
-    code: z.string().length(8),
+    code: z.coerce.string().length(8),
 });
 export type OTPVerify = z.infer<typeof OTPVerifySchema>;

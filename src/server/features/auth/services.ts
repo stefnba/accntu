@@ -284,7 +284,7 @@ export const loginWithOTP = async (
         }
 
         // Generate OTP and secure token
-        const otp = generateOTP(6);
+        const otp = generateOTP();
         const token = generateSecureToken();
         const otpHash = hashOTP(otp, email); // Use email as salt for additional security
 

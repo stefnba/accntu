@@ -1,30 +1,22 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
+import { alphabet, generateRandomString } from 'oslo/crypto';
 
-/**
- * Generate a random OTP code of specified length
- * @param length Length of the OTP code (default: 6)
- * @returns OTP code
- */
-export const generateOTP = (length: number = 6): string => {
-    const digits = '0123456789';
-    let otp = '';
-
-    for (let i = 0; i < length; i++) {
-        otp += digits[Math.floor(Math.random() * 10)];
-    }
-
-    console.log('Generating OTP', otp);
-
-    return otp;
+// Default OTP configuration
+const OTP_CONFIG = {
+    CODE_LENGTH: 8,
+    EXPIRES_IN: 10 * 60, // 10 minutes in seconds
+    MAX_ATTEMPTS: 3,
 };
 
 /**
- * Generate a secure random token
- * @param length Length of the token in bytes (default: 32)
- * @returns Secure random token as hex string
+ * Generate a random numeric OTP code
+ * @param length Length of the OTP code (default: 6)
+ * @returns OTP code
  */
-export const generateSecureToken = (length: number = 32): string => {
-    return randomBytes(length).toString('hex');
+export const generateOTP = (length: number = OTP_CONFIG.CODE_LENGTH): string => {
+    const code = generateRandomString(length, alphabet('0-9'));
+    console.log('Generating OTP', code);
+    return code;
 };
 
 /**
@@ -54,4 +46,13 @@ export const hashOTP = (otp: string, salt?: string): string => {
 export const verifyOTP = (otp: string, hash: string, salt?: string): boolean => {
     const computedHash = hashOTP(otp, salt);
     return computedHash === hash;
+};
+
+/**
+ * Generate a secure random token
+ * @param length Length of the token in bytes (default: 32)
+ * @returns Secure random token as hex string
+ */
+export const generateSecureToken = (length: number = 32): string => {
+    return generateRandomString(length * 2, alphabet('a-z', 'A-Z', '0-9'));
 };
