@@ -5,16 +5,20 @@ import { timing } from 'hono/timing';
 
 import { TUser } from '@/server/db/schemas';
 import authRoutes from '@/server/features/auth/routes';
-import { Session } from '@/server/features/auth/schemas';
 import userRoutes from '@/server/features/user/routes';
+
+// Extend Hono's Context type to include our user
+declare module 'hono' {
+    interface ContextVariableMap {
+        user: TUser;
+    }
+}
 
 const app = new Hono<{
     Variables: {
-        // Extend Hono's Context type to include our user
-        user: TUser | null;
-        session: Session | null;
+        user: TUser;
     };
-}>().basePath('/api');
+}>();
 
 // app.use('*', logger());
 app.use('*', timing());
