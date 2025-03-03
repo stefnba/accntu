@@ -1,7 +1,7 @@
 ---
 description: General project rules
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 
 
@@ -181,9 +181,6 @@ project-root/
 
 
 
-
-
-
 ## 2. State Management
 
 ### Zustand
@@ -204,9 +201,8 @@ project-root/
 
 ### Hono for backend
 - Use Hono for API routes in Next.js
-- Implement proper middleware for auth, error handling
 - Use consistent response format
-- Proper error handling and status codes
+- Proper error handling and status codes, see more below
 - use zod validator for validating request params, etc.
 
 ### Type Safety
@@ -252,10 +248,177 @@ project-root/
 - Proper form validation feedback
 
 ### Server-Side
-- Consistent error response format
-- Proper logging
-- Handle edge cases
-- Return appropriate status codes
+## Error Handling
+
+The application uses a comprehensive error handling system located in `src/server/lib/error/`. Here are the key rules for working with errors:
+
+1. **Always use the error factory**: Create errors using the `errorFactory` methods rather than throwing raw errors or creating `BaseError` instances directly.
+
+   ```typescript
+   // ❌ Don't do this
+   throw new Error('Something went wrong');
+
+   // ✅ Do this instead
+   throw errorFactory.createServiceError(
+     'Failed to process data',
+     'INTERNAL_SERVER_ERROR',
+     originalError
+   );
+   ```
+
+1a. **Understand the two error creation approaches**: The system provides two ways to create errors:
+
+   - **Direct error creation**: Use `errorFactory` methods directly for business logic errors:
+     ```typescript
+     throw errorFactory.createAuthError('User not found', 'AUTH.USER_NOT_FOUND', 404);
+     ```
+
+   - **Handler function approach**: Use specialized handler functions for external system errors:
+     ```typescript
+     // For database errors
+     handleDatabaseError(error, 'fetch user operation');
+
+     // For validation errors
+     handleZodError(zodError);
+     ```
+
+   Use handler functions for database and validation errors as they require specialized handling.
+   Use direct error creation for business logic, authentication, and other application-specific errors.
+
+2. **Use appropriate error types**: Choose the right factory method based on where the error occurs:
+   - `createApiError`: For errors in API routes/controllers
+   - `createServiceError`: For errors in business logic
+   - `createDatabaseError`: For database errors
+   - `createValidationError`: For data validation errors
+   - `createExternalError`: For errors in external service interactions
+   - `createAuthError`: For authentication errors
+
+3. **Include error codes**: Always use the predefined error codes from `ErrorCode` type. If you need a new code, add it to the `ErrorCode` type in `types.ts`.
+
+4. **Chain errors when appropriate**: When catching errors from lower layers, either:
+   - Add context to the existing error using `addToChain`
+   - Create a new error with the original as the cause
+
+   ```typescript
+   try {
+     // Operation that might throw
+   } catch (error) {
+     if (error instanceof BaseError) {
+       // Add context to existing error
+       throw error.addToChain('service', 'Additional context', 'NEW.ERROR_CODE');
+     }
+     // Create new error with original as cause
+     throw errorFactory.createServiceError(
+       'Higher level message',
+       'SERVICE.ERROR_CODE',
+       error instanceof Error ? error : undefined
+     );
+   }
+   ```
+
+5. **Set appropriate status codes**: Use HTTP status codes that match the error type:
+   - 400: Bad request (validation errors)
+   - 401: Unauthorized (authentication errors)
+   - 403: Forbidden (authorization errors)
+   - 404: Not found
+   - 409: Conflict (e.g., unique constraint violations)
+   - 429: Too many requests
+   - 500: Internal server error
+   - 502: Bad gateway (external service errors)
+
+6. **Handle errors in routes**: All routes should be wrapped with the error handler middleware:
+
+   ```typescript
+   import { errorHandler } from '../lib/error';
+
+   const app = new Hono();
+   app.use('*', errorHandler());
+   ```
+
+7. **Client-side error handling**: Use the provided utilities for handling errors on the client:
+
+   ```typescript
+   import { handleApiResponse, isSuccessResponse } from '../lib/error/client';
+
+   const result = handleApiResponse(data);
+   if (isSuccessResponse(result)) {
+     // Handle success
+   } else {
+     // Handle error
+   }
+   ```
+
+## Database Operations
+
+When working with database operations:
+
+1. **Use the withDb utility**: Always wrap database operations with the `withDb` or `withDbNullable` utility:
+
+   ```typescript
+   import { withDb } from '../lib/error/db';
+
+   // For operations that should never return null
+   const result = await withDb(
+     () => db.select().from(users).where(eq(users.id, userId)).limit(1),
+     'find user by ID'
+   );
+
+   // For operations that might legitimately return null
+   const result = await withDbNullable(
+     () => db.select().from(users).where(eq(users.id, userId)).limit(1),
+     'find user by ID'
+   );
+   ```
+
+2. **Provide operation descriptions**: Always include a descriptive operation name as the second parameter to `withDb` and `withDbNullable`.
+
+## Validation
+
+For data validation:
+
+1. **Use Zod schemas**: Define Zod schemas for all data validation.
+
+2. **Use the zValidator middleware**: Validate request data using the `zValidator` middleware:
+
+   ```typescript
+   import { zValidator } from '@hono/zod-validator';
+
+   const UserSchema = z.object({
+     name: z.string(),
+     email: z.string().email(),
+   });
+
+   app.post('/users', zValidator('json', UserSchema), async (c) => {
+     const data = c.req.valid('json');
+     // Process validated data
+   });
+   ```
+
+3. **Handle validation errors**: The global error handler will catch and format Zod validation errors automatically.
+
+## API Responses
+
+For API responses:
+
+1. **Use createSuccessResponse**: Always use the `createSuccessResponse` utility for success responses:
+
+   ```typescript
+   import { createSuccessResponse } from '../lib/error/response';
+
+   return c.json(createSuccessResponse({ user }));
+   ```
+
+2. **Check response types**: Use the `isSuccessResponse` type guard to safely access response data:
+
+   ```typescript
+   if (isSuccessResponse(response)) {
+     // Safe to access response.data
+   }
+   ```
+
+
+
+
 
 ## 8. Testing
 
@@ -314,4 +477,6 @@ project-root/
 - Implement pre-commit hooks
 
 These rules should be followed to maintain code quality, consistency, and maintainability throughout the project.
+
+
 
