@@ -1,4 +1,5 @@
 import { OptType } from '@/server/db/schemas/auth';
+import { TUser } from '@/server/db/schemas/user';
 import { createId } from '@paralleldrive/cuid2';
 import { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
@@ -71,10 +72,21 @@ export const deleteSession = async (sessionId: string): Promise<boolean> => {
 };
 
 // Cookie Management
+
+/**
+ * Set the session ID in the cookie
+ * @param c - The context object
+ * @param sessionId - The session ID to set
+ */
 export const setSessionCookie = (c: Context, sessionId: string): void => {
     setCookie(c, AUTH_COOKIE_NAME, sessionId, COOKIE_OPTIONS);
 };
 
+/**
+ * Get the session ID from the cookie
+ * @param c - The context object
+ * @returns The session ID if found, otherwise undefined
+ */
 export const getSessionFromCookie = (c: Context): string | undefined => {
     return getCookie(c, AUTH_COOKIE_NAME);
 };
@@ -84,6 +96,12 @@ export const clearSessionCookie = (c: Context): void => {
 };
 
 // User Authentication
+
+/**
+ * Authenticate a user by email
+ * @param email - The email of the user
+ * @returns The user if found, otherwise null
+ */
 export const authenticateUser = async (email: string): Promise<User | null> => {
     try {
         const userData = await queries.getUserByEmail(email);
@@ -142,7 +160,7 @@ export const registerUser = async (email: string, name: string): Promise<User | 
     }
 };
 
-export const validateSession = async (sessionId: string): Promise<User | null> => {
+export const validateSession = async (sessionId: string): Promise<TUser | null> => {
     try {
         const sessionData = await getSessionById(sessionId);
 
@@ -156,12 +174,7 @@ export const validateSession = async (sessionId: string): Promise<User | null> =
             return null;
         }
 
-        return {
-            id: userData.id,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-        };
+        return userData;
     } catch (error) {
         console.error('Session validation error:', error);
         return null;

@@ -1,6 +1,14 @@
 import { db } from '@/server/db';
-import { authAccount, OptType, session, verificationToken } from '@/server/db/schemas/auth';
-import { user } from '@/server/db/schemas/user';
+import {
+    authAccount,
+    OptType,
+    session,
+    TUser,
+    user,
+    userSettings,
+    verificationToken,
+} from '@/server/db/schemas';
+
 import { and, eq, sql } from 'drizzle-orm';
 
 // Session queries
@@ -73,8 +81,24 @@ export const getUserByEmail = async (email: string) => {
  * @param userId - The ID of the user
  * @returns The user if found, otherwise null
  */
-export const getUserById = async (userId: string) => {
-    const users = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+export const getUserById = async (userId: string): Promise<TUser | null> => {
+    const users = await db
+        .select({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            image: user.image,
+            createdAt: user.createdAt,
+            lastLoginAt: user.lastLoginAt,
+            role: user.role,
+            settings: userSettings,
+        })
+        .from(user)
+        .innerJoin(userSettings, eq(user.id, userSettings.userId))
+        .where(eq(user.id, userId))
+        .limit(1);
+
     return users.length ? users[0] : null;
 };
 

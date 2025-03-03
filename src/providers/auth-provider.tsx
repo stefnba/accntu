@@ -34,12 +34,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
-
+    const [isMounted, setIsMounted] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [authMethod, setAuthMethod] = useState<SocialProvider | 'email'>();
 
     // Auth endpoints
-    const { data: userMe } = useAuthEndpoints.me({});
+    const { data: userMe } = useAuthEndpoints.me(
+        {},
+        {
+            enabled: isMounted,
+        }
+    );
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
     const { mutate: loginWithEmailMutate } = useAuthEndpoints.requestOtp();
     const { mutateAsync: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp();
@@ -56,6 +61,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (userMe) {
             setUser(userMe);
         }
+
+        setIsMounted(true);
 
         checkAuthStatus();
     }, []);

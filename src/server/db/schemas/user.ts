@@ -65,6 +65,11 @@ export const UpdateUserSchema = createUpdateSchema(user)
     .extend({
         settings: UpdateUserSettingsSchema.optional(),
     });
+
+// Types
 export type TUserUpdateParams = z.infer<typeof UpdateUserSchema>;
 export type TUserCreateParams = z.infer<typeof InsertUserSchema>;
-export type TUser = z.infer<typeof SelectUserSchema>;
+export type TUser = z.infer<typeof SelectUserSchema> & {
+    settings: z.infer<typeof SelectUserSettingsSchema>;
+};
+export type TUserSettings = z.infer<typeof SelectUserSettingsSchema>;
