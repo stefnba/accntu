@@ -25,7 +25,10 @@ export function createMutation<
                 const response = await endpoint(variables);
 
                 if (!response.ok) {
-                    return options?.onError?.(await response.json(), variables, undefined);
+                    const error = await response.json();
+                    console.log('Mutation error:', error);
+                    // options?.onError?.(error, variables, undefined);
+                    return Promise.reject(error);
                 }
                 queryClient.invalidateQueries({ queryKey: queryKey });
                 return response.json();
