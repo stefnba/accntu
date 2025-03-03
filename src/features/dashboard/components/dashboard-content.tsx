@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks';
+import Link from 'next/link';
 
 export function DashboardContent() {
     const { user, logout } = useAuth();
@@ -55,7 +56,9 @@ export function DashboardContent() {
                         <CardDescription>Things you can do</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button className="w-full">Edit Profile</Button>
+                        <Link href={'/user/account'} className="w-full">
+                            Edit Profile
+                        </Link>
                         <Button variant="outline" className="w-full">
                             View Settings
                         </Button>
