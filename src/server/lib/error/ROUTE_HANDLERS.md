@@ -6,10 +6,11 @@ This document explains how to use the route handler utilities in the error handl
 
 The route handler utilities provide a consistent way to handle errors in your API routes while maintaining type safety for Hono RPC clients. They ensure that all responses follow a standardized format, making client-side error handling more predictable.
 
-There are two main route handler utilities:
+There are three main route handler utilities:
 
 1. `withRoute`: For standard API routes (typically GET requests)
-2. `withMutationRoute`: For mutation operations (POST, PUT, PATCH, DELETE)
+2. `withQueryRoute`: For query operations that return data directly
+3. `withMutationRoute`: For mutation operations (POST, PUT, PATCH, DELETE)
 
 ## withRoute
 
@@ -62,9 +63,26 @@ For errors, the response will follow the standard error format:
 }
 ```
 
+## withQueryRoute
+
+The `withQueryRoute` function is similar to `withRoute` but always returns a 200 status code for successful operations. It's designed specifically for query operations.
+
+### Usage
+
+```typescript
+import { withQueryRoute } from '@/server/lib/error/route-handler';
+
+app.get('/users', async (c) => {
+  return withQueryRoute(c, async () => {
+    const users = await fetchUsers();
+    return users; // Returns data directly with 200 status
+  });
+});
+```
+
 ## withMutationRoute
 
-The `withMutationRoute` function is designed for mutation operations (POST, PUT, PATCH, DELETE). It wraps successful responses in a standardized format with a `success` flag and a `data` property.
+The `withMutationRoute` function is designed for mutation operations (POST, PUT, PATCH, DELETE). It wraps successful responses in a standardized format with a `success` flag and a `data` property, and returns a 201 status code.
 
 ### Usage
 
@@ -106,10 +124,24 @@ For errors, the response will follow the same standard error format as `withRout
 
 ## Error Handling
 
-Both functions handle errors consistently:
+All three functions handle errors consistently by re-throwing them to be caught by the global error handler. This ensures that all errors are processed in a standardized way.
 
-1. `BaseError` instances are transformed into standardized API responses with appropriate status codes
-2. Unknown errors are wrapped in a generic error response with a 500 status code
+### Hono RPC Type Safety
+
+The route handlers use a special technique in the `handleRouteError` function to maintain type safety for Hono RPC clients:
+
+```typescript
+// IMPORTANT: This conditional block is required for Hono RPC type safety
+// It's never executed at runtime, but provides necessary type information
+// for the RPC client to properly infer error response types
+if (false as boolean) {
+    return c.json(error.toResponse(), errorStatusCode);
+}
+```
+
+These conditional blocks are never executed at runtime (the condition is always false), but they provide necessary type information for the Hono RPC client to properly infer error response types. Without these blocks, the RPC client would not be able to correctly type the error responses, leading to type errors or incorrect type inference.
+
+This technique is a form of "type hinting" that helps TypeScript understand the possible return types without actually executing the code. It's a common pattern in TypeScript libraries that need to maintain type safety across complex control flows.
 
 ### Throwing Errors
 
@@ -129,21 +161,22 @@ if (!user) {
 
 ## Type Safety
 
-Both functions maintain type safety for Hono RPC clients, ensuring that the response types are properly inferred.
+All functions maintain type safety for Hono RPC clients, ensuring that the response types are properly inferred.
 
 ## Best Practices
 
-1. Use `withRoute` for GET requests and other operations that return data directly
-2. Use `withMutationRoute` for POST, PUT, PATCH, and DELETE operations
-3. Use the `errorFactory` to create and throw errors with appropriate codes and status codes
-4. Handle validation using Zod schemas and the `zValidator` middleware
-5. Keep your handler functions focused on business logic, letting the route handlers take care of error handling
+1. Use `withRoute` for general API routes
+2. Use `withQueryRoute` for GET requests that should always return 200
+3. Use `withMutationRoute` for POST, PUT, PATCH, and DELETE operations
+4. Use the `errorFactory` to create and throw errors with appropriate codes and status codes
+5. Handle validation using Zod schemas and the `zValidator` middleware
+6. Keep your handler functions focused on business logic, letting the route handlers take care of error handling
 
 ## Complete Example
 
 ```typescript
 import { Hono } from 'hono';
-import { withMutationRoute, withRoute } from '@/server/lib/error/route-handler';
+import { withMutationRoute, withQueryRoute } from '@/server/lib/error/route-handler';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { errorFactory } from '@/server/lib/error';
@@ -157,9 +190,9 @@ const CreateUserSchema = z.object({
 // Create a new Hono app for user routes
 export const userRoutes = new Hono();
 
-// GET route using withRoute
+// GET route using withQueryRoute
 userRoutes.get('/', async (c) => {
-  return withRoute(c, async () => {
+  return withQueryRoute(c, async () => {
     const users = await getUsers();
     return users; // Returns data directly
   });

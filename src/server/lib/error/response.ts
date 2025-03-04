@@ -44,5 +44,5 @@ export function createMutationResponse<
 export function isMutationResponse<T>(
     response: APIResponse<T>
 ): response is APIMutationResponse<T> {
-    return response.success === true && response.data !== undefined;
+    return response.success === true;
 }

@@ -12,6 +12,7 @@ import { errorFactory } from './factory';
  * @returns A BaseError with validation error details
  */
 export function handleZodError(error: z.ZodError) {
+    // Extract field errors into a structured format
     const fieldErrors = error.errors.reduce(
         (acc, err) => {
             const path = err.path.join('.');
@@ -21,6 +22,7 @@ export function handleZodError(error: z.ZodError) {
         {} as Record<string, string>
     );
 
+    // Create a validation error with the field errors as details
     return errorFactory.createValidationError({
         message: 'Validation error',
         code: 'VALIDATION.INVALID_INPUT',
@@ -28,6 +30,8 @@ export function handleZodError(error: z.ZodError) {
         statusCode: 400,
         details: {
             fields: fieldErrors,
+            // Include the original error format for debugging
+            original: error.format(),
         },
     });
 }

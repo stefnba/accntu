@@ -45,10 +45,10 @@ Defines TypeScript types for the error system:
 - `ErrorChainItem`: Structure for an error in the error chain
 - `ErrorOptions`: Options for creating a BaseError
 - `APIErrorResponse`: Standard structure for API error responses
-- `APISuccessResponse`: Standard structure for API success responses
+- `APIMutationResponse`: Standard structure for API success responses
 - `APIResponse`: Union type for all possible API responses
 
-### 4. Error Handler (`handler.ts`)
+### 4. Global Error Handler (`global-handler.ts`)
 
 Provides a global error handler for Hono applications:
 
@@ -56,29 +56,44 @@ Provides a global error handler for Hono applications:
 - Transforms different error types into standardized API responses
 - Sets appropriate HTTP status codes
 - Logs errors with detailed information
-- Works with Hono's `onError` hook for reliable error handling
 
-### 5. Validation Error Handling (`validation.ts`)
+### 5. Route Handlers (`route-handler.ts`)
+
+Provides utilities for handling errors in route handlers:
+
+- `withRoute`: For standard API routes (typically GET requests)
+- `withQueryRoute`: For query operations that return data directly
+- `withMutationRoute`: For mutation operations (POST, PUT, PATCH, DELETE)
+
+#### Type Safety for Hono RPC
+
+The route handlers include special conditional blocks in the `handleRouteError` function that are critical for Hono RPC type safety:
+
+```typescript
+// IMPORTANT: This conditional block is required for Hono RPC type safety
+// It's never executed at runtime, but provides necessary type information
+// for the RPC client to properly infer error response types
+if (false as boolean) {
+    return c.json(error.toResponse(), errorStatusCode);
+}
+```
+
+These blocks are never executed at runtime (the condition is always false), but they provide necessary type information for the Hono RPC client to properly infer error response types. Without these blocks, the RPC client would not be able to correctly type the error responses, leading to type errors or incorrect type inference.
+
+### 6. Validation Error Handling (`validation.ts`)
 
 Specialized handling for validation errors:
 
 - Transforms Zod validation errors into structured validation errors
 - Provides utilities for handling validation errors
 
-### 6. Database Error Handling (`db.ts`)
+### 7. Database Error Handling (`db.ts`)
 
 Utilities for handling database errors:
 
 - Transforms database errors into structured errors
 - Provides higher-order functions for executing database queries with error handling
-
-### 7. Client-side Error Handling (`client.ts`)
-
-Utilities for handling errors on the client side:
-
-- Processes API responses to extract error information
-- Provides type guards for distinguishing between success and error responses
-- Includes hooks and utilities for React components
+- Includes transaction support
 
 ### 8. Response Utilities (`response.ts`)
 
@@ -122,7 +137,6 @@ This approach is best for:
 - Errors from external systems (like databases or validation libraries)
 - Cases where errors need translation from external formats to application formats
 - Situations where error patterns can be detected and mapped consistently
-- Complex error handling that benefits from encapsulation
 
 The codebase uses specialized handlers for database errors (`handleDatabaseError`) and validation errors (`handleZodError`) because these come from external systems and require specialized knowledge to interpret and transform.
 
@@ -182,7 +196,7 @@ if (!user) {
 
 ```typescript
 import { Hono } from 'hono';
-import { handleError } from './lib/error/handler';
+import { handleError } from './lib/error/global-handler';
 
 const app = new Hono();
 
@@ -197,72 +211,27 @@ app.get('/users/:id', async (c) => {
 export default app;
 ```
 
-### Handling Errors on the Client
+### Using Route Handlers
 
 ```typescript
-import { handleApiResponse, isSuccessResponse, useErrorHandler } from './lib/error/client';
+import { withRoute, withMutationRoute } from './lib/error/route-handler';
 
-// Method 1: Using handleApiResponse utility
-const fetchUser = async (id: string) => {
-  const response = await fetch(`/api/users/${id}`);
-  const data = await response.json();
-
-  return handleApiResponse(
-    data,
-    (userData) => {
-      // Handle success case
-      return userData;
-    },
-    {
-      'USER.NOT_FOUND': () => {
-        // Handle specific error
-        console.error('User not found');
-        return null;
-      },
-      default: (err) => {
-        // Handle any other error
-        console.error('Error fetching user:', err.error.message);
-        return null;
-      }
-    }
-  );
-};
-
-// Method 2: Using React Query with useErrorHandler
-function UserProfile({ userId }: { userId: string }) {
-  const { toast } = useToast();
-
-  // Create a reusable error handler
-  const handleError = useErrorHandler((err) => {
-    toast({
-      title: 'Error',
-      description: err.error.message,
-      variant: 'destructive',
-    });
+// For GET requests
+app.get('/users', async (c) => {
+  return withRoute(c, async () => {
+    const users = await fetchUsers();
+    return users;
   });
+});
 
-  // Use with React Query
-  const userQuery = api.user.get({
-    onError: (error) => handleError(error, {
-      'USER.NOT_FOUND': () => {
-        // Handle specific error
-        navigate('/users');
-      }
-    })
+// For POST requests
+app.post('/users', async (c) => {
+  return withMutationRoute(c, async () => {
+    const data = await c.req.json();
+    const user = await createUser(data);
+    return user;
   });
-
-  // Use with mutation
-  const updateUserMutation = api.user.update({
-    onError: (error) => handleError(error, {
-      'VALIDATION.INVALID_INPUT': (err) => {
-        // Handle validation errors
-        setFormErrors(err.error.details);
-      }
-    })
-  });
-
-  // Rest of component...
-}
+});
 ```
 
 ## Best Practices
@@ -271,5 +240,7 @@ function UserProfile({ userId }: { userId: string }) {
 2. **Include Meaningful Messages**: Error messages should be clear and actionable
 3. **Chain Errors When Appropriate**: Add context as errors propagate through layers
 4. **Set Appropriate Status Codes**: Use HTTP status codes that match the error type
-5. **Handle Errors on the Client**: Use the client utilities to handle errors consistently
-6. **Monitor Error Metrics**: Use the error metrics for monitoring and alerting
+5. **Use Route Handlers**: Leverage the route handler utilities for consistent error handling
+6. **Handle Database Errors**: Use the database utilities to handle database errors consistently
+7. **Validate Input**: Use Zod for validation and the validation error handler for consistent error responses
+8. **Monitor Error Metrics**: Use the error metrics for monitoring and alerting

@@ -1,21 +1,17 @@
 /**
  * Error Handling System
  *
- * This module provides a comprehensive error handling system for the application.
- * It includes:
+ * A comprehensive error handling system for the application that provides:
  *
- * 1. BaseError - A standardized error class that extends the native Error
- * 2. ErrorFactory - A factory for creating different types of errors
- * 3. Error Handler - Global error handler for Hono applications
- * 4. Validation - Utilities for handling validation errors
- * 5. Client-side utilities - Functions for handling errors on the client
+ * - Standardized error structures with BaseError
+ * - Factory methods for creating different types of errors
+ * - Global error handling for Hono applications
+ * - Route handlers with built-in error handling
+ * - Specialized handling for validation and database errors
+ * - Consistent API response formats
  *
- * The error handling system is designed to:
- * - Provide consistent error structures throughout the application
- * - Enable detailed error tracking and logging
- * - Support error propagation across application layers
- * - Transform errors into standardized API responses
- * - Facilitate client-side error handling
+ * The system ensures consistent error handling throughout the application,
+ * with detailed error tracking, logging, and standardized API responses.
  *
  * @module error
  */

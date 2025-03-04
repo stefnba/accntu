@@ -75,7 +75,9 @@ function handleRouteError(
     if (error instanceof BaseError) {
         const errorStatusCode = ensureErrorStatusCode(error.statusCode || 500);
 
-        // For RPC type inference only
+        // IMPORTANT: This conditional block is required for Hono RPC type safety
+        // It's never executed at runtime, but provides necessary type information
+        // for the RPC client to properly infer error response types
         if (false as boolean) {
             return c.json(error.toResponse(), errorStatusCode);
         }
@@ -86,7 +88,9 @@ function handleRouteError(
 
     // For unknown errors, create a generic error response
 
-    // For RPC type inference only
+    // IMPORTANT: This conditional block is required for Hono RPC type safety
+    // It's never executed at runtime, but provides necessary type information
+    // for the RPC client to properly infer error response types
     if (false as boolean) {
         return c.json(
             errorFactory
@@ -106,17 +110,23 @@ function handleRouteError(
 
 /**
  * Wraps a route handler with error handling
- * Returns a typed response with the appropriate error status code
- * Handles BaseError instances and unknown errors
  *
- * This function provides local error handling for routes while maintaining type safety for Hono RPC clients.
- * It ensures that errors are properly formatted as JSON responses with appropriate status codes.
+ * Returns a typed response with the appropriate status code.
+ * Maintains type safety for Hono RPC clients.
  *
- * Note: This function complements the global error handler in handler.ts, which catches errors
- * that bubble up through the middleware stack. Use this function when you need:
- * 1. Type-safe error responses for RPC clients
- * 2. Custom error handling logic at the route level
- * 3. Consistent error response format across your API
+ * @param c - The Hono context
+ * @param handler - The async handler function that performs the operation
+ * @param statusCode - Optional success status code (defaults to 200)
+ * @returns A typed response with the result or an error response
+ * @example
+ * ```
+ * app.get('/users', async (c) => {
+ *   return withRoute(c, async () => {
+ *     const users = await getUsers();
+ *     return users;
+ *   });
+ * });
+ * ```
  */
 export async function withRoute<
     T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
@@ -138,15 +148,22 @@ export async function withRoute<
 
 /**
  * Wraps a query route handler with standardized response formatting
- * Returns a typed response with the result for successful operations
- * Handles errors consistently with the same error format as withRoute
- * Always returns 200 status code for
  *
- * This function provides local error handling for routes while maintaining type safety for Hono RPC clients.
+ * Returns a typed response with the result for successful operations.
+ * Always returns 200 status code for successful operations.
  *
  * @param c - The Hono context
  * @param handler - The async handler function that performs the query
- * @returns A typed response with the result for successful operations or an error response
+ * @returns A typed response with the result or an error response
+ * @example
+ * ```
+ * app.get('/users', async (c) => {
+ *   return withQueryRoute(c, async () => {
+ *     const users = await getUsers();
+ *     return users;
+ *   });
+ * });
+ * ```
  */
 export async function withQueryRoute<
     T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
@@ -166,16 +183,12 @@ export async function withQueryRoute<
 
 /**
  * Wraps a mutation route handler with standardized response formatting
- * Returns a typed response with { success: true, data } for successful operations
- * Handles errors consistently with the same error format as withRoute
- * Return 201 status code for created resources
  *
- * This function is specifically designed for mutation operations (POST, PUT, PATCH, DELETE)
- * where you want to return a standardized success response with the created/updated resource.
+ * Returns a typed response with { success: true, data } for successful operations.
+ * Returns 201 status code for created resources.
  *
  * @param c - The Hono context
  * @param handler - The async handler function that performs the mutation
- * @param statusCode - Optional success status code (defaults to 201 for created)
  * @returns A typed response with standardized success or error format
  * @example
  * ```

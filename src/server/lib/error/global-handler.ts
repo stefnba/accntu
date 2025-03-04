@@ -9,16 +9,12 @@ import { handleZodError } from './validation';
  * Global error handler for Hono applications
  *
  * This function handles all errors thrown during request processing and transforms them
- * into structured API responses with appropriate status codes. It handles different types
- * of errors:
+ * into structured API responses with appropriate status codes. It handles:
  *
- * 1. BaseError - Our custom error type with built-in status codes and error details
- * 2. ZodError - Validation errors from Zod schema validation
- * 3. HTTPException - Errors thrown by Hono itself
- * 4. Unknown errors - Any other errors that might occur
- *
- * Each error type is transformed into a consistent API response format defined in
- * APIErrorResponse, ensuring clients receive standardized error information.
+ * - BaseError: Our custom error type with built-in status codes and error details
+ * - ZodError: Validation errors from Zod schema validation
+ * - HTTPException: Errors thrown by Hono itself
+ * - Unknown errors: Any other errors that might occur
  *
  * @param error - The error that was thrown
  * @param c - The Hono context
@@ -43,7 +39,7 @@ export const handleError = (error: Error, c: Context) => {
     // Handle Hono HTTP exceptions
     if (error instanceof HTTPException) {
         const baseError = errorFactory.createError({
-            message: error.message,
+            message: error.message || 'HTTP error occurred',
             code: 'INTERNAL_SERVER_ERROR',
             statusCode: error.status,
             layer: 'route',
@@ -51,6 +47,9 @@ export const handleError = (error: Error, c: Context) => {
         baseError.logError();
         return c.json(baseError.toResponse(), error.status);
     }
+
+    // Log the original error for debugging
+    console.error('Unhandled error in Hono application:', error);
 
     // Unknown errors
     const status = 500;

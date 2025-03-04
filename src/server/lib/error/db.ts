@@ -131,16 +131,37 @@ export async function withDbNullable<T>(
     }
 }
 
-export async function withTransaction<T>(operation: (trx: any) => Promise<T>): Promise<T> {
-    try {
-        // Replace with your actual transaction implementation
-        // Example for a generic DB client:
-        // return await db.transaction(async (trx) => {
-        //   return await operation(trx);
-        // });
+/**
+ * Executes a database operation within a transaction
+ *
+ * This function wraps a database operation in a transaction, ensuring that
+ * all operations either complete successfully or are rolled back. It also
+ * provides standardized error handling for transaction failures.
+ *
+ * @param operation - Function that performs database operations within the transaction
+ * @returns The result of the operation function
+ * @example
+ * ```
+ * const result = await withTransaction(async (trx) => {
+ *   const user = await trx.insert(users).values({ name: 'John' }).returning();
+ *   await trx.insert(profiles).values({ userId: user.id });
+ *   return user;
+ * });
+ * ```
+ */
+export async function withTransaction<T, TrxType = any>(
+    operation: (trx: TrxType) => Promise<T>
+): Promise<T> {
+    // This is a placeholder implementation
+    // In a real application, you would use your database client's transaction API
+    // For example, with Drizzle:
+    // return await db.transaction(async (trx) => {
+    //   return await operation(trx);
+    // });
 
+    try {
         // Placeholder implementation
-        return await operation({});
+        return await operation({} as TrxType);
     } catch (error) {
         if (error instanceof Error) {
             throw errorFactory.createDatabaseError({
