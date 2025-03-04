@@ -16,7 +16,7 @@ There are three main route handler utilities:
 
 The `withRoute` function is designed for standard API routes that return data directly. It handles errors consistently and returns the data as-is for successful operations.
 
-### Usage
+### Usage with withRoute
 
 ```typescript
 import { withRoute } from '@/server/lib/error/route-handler';
@@ -30,7 +30,7 @@ app.get('/users', async (c) => {
 });
 ```
 
-### Response Format
+### Response Format for withRoute
 
 For successful operations, the response will be the data returned by your handler function:
 
@@ -67,7 +67,7 @@ For errors, the response will follow the standard error format:
 
 The `withQueryRoute` function is similar to `withRoute` but always returns a 200 status code for successful operations. It's designed specifically for query operations.
 
-### Usage
+### Usage with withQueryRoute
 
 ```typescript
 import { withQueryRoute } from '@/server/lib/error/route-handler';
@@ -84,7 +84,7 @@ app.get('/users', async (c) => {
 
 The `withMutationRoute` function is designed for mutation operations (POST, PUT, PATCH, DELETE). It wraps successful responses in a standardized format with a `success` flag and a `data` property, and returns a 201 status code.
 
-### Usage
+### Usage with withMutationRoute
 
 ```typescript
 import { withMutationRoute } from '@/server/lib/error/route-handler';
@@ -104,7 +104,7 @@ app.post('/users', zValidator('json', CreateUserSchema), async (c) => {
 });
 ```
 
-### Response Format
+### Response Format for withMutationRoute
 
 For successful operations, the response will be wrapped in a standardized format:
 
