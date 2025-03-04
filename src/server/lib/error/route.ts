@@ -1,3 +1,11 @@
+/**
+ * Route Error Handling
+ *
+ * This module provides utilities for handling errors in route handlers and
+ * transforming them into structured API responses with appropriate status codes.
+ * It includes special handling for Hono RPC type safety.
+ */
+
 import { Context, TypedResponse } from 'hono';
 import {
     ClientErrorStatusCode,
@@ -30,6 +38,11 @@ export function ensureErrorStatusCode(statusCode: ContentfulStatusCode): ErrorRe
 
 /**
  * Handles errors consistently across all route handlers
+ *
+ * This function processes errors and transforms them into standardized API responses.
+ * It includes special conditional blocks that are critical for Hono RPC type safety.
+ * These blocks are never executed at runtime but provide necessary type information
+ * for the RPC client to properly infer error response types.
  *
  * @param c - The Hono context
  * @param error - The error to handle

@@ -1,3 +1,10 @@
+/**
+ * Database Error Handling
+ *
+ * This module provides utilities for handling database errors and transforming
+ * them into structured errors with appropriate error codes and messages.
+ */
+
 import { errorFactory } from './factory';
 
 /**

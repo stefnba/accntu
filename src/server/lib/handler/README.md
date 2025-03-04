@@ -12,7 +12,6 @@ The handler utilities provide a set of higher-order functions that wrap database
 
 Utilities for handling database operations:
 
-- `handleDatabaseError`: Transforms database errors into structured errors
 - `withDbQuery`: Executes a database query with error handling
 - `withDbQueryNullable`: Executes a database query that may return null
 - `withDbQueryValidated`: Executes a database query with input and output validation
@@ -39,8 +38,10 @@ A central export point for all handler utilities:
 ### Database Handlers
 
 ```typescript
+// Direct imports
 import { withDbQuery, withDbQueryValidated } from '@/server/lib/handler/db';
-// Or use the central handler index
+
+// Or use the central handler index with namespaces
 import { db } from '@/server/lib/handler';
 
 // Simple database query
@@ -49,7 +50,7 @@ const users = await withDbQuery(
   'fetch users'
 );
 
-// Database query with validation using the central index
+// Database query with validation
 const user = await db.withDbQueryValidated({
   inputSchema: userSchema,
   outputSchema: userSchema,
@@ -62,8 +63,10 @@ const user = await db.withDbQueryValidated({
 ### Route Handlers
 
 ```typescript
+// Direct imports
 import { withRoute, withMutationRoute } from '@/server/lib/handler/route';
-// Or use the central handler index
+
+// Or use the central handler index with namespaces
 import { route } from '@/server/lib/handler';
 
 // For GET requests
@@ -74,7 +77,7 @@ app.get('/users', async (c) => {
   });
 });
 
-// For POST requests using the central index
+// For POST requests using the namespace
 app.post('/users', async (c) => {
   return route.withMutationRoute(c, async () => {
     const data = await c.req.json();
@@ -84,17 +87,13 @@ app.post('/users', async (c) => {
 });
 ```
 
+## Error Handling
+
+These utilities integrate with the error handling system in `@/server/lib/error`. They use:
+
+- `handleDatabaseError` from `@/server/lib/error/db` for database errors
+- `handleRouteError` from `@/server/lib/error/route` for route errors
+
 ## Type Safety for Hono RPC
 
-The route handlers include special conditional blocks in the `handleRouteError` function that are critical for Hono RPC type safety:
-
-```typescript
-// IMPORTANT: This conditional block is required for Hono RPC type safety
-// It's never executed at runtime, but provides necessary type information
-// for the RPC client to properly infer error response types
-if (false as boolean) {
-    return c.json(error.toResponse(), errorStatusCode);
-}
-```
-
-These blocks are never executed at runtime (the condition is always false), but they provide necessary type information for the Hono RPC client to properly infer error response types. Without these blocks, the RPC client would not be able to correctly type the error responses, leading to type errors or incorrect type inference.
+The route handlers maintain type safety for Hono RPC clients by using special conditional blocks in the error handling logic. These blocks are never executed at runtime but provide necessary type information for the RPC client to properly infer error response types.

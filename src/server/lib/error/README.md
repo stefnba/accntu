@@ -13,9 +13,26 @@ The error handling system is designed to provide consistent, type-safe error han
 5. **Comprehensive Logging**: Errors are logged with detailed information for debugging
 6. **Error Metrics**: Error occurrences are tracked for monitoring purposes
 
+## Directory Structure
+
+The error handling system is organized into two main directories:
+
+1. **`src/server/lib/error/`**: Contains core error classes, types, and factory
+   - Core error classes and types
+   - Error factory for creating different types of errors
+   - Error handling functions for specific error types
+   - Global error handler for Hono applications
+
+2. **`src/server/lib/handler/`**: Contains specialized handlers for database and route operations
+   - Higher-order functions for database operations with error handling
+   - Higher-order functions for route handlers with error handling
+   - Centralized exports for all handler utilities
+
+This separation allows for better organization and clearer separation of concerns.
+
 ## Core Components
 
-### 1. BaseError Class (`base.ts`)
+### 1. BaseError Class (`error/base.ts`)
 
 The foundation of the error system is the `BaseError` class, which extends the native JavaScript `Error` class with additional functionality:
 
@@ -25,7 +42,7 @@ The foundation of the error system is the `BaseError` class, which extends the n
 - **Error Logging**: Provides detailed error logging
 - **Error Metrics**: Tracks error occurrences for monitoring
 
-### 2. Error Factory (`factory.ts`)
+### 2. Error Factory (`error/factory.ts`)
 
 The `ErrorFactory` provides methods for creating different types of errors with consistent structure:
 
@@ -36,7 +53,7 @@ The `ErrorFactory` provides methods for creating different types of errors with 
 - `createExternalError`: For errors in external service interactions
 - `createAuthError`: For authentication-related errors
 
-### 3. Error Types (`types.ts`)
+### 3. Error Types (`error/types.ts`)
 
 Defines TypeScript types for the error system:
 
@@ -48,7 +65,7 @@ Defines TypeScript types for the error system:
 - `APIMutationResponse`: Standard structure for API success responses
 - `APIResponse`: Union type for all possible API responses
 
-### 4. Global Error Handler (`global-handler.ts`)
+### 4. Global Error Handler (`error/handler.ts`)
 
 Provides a global error handler for Hono applications:
 
@@ -57,50 +74,34 @@ Provides a global error handler for Hono applications:
 - Sets appropriate HTTP status codes
 - Logs errors with detailed information
 
-### 5. Route Handlers (`route-handler.ts`)
+### 5. Error Handling Functions
 
-Provides utilities for handling errors in route handlers:
+#### Database Error Handling (`error/db.ts`)
 
-- `withRoute`: For standard API routes (typically GET requests)
-- `withQueryRoute`: For query operations that return data directly
-- `withMutationRoute`: For mutation operations (POST, PUT, PATCH, DELETE)
+- `handleDatabaseError`: Transforms database errors into structured errors with appropriate codes
 
-#### Type Safety for Hono RPC
+#### Route Error Handling (`error/route.ts`)
 
-The route handlers include special conditional blocks in the `handleRouteError` function that are critical for Hono RPC type safety:
+- `handleRouteError`: Handles errors in route handlers with special handling for Hono RPC type safety
+- `ensureErrorStatusCode`: Type narrowing function for error status codes
 
-```typescript
-// IMPORTANT: This conditional block is required for Hono RPC type safety
-// It's never executed at runtime, but provides necessary type information
-// for the RPC client to properly infer error response types
-if (false as boolean) {
-    return c.json(error.toResponse(), errorStatusCode);
-}
-```
-
-These blocks are never executed at runtime (the condition is always false), but they provide necessary type information for the Hono RPC client to properly infer error response types. Without these blocks, the RPC client would not be able to correctly type the error responses, leading to type errors or incorrect type inference.
-
-### 6. Validation Error Handling (`validation.ts`)
+### 6. Validation Error Handling (`error/validation.ts`)
 
 Specialized handling for validation errors:
 
 - Transforms Zod validation errors into structured validation errors
 - Provides utilities for handling validation errors
 
-### 7. Database Error Handling (`db.ts`)
-
-Utilities for handling database errors:
-
-- Transforms database errors into structured errors
-- Provides higher-order functions for executing database queries with error handling
-- Includes transaction support
-
-### 8. Response Utilities (`response.ts`)
+### 7. Response Utilities (`error/response.ts`)
 
 Utilities for creating standardized API responses:
 
 - Creates success responses with consistent structure
 - Provides type guards for response types
+
+## Handler Utilities
+
+The handler utilities in `src/server/lib/handler/` provide higher-order functions that wrap database operations and route handlers with standardized error handling. See the [Handler README](../handler/README.md) for more details.
 
 ## Error Creation Approaches
 
@@ -196,7 +197,7 @@ if (!user) {
 
 ```typescript
 import { Hono } from 'hono';
-import { handleError } from './lib/error/global-handler';
+import { handleError } from '@/server/lib/error/handler';
 
 const app = new Hono();
 
@@ -214,9 +215,9 @@ export default app;
 ### Using Route Handlers
 
 ```typescript
-// Import from the new handler directory
+// Import from the handler directory
 import { withRoute, withMutationRoute } from '@/server/lib/handler/route';
-// Or use the central handler index
+// Or use the central handler index with namespaces
 import { route } from '@/server/lib/handler';
 
 // For GET requests
@@ -227,7 +228,7 @@ app.get('/users', async (c) => {
   });
 });
 
-// For POST requests using the central index
+// For POST requests using the namespace
 app.post('/users', async (c) => {
   return route.withMutationRoute(c, async () => {
     const data = await c.req.json();
@@ -237,13 +238,37 @@ app.post('/users', async (c) => {
 });
 ```
 
+### Using Database Handlers
+
+```typescript
+// Import from the handler directory
+import { withDbQuery, withDbQueryValidated } from '@/server/lib/handler/db';
+// Or use the central handler index with namespaces
+import { db } from '@/server/lib/handler';
+
+// Simple database query
+const users = await withDbQuery(
+  () => database.select().from(users).limit(10),
+  'fetch users'
+);
+
+// Database query with validation using the namespace
+const user = await db.withDbQueryValidated({
+  inputSchema: userSchema,
+  outputSchema: userSchema,
+  inputData: userData,
+  queryFn: (validData) => database.insert(users).values(validData).returning(),
+  operation: 'create user'
+});
+```
+
 ## Best Practices
 
 1. **Use Appropriate Error Types**: Choose the right factory method for the error context
 2. **Include Meaningful Messages**: Error messages should be clear and actionable
 3. **Chain Errors When Appropriate**: Add context as errors propagate through layers
 4. **Set Appropriate Status Codes**: Use HTTP status codes that match the error type
-5. **Use Route Handlers**: Leverage the route handler utilities for consistent error handling
+5. **Use Handler Utilities**: Leverage the handler utilities for consistent error handling
 6. **Handle Database Errors**: Use the database utilities to handle database errors consistently
 7. **Validate Input**: Use Zod for validation and the validation error handler for consistent error responses
 8. **Monitor Error Metrics**: Use the error metrics for monitoring and alerting
