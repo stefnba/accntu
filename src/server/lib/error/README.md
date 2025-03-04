@@ -214,7 +214,10 @@ export default app;
 ### Using Route Handlers
 
 ```typescript
-import { withRoute, withMutationRoute } from './lib/error/route-handler';
+// Import from the new handler directory
+import { withRoute, withMutationRoute } from '@/server/lib/handler/route';
+// Or use the central handler index
+import { route } from '@/server/lib/handler';
 
 // For GET requests
 app.get('/users', async (c) => {
@@ -224,9 +227,9 @@ app.get('/users', async (c) => {
   });
 });
 
-// For POST requests
+// For POST requests using the central index
 app.post('/users', async (c) => {
-  return withMutationRoute(c, async () => {
+  return route.withMutationRoute(c, async () => {
     const data = await c.req.json();
     const user = await createUser(data);
     return user;
