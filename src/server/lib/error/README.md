@@ -48,21 +48,22 @@ Defines TypeScript types for the error system:
 - `APISuccessResponse`: Standard structure for API success responses
 - `APIResponse`: Union type for all possible API responses
 
-### 4. Error Middleware (`middleware.ts`)
+### 4. Error Handler (`handler.ts`)
 
-Provides Hono middleware for handling errors in API routes:
+Provides a global error handler for Hono applications:
 
 - Catches all errors thrown during request processing
 - Transforms different error types into standardized API responses
 - Sets appropriate HTTP status codes
 - Logs errors with detailed information
+- Works with Hono's `onError` hook for reliable error handling
 
 ### 5. Validation Error Handling (`validation.ts`)
 
 Specialized handling for validation errors:
 
 - Transforms Zod validation errors into structured validation errors
-- Provides middleware for catching and handling Zod validation errors
+- Provides utilities for handling validation errors
 
 ### 6. Database Error Handling (`db.ts`)
 
@@ -77,6 +78,7 @@ Utilities for handling errors on the client side:
 
 - Processes API responses to extract error information
 - Provides type guards for distinguishing between success and error responses
+- Includes hooks and utilities for React components
 
 ### 8. Response Utilities (`response.ts`)
 
@@ -128,7 +130,7 @@ The codebase uses specialized handlers for database errors (`handleDatabaseError
 
 1. **Error Creation**: An error is created using the appropriate factory method
 2. **Error Propagation**: As the error moves through application layers, it can be chained
-3. **Error Handling**: The error is caught by the error handler middleware
+3. **Error Handling**: The error is caught by Hono's `onError` hook using our error handler
 4. **Error Transformation**: The error is transformed into a standardized API response
 5. **Error Logging**: The error is logged with detailed information
 6. **Error Metrics**: The error occurrence is tracked for monitoring
@@ -176,16 +178,16 @@ if (!user) {
 }
 ```
 
-### Setting Up Error Handling Middleware
+### Setting Up Error Handling
 
 ```typescript
 import { Hono } from 'hono';
-import { errorHandler } from './lib/error';
+import { handleError } from './lib/error/handler';
 
 const app = new Hono();
 
-// Apply error handler middleware
-app.use('*', errorHandler());
+// Apply error handler using Hono's onError hook
+app.onError(handleError);
 
 // Define routes
 app.get('/users/:id', async (c) => {
@@ -198,28 +200,69 @@ export default app;
 ### Handling Errors on the Client
 
 ```typescript
-import { handleApiResponse, isSuccessResponse } from './lib/error/client';
+import { handleApiResponse, isSuccessResponse, useErrorHandler } from './lib/error/client';
 
+// Method 1: Using handleApiResponse utility
 const fetchUser = async (id: string) => {
   const response = await fetch(`/api/users/${id}`);
   const data = await response.json();
 
-  const result = handleApiResponse(data);
-
-  if (isSuccessResponse(result)) {
-    return result.data;
-  } else {
-    // Handle error based on error code
-    switch (result.error.code) {
-      case 'USER.NOT_FOUND':
-        // Handle user not found
-        break;
-      default:
-        // Handle other errors
-        break;
+  return handleApiResponse(
+    data,
+    (userData) => {
+      // Handle success case
+      return userData;
+    },
+    {
+      'USER.NOT_FOUND': () => {
+        // Handle specific error
+        console.error('User not found');
+        return null;
+      },
+      default: (err) => {
+        // Handle any other error
+        console.error('Error fetching user:', err.error.message);
+        return null;
+      }
     }
-  }
+  );
 };
+
+// Method 2: Using React Query with useErrorHandler
+function UserProfile({ userId }: { userId: string }) {
+  const { toast } = useToast();
+
+  // Create a reusable error handler
+  const handleError = useErrorHandler((err) => {
+    toast({
+      title: 'Error',
+      description: err.error.message,
+      variant: 'destructive',
+    });
+  });
+
+  // Use with React Query
+  const userQuery = api.user.get({
+    onError: (error) => handleError(error, {
+      'USER.NOT_FOUND': () => {
+        // Handle specific error
+        navigate('/users');
+      }
+    })
+  });
+
+  // Use with mutation
+  const updateUserMutation = api.user.update({
+    onError: (error) => handleError(error, {
+      'VALIDATION.INVALID_INPUT': (err) => {
+        // Handle validation errors
+        setFormErrors(err.error.details);
+      }
+    })
+  });
+
+  // Rest of component...
+}
 ```
 
 ## Best Practices

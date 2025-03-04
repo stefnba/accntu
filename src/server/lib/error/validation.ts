@@ -1,4 +1,3 @@
-import { MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import { errorFactory } from './factory';
 
@@ -32,25 +31,3 @@ export function handleZodError(error: z.ZodError) {
         },
     });
 }
-
-/**
- * Middleware that catches Zod validation errors and transforms them
- * into structured validation errors
- *
- * This middleware can be used in routes where you want to handle Zod
- * validation errors specifically, separate from the global error handler.
- * It catches Zod errors and transforms them into BaseErrors with detailed
- * validation information.
- *
- * @returns A Hono middleware handler for Zod validation errors
- */
-export const zodValidationErrorHandler = (): MiddlewareHandler => async (c, next) => {
-    try {
-        await next();
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            throw handleZodError(error);
-        }
-        throw error;
-    }
-};

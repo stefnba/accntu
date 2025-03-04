@@ -78,11 +78,11 @@ export type APIErrorResponse = {
 };
 
 /**
- * Standard structure for API success responses
+ * Standard structure for succesful API mutation responses
  *
  * This ensures all success responses follow the same format.
  */
-export type APISuccessResponse<T> = {
+export type APIMutationResponse<T> = {
     success: true;
     data: T;
 };
@@ -92,4 +92,4 @@ export type APISuccessResponse<T> = {
  *
  * This allows for type-safe handling of both success and error responses.
  */
-export type APIResponse<T> = APISuccessResponse<T> | APIErrorResponse;
+export type APIResponse<T> = APIMutationResponse<T> | APIErrorResponse;
