@@ -2,13 +2,20 @@ import { verificationTokenQueries } from '@/server/features/auth/queries';
 import { errorFactory } from '@/server/lib/error';
 
 import { createHash } from 'node:crypto';
+import { alphabet, generateRandomString } from 'oslo/crypto';
 
+/**
+ * Hash an OTP
+ * @param otp - The OTP to hash
+ * @returns The hashed OTP
+ */
 const hashOtp = (otp: string) => {
     return createHash('sha256').update(otp).digest('hex');
 };
 
 /**
- * Generate a new OTP
+ * Generate a random string of numbers that can be used as an OTP
+
  * @param params - The generation parameters
  * @param params.email - The user's email
  * @param params.userId - The user's ID
@@ -16,7 +23,7 @@ const hashOtp = (otp: string) => {
  */
 export const generateOtp = async ({ email, userId }: { email?: string; userId?: string }) => {
     // Generate a secure random OTP
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = generateRandomString(8, alphabet('0-9'));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const hashedCode = hashOtp(code);
@@ -70,8 +77,8 @@ export const verifyOtp = async ({ token, otp }: { token: string; otp: string }) 
     // Check if too many attempts
     if (otpRecord.attempts && otpRecord.attempts >= 3) {
         throw errorFactory.createAuthError({
-            message: 'Too many attempts',
-            code: 'AUTH.TOO_MANY_ATTEMPTS',
+            message: 'Too many failed attempts',
+            code: 'AUTH.TOO_MANY_INVALID_REQUESTS',
         });
     }
 
