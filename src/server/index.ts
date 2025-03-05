@@ -1,4 +1,5 @@
 import { TUser } from '@/server/db/schemas/user';
+import { globalAuthMiddleware } from '@/server/features/auth/middleware';
 import authRoutes from '@/server/features/auth/routes';
 import userRoutes from '@/server/features/user/routes';
 
@@ -23,6 +24,7 @@ const app = new Hono<{
 // app.use('*', logger());
 app.use('*', timing());
 app.use('*', cors());
+app.use('*', globalAuthMiddleware);
 
 // Use Hono's onError hook with our error handler
 app.onError(handleError);
