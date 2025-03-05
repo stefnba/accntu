@@ -22,6 +22,7 @@ const errorMetrics: Record<string, { count: number; lastOccurred: Date; occurren
 export class BaseError extends Error {
     public readonly traceId: string;
     public readonly timestamp: Date;
+    public readonly details: Record<string, unknown>;
     public readonly originalError?: Error;
     public readonly errorChain: ErrorChainItem[];
 
@@ -37,6 +38,7 @@ export class BaseError extends Error {
         message: string,
         public readonly code: ErrorCode,
         public readonly statusCode: ContentfulStatusCode,
+        details: Record<string, unknown>,
         options?: ErrorOptions
     ) {
         super(message);
@@ -44,6 +46,7 @@ export class BaseError extends Error {
         this.traceId = crypto.randomUUID();
         this.timestamp = new Date();
         this.originalError = options?.cause;
+        this.details = details;
         this.errorChain = [
             {
                 layer: options?.layer || 'query',
@@ -96,12 +99,12 @@ export class BaseError extends Error {
             error: {
                 code: this.code,
                 message: this.message,
-                details:
-                    this.errorChain[0].layer === 'route'
-                        ? undefined
-                        : {
-                              trace_id: this.traceId,
-                          },
+                details: this.details,
+                // this.errorChain[0].layer === 'route'
+                //     ? undefined
+                //     : {
+                //           trace_id: this.traceId,
+                //       },
             },
             trace_id: this.traceId,
         };
@@ -118,6 +121,7 @@ export class BaseError extends Error {
             message: this.message,
             code: this.code,
             statusCode: this.statusCode,
+            details: this.details,
             traceId: this.traceId,
             timestamp: this.timestamp,
             chain: this.errorChain,

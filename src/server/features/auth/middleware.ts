@@ -1,12 +1,14 @@
+import { validateSession } from '@/server/features/auth/services/session';
+import { clearCookie, getCookieValue } from '@/server/lib/cookies';
 import { Context, Next } from 'hono';
+import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
-import { clearSessionCookie, getSessionFromCookie, validateSession } from './services';
 
 /**
  * Middleware to require authentication for protected routes
  * Adds the user object to the context if authenticated
  */
-export const requireAuth = async (c: Context, next: Next) => {
+export const requireAuth = createMiddleware(async (c: Context, next: Next) => {
     try {
         // Log request details
         console.log('Auth middleware - Request path:', c.req.path);
@@ -17,8 +19,7 @@ export const requireAuth = async (c: Context, next: Next) => {
         });
 
         // Get session ID from cookie
-        const sessionId = getSessionFromCookie(c);
-        console.log('Auth middleware - Session ID:', sessionId);
+        const sessionId = getCookieValue(c, 'AUTH_SESSION');
 
         if (!sessionId) {
             console.log('Auth middleware - No session ID found in cookie');
@@ -27,30 +28,16 @@ export const requireAuth = async (c: Context, next: Next) => {
             });
         }
 
-        // Validate session
-        const user = await validateSession(sessionId);
-        console.log('Auth middleware - Session validation result:', {
-            hasUser: !!user,
-            userId: user?.id,
-        });
-
-        if (!user) {
-            console.log('Auth middleware - Invalid or expired session');
-            clearSessionCookie(c);
-            throw new HTTPException(401, {
-                message: 'Session expired',
-            });
+        // Validate session and get user
+        try {
+            const user = await validateSession(sessionId);
+            c.set('user', user);
+            // Continue to the next middleware or route handler
+            await next();
+        } catch (error) {
+            clearCookie(c, 'AUTH_SESSION');
+            throw error;
         }
-
-        // Add user to context
-        c.set('user', user);
-        console.log('Auth middleware - User set in context:', {
-            userId: user.id,
-            email: user.email,
-        });
-
-        // Continue to the next middleware or route handler
-        await next();
     } catch (error) {
         console.error('Auth middleware error:', {
             error,
@@ -69,7 +56,7 @@ export const requireAuth = async (c: Context, next: Next) => {
             message: 'Internal error',
         });
     }
-};
+});
 
 /**
  * Middleware to require admin role

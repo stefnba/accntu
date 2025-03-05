@@ -34,10 +34,9 @@ class ErrorFactory {
      */
     createError(params: ErrorParams): BaseError {
         const { message, code, statusCode, cause, layer, details } = params;
-        return new BaseError(message, code, statusCode || 500, {
+        return new BaseError(message, code, statusCode || 500, details || {}, {
             cause,
             layer,
-            details,
         });
     }
 

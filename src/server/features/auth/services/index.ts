@@ -5,7 +5,7 @@
 
 // Core auth services
 export * as sessionServices from './session';
-export * as verificationServices from './verification';
+export * as verificationTokenServices from './verification-token';
 
 // Auth method specific services
 export * as emailOtpServices from './email-otp';
@@ -15,11 +15,11 @@ export * as oauthServices from './oauth';
 import * as emailOtp from './email-otp';
 import * as oauth from './oauth';
 import * as session from './session';
-import * as verification from './verification';
+import * as verificationToken from './verification-token';
 
 export const services = {
     session,
-    verification,
+    verificationToken,
     emailOtp,
     oauth,
 };

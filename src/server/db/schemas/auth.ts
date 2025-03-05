@@ -3,14 +3,17 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import { z } from 'zod';
 import { user } from './user';
 
-// Provider enum for social logins
-export const authProvider = pgEnum('auth_provider', ['email', 'github', 'google']);
-export type AuthProvider = (typeof authProvider.enumValues)[number];
-export const optType = pgEnum('opt_type', ['login', 'magic-link', 'email-verification']);
+// Provider enum for auth providers
+const authProviderOptions = ['email', 'github', 'google'] as const;
+export const authProviderDrizzle = pgEnum('auth_provider', authProviderOptions);
+export const AuthProviderSchema = z.enum(authProviderOptions);
+export type TAuthProvider = z.infer<typeof AuthProviderSchema>;
 
-// Create Zod enums for type safety
-export const OptTypeEnum = z.enum(['login', 'magic-link', 'email-verification']);
-export type OptType = z.infer<typeof OptTypeEnum>;
+// OTP types
+const optTypeOptions = ['login', 'magic-link', 'email-verification'] as const;
+export const optTypeDrizzle = pgEnum('opt_type', optTypeOptions);
+export const OptTypeSchema = z.enum(optTypeOptions);
+export type TOptType = z.infer<typeof OptTypeSchema>;
 
 // Session table for storing user sessions
 export const session = pgTable('session', {
@@ -32,7 +35,7 @@ export const authAccount = pgTable(
         userId: text()
             .notNull()
             .references(() => user.id, { onDelete: 'cascade' }),
-        provider: authProvider().notNull(),
+        provider: authProviderDrizzle().notNull(),
         providerAccountId: text().notNull(),
         refreshToken: text(),
         accessToken: text(),
@@ -55,12 +58,12 @@ export const verificationToken = pgTable(
         token: text().notNull(),
         userId: text().references(() => user.id, { onDelete: 'cascade' }),
         email: text(),
-        type: optType().notNull(),
+        type: optTypeDrizzle().notNull(),
         expiresAt: timestamp({ mode: 'date' }).notNull(),
         createdAt: timestamp({ mode: 'date' }).notNull().defaultNow(),
         usedAt: timestamp({ mode: 'date' }),
-        attempts: integer().default(0),
-        tokenHash: text().notNull(), // For storing hashed OTP
+        attempts: integer().notNull().default(0),
+        hashedCode: text().notNull(), //  hashed OTP
     },
     (table) => {
         return {
@@ -72,9 +75,11 @@ export const verificationToken = pgTable(
 
 // Schemas for type safety
 export const SelectSessionSchema = createSelectSchema(session);
-export const InsertSessionSchema = createInsertSchema(session).omit({
-    createdAt: true,
-    id: true,
+export const InsertSessionSchema = createInsertSchema(session).pick({
+    userId: true,
+    expiresAt: true,
+    ipAddress: true,
+    userAgent: true,
 });
 
 export const SelectAccountSchema = createSelectSchema(authAccount);
@@ -82,6 +87,7 @@ export const InsertAccountSchema = createInsertSchema(authAccount);
 
 export const SelectVerificationTokenSchema = createSelectSchema(verificationToken);
 export const InsertVerificationTokenSchema = createInsertSchema(verificationToken).omit({
+    token: true,
     attempts: true,
     usedAt: true,
     createdAt: true,

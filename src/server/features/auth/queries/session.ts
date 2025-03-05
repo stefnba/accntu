@@ -20,20 +20,21 @@ import { z } from 'zod';
  * @param params.userAgent - The user agent (optional)
  * @returns The created session
  */
-export const createSessionRecord = async (params: z.infer<typeof InsertSessionSchema>) =>
+export const createSessionRecord = async (inputData: z.infer<typeof InsertSessionSchema>) =>
     withDbQueryValidated({
         operation: 'create session record',
         inputSchema: InsertSessionSchema,
-        inputData: params,
+        inputData,
         queryFn: (validatedData) =>
-            db.insert(session).values({
-                id: createId(),
-                userId: validatedData.userId,
-                expiresAt: validatedData.expiresAt,
-                ipAddress: validatedData.ipAddress,
-                userAgent: validatedData.userAgent,
-                lastActiveAt: new Date(),
-            }),
+            db
+                .insert(session)
+                .values({
+                    ...validatedData,
+                    id: createId(),
+                    lastActiveAt: new Date(),
+                })
+                .returning()
+                .then(([result]) => result),
     });
 
 /**

@@ -2,9 +2,23 @@ import { boolean, pgEnum, pgTable, text, timestamp, varchar } from 'drizzle-orm/
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
-export const userRole = pgEnum('user_role', ['admin', 'user']);
-export const userTheme = pgEnum('user_theme', ['light', 'dark', 'system']);
-export const userLanguage = pgEnum('user_language', ['en']);
+// User role
+const userRoleOptions = ['admin', 'user'] as const;
+export const userRoleDrizzle = pgEnum('user_role', userRoleOptions);
+export const UserRoleSchema = z.enum(userRoleOptions);
+export type TUserRole = z.infer<typeof UserRoleSchema>;
+
+// User theme
+const userThemeOptions = ['light', 'dark', 'system'] as const;
+export const userThemeDrizzle = pgEnum('user_theme', userThemeOptions);
+export const UserThemeSchema = z.enum(userThemeOptions);
+export type TUserTheme = z.infer<typeof UserThemeSchema>;
+
+// User language
+const userLanguageOptions = ['en'] as const;
+export const userLanguageDrizzle = pgEnum('user_language', userLanguageOptions);
+export const UserLanguageSchema = z.enum(userLanguageOptions);
+export type TUserLanguage = z.infer<typeof UserLanguageSchema>;
 
 export const user = pgTable('user', {
     id: text().primaryKey(),
@@ -17,16 +31,16 @@ export const user = pgTable('user', {
     updatedAt: timestamp({ mode: 'date' }),
     isEnabled: boolean().notNull().default(true),
     lastLoginAt: timestamp({ mode: 'date' }),
-    role: userRole().notNull().default('user'),
+    role: userRoleDrizzle().notNull().default('user'),
 });
 
 export const userSettings = pgTable('user_settings', {
     userId: text()
         .primaryKey()
         .references(() => user.id),
-    theme: userTheme().notNull().default('system'),
+    theme: userThemeDrizzle().notNull().default('system'),
     currency: text(),
-    language: userLanguage().notNull().default('en'),
+    language: userLanguageDrizzle().notNull().default('en'),
     timezone: text(),
 });
 
@@ -73,7 +87,5 @@ export const UpdateUserSchema = createUpdateSchema(user)
 // Types
 export type TUserUpdateParams = z.infer<typeof UpdateUserSchema>;
 export type TUserCreateParams = z.infer<typeof InsertUserSchema>;
-export type TUser = z.infer<typeof SelectUserSchema> & {
-    settings: z.infer<typeof SelectUserSettingsSchema>;
-};
+export type TUser = z.infer<typeof SelectUserSchema>;
 export type TUserSettings = z.infer<typeof SelectUserSettingsSchema>;

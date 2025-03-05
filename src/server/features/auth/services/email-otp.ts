@@ -1,82 +1,26 @@
-import { createId } from '@paralleldrive/cuid2';
-import * as emailOtpQueries from '../queries/email-otp';
+import { verificationTokenQueries } from '@/server/features/auth/queries';
+import { generateOtp, verifyOtp } from '@/server/features/auth/services/verification-token';
+import * as userQueries from '@/server/features/user/queries';
+import { errorFactory } from '@/server/lib/error';
 
 /**
- * Generate a new OTP for email authentication
- * @param params - The generation parameters
- * @param params.email - The user's email
- * @returns The generated OTP and token
- */
-export const generateEmailOtp = async ({ email }: { email: string }) => {
-    // Generate a secure random OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const token = createId();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Store the OTP in the database
-    await emailOtpQueries.createEmailOtpRecord({
-        token,
-        email,
-        otpHash: otp, // In a real app, this should be hashed
-        expiresAt,
-    });
-
-    return { otp, token };
-};
-
-/**
- * Verify an email OTP
- * @param params - The verification parameters
- * @param params.token - The token associated with the OTP
- * @param params.otp - The OTP to verify
- * @returns Whether the OTP is valid
- */
-export const verifyEmailOtp = async ({ token, otp }: { token: string; otp: string }) => {
-    // Get the OTP record
-    const otpRecord = await emailOtpQueries.getEmailOtpRecordByToken({ token });
-
-    if (!otpRecord) {
-        return false;
-    }
-
-    // Check if the OTP has expired
-    if (otpRecord.expiresAt < new Date()) {
-        return false;
-    }
-
-    // Check if the OTP has been used
-    if (otpRecord.usedAt) {
-        return false;
-    }
-
-    // Check if too many attempts
-    if (otpRecord.attempts && otpRecord.attempts >= 3) {
-        return false;
-    }
-
-    // Check if the OTP matches
-    if (otpRecord.tokenHash !== otp) {
-        // Increment attempts
-        await emailOtpQueries.incrementEmailOtpRecordAttempts({ token });
-        return false;
-    }
-
-    return true;
-};
-
-/**
- * Login with email OTP
+ * Initiate login with email OTP
  * @param params - The login parameters
  * @param params.email - The user's email
  * @returns The token for verification
  */
-export const loginWithEmailOTP = async ({
+export const initiateLoginWithEmailOTP = async ({
     email,
 }: {
     email: string;
 }): Promise<{ token: string }> => {
     // Check if there's an existing unused OTP for this email
-    const existingOtp = await emailOtpQueries.getEmailOtpRecordByEmail({ email });
+    const existingOtps = await verificationTokenQueries.getVerificationTokenRecordsByEmailAndType({
+        email,
+        type: 'login',
+    });
+
+    const existingOtp = existingOtps?.[0];
 
     // If there's a recent OTP (less than 1 minute old), don't generate a new one
     if (
@@ -88,10 +32,41 @@ export const loginWithEmailOTP = async ({
     }
 
     // Generate a new OTP
-    const { token } = await generateEmailOtp({ email });
+    const { token } = await generateOtp({ email });
 
     // In a real app, send the OTP to the user's email
+    // TODO: Implement email sending
     // await sendEmail(email, 'Your OTP', `Your OTP is: ${otp}`);
 
     return { token };
+};
+
+export const verifyLoginWithEmailOTP = async ({
+    token,
+    otp,
+    email,
+}: {
+    token: string;
+    otp: string;
+    email: string;
+}) => {
+    const verification = await verifyOtp({ token, otp });
+
+    if (!verification) {
+        throw errorFactory.createAuthError({
+            message: 'Invalid or expired OTP',
+            code: 'AUTH.OTP_INVALID',
+        });
+    }
+
+    const user = await userQueries.getUserRecordByEmail({ email });
+
+    if (!user) {
+        throw errorFactory.createAuthError({
+            message: 'User not found',
+            code: 'AUTH.USER_NOT_FOUND',
+        });
+    }
+
+    return user;
 };

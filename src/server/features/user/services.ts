@@ -1,5 +1,6 @@
 import { TUserCreateParams, TUserUpdateParams } from '@/server/db/schemas';
 import * as UserQueries from '@/server/features/user/queries';
+import { errorFactory } from '@/server/lib/error';
 
 /**
  * Get a user by ID
@@ -51,22 +52,32 @@ export const updateUserProfile = async ({
  * @param params.data - User data to create
  * @returns Created user data
  */
-export const signupNewUser = async ({ data }: { data: TUserCreateParams }) => {
+export const signupNewUser = async (params: TUserCreateParams) => {
+    // check if email exits
+    const existingUser = await UserQueries.getUserRecordByEmail({ email: params.email });
+    if (existingUser) {
+        throw errorFactory.createAuthError({
+            message: 'Email already exists',
+            code: 'AUTH.EMAIL_EXISTS',
+        });
+    }
+
     // Create user record
-    const newUser = await UserQueries.createUserRecord({
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        image: data.image,
-    });
+    const newUser = await UserQueries.createUserRecord(params);
 
     // Create user settings record
-    const newUserSettings = await UserQueries.createUserSettingsRecord({
+    await UserQueries.createUserSettingsRecord({
         userId: newUser.id,
     });
 
-    return {
-        ...newUser,
-        settings: newUserSettings,
-    };
+    const newUserWithSettings = await UserQueries.getUserRecordById({ userId: newUser.id });
+
+    if (!newUserWithSettings) {
+        throw errorFactory.createServiceError({
+            message: 'Failed to create user',
+            code: 'SERVICE.CREATE_FAILED',
+        });
+    }
+
+    return newUserWithSettings;
 };

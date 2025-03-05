@@ -4,7 +4,6 @@
  */
 
 // Core auth queries
-export * as emailOtpQueries from './email-otp';
 export * as oauthQueries from './oauth';
 export * as sessionQueries from './session';
 export * as verificationTokenQueries from './verification-token';

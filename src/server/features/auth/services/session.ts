@@ -1,4 +1,6 @@
 import { InsertSessionSchema } from '@/server/db/schemas/auth';
+import * as userQueries from '@/server/features/user/queries';
+import { errorFactory } from '@/server/lib/error';
 import { z } from 'zod';
 import * as sessionQueries from '../queries/session';
 
@@ -6,13 +8,20 @@ import * as sessionQueries from '../queries/session';
  * Create a new session
  * @param params - Session creation parameters
  * @param params.userId - The user ID
- * @param params.expiresAt - When the session expires
  * @param params.ipAddress - The IP address (optional)
  * @param params.userAgent - The user agent (optional)
  * @returns The created session
  */
-export const createSession = async (params: z.infer<typeof InsertSessionSchema>) => {
-    return sessionQueries.createSessionRecord(params);
+export const createSession = async (
+    params: Omit<z.infer<typeof InsertSessionSchema>, 'expiresAt'>
+) => {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 1 week from now
+
+    return sessionQueries.createSessionRecord({
+        ...params,
+        expiresAt,
+    });
 };
 
 /**
@@ -54,4 +63,34 @@ export const updateSessionActivity = async ({ sessionId }: { sessionId: string }
 export const deleteSession = async ({ sessionId }: { sessionId: string }) => {
     await sessionQueries.deleteSessionRecord({ sessionId });
     return true;
+};
+
+/**
+ * Validate a session
+ * @param params - Session validation parameters
+ * @param params.sessionId - The session ID
+ * @returns The validated session
+ */
+export const validateSession = async ({ sessionId }: { sessionId: string }) => {
+    const session = await sessionQueries.getSessionRecordById({ sessionId });
+    if (!session) {
+        throw errorFactory.createAuthError({
+            message: 'Session not found',
+            code: 'AUTH.SESSION_NOT_FOUND',
+        });
+    }
+
+    // todo: check if session is expired
+
+    // todo get user by id
+    const user = await userQueries.getUserRecordById({ userId: session.userId });
+
+    if (!user) {
+        throw errorFactory.createAuthError({
+            message: 'User not found',
+            code: 'AUTH.USER_NOT_FOUND',
+        });
+    }
+
+    return user;
 };

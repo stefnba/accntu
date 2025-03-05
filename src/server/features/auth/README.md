@@ -1,69 +1,187 @@
-# Auth Feature
+# Authentication Feature
 
-This directory contains the authentication and authorization features of the application.
+This directory contains the authentication feature for the application, which handles user authentication, session management, and authorization.
 
 ## Directory Structure
 
 ```
-auth/
-├── queries/                # Database queries
-│   ├── email-otp.ts        # Email OTP verification queries
-│   ├── oauth.ts            # OAuth account queries
-│   ├── session.ts          # Session management queries
-│   ├── verification-token.ts # Verification token queries
-│   └── index.ts            # Exports all queries with namespacing
-├── services/               # Business logic
-│   ├── auth.ts             # Main auth service combining different methods
-│   ├── email-otp.ts        # Email OTP verification services
-│   ├── oauth.ts            # OAuth authentication services
-│   ├── session.ts          # Session management services
-│   ├── verification.ts     # Email verification services
-│   └── index.ts            # Exports all services with namespacing
-├── constants.ts            # Auth-related constants
-├── middleware.ts           # Auth middleware
-├── routes.ts               # Auth API routes
-├── schemas.ts              # Auth-specific schemas
-├── utils.ts                # Auth utilities
-└── index.ts                # Main entry point
+src/server/features/auth/
+├── queries/           # Database queries for auth-related operations
+│   ├── email-otp.ts   # Email OTP queries
+│   └── session.ts     # Session queries
+├── services/          # Business logic for auth-related operations
+│   ├── auth.ts        # Main auth service
+│   ├── email-otp.ts   # Email OTP service
+│   ├── oauth.ts       # OAuth service
+│   └── session.ts     # Session service
+├── middleware.ts      # Auth middleware for protecting routes
+├── routes.ts          # Auth API routes
+└── schemas.ts         # Validation schemas for auth-related operations
 ```
 
 ## Usage
 
-### Importing
+### Importing Services and Queries
 
 ```typescript
-// Import specific namespaced queries
-import { sessionQueries, verificationTokenQueries } from '@/server/features/auth/queries';
+// Import services
+import * as authServices from '@/server/features/auth/services/auth';
+import * as sessionServices from '@/server/features/auth/services/session';
+import * as emailOtpServices from '@/server/features/auth/services/email-otp';
+import * as oauthServices from '@/server/features/auth/services/oauth';
 
-// Import specific namespaced services
-import { sessionServices, emailOtpServices } from '@/server/features/auth/services';
-
-// Import everything with namespacing
-import { queries, services } from '@/server/features/auth';
+// Import queries
+import * as sessionQueries from '@/server/features/auth/queries/session';
+import * as emailOtpQueries from '@/server/features/auth/queries/email-otp';
 ```
 
-### Examples
+### Session Management
+
+The session management system uses Hono's context to handle cookies directly in the service layer, following a centralized approach:
 
 ```typescript
-// Create a session
-const session = await sessionServices.createSession({
-  userId: 'user-id',
-  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+// Create a session for a user (handles cookie setting internally)
+await sessionServices.createSession(c, user);
+
+// Get session from cookie
+const session = await sessionServices.getSessionFromCookie(c);
+
+// Invalidate session and clear cookie
+await sessionServices.invalidateSessionFromCookie(c);
+
+// Validate session from cookie (throws error if invalid)
+const user = await sessionServices.validateSessionFromCookie(c);
+```
+
+### Authenticating a User
+
+```typescript
+// Authenticate with email OTP
+await authServices.authenticateWithEmailOtp(c, { email: 'user@example.com' });
+
+// Verify email OTP and create session
+const user = await authServices.verifyEmailOtpAndCreateSession(c, {
+  token: 'token123',
+  otp: '123456'
 });
 
-// Authenticate with email OTP
-const { token } = await emailOtpServices.loginWithEmailOTP('user@example.com');
+// Get current user from session
+const currentUser = await authServices.getCurrentUser(c);
 
-// Verify email OTP
-const isValid = await emailOtpServices.verifyEmailOtp(token, '123456');
+// Logout user
+await authServices.logout(c);
+```
+
+### Protecting Routes with Middleware
+
+```typescript
+// In your route file
+import { requireAuth, requireAdmin } from '@/server/features/auth/middleware';
+
+// Protect a route
+app.get('/protected', requireAuth, (c) => {
+  const user = c.get('user');
+  return c.json({ user });
+});
+
+// Admin-only route
+app.get('/admin', requireAuth, requireAdmin, (c) => {
+  return c.json({ message: 'Admin area' });
+});
 ```
 
 ## Auth Methods
 
-The auth feature supports multiple authentication methods:
+The authentication system supports multiple authentication methods:
 
-1. **Email OTP**: One-time password sent to email
-2. **OAuth**: Social login with providers like GitHub and Google
-3. **Magic Link**: Email link authentication
+1. **Email OTP**: One-time password sent to the user's email
+2. **OAuth**: Authentication with third-party providers (Google, GitHub, etc.)
+3. **Magic Link**: Passwordless authentication via email links
 
-Each method has its own set of queries and services, but they all integrate with the same session management system.
+Each authentication method integrates with the same session management system, providing a consistent user experience regardless of the authentication method used.
+
+## Cookie Management
+
+The authentication system uses Hono's built-in cookie helpers for managing cookies through a centralized utility layer:
+
+```typescript
+import { getCookieValue, setSecureCookie, clearCookie } from '@/server/lib/cookies';
+
+// Set a secure cookie (HTTP-only, secure in production)
+setSecureCookie(c, COOKIE_NAMES.AUTH_SESSION, sessionId);
+
+// Get a cookie value
+const sessionId = getCookieValue(c, COOKIE_NAMES.AUTH_SESSION);
+
+// Clear a cookie
+clearCookie(c, COOKIE_NAMES.AUTH_SESSION);
+
+// Set a preference cookie (accessible by client-side JavaScript)
+setPreferenceCookie(c, COOKIE_NAMES.THEME, 'dark');
+
+// Set a session cookie (expires when browser is closed)
+setSessionCookie(c, COOKIE_NAMES.CSRF_TOKEN, csrfToken);
+
+// Get all cookies
+const allCookies = getAllCookies(c);
+```
+
+### Cookie Constants
+
+All cookie names are centralized in `COOKIE_NAMES` constant:
+
+```typescript
+export const COOKIE_NAMES = {
+  // Auth related cookies
+  AUTH_SESSION: 'auth_session',
+  AUTH_REFRESH_TOKEN: 'refresh_token',
+  CSRF_TOKEN: 'csrf_token',
+
+  // User preferences
+  THEME: 'theme',
+  LANGUAGE: 'language',
+
+  // Feature flags
+  BETA_FEATURES: 'beta_features',
+};
+```
+
+## Error Handling
+
+The authentication system uses a centralized error handling approach:
+
+```typescript
+// In services
+throw errorFactory.createAuthError({
+  message: 'Invalid or expired session',
+  code: 'AUTH.SESSION_NOT_FOUND',
+  statusCode: 401,
+});
+
+// In middleware
+try {
+  // Authentication logic
+} catch (error) {
+  // Error handling
+  if (error instanceof HTTPException) throw error;
+  throw new HTTPException(500, { message: 'Internal error' });
+}
+```
+
+## Code Style
+
+All functions in this feature use object parameters instead of positional parameters for better maintainability and readability:
+
+```typescript
+// Good
+function doSomething({ param1, param2 }: { param1: string; param2: number }) {
+  // ...
+}
+
+// Bad
+function doSomething(param1: string, param2: number) {
+  // ...
+}
+```
+
+This makes the code more maintainable, self-documenting, and easier to extend in the future.

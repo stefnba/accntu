@@ -5,14 +5,14 @@ export const useAuthEndpoints = {
     verifyOtp: createMutation(apiClient.auth['verify-otp'].$post),
     signupWithEmail: createMutation(apiClient.auth.signup.$post),
     logout: createMutation(apiClient.auth.logout.$post),
-    me: createQuery(apiClient.auth.me.$get),
+    me: createQuery(apiClient.user.me.$get),
 
     // Oauth Login
     loginWithGithub: createMutation(apiClient.auth.github.authorize.$get),
     loginWithGoogle: createMutation(apiClient.auth.google.authorize.$get),
     loginWithApple: createMutation(apiClient.auth.apple.authorize.$get),
 
-    // OAuth Verification
+    // OAuth Callback
     verifyGithub: createMutation(apiClient.auth.github.callback.$post),
     verifyGoogle: createMutation(apiClient.auth.google.callback.$post),
 };

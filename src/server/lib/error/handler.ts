@@ -1,9 +1,7 @@
 import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { z } from 'zod';
 import { BaseError } from './base';
 import { errorFactory } from './factory';
-import { handleZodError } from './validation';
 
 /**
  * Global error handler for Hono applications
@@ -21,19 +19,12 @@ import { handleZodError } from './validation';
  * @returns A JSON response with the appropriate error information
  */
 export const handleError = (error: Error, c: Context) => {
-    console.error('Error in Hono application:', error);
+    console.error('Error in Hono application:', error.message);
 
     // Handle BaseError (our custom error type)
     if (error instanceof BaseError) {
         error.logError();
         return c.json(error.toResponse(), error.statusCode);
-    }
-
-    // Handle Zod validation errors
-    if (error instanceof z.ZodError) {
-        const validationError = handleZodError(error);
-        validationError.logError();
-        return c.json(validationError.toResponse(), validationError.statusCode);
     }
 
     // Handle Hono HTTP exceptions

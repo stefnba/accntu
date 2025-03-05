@@ -10,11 +10,18 @@ export type ErrorCode =
     // Auth Errors
     | 'AUTH.SESSION_NOT_FOUND'
     | 'AUTH.SESSION_EXPIRED'
-    | 'AUTH.INVALID_OTP'
     | 'AUTH.OTP_EXPIRED'
+    | 'AUTH.OTP_ALREADY_USED'
+    | 'AUTH.OTP_NOT_FOUND'
+    | 'AUTH.OTP_INVALID'
+    | 'AUTH.OTP_GENERATION_FAILED'
+    | 'AUTH.COOKIE_NOT_FOUND'
+    | 'AUTH.COOKIE_INVALID'
     | 'AUTH.USER_NOT_FOUND'
+    | 'AUTH.USER_NOT_IN_CONTEXT'
     | 'AUTH.EMAIL_EXISTS'
     | 'AUTH.INVALID_CREDENTIALS'
+    | 'AUTH.TOO_MANY_REQUESTS'
     // Validation Errors
     | 'VALIDATION.INVALID_INPUT'
     | 'VALIDATION.MISSING_FIELD'
@@ -31,6 +38,13 @@ export type ErrorCode =
     // Rate Limiting Errors
     | 'RATE_LIMIT.TOO_MANY_REQUESTS'
     | 'RATE_LIMIT.IP_BLOCKED'
+    // Service Errors
+    | 'SERVICE.CREATE_FAILED'
+    | 'SERVICE.UPDATE_FAILED'
+    | 'SERVICE.DELETE_FAILED'
+    | 'SERVICE.NOT_FOUND'
+    | 'SERVICE.ALREADY_EXISTS'
+
     // Generic Errors
     | 'INTERNAL_SERVER_ERROR';
 
