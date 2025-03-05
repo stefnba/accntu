@@ -1,10 +1,8 @@
-import { InsertAccountSchema } from '@/server/db/schemas/auth';
+import { InsertAccountSchema, TOAuthProvider } from '@/server/db/schemas/auth';
 import * as UserQueries from '@/server/features/user/queries';
 import { errorFactory } from '@/server/lib/error';
 import { z } from 'zod';
 import * as oauthQueries from '../queries/oauth';
-
-type AuthProvider = 'github' | 'google';
 
 /**
  * Link an OAuth account to a user
@@ -22,7 +20,7 @@ export const linkOAuthAccount = async ({
     data,
 }: {
     userId: string;
-    provider: AuthProvider;
+    provider: TOAuthProvider;
     providerAccountId: string;
     data: Omit<z.infer<typeof InsertAccountSchema>, 'userId' | 'provider' | 'providerAccountId'>;
 }) => {
@@ -89,7 +87,7 @@ export const getOAuthAccount = async ({
     provider,
     providerAccountId,
 }: {
-    provider: AuthProvider;
+    provider: TOAuthProvider;
     providerAccountId: string;
 }) => {
     return oauthQueries.getOAuthAccountRecordByProviderAccountId({
@@ -110,7 +108,7 @@ export const unlinkOAuthAccount = async ({
     provider,
 }: {
     userId: string;
-    provider: AuthProvider;
+    provider: TOAuthProvider;
 }) => {
     // Check if the user exists
     const user = await UserQueries.getUserRecordById({ userId });

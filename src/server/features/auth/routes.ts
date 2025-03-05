@@ -1,3 +1,4 @@
+import { OAuthProviderSchema } from '@/server/db/schemas';
 import { EmailLoginSchema, OTPVerifySchema, SignupSchema } from '@/server/features/auth/schemas';
 import { sessionServices } from '@/server/features/auth/services';
 import {
@@ -107,14 +108,21 @@ const app = new Hono()
     )
 
     // GitHub oauth
-    .get('/github/authorize', async (c) => {})
-    .post('/github/callback', async (c) => {})
-    // Google oauth
-    .get('/google/authorize', async (c) => {})
-    .post('/google/callback', async (c) => {})
+    .get(
+        '/:provider/authorize',
+        zValidator('param', z.object({ provider: OAuthProviderSchema })),
+        async (c) => {
+            const { provider } = c.req.valid('param');
 
-    // Apple oauth
-    .get('/apple/authorize', async (c) => {})
-    .post('/apple/callback', async (c) => {});
+            // const { url } = await oauthServices.getOAuthAuthorizationUrl({ provider });
+        }
+    )
+    .post(
+        '/:provider/callback',
+        zValidator('param', z.object({ provider: OAuthProviderSchema })),
+        async (c) => {
+            const { provider } = c.req.valid('param');
+        }
+    );
 
 export default app;

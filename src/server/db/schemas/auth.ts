@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { user } from './user';
 
 // Provider enum for auth providers
-const authProviderOptions = ['email', 'github', 'google'] as const;
+const oauthProviderOptions = ['github', 'google'] as const;
+export const OAuthProviderSchema = z.enum(oauthProviderOptions);
+export type TOAuthProvider = z.infer<typeof OAuthProviderSchema>;
+
+const authProviderOptions = ['email', ...oauthProviderOptions] as const;
 export const authProviderDrizzle = pgEnum('auth_provider', authProviderOptions);
 export const AuthProviderSchema = z.enum(authProviderOptions);
 export type TAuthProvider = z.infer<typeof AuthProviderSchema>;

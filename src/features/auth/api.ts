@@ -8,11 +8,6 @@ export const useAuthEndpoints = {
     me: createQuery(apiClient.user.me.$get),
 
     // Oauth Login
-    loginWithGithub: createMutation(apiClient.auth.github.authorize.$get),
-    loginWithGoogle: createMutation(apiClient.auth.google.authorize.$get),
-    loginWithApple: createMutation(apiClient.auth.apple.authorize.$get),
-
-    // OAuth Callback
-    verifyGithub: createMutation(apiClient.auth.github.callback.$post),
-    verifyGoogle: createMutation(apiClient.auth.google.callback.$post),
+    initiateLoginWithOauth: createMutation(apiClient.auth[':provider'].authorize.$get),
+    verifyOauthCallback: createMutation(apiClient.auth[':provider'].callback.$post),
 };
