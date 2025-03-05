@@ -1,109 +1,72 @@
-import { db } from '@/server/db';
-import {
-    SelectUserSchema,
-    TUser,
-    TUserCreateParams,
-    TUserUpdateParams,
-    user,
-    userSettings,
-} from '@/server/db/schemas';
-import { createId } from '@paralleldrive/cuid2';
-import { eq } from 'drizzle-orm';
+import { TUserCreateParams, TUserUpdateParams } from '@/server/db/schemas';
+import * as UserQueries from '@/server/features/user/queries';
 
 /**
  * Get a user by ID
- * @param id User ID
+ * @param params - User retrieval parameters
+ * @param params.userId - User ID
  * @returns User data or null if not found
  */
-export const getUser = async (id: string) => {
-    try {
-        const userData = await db.select().from(user).where(eq(user.id, id)).limit(1);
-
-        if (!userData.length) {
-            return null;
-        }
-
-        return SelectUserSchema.parse(userData[0]);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        throw new Error('Failed to fetch user');
-    }
+export const getUserProfile = async ({ userId }: { userId: string }) => {
+    return UserQueries.getUserRecordById({ userId });
 };
 
 /**
  * Update a user by ID
- * @param id User ID
- * @param data User data to update, this includes the user settings
+ * @param params - User update parameters
+ * @param params.userId - User ID
+ * @param params.data - User data to update, this includes the user settings
  * @returns Updated user data or null if not found
  */
-export const updateUser = async (id: string, data: TUserUpdateParams): Promise<TUser> => {
-    try {
-        const { settings, ...userData } = data;
+export const updateUserProfile = async ({
+    userId,
+    data,
+}: {
+    userId: string;
+    data: TUserUpdateParams;
+}) => {
+    const { settings, ...userData } = data;
 
-        if (settings) {
-            // Update user settings
-            await db
-                .update(userSettings)
-                .set({
-                    ...settings,
-                })
-                .where(eq(userSettings.userId, id));
-        }
-
-        // Update user data
-        await db
-            .update(user)
-            .set({
-                ...userData,
-                updatedAt: new Date(),
-            })
-            .where(eq(user.id, id))
-            .returning({
-                id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                image: user.image,
-                updatedAt: user.updatedAt,
-            });
-
-        const updatedUser = await getUser(id);
-
-        if (!updatedUser) {
-            throw new Error('Failed to update user');
-        }
-
-        return updatedUser;
-    } catch (error) {
-        console.error('Error updating user:', error);
-        throw new Error('Failed to update user');
+    if (settings) {
+        await UserQueries.updateUserSettingsRecord({
+            userId,
+            data: settings,
+        });
     }
+
+    // Update user data
+    await UserQueries.updateUserRecord({
+        userId,
+        data: userData,
+    });
+
+    const updatedUserData = await UserQueries.getUserRecordById({ userId });
+
+    return updatedUserData;
 };
 
 /**
  * Create a new user
- * @param data User data to create
+ * @param params - User creation parameters
+ * @param params.data - User data to create
  * @returns Created user data
  */
-export const createUser = async (data: TUserCreateParams) => {
-    try {
-        const [createdUser] = await db
-            .insert(user)
-            .values({
-                ...data,
-                id: createId(),
-                createdAt: new Date(),
-            })
-            .returning({
-                id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                createdAt: user.createdAt,
-            });
+export const signupNewUser = async ({ data }: { data: TUserCreateParams }) => {
+    // Create user record
+    const newUser = await UserQueries.createUserRecord({
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        image: data.image,
+    });
 
-        return createdUser;
-    } catch (error) {
-        console.error('Error creating user:', error);
-        throw new Error('Failed to create user');
-    }
+    // Create user settings record
+    const newUserSettings = await UserQueries.createUserSettingsRecord({
+        userId: newUser.id,
+    });
+
+    return {
+        ...newUser,
+        settings: newUserSettings,
+    };
 };

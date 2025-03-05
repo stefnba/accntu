@@ -1,10 +1,11 @@
 import { integer, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { user } from './user';
 
 // Provider enum for social logins
 export const authProvider = pgEnum('auth_provider', ['email', 'github', 'google']);
+export type AuthProvider = (typeof authProvider.enumValues)[number];
 export const optType = pgEnum('opt_type', ['login', 'magic-link', 'email-verification']);
 
 // Create Zod enums for type safety
@@ -59,7 +60,7 @@ export const verificationToken = pgTable(
         createdAt: timestamp({ mode: 'date' }).notNull().defaultNow(),
         usedAt: timestamp({ mode: 'date' }),
         attempts: integer().default(0),
-        tokenHash: text(), // For storing hashed OTP
+        tokenHash: text().notNull(), // For storing hashed OTP
     },
     (table) => {
         return {
@@ -71,13 +72,21 @@ export const verificationToken = pgTable(
 
 // Schemas for type safety
 export const SelectSessionSchema = createSelectSchema(session);
-export const InsertSessionSchema = createInsertSchema(session);
+export const InsertSessionSchema = createInsertSchema(session).omit({
+    createdAt: true,
+    id: true,
+});
 
 export const SelectAccountSchema = createSelectSchema(authAccount);
 export const InsertAccountSchema = createInsertSchema(authAccount);
 
 export const SelectVerificationTokenSchema = createSelectSchema(verificationToken);
-export const InsertVerificationTokenSchema = createInsertSchema(verificationToken);
+export const InsertVerificationTokenSchema = createInsertSchema(verificationToken).omit({
+    attempts: true,
+    usedAt: true,
+    createdAt: true,
+});
+export const UpdateVerificationTokenSchema = createUpdateSchema(verificationToken).omit({});
 
 // Types
 export type TSession = z.infer<typeof SelectSessionSchema>;

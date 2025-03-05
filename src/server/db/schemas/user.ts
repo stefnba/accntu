@@ -39,16 +39,20 @@ export const UpdateUserSettingsSchema = createUpdateSchema(userSettings).pick({
     language: true,
     timezone: true,
 });
-export const SelectUserSchema = createSelectSchema(user).pick({
-    id: true,
-    firstName: true,
-    lastName: true,
-    email: true,
-    image: true,
-    role: true,
-    createdAt: true,
-    lastLoginAt: true,
-});
+export const SelectUserSchema = createSelectSchema(user)
+    .pick({
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        lastLoginAt: true,
+    })
+    .extend({
+        settings: SelectUserSettingsSchema.omit({ userId: true }),
+    });
 export const SelectUserPrivateSchema = SelectUserSchema;
 export const InsertUserSchema = createInsertSchema(user).pick({
     firstName: true,

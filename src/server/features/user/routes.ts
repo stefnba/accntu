@@ -1,6 +1,9 @@
 import { UpdateUserSchema } from '@/server/db/schemas/user';
 import { requireAuth } from '@/server/features/auth/middleware';
-import { updateUser } from '@/server/features/user/services';
+import { getUserProfile, updateUserProfile } from '@/server/features/user/services';
+import { errorFactory } from '@/server/lib/error';
+
+import { withMutationRoute, withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 
@@ -10,32 +13,35 @@ const app = new Hono()
     .use('*', requireAuth)
 
     // Update user profile
-    .patch('/update', zValidator('json', UpdateUserSchema), async (c) => {
-        try {
+    .patch('/update', zValidator('json', UpdateUserSchema), async (c) =>
+        withMutationRoute(c, async () => {
             const data = c.req.valid('json');
             const user = c.get('user');
-            const updatedUser = await updateUser(user.id, data);
+
+            const updatedUser = await updateUserProfile({
+                userId: user.id,
+                data,
+            });
 
             if (!updatedUser) {
-                return c.json({ error: 'User not found' }, 404);
+                throw errorFactory.createApiError({
+                    message: 'User not found',
+                    code: 'AUTH.USER_NOT_FOUND',
+                    statusCode: 404,
+                });
             }
 
-            return c.json(updatedUser, 200);
-        } catch (error) {
-            console.error('Error updating user:', error);
-            return c.json({ error: 'Failed to update user' }, 500);
-        }
-    })
+            return updatedUser;
+        })
+    )
 
     // Get current user profile
-    .get('/me', async (c) => {
-        try {
+    .get('/me', async (c) =>
+        withRoute(c, async () => {
             const user = c.get('user');
-            return c.json(user, 200);
-        } catch (error) {
-            console.error('Error fetching user:', error);
-            return c.json({ error: 'Failed to fetch user' }, 500);
-        }
-    });
+            const userProfile = await getUserProfile({ userId: user.id });
+            return userProfile;
+        })
+    );
 
 export default app;

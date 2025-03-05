@@ -1,322 +1,310 @@
-import { github } from '@/server/features/auth/oauth';
+import { EmailLoginSchema } from '@/server/features/auth/schemas';
+import { loginWithEmailOTP } from '@/server/features/auth/services/email-otp';
+import { withMutationRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
-import { generateState } from 'arctic';
 import { Hono } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
+import { setCookie } from 'hono/cookie';
 import { z } from 'zod';
-import { GitHubEmail, GitHubUser } from './oauth';
-import { OTPVerifySchema } from './schemas';
-import {
-    authenticateUser,
-    authenticateWithSocial,
-    clearSessionCookie,
-    createSession,
-    deleteSession,
-    getOTPTokenFromCookie,
-    getSessionFromCookie,
-    loginWithOTP,
-    registerUser,
-    setOTPTokenCookie,
-    setSessionCookie,
-    validateSession,
-    verifyOTPWithToken,
-} from './services';
-
+import { setOTPTokenCookie } from './services';
 // Validation schemas
-const LoginSchema = z.object({
-    email: z.string().email(),
-});
 
 const SignupSchema = z.object({
     email: z.string().email(),
-    name: z.string(),
+    name: z.string().min(2).max(100),
 });
 
 const SocialLoginSchema = z.object({
     id: z.string(),
     email: z.string().email(),
-    name: z.string().optional(),
-    provider: z.enum(['github', 'google']),
+    name: z.string(),
+    provider: z.enum(['github', 'google', 'apple']),
 });
 
 // Create Hono app for auth routes
 const app = new Hono()
+
     // Email login - request OTP
-    .post('/request-otp', zValidator('json', LoginSchema), async (c) => {
-        try {
+    .post('/request-otp', zValidator('json', EmailLoginSchema), async (c) =>
+        withMutationRoute(c, async () => {
             const { email } = c.req.valid('json');
 
-            // Generate OTP for user
-            const result = await loginWithOTP(email);
-
-            if (!result) {
-                return c.json({ error: 'Failed to generate OTP' }, 500);
-            }
+            // Generate OTP and send it
+            const { token } = await loginWithEmailOTP(email);
 
             // Set token in HTTP-only cookie
-            setOTPTokenCookie(c, result.token);
+            setOTPTokenCookie(c, token);
 
             // Set email in a cookie for the verification page
             setCookie(c, 'auth_email', email, {
-                httpOnly: false, // Allow JavaScript access
-                path: '/',
-                maxAge: 60 * 10, // 10 minutes
-                sameSite: 'Lax',
-            });
-
-            // In a real app, you would send the OTP via email
-            // For development, return it in the response
-            if (process.env.NODE_ENV !== 'production') {
-                return c.json({
-                    message: 'OTP sent successfully',
-                    otp: result.otp,
-                    userId: result.userId,
-                });
-            }
-
-            return c.json({ message: 'OTP sent successfully' });
-        } catch (error) {
-            console.error('Login error:', error);
-            return c.json({ error: 'Failed to login' }, 500);
-        }
-    })
-
-    // Verify OTP and login
-    .post('/verify-otp', zValidator('json', OTPVerifySchema), async (c) => {
-        try {
-            const { code } = c.req.valid('json');
-
-            // Get token from cookie
-            const token = getOTPTokenFromCookie(c);
-
-            if (!token) {
-                return c.json({ error: 'OTP session expired or invalid' }, 401);
-            }
-
-            // Verify OTP with token
-            const verification = await verifyOTPWithToken(token, code);
-
-            if (!verification.valid || !verification.email) {
-                return c.json({ error: 'Invalid or expired OTP' }, 401);
-            }
-
-            // Find user by email
-            const user = await authenticateUser(verification.email);
-
-            if (!user) {
-                return c.json({ error: 'User not found' }, 404);
-            }
-
-            // Create session
-            const sessionId = await createSession(
-                user.id,
-                c.req.header('x-forwarded-for'),
-                c.req.header('user-agent')
-            );
-
-            // Set session cookie
-            setSessionCookie(c, sessionId);
-
-            // Clear the email cookie as it's no longer needed
-            setCookie(c, 'auth_email', '', {
                 httpOnly: false,
                 path: '/',
-                maxAge: 0, // Expire immediately
-                sameSite: 'Lax',
-            });
-
-            return c.json({ user });
-        } catch (error) {
-            console.error('OTP verification error:', error);
-            return c.json({ error: 'Failed to verify OTP' }, 401);
-        }
-    })
-
-    // Signup route
-    .post('/signup', zValidator('json', SignupSchema), async (c) => {
-        try {
-            const { email, name } = c.req.valid('json');
-
-            // Register the user
-            const user = await registerUser(email, name);
-
-            if (!user) {
-                return c.json({ error: 'Failed to register user' }, 500);
-            }
-
-            // Generate OTP for verification
-            const result = await loginWithOTP(email);
-
-            if (!result) {
-                return c.json({ error: 'Failed to generate OTP' }, 500);
-            }
-
-            // Set token in HTTP-only cookie
-            setOTPTokenCookie(c, result.token);
-
-            // Set email in a cookie for the verification page
-            setCookie(c, 'auth_email', email, {
-                httpOnly: false, // Allow JavaScript access
-                path: '/',
                 maxAge: 60 * 10, // 10 minutes
                 sameSite: 'Lax',
             });
 
-            // In a real app, you would send the OTP via email
-            // For development, return it in the response
-            if (process.env.NODE_ENV !== 'production') {
-                return c.json({
-                    message: 'User registered successfully. OTP sent for verification.',
-                    user,
-                    otp: result.otp,
-                });
-            }
+            // Return success response
+            return { message: 'OTP sent successfully' };
+        })
+    );
 
-            return c.json({
-                message: 'User registered successfully. OTP sent for verification.',
-                user,
-            });
-        } catch (error) {
-            console.error('Signup error:', error);
-            return c.json({ error: 'Failed to signup' }, 500);
-        }
-    })
+//     // Return success response
+//     return c.json(createSuccessResponse({ message: 'OTP sent successfully' }), 201);})
+//     try {
 
-    // Logout route
-    .post('/logout', async (c) => {
-        try {
-            // Get session ID from cookie
-            const sessionId = getSessionFromCookie(c);
+//     } catch (error: unknown) {
+//         // This is just for type inference with Hono RPC
+//         // The actual error handling will be done by the global error handler
+//         if (error instanceof BaseError) {
+//             // Return a typed error response based on the error's status code
+//             // This is just for type inference with Hono RPC
+//             const statusCode = ensureErrorStatusCode(error.statusCode || 500);
 
-            if (sessionId) {
-                // Delete session from database
-                await deleteSession(sessionId);
-            }
+//             // For RPC type inference only - this creates the correct type signature
+//             // We use a condition that TypeScript can't prove is always false
+//             // but we know will never be true at runtime
+//             if (false as boolean) {
+//                 // This code is never executed, it's just for type inference
+//                 return c.json(error.toResponse(), statusCode);
+//             }
 
-            // Clear the auth cookie
-            clearSessionCookie(c);
+//             // Rethrow to let the global error handler deal with it
+//             throw error;
+//         }
 
-            return c.json({ success: true });
-        } catch (error) {
-            console.error('Logout error:', error);
-            return c.json({ error: 'Failed to logout' }, 500);
-        }
-    })
+//         // For unknown errors, provide a 500 type and rethrow
+//         // For RPC type inference only
+//         if (false as boolean) {
+//             // This code is never executed, it's just for type inference
+//             return c.json(
+//                 errorFactory
+//                     .createError({
+//                         message: 'An unexpected error occurred',
+//                         code: 'INTERNAL_SERVER_ERROR',
+//                         statusCode: 500,
+//                     })
+//                     .toResponse(),
+//                 500
+//             );
+//         }
 
-    // Get current user route
-    .get('/me', async (c) => {
-        try {
-            // Get the auth cookie
-            const sessionId = getSessionFromCookie(c);
+//         // Rethrow to let the global error handler deal with it
+//         throw error;
+//     }
+// })
 
-            if (!sessionId) {
-                return c.json({ user: null }, 401);
-            }
+// Verify OTP and login
+// .post('/verify-otp', zValidator('json', OTPVerifySchema), async (c) => {
+//     const { code } = c.req.valid('json');
 
-            // Validate the session
-            const user = await validateSession(sessionId);
+//     // Get token from cookie
+//     const token = getOTPTokenFromCookie(c);
 
-            if (!user) {
-                // Invalid session, clear the cookie
-                clearSessionCookie(c);
-                return c.json({ user: null }, 401);
-            }
+//     if (!token) {
+//         return c.json({ error: 'OTP session expired or invalid' }, 401);
+//     }
 
-            return c.json(user);
-        } catch (error) {
-            console.error('Error getting user from session:', error);
-            return c.json({ error: 'Failed to get user' }, 500);
-        }
-    })
+//     // Verify OTP with token
+//     const verification = await verifyOTPWithToken(token, code);
 
-    // GitHub auth routes
-    .get('/github/authorize', async (c) => {
-        const state = generateState();
-        // Store state in cookie for verification later
-        setCookie(c, `github_oauth_state_${state}`, state, { maxAge: 60 * 10 }); // 10 minutes
+//     if (!verification.valid || !verification.email) {
+//         return c.json({ error: 'Invalid or expired OTP' }, 401);
+//     }
 
-        const url = github.createAuthorizationURL(state, ['user:email']);
-        return c.json({ url: url.toString(), state });
-    })
-    .post('/github/callback', async (c) => {
-        try {
-            const code = c.req.query('code');
-            const state = c.req.query('state');
+//     // Find user by email
+//     const user = await authenticateUser(verification.email);
 
-            // Verify state
-            const storedState = getCookie(c, `github_oauth_state_${state}`);
-            if (!storedState || storedState !== state) {
-                return c.json({ error: 'Invalid state' }, 400);
-            }
+//     if (!user) {
+//         return c.json({ error: 'User not found' }, 404);
+//     }
 
-            if (!code) {
-                return c.json({ error: 'No code provided' }, 400);
-            }
+//     // Create session
+//     const sessionId = await createSession(
+//         user.id,
+//         c.req.header('x-forwarded-for'),
+//         c.req.header('user-agent')
+//     );
 
-            // Exchange code for tokens
-            const tokens = await github.validateAuthorizationCode(code);
-            const accessToken = tokens.accessToken();
+//     // Set session cookie
+//     setSessionCookie(c, sessionId);
 
-            // Get user info from GitHub
-            const githubUserResponse = await fetch('https://api.github.com/user', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-            const githubUser: GitHubUser = await githubUserResponse.json();
+//     // Clear the email cookie as it's no longer needed
+//     setCookie(c, 'auth_email', '', {
+//         httpOnly: false,
+//         path: '/',
+//         maxAge: 0, // Expire immediately
+//         sameSite: 'Lax',
+//     });
 
-            const response = await fetch('https://api.github.com/user/emails', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-            const githubEmail: GitHubEmail[] = await response.json();
-            const primaryEmail = githubEmail.find((email) => email.primary)?.email ?? null;
+//     return c.json({ user });
+// })
 
-            if (!primaryEmail) {
-                // todo handle error
-                throw new Error('No primary email found');
-            }
+// // Signup route
+// .post('/signup', zValidator('json', SignupSchema), async (c) => {
+//     const { email, name } = c.req.valid('json');
 
-            // Use your existing social auth logic
-            const user = await authenticateWithSocial({
-                id: githubUser.id.toString(),
-                email: primaryEmail,
-                name: githubUser.name || githubUser.login,
-                provider: 'github',
-            });
+//     // Register the user
+//     const user = await registerUser(email, name);
 
-            if (!user) {
-                return c.json({ error: 'Failed to authenticate with GitHub' }, 500);
-            }
+//     if (!user) {
+//         return c.json({ error: 'Failed to register user' }, 500);
+//     }
 
-            // Create session
-            const sessionId = await createSession(
-                user.id,
-                c.req.header('x-forwarded-for'),
-                c.req.header('user-agent')
-            );
+//     // Generate OTP for verification
+//     const result = await loginWithOTP(email);
 
-            // Set session cookie
-            setSessionCookie(c, sessionId);
+//     if (!result) {
+//         return c.json({ error: 'Failed to generate OTP' }, 500);
+//     }
 
-            // Redirect to frontend
-            return c.redirect('/dashboard');
-        } catch (error) {
-            console.error('GitHub callback error:', error);
-            return c.json({ error: 'Failed to authenticate with GitHub' }, 500);
-        }
-    })
+//     // Set token in HTTP-only cookie
+//     setOTPTokenCookie(c, result.token);
 
-    // Google auth routes
-    .get('/google/authorize', async (c) => {
-        const state = generateState();
-        setCookie(c, `google_oauth_state_${state}`, state, { maxAge: 60 * 10 }); // 10 minutes
-    })
-    .post('/google/callback', async (c) => {})
+//     // Set email in a cookie for the verification page
+//     setCookie(c, 'auth_email', email, {
+//         httpOnly: false,
+//         path: '/',
+//         maxAge: 60 * 10, // 10 minutes
+//         sameSite: 'Lax',
+//     });
 
-    // Apple auth routes
-    .get('/apple/authorize', async (c) => {})
-    .get('/apple/callback', async (c) => {});
+//     if (process.env.NODE_ENV !== 'production') {
+//         return c.json({
+//             message: 'User registered successfully. OTP sent for verification.',
+//             user,
+//             otp: result.otp,
+//         });
+//     }
+
+//     return c.json({
+//         message: 'User registered successfully. OTP sent for verification.',
+//         user,
+//     });
+// })
+
+// // Logout route
+// .post('/logout', async (c) => {
+//     // Get session ID from cookie
+//     const sessionId = getSessionFromCookie(c);
+
+//     if (sessionId) {
+//         // Delete session from database
+//         await deleteSession(sessionId);
+//     }
+
+//     // Clear the auth cookie
+//     clearSessionCookie(c);
+
+//     return c.json({ success: true });
+// })
+
+// // Get current user route
+// .get('/me', async (c) => {
+//     const sessionId = getSessionFromCookie(c);
+//     if (!sessionId) {
+//         return c.json({ error: 'No session' }, 401);
+//     }
+
+//     const user = await validateSession(sessionId);
+//     if (!user) {
+//         clearSessionCookie(c);
+//         return c.json({ error: 'Session expired' }, 401);
+//     }
+
+//     return c.json(user);
+// })
+
+// // GitHub auth routes
+// .get('/github/authorize', async (c) => {
+//     const state = generateState();
+//     const scopes = ['user:email']; // Add required scopes
+//     const url = await github.createAuthorizationURL(state, scopes);
+
+//     // Store state in cookie for verification
+//     setCookie(c, `github_oauth_state_${state}`, state, {
+//         httpOnly: true,
+//         path: '/',
+//         maxAge: 60 * 10, // 10 minutes
+//         sameSite: 'Lax',
+//     });
+
+//     return c.json({ url: url.toString() });
+// })
+// .get('/github/callback', async (c) => {
+//     const code = c.req.query('code');
+//     const state = c.req.query('state');
+
+//     if (!state) {
+//         return c.json({ error: 'No state provided' }, 400);
+//     }
+
+//     const storedState = getCookie(c, `github_oauth_state_${state}`);
+//     if (!storedState || storedState !== state) {
+//         return c.json({ error: 'Invalid state' }, 400);
+//     }
+
+//     if (!code) {
+//         return c.json({ error: 'No code provided' }, 400);
+//     }
+
+//     // Exchange code for tokens
+//     const tokens = await github.validateAuthorizationCode(code);
+//     const accessToken = tokens.accessToken();
+
+//     // Get user info from GitHub
+//     const githubUserResponse = await fetch('https://api.github.com/user', {
+//         headers: {
+//             Authorization: `Bearer ${accessToken}`,
+//         },
+//     });
+//     const githubUser: GitHubUser = await githubUserResponse.json();
+
+//     const response = await fetch('https://api.github.com/user/emails', {
+//         headers: {
+//             Authorization: `Bearer ${accessToken}`,
+//         },
+//     });
+//     const githubEmail: GitHubEmail[] = await response.json();
+//     const primaryEmail = githubEmail.find((email) => email.primary)?.email ?? null;
+
+//     if (!primaryEmail) {
+//         throw new Error('No primary email found');
+//     }
+
+//     // Use your existing social auth logic
+//     const user = await authenticateWithSocial({
+//         id: githubUser.id.toString(),
+//         email: primaryEmail,
+//         name: githubUser.name || githubUser.login,
+//         provider: 'github',
+//     });
+
+//     if (!user) {
+//         return c.json({ error: 'Failed to authenticate with GitHub' }, 500);
+//     }
+
+//     // Create session
+//     const sessionId = await createSession(
+//         user.id,
+//         c.req.header('x-forwarded-for'),
+//         c.req.header('user-agent')
+//     );
+
+//     // Set session cookie
+//     setSessionCookie(c, sessionId);
+
+//     // Redirect to frontend
+//     return c.redirect('/dashboard');
+// })
+
+// // Google auth routes
+// .get('/google/authorize', async (c) => {
+//     const state = generateState();
+//     setCookie(c, `google_oauth_state_${state}`, state, { maxAge: 60 * 10 }); // 10 minutes
+// })
+// .post('/google/callback', async (c) => {})
+
+// // Apple auth routes
+// .get('/apple/authorize', async (c) => {})
+// .get('/apple/callback', async (c) => {});
 
 export default app;

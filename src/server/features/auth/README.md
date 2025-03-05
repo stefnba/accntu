@@ -1,76 +1,69 @@
-# Authentication System
+# Auth Feature
 
-This authentication system provides session-based authentication with multiple login methods:
+This directory contains the authentication and authorization features of the application.
 
-1. Email with OTP (One-Time Password)
-2. GitHub OAuth
-3. Google OAuth
+## Directory Structure
 
-## Features
-
-- Session-based authentication (no JWT)
-- Multiple login methods for the same user account
-- Database-backed sessions with expiration
-- Secure HTTP-only cookies
-- Protection against session fixation
-- IP and user agent tracking for sessions
-
-## Database Schema
-
-The authentication system uses three main tables:
-
-1. **session** - Stores active user sessions
-2. **account** - Links social accounts to users
-3. **verificationToken** - Manages OTP codes and email verification
-
-## Authentication Flow
-
-### Email + OTP Login
-
-1. User enters email address
-2. System generates OTP and sends it to the email
-3. User enters OTP to verify identity
-4. System creates a session and sets a session cookie
-
-### Social Login (GitHub/Google)
-
-1. Frontend initiates OAuth flow with provider
-2. Provider redirects back with user profile
-3. Backend verifies the profile and finds or creates user
-4. System creates a session and sets a session cookie
-
-## API Endpoints
-
-- `POST /api/auth/login` - Request OTP for email login
-- `POST /api/auth/verify-otp` - Verify OTP and login
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/logout` - End session
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/social` - Authenticate with social provider
-
-## Protected Routes
-
-Use the `requireAuth` middleware to protect routes:
-
-```typescript
-import { requireAuth } from '@/server/features/auth/middleware';
-
-// Create a protected route group
-const protectedRoutes = new Hono()
-  .use('*', requireAuth)
-  .get('/profile', (c) => {
-    const user = c.get('user');
-    return c.json({ user });
-  });
-
-// Add to main app
-app.route('/protected', protectedRoutes);
+```
+auth/
+├── queries/                # Database queries
+│   ├── email-otp.ts        # Email OTP verification queries
+│   ├── oauth.ts            # OAuth account queries
+│   ├── session.ts          # Session management queries
+│   ├── verification-token.ts # Verification token queries
+│   └── index.ts            # Exports all queries with namespacing
+├── services/               # Business logic
+│   ├── auth.ts             # Main auth service combining different methods
+│   ├── email-otp.ts        # Email OTP verification services
+│   ├── oauth.ts            # OAuth authentication services
+│   ├── session.ts          # Session management services
+│   ├── verification.ts     # Email verification services
+│   └── index.ts            # Exports all services with namespacing
+├── constants.ts            # Auth-related constants
+├── middleware.ts           # Auth middleware
+├── routes.ts               # Auth API routes
+├── schemas.ts              # Auth-specific schemas
+├── utils.ts                # Auth utilities
+└── index.ts                # Main entry point
 ```
 
-## Security Considerations
+## Usage
 
-- Sessions expire after 1 week
-- OTP codes expire after 10 minutes
-- Sessions are invalidated on logout
-- Cookies are HTTP-only and use SameSite=Strict
-- Secure flag is enabled in production
+### Importing
+
+```typescript
+// Import specific namespaced queries
+import { sessionQueries, verificationTokenQueries } from '@/server/features/auth/queries';
+
+// Import specific namespaced services
+import { sessionServices, emailOtpServices } from '@/server/features/auth/services';
+
+// Import everything with namespacing
+import { queries, services } from '@/server/features/auth';
+```
+
+### Examples
+
+```typescript
+// Create a session
+const session = await sessionServices.createSession({
+  userId: 'user-id',
+  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+});
+
+// Authenticate with email OTP
+const { token } = await emailOtpServices.loginWithEmailOTP('user@example.com');
+
+// Verify email OTP
+const isValid = await emailOtpServices.verifyEmailOtp(token, '123456');
+```
+
+## Auth Methods
+
+The auth feature supports multiple authentication methods:
+
+1. **Email OTP**: One-time password sent to email
+2. **OAuth**: Social login with providers like GitHub and Google
+3. **Magic Link**: Email link authentication
+
+Each method has its own set of queries and services, but they all integrate with the same session management system.

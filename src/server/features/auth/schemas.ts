@@ -1,13 +1,10 @@
 import { z } from 'zod';
 
-export const UserSchema = z.object({
-    id: z.string(),
-    email: z.string(),
-    lastName: z.string().nullable(),
-    firstName: z.string().nullable(),
+export const EmailLoginSchema = z.object({
+    email: z.string().email(),
 });
 
-export type User = z.infer<typeof UserSchema>;
+export type EmailLogin = z.infer<typeof EmailLoginSchema>;
 
 export const SessionSchema = z.object({
     id: z.string(),

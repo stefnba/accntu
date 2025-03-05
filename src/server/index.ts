@@ -1,7 +1,7 @@
 import { TUser } from '@/server/db/schemas/user';
 import authRoutes from '@/server/features/auth/routes';
 import userRoutes from '@/server/features/user/routes';
-import { handleError } from '@/server/lib/error/global-handler';
+import { handleError } from '@/server/lib/error/handler';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { timing } from 'hono/timing';

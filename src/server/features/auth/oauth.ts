@@ -1,4 +1,3 @@
-// src/server/features/auth/social.ts
 import { GitHub, Google } from 'arctic';
 // import { env } from 'process';
 
