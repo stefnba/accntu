@@ -1,6 +1,4 @@
 import { createHash } from 'crypto';
-import { Context } from 'hono';
-import { HTTPException } from 'hono/http-exception';
 import { alphabet, generateRandomString } from 'oslo/crypto';
 
 // Default OTP configuration
@@ -57,19 +55,4 @@ export const verifyOTP = (otp: string, hash: string, salt?: string): boolean => 
  */
 export const generateSecureToken = (length: number = 32): string => {
     return generateRandomString(length * 2, alphabet('a-z', 'A-Z', '0-9'));
-};
-
-/**
- * Get the user object from the Hono context.
- * @param c Hono context.
- * @returns User object.
- */
-export const getUser = (c: Context) => {
-    const user = c.get('user');
-
-    if (!user) {
-        throw new HTTPException(401, { message: 'Unauthorized' });
-    }
-
-    return user;
 };
