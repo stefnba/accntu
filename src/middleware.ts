@@ -1,0 +1,47 @@
+import { LOGIN_URL, PUBLIC_ROUTES } from '@/lib/config';
+import { isPathMatch } from '@/server/features/auth/utils';
+import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies/constants';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
+export function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+
+    // Check if the path is a public route
+    const isPublic = isPathMatch(pathname, PUBLIC_ROUTES);
+
+    // If it's a public route, allow access
+    if (isPublic) {
+        return NextResponse.next();
+    }
+
+    // For all other routes, check for session cookie
+    const sessionCookie = request.cookies.get(COOKIE_NAMES_SESSION.SESSION);
+
+    // If no session cookie, redirect to login
+    if (!sessionCookie) {
+        const loginUrl = new URL(LOGIN_URL, request.url);
+        // Add the original URL as a query parameter for redirect after login
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+    }
+
+    // Session cookie exists, allow access
+    // Note: This doesn't validate the session, just checks for its existence
+    // The actual validation happens in the API routes or server components
+    return NextResponse.next();
+}
+
+// Configure which paths the middleware should run on
+export const config = {
+    matcher: [
+        /*
+         * Match all request paths except:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - /api/* (API routes handled by Hono)
+         */
+        '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    ],
+};
