@@ -1,10 +1,6 @@
 import { db } from '@/server/db';
 import { InsertSessionSchema, SelectSessionSchema, session } from '@/server/db/schemas';
-import {
-    withDbQuery,
-    withDbQueryValidated,
-    withDbQueryValidatedNullable,
-} from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -21,7 +17,7 @@ import { z } from 'zod';
  * @returns The created session
  */
 export const createSessionRecord = async (inputData: z.infer<typeof InsertSessionSchema>) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'create session record',
         inputSchema: InsertSessionSchema,
         inputData,
@@ -44,7 +40,7 @@ export const createSessionRecord = async (inputData: z.infer<typeof InsertSessio
  * @returns The session if found, otherwise null
  */
 export const getSessionRecordById = async ({ sessionId }: { sessionId: string }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         operation: 'get session record by id',
         outputSchema: SelectSessionSchema,
         queryFn: async () => {
@@ -60,7 +56,7 @@ export const getSessionRecordById = async ({ sessionId }: { sessionId: string })
  * @returns The session records
  */
 export const getSessionRecordsByUserId = async ({ userId }: { userId: string }) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'get session records by user id',
         outputSchema: z.array(SelectSessionSchema),
         queryFn: async () => db.select().from(session).where(eq(session.userId, userId)),

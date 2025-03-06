@@ -9,7 +9,7 @@ import {
 } from '@/server/db/schemas';
 
 import { db } from '@/server/db';
-import { withDbQueryValidated, withDbQueryValidatedNullable } from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ import { z } from 'zod';
  * @returns The created user record
  */
 export const createUserRecord = async (params: z.infer<typeof InsertUserSchema>) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'create user',
         inputData: params,
         inputSchema: InsertUserSchema,
@@ -48,7 +48,7 @@ export const createUserRecord = async (params: z.infer<typeof InsertUserSchema>)
  * @returns The user record if found, otherwise null
  */
 export const getUserRecordByEmail = async ({ email }: { email: string }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         outputSchema: SelectUserSchema,
         operation: 'get user by email',
         queryFn: async () => {
@@ -73,6 +73,8 @@ export const getUserRecordByEmail = async ({ email }: { email: string }) =>
                 .innerJoin(userSettings, eq(user.id, userSettings.userId))
                 .where(eq(user.email, email));
 
+            console.log('result query', result);
+
             return result;
         },
     });
@@ -84,7 +86,7 @@ export const getUserRecordByEmail = async ({ email }: { email: string }) =>
  * @returns The user if found, otherwise null
  */
 export const getUserRecordById = async ({ userId }: { userId: string }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         outputSchema: SelectUserSchema,
         operation: 'get user by id',
         queryFn: async () => {
@@ -124,7 +126,7 @@ export const getUserRecordById = async ({ userId }: { userId: string }) =>
  * @returns The created user settings record
  */
 export const createUserSettingsRecord = async (params: z.infer<typeof InsertUserSettingsSchema>) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'create user settings',
         inputData: params,
         inputSchema: InsertUserSettingsSchema,
@@ -157,7 +159,7 @@ export const updateUserRecord = async ({
     userId: string;
     data: z.infer<typeof UpdateUserSchema>;
 }) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'update user',
         inputData: data,
         inputSchema: UpdateUserSchema,
@@ -191,7 +193,7 @@ export const updateUserSettingsRecord = async ({
     userId: string;
     data: z.infer<typeof UpdateUserSettingsSchema>;
 }) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'update user settings',
         inputData: data,
         inputSchema: UpdateUserSettingsSchema,

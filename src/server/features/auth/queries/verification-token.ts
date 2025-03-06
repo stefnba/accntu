@@ -5,11 +5,7 @@ import {
     TOptType,
     verificationToken,
 } from '@/server/db/schemas/auth';
-import {
-    withDbQuery,
-    withDbQueryValidated,
-    withDbQueryValidatedNullable,
-} from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
 import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -27,7 +23,7 @@ import { z } from 'zod';
 export const createVerificationTokenRecord = async (
     inputData: z.infer<typeof InsertVerificationTokenSchema>
 ) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'create verification token record',
         inputSchema: InsertVerificationTokenSchema,
         inputData,
@@ -59,7 +55,7 @@ export const getVerificationTokenRecord = async ({
     token: string;
     type: TOptType;
 }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         operation: 'get verification token record',
         outputSchema: SelectVerificationTokenSchema,
         queryFn: async () => {
@@ -100,7 +96,7 @@ export const markVerificationTokenRecordAsUsed = async ({ token }: { token: stri
  * @returns The verification token if found, otherwise null
  */
 export const getVerificationTokenRecordByToken = async ({ token }: { token: string }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         operation: 'get verification token record by token',
         outputSchema: SelectVerificationTokenSchema,
         queryFn: async () => {
@@ -155,7 +151,7 @@ export const getVerificationTokenRecordsByEmailAndType = async ({
     email: string;
     type: TOptType;
 }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         operation: 'get verification token records by email and type',
         outputSchema: SelectVerificationTokenSchema.array(),
         queryFn: async () => {

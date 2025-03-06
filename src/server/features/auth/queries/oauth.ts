@@ -1,10 +1,6 @@
 import { db } from '@/server/db';
 import { authAccount, InsertAccountSchema, SelectAccountSchema } from '@/server/db/schemas/auth';
-import {
-    withDbQuery,
-    withDbQueryValidated,
-    withDbQueryValidatedNullable,
-} from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -22,7 +18,7 @@ type AuthProvider = 'email' | 'github' | 'google';
  * @param params.expiresAt - The expiration date (optional)
  */
 export const createOAuthAccountRecord = async (params: z.infer<typeof InsertAccountSchema>) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'create OAuth account record',
         inputSchema: InsertAccountSchema,
         inputData: params,
@@ -42,7 +38,7 @@ export const getOAuthAccountRecordByProviderAccountId = async ({
     provider: AuthProvider;
     providerAccountId: string;
 }) =>
-    withDbQueryValidatedNullable({
+    withDbQuery({
         operation: 'get OAuth account record by provider account ID',
         outputSchema: SelectAccountSchema,
         queryFn: async () => {
@@ -66,7 +62,7 @@ export const getOAuthAccountRecordByProviderAccountId = async ({
  * @param params.userId - The user ID
  */
 export const getOAuthAccountRecordsByUserId = async ({ userId }: { userId: string }) =>
-    withDbQueryValidated({
+    withDbQuery({
         operation: 'get OAuth account records by user ID',
         outputSchema: z.array(SelectAccountSchema),
         queryFn: async () => db.select().from(authAccount).where(eq(authAccount.userId, userId)),
