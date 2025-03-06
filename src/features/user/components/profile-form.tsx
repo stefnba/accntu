@@ -5,18 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUserEndpoints } from '@/features/user/api';
 import { useAuth } from '@/hooks';
 import { UpdateUserSchema } from '@/server/db/schemas';
+import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export function ProfileForm() {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
 
     const { mutate: updateUserMutate } = useUserEndpoints.update();
 
     const profileForm = useForm({
         schema: UpdateUserSchema,
         defaultValues: {
-            firstName: 'John',
-            lastName: 'Doe',
+            firstName: '',
+            lastName: '',
         },
         onSubmit: async (data) => {
             updateUserMutate(
@@ -34,6 +35,21 @@ export function ProfileForm() {
             );
         },
     });
+
+    const resetForm = profileForm.reset;
+
+    useEffect(() => {
+        if (user) {
+            profileForm.reset({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+            });
+        }
+    }, [user, resetForm]);
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <Card>
