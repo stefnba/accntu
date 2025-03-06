@@ -49,10 +49,10 @@ export const createUserRecord = async (params: z.infer<typeof InsertUserSchema>)
  */
 export const getUserRecordByEmail = async ({ email }: { email: string }) =>
     withDbQuery({
-        outputSchema: SelectUserSchema,
+        outputSchema: SelectUserSchema.nullable(),
         operation: 'get user by email',
         queryFn: async () => {
-            const [result] = await db
+            const result = await db
                 .select({
                     id: user.id,
                     email: user.email,
@@ -71,9 +71,8 @@ export const getUserRecordByEmail = async ({ email }: { email: string }) =>
                 })
                 .from(user)
                 .innerJoin(userSettings, eq(user.id, userSettings.userId))
-                .where(eq(user.email, email));
-
-            console.log('result query', result);
+                .where(eq(user.email, email))
+                .then((result) => result[0]);
 
             return result;
         },
@@ -87,10 +86,10 @@ export const getUserRecordByEmail = async ({ email }: { email: string }) =>
  */
 export const getUserRecordById = async ({ userId }: { userId: string }) =>
     withDbQuery({
-        outputSchema: SelectUserSchema,
+        outputSchema: SelectUserSchema.nullable(),
         operation: 'get user by id',
         queryFn: async () => {
-            const [result] = await db
+            const result = await db
                 .select({
                     id: user.id,
                     email: user.email,
@@ -109,7 +108,8 @@ export const getUserRecordById = async ({ userId }: { userId: string }) =>
                 })
                 .from(user)
                 .innerJoin(userSettings, eq(user.id, userId))
-                .where(eq(user.id, userId));
+                .where(eq(user.id, userId))
+                .then((result) => result[0]);
 
             return result;
         },
@@ -176,7 +176,8 @@ export const updateUserRecord = async ({
                     firstName: user.firstName,
                     lastName: user.lastName,
                     image: user.image,
-                }),
+                })
+                .then((result) => result[0]),
     });
 
 /**

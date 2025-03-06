@@ -98,7 +98,7 @@ export const markVerificationTokenRecordAsUsed = async ({ token }: { token: stri
 export const getVerificationTokenRecordByToken = async ({ token }: { token: string }) =>
     withDbQuery({
         operation: 'get verification token record by token',
-        outputSchema: SelectVerificationTokenSchema,
+        outputSchema: SelectVerificationTokenSchema.nullable(),
         queryFn: async () => {
             const [result] = await db
                 .select()
