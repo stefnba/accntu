@@ -2,6 +2,7 @@ import { TUser } from '@/server/db/schemas/user';
 import { globalAuthMiddleware } from '@/server/features/auth/middleware';
 import authRoutes from '@/server/features/auth/routes';
 import userRoutes from '@/server/features/user/routes';
+import { logger } from 'hono/logger';
 
 import { handleError } from '@/server/lib/error/handler';
 import { Hono } from 'hono';
@@ -21,6 +22,8 @@ const app = new Hono<{
     };
 }>().basePath('/api');
 
+app.use('*', timing());
+app.use('*', logger());
 app.use('*', timing());
 app.use('*', cors());
 app.use('*', globalAuthMiddleware);

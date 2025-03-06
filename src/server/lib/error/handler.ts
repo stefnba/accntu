@@ -19,15 +19,19 @@ import { errorFactory } from './factory';
  * @returns A JSON response with the appropriate error information
  */
 export const handleError = (error: Error, c: Context) => {
-    console.error('Error in Hono application:', error.message);
+    const requestData = {
+        method: c.req.method,
+        url: c.req.url,
+        status: c.res.status,
+    };
 
-    // Handle BaseError (our custom error type)
+    // Handle our custom BaseError
     if (error instanceof BaseError) {
-        error.logError();
+        error.logError(requestData);
         return c.json(error.toResponse(), error.statusCode);
     }
 
-    // Handle Hono HTTP exceptions
+    // Handle Hono HTTP exceptions (404, etc.)
     if (error instanceof HTTPException) {
         const baseError = errorFactory.createError({
             message: error.message || 'HTTP error occurred',
@@ -35,22 +39,18 @@ export const handleError = (error: Error, c: Context) => {
             statusCode: error.status,
             layer: 'route',
         });
-        baseError.logError();
+        baseError.logError(requestData);
         return c.json(baseError.toResponse(), error.status);
     }
 
-    // Log the original error for debugging
-    console.error('Unhandled error in Hono application:', error);
-
-    // Unknown errors
-    const status = 500;
+    // Handle unknown errors as critical errors
     const baseError = errorFactory.createError({
         message: 'An unexpected error occurred',
         code: 'INTERNAL_SERVER_ERROR',
-        statusCode: status,
+        statusCode: 500,
         cause: error instanceof Error ? error : undefined,
         layer: 'route',
     });
-    baseError.logError();
-    return c.json(baseError.toResponse(), status);
+    baseError.logError(requestData);
+    return c.json(baseError.toResponse(), 500);
 };

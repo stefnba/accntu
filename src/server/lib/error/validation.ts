@@ -1,42 +1,41 @@
-import { z } from 'zod';
+import { Context } from 'hono';
+import { ZodError } from 'zod';
+import { logger } from '../logger';
 import { errorFactory } from './factory';
 
 /**
- * Handles Zod validation errors and transforms them into structured errors
- *
- * This function takes a Zod validation error and transforms it into our
- * standardized BaseError format with appropriate error codes and messages.
- * It extracts field-specific error messages and formats them in a consistent way.
- *
- * @param error - The Zod validation error to handle
- * @returns A BaseError with validation error details
+ * Handles Zod validation errors by transforming them into a standardized error response
+ * @param error The Zod validation error
+ * @param c Optional Hono context for request-specific information
  */
-export function handleZodError(error: z.ZodError) {
-    // Extract field errors into a structured format
+export const handleZodError = (error: ZodError, c?: Context) => {
+    // Extract field errors into a more readable format
     const fieldErrors = error.errors.reduce(
-        (acc, err) => {
-            const path = err.path.join('.');
-            acc[path] = err.message;
+        (acc, curr) => {
+            const path = curr.path.join('.');
+            acc[path] = curr.message;
             return acc;
         },
         {} as Record<string, string>
     );
 
-    console.log('handleZodError fieldErrors', fieldErrors);
+    // Log validation error with details
+    logger.warn('Validation error', {
+        context: 'validation',
+        data: { fields: fieldErrors },
+        error: error,
+    });
 
-    // Create a validation error with the field errors as details
-    return errorFactory.createValidationError({
+    // Create and throw a validation error with field details
+    throw errorFactory.createValidationError({
         message: 'Validation error',
         code: 'VALIDATION.INVALID_INPUT',
-        cause: error,
-        statusCode: 400,
         details: {
             fields: fieldErrors,
-            // Include the original error format for debugging
-            original: error.format(),
+            original: error,
         },
     });
-}
+};
 
 import { zValidator as zv } from '@hono/zod-validator';
 import type { ValidationTargets } from 'hono';

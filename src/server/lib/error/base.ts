@@ -1,5 +1,28 @@
+import { LOG_CONTEXTS, logger } from '@/server/lib/logger';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { APIErrorResponse, ErrorChainItem, ErrorCode, ErrorLayer, ErrorOptions } from './types';
+
+// Error types that are expected/handled as part of normal operation
+const EXPECTED_ERROR_CODES: ErrorCode[] = [
+    'VALIDATION.INVALID_INPUT',
+    'AUTH.SESSION_NOT_FOUND',
+    'AUTH.SESSION_EXPIRED',
+    'AUTH.OTP_EXPIRED',
+    'AUTH.OTP_ALREADY_USED',
+    'AUTH.OTP_NOT_FOUND',
+    'AUTH.OTP_INVALID',
+    'AUTH.OTP_GENERATION_FAILED',
+    'AUTH.COOKIE_NOT_FOUND',
+    'AUTH.COOKIE_INVALID',
+    'AUTH.USER_NOT_FOUND',
+] as const;
+
+// Map error layers to log contexts
+const LAYER_TO_CONTEXT: Record<ErrorLayer, keyof typeof LOG_CONTEXTS> = {
+    route: 'ROUTE',
+    service: 'SERVICE',
+    query: 'QUERY',
+} as const;
 
 // Simple in-memory error tracking
 const errorMetrics: Record<string, { count: number; lastOccurred: Date; occurrences: Date[] }> = {};
@@ -100,33 +123,43 @@ export class BaseError extends Error {
                 code: this.code,
                 message: this.message,
                 details: this.details,
-                // this.errorChain[0].layer === 'route'
-                //     ? undefined
-                //     : {
-                //           trace_id: this.traceId,
-                //       },
             },
             trace_id: this.traceId,
         };
     }
 
     /**
-     * Logs the error to the console with detailed information
+     * Logs the error with appropriate severity level and context
      *
      * This provides comprehensive error information for debugging,
      * including the error chain, original error, and stack trace.
+     *
+     * @param requestData - Optional request context data
      */
-    logError() {
-        console.error('Error:', {
-            message: this.message,
+    logError(requestData?: { method: string; url: string; status: number }) {
+        const context = LOG_CONTEXTS[LAYER_TO_CONTEXT[this.errorChain[0].layer]];
+        const logData = {
+            ...(requestData && { request: requestData }),
             code: this.code,
-            statusCode: this.statusCode,
             details: this.details,
             traceId: this.traceId,
-            timestamp: this.timestamp,
             chain: this.errorChain,
-            originalError: this.originalError,
-            stack: this.stack,
+        };
+
+        // Log expected errors (validation, auth, etc.) and client errors (4xx) as warnings
+        if (EXPECTED_ERROR_CODES.includes(this.code) || this.statusCode < 500) {
+            logger.warn(this.message, {
+                context,
+                data: logData,
+            });
+            return;
+        }
+
+        // Server errors (500+) and unexpected errors are logged with full details
+        logger.error(this.message, {
+            context,
+            data: logData,
+            error: this,
         });
     }
 
