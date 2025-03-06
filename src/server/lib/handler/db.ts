@@ -141,10 +141,10 @@ export async function withDbQuery<
         }
 
         // Execute the query
-        const result = await queryFn(validatedInput);
+        const result = (await queryFn(validatedInput)) ?? null;
 
         // Validate output data if schema is provided
-        if (result !== null && outputSchema) {
+        if (outputSchema) {
             try {
                 return outputSchema.parse(result);
             } catch (validationError) {
@@ -162,7 +162,7 @@ export async function withDbQuery<
 
         // Handle null results based on allowNull flag and output schema
         if (result === null) {
-            if (!allowNull || (outputSchema && !outputSchema.safeParse(null).success)) {
+            if (!allowNull) {
                 throw errorFactory.createDatabaseError({
                     message: `Database returned null for ${operation}`,
                     code: 'DB.QUERY_NULL_RETURNED',
