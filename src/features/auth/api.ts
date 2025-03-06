@@ -5,7 +5,7 @@ export const useAuthEndpoints = {
     verifyOtp: createMutation(apiClient.auth['verify-otp'].$post),
     signupWithEmail: createMutation(apiClient.auth.signup.$post),
     logout: createMutation(apiClient.auth.logout.$post),
-    me: createQuery(apiClient.user.me.$get),
+    me: createQuery(apiClient.user.me.$get, ['user']),
 
     // Oauth Login
     initiateLoginWithOauth: createMutation(apiClient.auth[':provider'].authorize.$get),
