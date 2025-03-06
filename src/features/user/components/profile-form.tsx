@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUserEndpoints } from '@/features/user/api';
 import { useAuth } from '@/hooks';
 import { UpdateUserSchema } from '@/server/db/schemas';
+import toast from 'react-hot-toast';
 
 export function ProfileForm() {
     const { user } = useAuth();
@@ -18,9 +19,19 @@ export function ProfileForm() {
             lastName: 'Doe',
         },
         onSubmit: async (data) => {
-            updateUserMutate({
-                json: data,
-            });
+            updateUserMutate(
+                {
+                    json: data,
+                },
+                {
+                    onError: (error) => {
+                        toast.error('Error updating user');
+                    },
+                    onSuccess: () => {
+                        toast.success('User updated successfully');
+                    },
+                }
+            );
         },
     });
 

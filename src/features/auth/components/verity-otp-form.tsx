@@ -26,6 +26,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
                     message: 'Failed to verify OTP. Please try again.',
                 });
                 form.reset();
+                toast.error('Failed to verify OTP. Please try again.');
             });
         },
         onError: (errors) => {
@@ -88,7 +89,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
                             Resend
                         </Button>
                         {' or '}
-                        <a href="/auth/login" className="text-primary hover:underline">
+                        <a href="/login" className="text-primary hover:underline">
                             return to login
                         </a>
                     </div>
