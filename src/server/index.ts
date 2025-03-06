@@ -21,7 +21,6 @@ const app = new Hono<{
     };
 }>().basePath('/api');
 
-// app.use('*', logger());
 app.use('*', timing());
 app.use('*', cors());
 app.use('*', globalAuthMiddleware);
@@ -33,4 +32,4 @@ app.onError(handleError);
 const routes = app.route('/user', userRoutes).route('/auth', authRoutes);
 
 export type AppType = typeof routes;
-export { app };
+export { app, routes };
