@@ -1,6 +1,7 @@
 import { verificationTokenQueries } from '@/server/features/auth/queries';
 import { generateOtp, verifyOtp } from '@/server/features/auth/services/verification-token';
 import * as userQueries from '@/server/features/user/queries';
+import * as userServices from '@/server/features/user/services';
 import { errorFactory } from '@/server/lib/error';
 
 /**
@@ -59,7 +60,16 @@ export const verifyLoginWithEmailOTP = async ({
         });
     }
 
-    const user = await userQueries.getUserRecordByEmail({ email });
+    let user = await userQueries.getUserRecordByEmail({ email });
+
+    // TODO: Check create new user if not found
+    if (!user) {
+        const newUser = await userServices.signupNewUser({
+            email,
+            firstName: email.split('@')[0],
+        });
+        user = newUser;
+    }
 
     if (!user) {
         throw errorFactory.createAuthError({
