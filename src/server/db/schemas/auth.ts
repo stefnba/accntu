@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { user } from './user';
 
 // Provider enum for auth providers
-const oauthProviderOptions = ['github', 'google'] as const;
+const oauthProviderOptions = ['github', 'google', 'apple'] as const;
 export const OAuthProviderSchema = z.enum(oauthProviderOptions);
 export type TOAuthProvider = z.infer<typeof OAuthProviderSchema>;
 
