@@ -14,57 +14,81 @@ import { errorFactory } from '../error/factory';
  *
  * This function provides a unified interface for database operations with:
  * - Input validation using Zod schemas
- * - Output validation using Zod schemas
- * - Null handling with type safety
+ * - Output validation using Zod schemas (handles nullability)
+ * - Null handling with type safety (when no output schema)
  * - Consistent error handling and formatting
  *
  * Type safety is enforced through overloads:
- * - When allowNull=false (default): Ensures query returns non-null value
- * - When allowNull=true: Allows query to return null
+ * - With outputSchema: Schema defines nullability
+ * - Without outputSchema: allowNull parameter controls nullability
  *
  * @example
- * // Non-nullable query with validation
+ * // Schema-validated query (nullability defined in schema)
  * const result = await withDbQuery({
  *   queryFn: (input) => db.insert(user).values(input).returning(),
  *   inputSchema: userSchema,
- *   outputSchema: userSchema,
+ *   outputSchema: userSchema, // schema defines if null is allowed
  *   inputData: userData,
- *   allowNull: false
  * });
  *
- * // Nullable query without validation
+ * // Query without schema validation
  * const result = await withDbQuery({
  *   queryFn: () => db.select().from(user).where(eq(user.id, '1')),
- *   allowNull: true
+ *   allowNull: true // only used when no outputSchema
  * });
- *
- * @param options - Configuration options
- * @param options.queryFn - The database query function to execute
- * @param options.operation - Description of the operation (for error messages)
- * @param options.inputSchema - Optional zod schema to validate input data
- * @param options.outputSchema - Optional zod schema to validate query results
- * @param options.inputData - Optional input data to validate (required if inputSchema is provided)
- * @param options.allowNull - Whether to allow null results (defaults to false)
- * @returns The validated result of the query function
- * @throws {ValidationError} If input/output validation fails
- * @throws {DatabaseError} If query fails or returns null when not allowed
  */
 export async function withDbQuery<
     TOutput,
     TInputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
-    TOutputSchema extends z.ZodSchema<TOutput, any, any> = z.ZodSchema<TOutput, any, any>,
+    TOutputSchema extends z.ZodSchema<TOutput | null, any, any> = z.ZodSchema<
+        TOutput | null,
+        any,
+        any
+    >,
 >({
     queryFn,
     operation,
     inputSchema,
     outputSchema,
     inputData,
+}: {
+    queryFn: (validatedInput: z.infer<TInputSchema>) => Promise<TOutput | null>;
+    operation?: string;
+    inputSchema?: TInputSchema;
+    outputSchema: TOutputSchema;
+    inputData?: unknown;
+}): Promise<z.infer<TOutputSchema>>;
+
+export async function withDbQuery<
+    TOutput,
+    TInputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
+>({
+    queryFn,
+    operation,
+    inputSchema,
+    inputData,
+    allowNull,
+}: {
+    queryFn: (validatedInput: z.infer<TInputSchema>) => Promise<TOutput | null>;
+    operation?: string;
+    inputSchema?: TInputSchema;
+    inputData?: unknown;
+    allowNull: true;
+}): Promise<TOutput | null>;
+
+export async function withDbQuery<
+    TOutput,
+    TInputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
+>({
+    queryFn,
+    operation,
+    inputSchema,
+    inputData,
     allowNull,
 }: {
     queryFn: (validatedInput: z.infer<TInputSchema>) => Promise<TOutput>;
     operation?: string;
     inputSchema?: TInputSchema;
-    outputSchema?: TOutputSchema;
     inputData?: unknown;
     allowNull?: false;
 }): Promise<TOutput>;
@@ -72,35 +96,7 @@ export async function withDbQuery<
 export async function withDbQuery<
     TOutput,
     TInputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
-    TOutputSchema extends z.ZodSchema<TOutput | null, any, any> = z.ZodSchema<
-        TOutput | null,
-        any,
-        any
-    >,
->({
-    queryFn,
-    operation,
-    inputSchema,
-    outputSchema,
-    inputData,
-    allowNull,
-}: {
-    queryFn: (validatedInput: z.infer<TInputSchema>) => Promise<TOutput | null>;
-    operation?: string;
-    inputSchema?: TInputSchema;
-    outputSchema?: TOutputSchema;
-    inputData?: unknown;
-    allowNull?: true;
-}): Promise<TOutput | null>;
-
-export async function withDbQuery<
-    TOutput,
-    TInputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
-    TOutputSchema extends z.ZodSchema<TOutput | null, any, any> = z.ZodSchema<
-        TOutput | null,
-        any,
-        any
-    >,
+    TOutputSchema extends z.ZodSchema<any, any> = z.ZodSchema<any, any>,
 >({
     queryFn,
     operation = 'database operation',
@@ -116,66 +112,73 @@ export async function withDbQuery<
     inputData?: unknown;
     allowNull?: boolean;
 }): Promise<TOutput | null> {
-    try {
-        // Validate input data if schema is provided
-        let validatedInput: z.infer<TInputSchema> | undefined = undefined;
+    // Validate input data if schema is provided
+    let validatedInput: z.infer<TInputSchema>;
 
-        if (inputSchema) {
-            if (inputData === undefined) {
-                throw new Error('Input data must be provided when inputSchema is specified');
-            }
-
-            try {
-                validatedInput = inputSchema.parse(inputData);
-            } catch (validationError) {
-                if (validationError instanceof z.ZodError) {
-                    throw errorFactory.createValidationError({
-                        message: `Invalid input data for ${operation}`,
-                        code: 'DB.INVALID_INPUT',
-                        cause: validationError,
-                        details: { zodErrors: validationError.errors },
-                    });
-                }
-                throw validationError;
-            }
+    if (inputSchema) {
+        if (inputData === undefined) {
+            throw new Error('Input data must be provided when inputSchema is specified');
         }
 
+        const validatedInputParsed = inputSchema.safeParse(inputData);
+
+        if (validatedInputParsed.error) {
+            throw errorFactory.createValidationError({
+                message: `Invalid input data for ${operation}`,
+                code: 'DB.INVALID_INPUT',
+                cause: validatedInputParsed.error,
+                details: { zodErrors: validatedInputParsed.error.errors },
+            });
+        }
+
+        validatedInput = validatedInputParsed.data;
+    } else {
+        // When no input schema, pass an empty object as validatedInput
+        validatedInput = {} as z.infer<TInputSchema>;
+    }
+
+    try {
         // Execute the query
         const result = (await queryFn(validatedInput)) ?? null;
 
-        // Validate output data if schema is provided
+        // If we have an output schema, use it for validation (including null handling)
         if (outputSchema) {
-            try {
-                return outputSchema.parse(result);
-            } catch (validationError) {
-                if (validationError instanceof z.ZodError) {
-                    throw errorFactory.createValidationError({
-                        message: `Invalid output data from ${operation}`,
-                        code: 'DB.INVALID_OUTPUT',
-                        cause: validationError,
-                        details: { zodErrors: validationError.errors },
-                    });
-                }
-                throw validationError;
-            }
-        }
+            const validatedOutputParsed = outputSchema.safeParse(result);
 
-        // Handle null results based on allowNull flag and output schema
-        if (result === null) {
-            if (!allowNull) {
-                throw errorFactory.createDatabaseError({
-                    message: `Database returned null for ${operation}`,
-                    code: 'DB.QUERY_NULL_RETURNED',
-                    cause: new Error(`Database returned null for ${operation}`),
+            if (validatedOutputParsed.error) {
+                throw errorFactory.createValidationError({
+                    message: `Invalid output data from ${operation}`,
+                    code: 'DB.INVALID_OUTPUT',
+                    cause: validatedOutputParsed.error,
+                    details: { zodErrors: validatedOutputParsed.error.errors },
                 });
             }
-            return null;
+
+            return validatedOutputParsed.data;
+        }
+
+        // Handle null results when no output schema is provided
+        if (result === null && !allowNull) {
+            throw errorFactory.createDatabaseError({
+                message: `Database returned null for ${operation}`,
+                code: 'DB.QUERY_NULL_RETURNED',
+                cause: new Error(`Database returned null for ${operation}`),
+            });
         }
 
         return result;
     } catch (error) {
         if (error instanceof BaseError) {
             throw error;
+        }
+
+        // Check if it's a database error (PostgreSQL error codes start with numbers)
+        if (error instanceof Error && 'code' in error && /^\d/.test(String(error.code))) {
+            throw errorFactory.createDatabaseError({
+                message: `Database error in ${operation}: ${error.message}`,
+                code: 'DB.OPERATION_FAILED',
+                cause: error,
+            });
         }
 
         throw errorFactory.createDatabaseError({
