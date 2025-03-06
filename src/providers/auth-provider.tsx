@@ -228,6 +228,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 onSettled: () => {
                     setIsLoading(false);
                 },
+                // onError: (error) => {
+                //     console.log('Verify OTP failed:', error);
+                // },
                 // onSuccess: (data) => {
                 //     console.log('Verify OTP success:', data);
                 //     setUser(data.user);
@@ -248,7 +251,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             })
             .catch((error) => {
                 console.log('Here, Verify OTP failed:', error);
-                return Promise.reject(error);
+                return Promise.reject({
+                    message: 'Verify OTP failed',
+                    error,
+                });
             });
     }, []);
 
