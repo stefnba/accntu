@@ -15,12 +15,12 @@ type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
 };
 
 export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps) {
-    const { verifyOtp, loginWithEmail, isLoading } = useAuth();
+    const { verifyLoginWithEmailOTP, initiateLoginWithEmailOTP, isLoading } = useAuth();
 
     const form = useForm({
         ...OTPVerifyFormSchema,
         onSubmit: async (values) => {
-            await verifyOtp(values.code).catch((error) => {
+            await verifyLoginWithEmailOTP(values.code).catch((error) => {
                 console.log('Hereddddddddddd, Verify OTP failed:', error);
                 form.setError('code', {
                     message: 'Failed to verify OTP. Please try again.',
@@ -43,7 +43,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
         }
 
         try {
-            await loginWithEmail(email);
+            await initiateLoginWithEmailOTP(email);
             form.reset();
             // Show success message
             toast.success('Code sent successfully. Please check your email.');

@@ -18,10 +18,10 @@ import { cn } from '@/lib/utils';
     Social Auth
 */
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { loginWithOauth, isLoading } = useAuth();
+    const { initiateLoginWithOauth, isLoading } = useAuth();
 
     const handleSocialLogin = async (provider: SocialProvider) => {
-        await loginWithOauth(provider);
+        await initiateLoginWithOauth(provider);
     };
 
     return (
@@ -62,7 +62,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     Email Auth
 */
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { loginWithEmail, signupWithEmail, isLoading, authMethod } = useAuth();
+    const { initiateLoginWithEmailOTP, signupWithEmail, isLoading, authMethod } = useAuth();
     const isLogin = action === 'Login';
 
     // Login form
@@ -72,7 +72,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             defaultValues: loginEmailFormSchema.defaultValues,
             onSubmit: async (data) => {
                 try {
-                    await loginWithEmail(data.email);
+                    await initiateLoginWithEmailOTP(data.email);
                 } catch (error) {
                     console.log('Login failed:', error);
                 }
