@@ -8,7 +8,7 @@ import {
 import * as userServices from '@/server/features/user/services';
 import {
     clearCookie,
-    COOKIE_NAMES_AUTH,
+    getCookieValue,
     setSecureCookie,
     setSessionCookie,
 } from '@/server/lib/cookies';
@@ -43,20 +43,16 @@ const app = new Hono()
     .post(
         '/verify-otp',
         zValidator('json', OTPVerifySchema),
-        zValidator(
-            'cookie',
-            z.object({
-                [COOKIE_NAMES_AUTH.AUTH_OTP_TOKEN]: z.string(),
-                [COOKIE_NAMES_AUTH.AUTH_OTP_EMAIL]: z.string(),
-            })
-        ),
+
         async (c) =>
             withMutationRoute(c, async () => {
                 const { code } = c.req.valid('json');
-                const {
-                    [COOKIE_NAMES_AUTH.AUTH_OTP_EMAIL]: email,
-                    [COOKIE_NAMES_AUTH.AUTH_OTP_TOKEN]: token,
-                } = c.req.valid('cookie');
+
+                const email = getCookieValue(c, 'AUTH_OTP_EMAIL', z.string());
+                const token = getCookieValue(c, 'AUTH_OTP_TOKEN', z.string());
+
+                clearCookie(c, 'AUTH_OTP_TOKEN');
+                clearCookie(c, 'AUTH_OTP_EMAIL');
 
                 // Verify OTP with token
                 const user = await verifyLoginWithEmailOTP({ token, otp: code, email });
@@ -70,7 +66,7 @@ const app = new Hono()
 
                 setSessionCookie(c, 'SESSION', sessionId);
 
-                return { message: 'Login successful' };
+                return { message: 'Login successful', user };
             })
     )
 
