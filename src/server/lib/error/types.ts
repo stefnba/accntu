@@ -45,6 +45,9 @@ export type ErrorCode =
     | 'SERVICE.NOT_FOUND'
     | 'SERVICE.ALREADY_EXISTS'
 
+    // Cookie Errors
+    | 'COOKIE.INVALID_VALUE'
+
     // Generic Errors
     | 'INTERNAL_SERVER_ERROR';
 

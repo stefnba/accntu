@@ -3,6 +3,7 @@ import { validateSession } from '@/server/features/auth/services/session';
 import { clearCookie, getCookieValue } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
 import { Context, Next } from 'hono';
+import { z } from 'zod';
 import { METHOD_PUBLIC_API_ROUTES, PUBLIC_API_ROUTES, ROLE_PROTECTED_ROUTES } from './config';
 import { isMethodPathMatch, isPathMatch } from './utils';
 
@@ -39,7 +40,7 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
 
     try {
         // Get session ID from cookie
-        const sessionId = getCookieValue(c, 'AUTH_SESSION');
+        const sessionId = getCookieValue(c, 'SESSION', z.string());
 
         if (!sessionId) {
             throw errorFactory.createAuthError({
