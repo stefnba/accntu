@@ -64,7 +64,7 @@ const app = new Hono()
                     userAgent: c.req.header('user-agent'),
                 });
 
-                setSessionCookie(c, 'SESSION', sessionId);
+                setSessionCookie(c, 'AUTH_SESSION', sessionId);
 
                 return { message: 'Login successful', user };
             })
@@ -98,7 +98,7 @@ const app = new Hono()
 
     .post('/logout', async (c) =>
         withMutationRoute(c, async () => {
-            clearCookie(c, 'SESSION');
+            clearCookie(c, 'AUTH_SESSION');
             return { message: 'Logout successful' };
         })
     )

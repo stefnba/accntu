@@ -9,14 +9,13 @@ import { CookieOptions } from 'hono/utils/cookie';
  */
 export const COOKIE_NAMES_AUTH = {
     // Auth related cookies
-    AUTH_SESSION: 'auth_session', // Session cookie
     AUTH_REFRESH_TOKEN: 'auth_refresh_token', // Refresh token cookie
     AUTH_OTP_EMAIL: 'auth_otp_email', // Email used for OTP verification
     AUTH_OTP_TOKEN: 'auth_otp_token', // OTP token cookie
 } as const;
 
 export const COOKIE_NAMES_SESSION = {
-    SESSION: 'session',
+    AUTH_SESSION: 'auth_session',
 } as const;
 
 export const COOKIE_NAMES_PREFERENCES = {
@@ -79,13 +78,12 @@ export const COOKIE_NAME_TO_OPTIONS: Record<
     (typeof COOKIE_OPTIONS)[keyof typeof COOKIE_OPTIONS]
 > = {
     // Auth cookies
-    AUTH_SESSION: COOKIE_OPTIONS.SECURE,
     AUTH_REFRESH_TOKEN: COOKIE_OPTIONS.SECURE,
     AUTH_OTP_EMAIL: COOKIE_OPTIONS.SECURE,
     AUTH_OTP_TOKEN: COOKIE_OPTIONS.SECURE,
 
     // Session cookies
-    SESSION: COOKIE_OPTIONS.SESSION,
+    AUTH_SESSION: COOKIE_OPTIONS.SESSION,
 
     // Preference cookies
     THEME: COOKIE_OPTIONS.PREFERENCES,

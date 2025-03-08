@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
     }
 
     // For all other routes, check for session cookie
-    const sessionCookie = request.cookies.get(COOKIE_NAMES_SESSION.SESSION);
+    const sessionCookie = request.cookies.get(COOKIE_NAMES_SESSION.AUTH_SESSION);
 
     // If no session cookie, redirect to login
     if (!sessionCookie) {
