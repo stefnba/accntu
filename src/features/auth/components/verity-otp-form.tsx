@@ -20,13 +20,17 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
     const form = useForm({
         ...OTPVerifyFormSchema,
         onSubmit: async (values) => {
-            await verifyLoginWithEmailOTP(values.code).catch((error) => {
-                console.log('Hereddddddddddd, Verify OTP failed:', error);
-                form.setError('code', {
-                    message: 'Failed to verify OTP. Please try again.',
-                });
-                form.reset();
-                toast.error('Failed to verify OTP. Please try again.');
+            await verifyLoginWithEmailOTP(values.code, {
+                errorHandlers: {
+                    default: (error) => {
+                        toast.error('Test: Failed to verify OTP. Please try again.');
+                        console.log('Hereddddddddddd, Verify OTP failed:', error);
+                        form.setError('code', {
+                            message: 'Failed to verify OTP. Please try again.',
+                        });
+                        form.reset();
+                    },
+                },
             });
         },
         onError: (errors) => {
@@ -34,8 +38,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
         },
     });
 
-    const { watch, formState, handleSubmit, isSubmitting, register } = form;
-    const otp = watch('code');
+    const { formState, isSubmitting } = form;
 
     const handleResendCode = async () => {
         if (!email) {

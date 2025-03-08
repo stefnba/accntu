@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
 import { LOGIN_REDIRECT_URL, LOGIN_URL } from '@/lib/config';
+import { ErrorHandler, handleErrorHandlers } from '@/lib/error';
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 type TAuthState = 'loggedIn' | 'loggedOut' | 'loading';
@@ -20,7 +21,10 @@ type AuthContextType = {
     isAuthenticated: boolean;
     logout: () => void;
     initiateLoginWithEmailOTP: (email: string) => Promise<void>;
-    verifyLoginWithEmailOTP: (code: string) => Promise<void>;
+    verifyLoginWithEmailOTP: (
+        code: string,
+        options?: { errorHandlers?: ErrorHandler }
+    ) => Promise<void>;
     signupWithEmail: (email: string, name: string) => Promise<void>;
     initiateLoginWithOauth: (provider: SocialProvider) => Promise<void>;
     verifyOauthCallback: (
@@ -75,21 +79,17 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
             refetchOnWindowFocus: false,
             // Stop retrying if we get an auth error
             retryOnMount: false,
-            // Throw on auth errors to trigger the error boundary
-            // throwOnError: (error: any) => {
-            //     if (
-            //         error?.code === 'AUTH.SESSION_NOT_FOUND' ||
-            //         error?.code === 'AUTH.USER_NOT_FOUND'
-            //     ) {
-            //         return true;
-            //     }
-            //     return false;
-            // },
+            // Handle errors
+            errorHandlers: {
+                default: (error) => {
+                    console.log('Here, userMe error:', error);
+                },
+            },
         }
     );
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
     const { mutate: loginWithEmailMutate } = useAuthEndpoints.requestOtp();
-    const { mutateAsync: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp();
+    const { mutateAsync: verifyEmailLoginMutate } = useAuthEndpoints.verifyOtp({});
     const { mutate: signupWithEmailMutate } = useAuthEndpoints.signupWithEmail();
     const { mutate: loginWithOauthMutate } = useAuthEndpoints.initiateLoginWithOauth();
 
@@ -283,29 +283,27 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
      * Verify login with email OTP
      * @param code - The code to verify the login with
      */
-    const verifyLoginWithEmailOTP = useCallback(async (code: string) => {
-        return verifyEmailLoginMutate(
-            {
-                json: { code },
-            },
-            {
-                onSettled: () => {
-                    finalizeLogin();
+    const verifyLoginWithEmailOTP = useCallback(
+        async (code: string, options?: { errorHandlers?: ErrorHandler }) => {
+            await verifyEmailLoginMutate(
+                {
+                    json: { code },
                 },
-            }
-        )
-            .then(({ data }) => {
-                // Set user
-                router.push('/dashboard');
-            })
-            .catch((error) => {
-                console.log('Here, Verify OTP failed:', error);
-                return Promise.reject({
-                    message: 'Verify OTP failed',
-                    error,
-                });
-            });
-    }, []);
+                {
+                    onSuccess: () => {
+                        finalizeLogin();
+                    },
+                    onError: (error) => {
+                        console.log('Here, Verify OTP failed:', error, options?.errorHandlers);
+
+                        // Handle error handlers
+                        handleErrorHandlers(error, options?.errorHandlers);
+                    },
+                }
+            );
+        },
+        []
+    );
 
     /**
      * Finalize login

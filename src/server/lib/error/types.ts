@@ -1,5 +1,7 @@
 // src/server/error/types.ts
 
+import { z } from 'zod';
+
 /**
  * Enumeration of all possible error codes in the application
  *
@@ -8,13 +10,13 @@
  */
 export type ErrorCode =
     // Auth Errors
-    | 'AUTH.SESSION_NOT_FOUND'
-    | 'AUTH.SESSION_EXPIRED'
-    | 'AUTH.OTP_EXPIRED'
-    | 'AUTH.OTP_ALREADY_USED'
-    | 'AUTH.OTP_NOT_FOUND'
-    | 'AUTH.OTP_INVALID'
-    | 'AUTH.OTP_GENERATION_FAILED'
+    | 'AUTH.SESSION_NOT_FOUND' // Session not found
+    | 'AUTH.SESSION_EXPIRED' // Session expired
+    | 'AUTH.OTP_EXPIRED' // OTP expired
+    | 'AUTH.OTP_ALREADY_USED' // OTP already used
+    | 'AUTH.OTP_NOT_FOUND' // OTP not found
+    | 'AUTH.OTP_INVALID' // OTP invalid
+    | 'AUTH.OTP_GENERATION_FAILED' // OTP generation failed
     | 'AUTH.COOKIE_NOT_FOUND'
     | 'AUTH.COOKIE_INVALID'
     | 'AUTH.USER_NOT_FOUND'
@@ -97,6 +99,17 @@ export type APIErrorResponse = {
     };
     trace_id: string;
 };
+
+export const APIErrorResponseSchema = z.object({
+    success: z.literal(false),
+    error: z.object({
+        code: z.custom<ErrorCode>(),
+        message: z.string(),
+        details: z.record(z.unknown()).optional(),
+    }),
+    trace_id: z.string(),
+});
+export type APIErrorResponseA = z.infer<typeof APIErrorResponseSchema>;
 
 /**
  * Standard structure for succesful API mutation responses

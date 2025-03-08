@@ -11,7 +11,16 @@ import toast from 'react-hot-toast';
 export function ProfileForm() {
     const { user, isLoading } = useAuth();
 
-    const { mutate: updateUserMutate } = useUserEndpoints.update();
+    const { mutate: updateUserMutate } = useUserEndpoints.update({
+        errorHandlers: {
+            'VALIDATION.INVALID_INPUT': (err) => {
+                toast.error('Please check your input');
+            },
+            default: (err) => {
+                toast.error(err.error.message || 'Error updating user');
+            },
+        },
+    });
 
     const profileForm = useForm({
         schema: UpdateUserSchema,
@@ -25,9 +34,6 @@ export function ProfileForm() {
                     json: data,
                 },
                 {
-                    onError: (error) => {
-                        toast.error('Error updating user');
-                    },
                     onSuccess: () => {
                         toast.success('User updated successfully');
                     },
@@ -47,15 +53,11 @@ export function ProfileForm() {
         }
     }, [user, resetForm]);
 
-    if (isLoading) {
-        return <div>Loading...</div>;
-    }
-
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Profile</CardTitle>
-                <CardDescription>Update your personal information.</CardDescription>
+                <CardDescription>Update your profile information</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form form={profileForm}>
@@ -64,13 +66,6 @@ export function ProfileForm() {
                             <FormInput form={profileForm} name="firstName" label="First Name" />
                             <FormInput form={profileForm} name="lastName" label="Last Name" />
                         </div>
-                        {/* <FormInput
-                            form={profileForm}
-                            name="email"
-                            label="Email"
-                            type="email"
-                            disabled
-                        /> */}
                     </div>
                     <div className="mt-6">
                         <FormSubmitButton form={profileForm}>Update Profile</FormSubmitButton>

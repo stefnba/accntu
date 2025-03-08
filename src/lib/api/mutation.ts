@@ -1,4 +1,4 @@
-import { isSuccessResponse } from '@/lib/error';
+import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/error';
 import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
@@ -6,7 +6,7 @@ import { StatusCode } from 'hono/utils/http-status';
 /**
  * Creates a type-safe mutation hook for a Hono endpoint
  * @param endpoint - The Hono endpoint to create a mutation for
- * @param status - The status code of the response
+ * @param queryKey - Optional query key to invalidate on success
  * @returns A type-safe mutation hook
  */
 export function createMutation<
@@ -21,33 +21,46 @@ export function createMutation<
     >;
 
     return (
-        options?: Omit<UseMutationOptions<TResponse, TResponseError, TParams>, 'mutationFn'>
+        options?: Omit<UseMutationOptions<TResponse, TResponseError, TParams>, 'mutationFn'> & {
+            errorHandlers?: ErrorHandler;
+        }
     ) => {
         const queryClient = useQueryClient();
+
+        // Extract errorHandlers from options
+        const { errorHandlers, ...mutationOptions } = options || {};
+
+        // Create a custom onError function that uses the error handlers
+        const originalOnError = mutationOptions.onError;
+
+        const enhancedOptions = {
+            ...mutationOptions,
+            onError:
+                errorHandlers || originalOnError
+                    ? (error: TResponseError, variables: TParams, context: unknown) => {
+                          handleErrorHandlers(error, errorHandlers);
+
+                          // Also call the original onError if it exists
+                          if (originalOnError) {
+                              originalOnError(error, variables, context);
+                          }
+                      }
+                    : undefined,
+        };
+
         return useMutation<TResponse, TResponseError, TParams>({
             mutationFn: async (variables) => {
                 try {
                     const response = await endpoint(variables);
 
                     if (!response.ok) {
-                        // If the response is 401, redirect to the login page
-                        if (response.status === 401) {
-                            window.location.href = '/login';
-                        }
+                        // Handle 401 redirects at the component level instead
+                        // to allow for more graceful handling
 
+                        // Handle API error responses
                         const errorData = await response.json();
-                        // Check if it's our standardized error format
-                        if (errorData && !isSuccessResponse(errorData)) {
-                            return Promise.reject(errorData);
-                        }
-                        // For non-standard errors
-                        return Promise.reject({
-                            error: {
-                                message: response.statusText || 'Request failed',
-                                code: 'UNKNOWN_ERROR',
-                                statusCode: response.status,
-                            },
-                        });
+                        const errorObj = normalizeApiError(errorData);
+                        return Promise.reject(errorObj);
                     }
 
                     // Handle empty responses (like 204 No Content)
@@ -59,16 +72,21 @@ export function createMutation<
 
                     // Invalidate related queries if a queryKey was provided
                     if (queryKey) {
-                        queryClient.invalidateQueries({ queryKey: queryKey });
+                        queryClient.invalidateQueries({
+                            queryKey: Array.isArray(queryKey) ? queryKey : [queryKey],
+                        });
                     }
 
                     return data;
                 } catch (error) {
                     console.error('Mutation error:', error);
-                    return Promise.reject(error);
+
+                    // Handle API error responses
+                    const errorObj = normalizeApiError(error);
+                    return Promise.reject(errorObj);
                 }
             },
-            ...options,
+            ...enhancedOptions,
         });
     };
 }

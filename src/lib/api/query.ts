@@ -1,4 +1,4 @@
-import { isSuccessResponse } from '@/lib/error';
+import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/error';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
@@ -25,11 +25,23 @@ export function createQuery<
         options?: Omit<
             UseQueryOptions<TResponse, TResponseError, TResponse>,
             'queryKey' | 'queryFn'
-        >
+        > & {
+            errorHandlers?: ErrorHandler;
+        }
     ) => {
         const queryKey = Array.isArray(defaultQueryKey)
             ? [...defaultQueryKey, params]
             : [defaultQueryKey, params];
+
+        // Extract errorHandlers from options
+        const { errorHandlers, ...queryOptions } = options || {};
+
+        const enhancedOptions: Omit<
+            UseQueryOptions<TResponse, TResponseError, TResponse>,
+            'queryKey' | 'queryFn'
+        > = {
+            ...queryOptions,
+        };
 
         return useQuery<TResponse, TResponseError>({
             queryKey,
@@ -44,17 +56,12 @@ export function createQuery<
 
                         const errorData = await response.json();
                         // Check if it's our standardized error format
-                        if (errorData && !isSuccessResponse(errorData)) {
-                            return Promise.reject(errorData);
-                        }
-                        // For non-standard errors
-                        return Promise.reject({
-                            error: {
-                                message: response.statusText || 'Request failed',
-                                code: 'UNKNOWN_ERROR',
-                                statusCode: response.status,
-                            },
-                        });
+                        const errorObj = normalizeApiError(errorData);
+
+                        // Handle error handlers
+                        handleErrorHandlers(errorObj, errorHandlers);
+
+                        return Promise.reject(errorObj);
                     }
 
                     // Handle empty responses (like 204 No Content)
@@ -65,10 +72,13 @@ export function createQuery<
                     return response.json();
                 } catch (error) {
                     console.error('Query error:', error);
-                    return Promise.reject(error);
+
+                    // Handle API error responses
+                    const errorObj = normalizeApiError(error);
+                    return Promise.reject(errorObj);
                 }
             },
-            ...options,
+            ...enhancedOptions,
         });
     };
 }
