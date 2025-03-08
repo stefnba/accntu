@@ -4,7 +4,6 @@ export const PUBLIC_ROUTES = [
     '/login',
     '/signup',
     '/auth/*',
-    '/api/auth/*',
 
     // Public pages
     '/',
@@ -19,7 +18,6 @@ export const PUBLIC_ROUTES = [
     '/favicon.ico',
     '/static/*',
     '/images/*',
-    '/api/public/*',
 ];
 
 export const LOGIN_REDIRECT_URL = '/dashboard';
