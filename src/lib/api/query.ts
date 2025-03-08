@@ -1,3 +1,4 @@
+import { isSuccessResponse } from '@/lib/error';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
@@ -14,23 +15,58 @@ export function createQuery<
 >(endpoint: TEndpoint, defaultQueryKey?: string | string[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
+    type TResponseError = InferResponseType<
+        typeof endpoint,
+        400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 502
+    >;
 
     return (
         params: TParams,
-        options?: Omit<UseQueryOptions<TResponse, Error, TResponse>, 'queryKey' | 'queryFn'>
+        options?: Omit<
+            UseQueryOptions<TResponse, TResponseError, TResponse>,
+            'queryKey' | 'queryFn'
+        >
     ) => {
         const queryKey = Array.isArray(defaultQueryKey)
             ? [...defaultQueryKey, params]
             : [defaultQueryKey, params];
 
-        return useQuery<TResponse, Error>({
+        return useQuery<TResponse, TResponseError>({
             queryKey,
             queryFn: async () => {
-                const response = await endpoint(params);
-                if (!response.ok) {
-                    throw new Error(response.statusText || 'Request failed');
+                try {
+                    const response = await endpoint(params);
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '/login';
+                        }
+
+                        const errorData = await response.json();
+                        // Check if it's our standardized error format
+                        if (errorData && !isSuccessResponse(errorData)) {
+                            return Promise.reject(errorData);
+                        }
+                        // For non-standard errors
+                        return Promise.reject({
+                            error: {
+                                message: response.statusText || 'Request failed',
+                                code: 'UNKNOWN_ERROR',
+                                statusCode: response.status,
+                            },
+                        });
+                    }
+
+                    // Handle empty responses (like 204 No Content)
+                    if (response.status === 204) {
+                        return {} as TResponse;
+                    }
+
+                    return response.json();
+                } catch (error) {
+                    console.error('Query error:', error);
+                    return Promise.reject(error);
                 }
-                return response.json();
             },
             ...options,
         });

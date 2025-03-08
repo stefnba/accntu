@@ -37,13 +37,12 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Auth provider props
 type AuthProviderProps = {
     children: React.ReactNode;
-    initialSession?: {
-        user: TUser | null;
+    initialSession: {
         sessionId?: string;
-    } | null;
+    };
 };
 
-export function AuthProvider({ children, initialSession = null }: AuthProviderProps) {
+export function AuthProvider({ children, initialSession }: AuthProviderProps) {
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -63,17 +62,29 @@ export function AuthProvider({ children, initialSession = null }: AuthProviderPr
         {},
         {
             // Set initial data from initialSession if available
-            initialData: initialSession?.user || undefined,
+            // initialData: initialSession?.user || undefined,
             // Only enable the query if we're mounted and not logged out
             enabled: isMounted && authStatus === 'loggedIn',
             // Refetch every 5 minutes to check if still logged in
             refetchInterval: 1000 * 60 * 5,
-            // Refetch in the background if the window is not focused
-            refetchIntervalInBackground: true,
-            // Retry 3 times if the query fails
+            // Don't refetch in the background
+            refetchIntervalInBackground: false,
+            // Only retry once if the query fails
             retry: 3,
             // Don't refetch on window focus (we already have refetchInterval)
             refetchOnWindowFocus: false,
+            // Stop retrying if we get an auth error
+            retryOnMount: false,
+            // Throw on auth errors to trigger the error boundary
+            // throwOnError: (error: any) => {
+            //     if (
+            //         error?.code === 'AUTH.SESSION_NOT_FOUND' ||
+            //         error?.code === 'AUTH.USER_NOT_FOUND'
+            //     ) {
+            //         return true;
+            //     }
+            //     return false;
+            // },
         }
     );
     const { mutate: logoutMutate } = useAuthEndpoints.logout({});
@@ -84,35 +95,41 @@ export function AuthProvider({ children, initialSession = null }: AuthProviderPr
 
     // Check if user is logged in on mount - only if no initialSession
     useEffect(() => {
+        /**
+         * Check if user is already logged in
+         */
         const checkAuthStatus = async () => {
-            if (initialSession) {
-                // Already have session data from the server
-                return;
-            }
+            if (initialSession && initialSession.sessionId) {
+                // if user is already logged in, return
+                if (userMe) {
+                    return;
+                } else {
+                    // refetch user
+                    await refetchUser();
+                }
 
-            try {
-                await refetchUser();
-            } catch (error) {
-                console.error('Failed to check auth status:', error);
+                return;
             }
         };
 
         setIsMounted(true);
         checkAuthStatus();
-    }, [initialSession, refetchUser]);
+    }, [initialSession, refetchUser, authStatus]);
 
     // Handle session expiration
     useEffect(() => {
         // If we get an error from the user profile query and we had a user before,
         // it likely means the session expired or was invalidated
-        if (userMeError && userMe) {
+        // If the session cookie is missing, the middleware will already redirect to the login page
+        if (userMeError) {
+            console.log('userMeError', userMeError);
             // Show a notification to the user
             toast.error('Your session has expired. Please log in again.');
 
             // Logout the user
             logout();
         }
-    }, [userMeError, userMe, router]);
+    }, [userMeError]);
 
     // Update the auth status when the user profile is fetched
     useEffect(() => {
@@ -191,13 +208,20 @@ export function AuthProvider({ children, initialSession = null }: AuthProviderPr
      * Logout function
      */
     const logout = useCallback(() => {
+        // Set logged out state to disable future queries
+        setAuthStatus('loggedOut');
+
+        // Reset any auth-related state
+        setAuthMethod(undefined);
+
         const handleLogout = () => {
-            // Set logged out state to disable the query
-            setAuthStatus('loggedOut');
-            // Clear the user query from cache
-            // https://tanstack.com/query/latest/docs/reference/QueryClient/#queryclientinvalidatequeries
+            // First, cancel all pending queries to prevent unnecessary retries
+            queryClient.cancelQueries();
+
+            // Then remove specific queries we want to clear
             queryClient.removeQueries({ queryKey: ['user'] });
-            queryClient.invalidateQueries({ queryKey: ['user'], refetchType: 'none' });
+            queryClient.removeQueries({ queryKey: ['sessions'] });
+
             // Redirect to login page
             router.push(LOGIN_URL);
         };

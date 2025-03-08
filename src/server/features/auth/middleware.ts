@@ -40,9 +40,13 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
 
     try {
         // Get session ID from cookie
-        const sessionId = getCookieValue(c, 'SESSION', z.string());
+        const sessionId = getCookieValue(c, 'AUTH_SESSION', z.string());
 
+        // User is not logged in
         if (!sessionId) {
+            // Clear the session cookie
+            clearCookie(c, 'AUTH_SESSION');
+
             throw errorFactory.createAuthError({
                 message: 'No session found',
                 code: 'AUTH.SESSION_NOT_FOUND',

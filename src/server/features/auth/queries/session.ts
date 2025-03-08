@@ -2,7 +2,7 @@ import { db } from '@/server/db';
 import { InsertSessionSchema, SelectSessionSchema, session } from '@/server/db/schemas';
 import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 
 // Session queries
@@ -42,7 +42,7 @@ export const createSessionRecord = async (inputData: z.infer<typeof InsertSessio
 export const getSessionRecordById = async ({ sessionId }: { sessionId: string }) =>
     withDbQuery({
         operation: 'get session record by id',
-        outputSchema: SelectSessionSchema,
+        outputSchema: SelectSessionSchema.nullable(),
         queryFn: async () => {
             const [result] = await db.select().from(session).where(eq(session.id, sessionId));
             return result;
@@ -58,7 +58,7 @@ export const getSessionRecordById = async ({ sessionId }: { sessionId: string })
 export const getSessionRecordsByUserId = async ({ userId }: { userId: string }) =>
     withDbQuery({
         operation: 'get session records by user id',
-        outputSchema: z.array(SelectSessionSchema),
+        // outputSchema: z.array(SelectSessionSchema),
         queryFn: async () => db.select().from(session).where(eq(session.userId, userId)),
     });
 
@@ -83,4 +83,29 @@ export const deleteSessionRecord = async ({ sessionId }: { sessionId: string }) 
     withDbQuery({
         operation: 'delete session record',
         queryFn: () => db.delete(session).where(eq(session.id, sessionId)),
+    });
+
+/**
+ * Delete all session records for a user except one
+ * @param params - The delete parameters
+ * @param params.userId - The ID of the user
+ * @param params.exceptSessionId - The ID of the session to preserve (optional)
+ */
+export const deleteAllSessionRecordsExcept = async ({
+    userId,
+    exceptSessionId,
+}: {
+    userId: string;
+    exceptSessionId?: string;
+}) =>
+    withDbQuery({
+        operation: 'delete all session records except one',
+        queryFn: () =>
+            db
+                .delete(session)
+                .where(
+                    exceptSessionId
+                        ? and(eq(session.userId, userId), ne(session.id, exceptSessionId))
+                        : eq(session.userId, userId)
+                ),
     });

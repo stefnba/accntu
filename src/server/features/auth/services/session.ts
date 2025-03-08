@@ -94,3 +94,55 @@ export const validateSession = async ({ sessionId }: { sessionId: string }) => {
 
     return user;
 };
+
+/**
+ * Revoke a specific session
+ * @param params - Session revocation parameters
+ * @param params.sessionId - The session ID to revoke
+ * @param params.userId - The user ID (for security check)
+ * @returns True if successful
+ */
+export const revokeSession = async ({
+    sessionId,
+    userId,
+}: {
+    sessionId: string;
+    userId: string;
+}) => {
+    const session = await getSessionById({ sessionId });
+    if (!session) {
+        throw errorFactory.createAuthError({
+            message: 'Session not found',
+            code: 'AUTH.SESSION_NOT_FOUND',
+        });
+    }
+
+    // Security check: ensure session belongs to user
+    if (session.userId !== userId) {
+        throw errorFactory.createAuthError({
+            message: 'Unauthorized to revoke this session',
+            code: 'AUTH.INVALID_CREDENTIALS',
+        });
+    }
+
+    await deleteSession({ sessionId });
+    return true;
+};
+
+/**
+ * Revoke all sessions for a user except one
+ * @param params - Session revocation parameters
+ * @param params.userId - The user ID
+ * @param params.exceptSessionId - Session ID to preserve (optional)
+ * @returns True if successful
+ */
+export const revokeAllSessions = async ({
+    userId,
+    exceptSessionId,
+}: {
+    userId: string;
+    exceptSessionId?: string;
+}) => {
+    await sessionQueries.deleteAllSessionRecordsExcept({ userId, exceptSessionId });
+    return true;
+};

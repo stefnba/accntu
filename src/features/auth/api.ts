@@ -7,6 +7,11 @@ export const useAuthEndpoints = {
     logout: createMutation(apiClient.auth.logout.$post),
     me: createQuery(apiClient.user.me.$get, ['user']),
 
+    // Sessions
+    getSessions: createQuery(apiClient.user.sessions.$get, ['sessions']),
+    revokeSession: createMutation(apiClient.user.sessions[':sessionId'].$delete, ['sessions']),
+    revokeAllSessions: createMutation(apiClient.user.sessions.$delete, ['sessions']),
+
     // Oauth Login
     initiateLoginWithOauth: createMutation(apiClient.auth[':provider'].authorize.$get),
     verifyOauthCallback: createMutation(apiClient.auth[':provider'].callback.$post),
