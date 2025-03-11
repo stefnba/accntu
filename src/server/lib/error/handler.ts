@@ -35,7 +35,7 @@ export const handleError = (error: Error, c: Context) => {
     if (error instanceof HTTPException) {
         const baseError = errorFactory.createError({
             message: error.message || 'HTTP error occurred',
-            code: 'INTERNAL_SERVER_ERROR',
+            code: 'SERVER.INTERNAL_ERROR',
             statusCode: error.status,
             layer: 'route',
         });
@@ -46,7 +46,7 @@ export const handleError = (error: Error, c: Context) => {
     // Handle unknown errors as critical errors
     const baseError = errorFactory.createError({
         message: 'An unexpected error occurred',
-        code: 'INTERNAL_SERVER_ERROR',
+        code: 'SERVER.INTERNAL_ERROR',
         statusCode: 500,
         cause: error instanceof Error ? error : undefined,
         layer: 'route',
