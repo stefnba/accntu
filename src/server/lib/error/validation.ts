@@ -29,7 +29,7 @@ export const handleZodError = (error: ZodError, c?: Context) => {
     // Create and throw a validation error with field details
     throw errorFactory.createValidationError({
         message: 'Validation error',
-        code: 'VALIDATION.INVALID_INPUT',
+        code: 'VALIDATION.VALIDATION_ERROR',
         details: {
             fields: fieldErrors,
             original: error,
