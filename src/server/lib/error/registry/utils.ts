@@ -74,13 +74,16 @@ export function getErrorDefinitionFromRegistry<T extends TErrorCode>(code: T): E
     // Use publicMessage if defined, otherwise default to description
     const publicMessage = errorDef.publicMessage || errorDef.description;
 
+    const publicCode = errorDef.publicCode || errorDef.code;
+
     // Return the error definition with derived properties
     return {
         ...errorDef,
-        fullCode: code as T,
+        fullCode: code,
         category: categoryStr,
         isPublicSafe,
         publicMessage,
+        publicCode,
     };
 }
 

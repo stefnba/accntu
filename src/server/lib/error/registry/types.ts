@@ -5,6 +5,9 @@
  * to define and work with standardized error codes and their properties.
  */
 
+import { TPublicErrorCodes } from '@/server/lib/error/registry/public';
+import { ContentfulStatusCode } from 'hono/utils/http-status';
+
 /**
  * Type for generating dot notation from an object with string array values
  *
@@ -72,7 +75,7 @@ export type ErrorEntryType<TCode extends string = string> = {
      * The HTTP status code that should be returned for this error
      * Common values: 400 (bad request), 401 (unauthorized), 404 (not found), 500 (server error)
      */
-    readonly statusCode: number;
+    readonly statusCode: ContentfulStatusCode;
 
     /**
      * Indicates whether this error is expected during normal operation
@@ -84,9 +87,8 @@ export type ErrorEntryType<TCode extends string = string> = {
     /**
      * The public-facing error code that can be returned to clients
      * Should be one of the predefined codes from PublicErrorCodesByCategory
-     * If not provided, the error is considered not safe for public consumption
      */
-    readonly publicCode?: string;
+    readonly publicCode: TPublicErrorCodes;
 
     /**
      * A user-friendly error message that can be shown to end users
@@ -128,5 +130,5 @@ export type ErrorDefinition<TCode extends string = string> = Omit<
     /** The message that can be safely shown to users */
     publicMessage: string;
     /** The public code category that this maps to */
-    publicCode?: string;
+    publicCode: TPublicErrorCodes;
 };

@@ -414,11 +414,13 @@ export const ErrorRegistry = {
             publicMessage: 'An unexpected error occurred. Please try again later',
             shouldRetry: true,
         }),
+        // todo possible delete
         createErrorEntry({
             code: 'DATABASE_ERROR',
             description: 'Error occurred while interacting with the database',
             statusCode: 500,
             isExpected: false,
+            publicCode: 'SERVER.INTERNAL_ERROR',
             // No publicCode or publicMessage - this is an internal error that shouldn't be exposed
         }),
         createErrorEntry({
@@ -446,6 +448,7 @@ export const ErrorRegistry = {
             description: 'System configuration error detected',
             statusCode: 500,
             isExpected: false,
+            publicCode: 'SERVER.INTERNAL_ERROR',
             // No publicCode or publicMessage - this is an internal error that shouldn't be exposed
         }),
     ],
@@ -485,6 +488,7 @@ export const ErrorRegistry = {
             description: 'API key for external service is invalid',
             statusCode: 500,
             isExpected: false,
+            publicCode: 'SERVER.INTERNAL_ERROR',
             // No publicCode or publicMessage - this is an internal error that shouldn't be exposed
         }),
     ],
@@ -496,13 +500,14 @@ export const ErrorRegistry = {
             description: 'Failed to connect to the database',
             statusCode: 500,
             isExpected: false,
-            // Internal error, not exposed to clients
+            publicCode: 'SERVER.INTERNAL_ERROR',
         }),
         createErrorEntry({
             code: 'QUERY_FAILED',
             description: 'Database query failed to execute',
             statusCode: 500,
             isExpected: false,
+            publicCode: 'SERVER.INTERNAL_ERROR',
             // Internal error, not exposed to clients
         }),
         createErrorEntry({
@@ -526,6 +531,7 @@ export const ErrorRegistry = {
             description: 'Database transaction failed to commit',
             statusCode: 500,
             isExpected: false,
+            publicCode: 'SERVER.INTERNAL_ERROR',
             // Internal error, not exposed to clients
         }),
         createErrorEntry({
@@ -541,7 +547,7 @@ export const ErrorRegistry = {
             description: 'Database returned invalid or unexpected data format',
             statusCode: 500,
             isExpected: false,
-            // Internal error, not exposed to clients
+            publicCode: 'SERVER.INTERNAL_ERROR',
         }),
         createErrorEntry({
             code: 'QUERY_NULL_RETURNED',
@@ -556,7 +562,7 @@ export const ErrorRegistry = {
             description: 'Database operation failed for an unknown reason',
             statusCode: 500,
             isExpected: false,
-            // Internal error, not exposed to clients
+            publicCode: 'SERVER.INTERNAL_ERROR',
         }),
     ],
 
