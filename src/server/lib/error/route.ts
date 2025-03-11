@@ -15,7 +15,7 @@ import {
 } from 'hono/utils/http-status';
 import { BaseError } from './base';
 import { errorFactory } from './factory';
-import { APIErrorResponse } from './types';
+import { TAPIErrorResponse } from './types';
 
 export type ErrorReponseCode = ServerErrorStatusCode | ClientErrorStatusCode;
 export type SuccessResponseCode = SuccessStatusCode;
@@ -51,7 +51,7 @@ export function ensureErrorStatusCode(statusCode: ContentfulStatusCode): ErrorRe
 export function handleRouteError(
     c: Context,
     error: unknown
-): TypedResponse<APIErrorResponse, ErrorReponseCode, 'json'> {
+): TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'> {
     // Handle BaseError with proper type narrowing for RPC
     if (error instanceof BaseError) {
         const errorStatusCode = ensureErrorStatusCode(error.statusCode || 500);
@@ -77,7 +77,7 @@ export function handleRouteError(
             errorFactory
                 .createError({
                     message: 'An unexpected error occurred',
-                    code: 'INTERNAL_SERVER_ERROR',
+                    code: 'SERVER.INTERNAL_ERROR',
                     statusCode: 500,
                 })
                 .toResponse(),
