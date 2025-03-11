@@ -1,14 +1,16 @@
 // src/server/error/factory.ts
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { BaseError } from './base';
-import { ErrorCode, ErrorOptions } from './types';
+import { TErrorCode } from './registry';
+import { getErrorDefinitionFromRegistry } from './registry/utils';
+import { ErrorOptions } from './types';
 
 /**
  * Parameters for creating an error
  */
 export type ErrorParams = {
     message: string;
-    code: ErrorCode;
+    code: TErrorCode;
     statusCode?: ContentfulStatusCode;
     cause?: Error;
     layer?: ErrorOptions['layer'];
@@ -34,9 +36,20 @@ class ErrorFactory {
      */
     createError(params: ErrorParams): BaseError {
         const { message, code, statusCode, cause, layer, details } = params;
-        return new BaseError(message, code, statusCode || 500, details || {}, {
-            cause,
-            layer,
+
+        // Get default values from the registry
+        const errorDefinition = getErrorDefinitionFromRegistry(code);
+
+        // Create the BaseError with object parameters
+        return new BaseError({
+            errorDefinition,
+            message,
+            statusCode,
+            details: details || {},
+            options: {
+                cause,
+                layer,
+            },
         });
     }
 
@@ -51,7 +64,6 @@ class ErrorFactory {
     createApiError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 400,
             layer: 'route',
         });
     }
@@ -67,7 +79,6 @@ class ErrorFactory {
     createServiceError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 500,
             layer: 'service',
         });
     }
@@ -83,7 +94,6 @@ class ErrorFactory {
     createDatabaseError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 500,
             layer: 'query',
         });
     }
@@ -100,7 +110,21 @@ class ErrorFactory {
     createValidationError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 400,
+            layer: 'route',
+        });
+    }
+
+    /**
+     * Creates an error related to cookies
+     *
+     * Use this for errors that occur during cookie operations.
+     *
+     * @param params - Object containing error parameters
+     * @returns A new BaseError instance with cookie layer context
+     */
+    createCookieError(params: Omit<ErrorParams, 'layer'>): BaseError {
+        return this.createError({
+            ...params,
             layer: 'route',
         });
     }
@@ -117,7 +141,6 @@ class ErrorFactory {
     createExternalError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 502,
             layer: 'service',
         });
     }
@@ -134,7 +157,6 @@ class ErrorFactory {
     createAuthError(params: Omit<ErrorParams, 'layer'>): BaseError {
         return this.createError({
             ...params,
-            statusCode: params.statusCode || 401,
             layer: 'service',
         });
     }
@@ -152,8 +174,6 @@ class ErrorFactory {
  * throw errorFactory.createServiceError({
  *   message: 'User not found',
  *   code: 'USER.NOT_FOUND',
- *   cause: originalError,
- *   statusCode: 404
  * });
  * ```
  */
