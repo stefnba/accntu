@@ -1,104 +1,148 @@
-import { LOG_CONTEXTS, logger } from '@/server/lib/logger';
+import { TErrorCode } from '@/server/lib/error/registry/index';
+import { ErrorDefinition } from '@/server/lib/error/registry/types';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
-import { APIErrorResponse, ErrorChainItem, ErrorCode, ErrorLayer, ErrorOptions } from './types';
+import { nanoid } from 'nanoid';
+import { logger } from '../logger';
+import { LogContext } from '../logger/types';
+import { sanitizeErrorForPublic, SanitizeErrorOptions } from './sanitize';
+import { ErrorChainItem, ErrorLayer, ErrorOptions, TAPIErrorResponse } from './types';
 
-// Error types that are expected/handled as part of normal operation
-const EXPECTED_ERROR_CODES: ErrorCode[] = [
-    'VALIDATION.INVALID_INPUT',
-    'AUTH.SESSION_NOT_FOUND',
-    'AUTH.SESSION_EXPIRED',
-    'AUTH.OTP_EXPIRED',
-    'AUTH.OTP_ALREADY_USED',
-    'AUTH.OTP_NOT_FOUND',
-    'AUTH.OTP_INVALID',
-    'AUTH.OTP_GENERATION_FAILED',
-    'AUTH.COOKIE_NOT_FOUND',
-    'AUTH.COOKIE_INVALID',
-    'AUTH.USER_NOT_FOUND',
-] as const;
-
-// Map error layers to log contexts
-const LAYER_TO_CONTEXT: Record<ErrorLayer, keyof typeof LOG_CONTEXTS> = {
-    route: 'ROUTE',
-    service: 'SERVICE',
-    query: 'QUERY',
-} as const;
-
-// Simple in-memory error tracking
-const errorMetrics: Record<string, { count: number; lastOccurred: Date; occurrences: Date[] }> = {};
+// Metric tracking for errors
+const errorMetrics: Record<
+    string,
+    {
+        count: number;
+        lastOccurred: Date;
+        occurrences: Date[];
+    }
+> = {};
 
 /**
- * BaseError class for standardized error handling
+ * Maps error layer to log context
+ */
+const LAYER_TO_CONTEXT: Record<ErrorLayer, string> = {
+    query: 'database',
+    service: 'service',
+    route: 'route',
+};
+
+/**
+ * Parameters for creating a BaseError
+ */
+export interface BaseErrorParams {
+    /** Error definition from registry */
+    errorDefinition: ErrorDefinition<TErrorCode>;
+    /** Human-readable error message (defaults to errorDefinition.description) */
+    message?: string;
+    /** HTTP status code (defaults to errorDefinition.statusCode) */
+    statusCode?: ContentfulStatusCode;
+    /** Additional details about the error */
+    details?: Record<string, unknown>;
+    /** Additional options for this error */
+    options?: ErrorOptions;
+}
+
+/**
+ * Base error class for all application errors
  *
- * This class extends the native Error class to provide a structured approach to error handling
- * with additional metadata like error codes, status codes, and error chains. It includes
- * functionality for:
+ * This class extends the native Error class with additional functionality
+ * for error tracking, logging, and API response generation.
  *
- * - Tracking error occurrences for monitoring
- * - Generating consistent API error responses
- * - Logging errors with detailed information
- * - Building error chains to trace error propagation
- *
- * All application errors should extend from or be created using this class to ensure
- * consistent error handling throughout the application.
+ * @extends Error
  */
 export class BaseError extends Error {
+    /**
+     * Unique trace ID for this error
+     */
     public readonly traceId: string;
+
+    /**
+     * Timestamp when this error was created
+     */
     public readonly timestamp: Date;
+
+    /**
+     * Additional details about the error
+     */
     public readonly details: Record<string, unknown>;
+
+    /**
+     * Original error that caused this error (if any)
+     */
     public readonly originalError?: Error;
+
+    /**
+     * Chain of errors that led to this error
+     */
     public readonly errorChain: ErrorChainItem[];
 
     /**
-     * Creates a new BaseError instance
-     *
-     * @param message - Human-readable error message
-     * @param code - Error code for categorizing errors
-     * @param statusCode - HTTP status code to return to clients
-     * @param options - Additional error options like cause and layer
+     * Error definition from registry
      */
-    constructor(
-        message: string,
-        public readonly code: ErrorCode,
-        public readonly statusCode: ContentfulStatusCode,
-        details: Record<string, unknown>,
-        options?: ErrorOptions
-    ) {
-        super(message);
-        this.name = this.constructor.name;
-        this.traceId = crypto.randomUUID();
+    public readonly errorDefinition: ErrorDefinition<TErrorCode>;
+
+    /**
+     * Error code for this error
+     */
+    public readonly code: TErrorCode;
+
+    /**
+     * HTTP status code for this error
+     */
+    public readonly statusCode: ContentfulStatusCode;
+
+    /**
+     * Creates a new BaseError
+     *
+     * @param params - Parameters for creating the error
+     */
+    constructor(params: BaseErrorParams) {
+        const { errorDefinition, message, statusCode, details = {}, options = {} } = params;
+
+        // Use provided message or default from error definition
+        const errorMessage = message || errorDefinition.description;
+        super(errorMessage);
+
+        // Store error definition
+        this.errorDefinition = errorDefinition;
+
+        // Use provided code or default from error definition
+        this.code = errorDefinition.fullCode;
+
+        // Use provided status code or default from error definition
+        this.statusCode = statusCode || errorDefinition.statusCode;
+
+        this.name = 'BaseError';
+        this.traceId = nanoid();
         this.timestamp = new Date();
-        this.originalError = options?.cause;
         this.details = details;
+        this.originalError = options.cause;
+
+        // Create the initial error chain
         this.errorChain = [
             {
-                layer: options?.layer || 'query',
-                error: message,
+                layer: options.layer || 'route',
+                error: errorMessage,
                 code: this.code,
                 timestamp: this.timestamp,
             },
         ];
 
-        if (options?.cause instanceof BaseError) {
-            this.errorChain.push(...options.cause.errorChain);
-        }
-
-        // Track error for metrics
+        // Track this error occurrence
         this.trackError();
     }
 
     /**
      * Adds a new error to the error chain
      *
-     * This allows tracking the propagation of errors through different layers
-     * of the application (e.g., from query to service to route).
+     * This is used when an error is caught and re-thrown with additional context.
      *
-     * @param layer - The application layer where the error occurred
-     * @param error - The error message
-     * @param code - The error code
-     * @returns This error instance for chaining
+     * @param layer - The layer where the error was caught
+     * @param error - Human-readable error message
+     * @param code - Error code for this layer
+     * @returns this (for method chaining)
      */
-    addToChain(layer: ErrorLayer, error: string, code: ErrorCode) {
+    addToChain(layer: ErrorLayer, error: string, code: TErrorCode) {
         this.errorChain.push({
             layer,
             error,
@@ -109,97 +153,92 @@ export class BaseError extends Error {
     }
 
     /**
-     * Converts the error to a standardized API response
+     * Converts this error to an API response suitable for the public client
      *
-     * This ensures all errors returned to clients follow the same structure,
-     * making error handling on the client side more predictable.
+     * This standardizes the format of error responses across the application.
      *
-     * @returns A structured API error response
+     * @returns A standardized API error response
      */
-    toResponse(): APIErrorResponse {
-        return {
-            success: false,
-            error: {
-                code: this.code,
-                message: this.message,
-                details: this.details,
-            },
-            trace_id: this.traceId,
-        };
+    toResponse(options?: SanitizeErrorOptions): TAPIErrorResponse {
+        return sanitizeErrorForPublic(this.errorDefinition, this.traceId, this.details, options);
     }
 
     /**
-     * Logs the error with appropriate severity level and context
+     * Logs this error
      *
-     * This provides comprehensive error information for debugging,
-     * including the error chain, original error, and stack trace.
+     * The log level is determined by whether this is an expected error.
+     * Expected errors (like validation errors) are logged at info level.
+     * Unexpected errors are logged at error level.
      *
-     * @param requestData - Optional request context data
+     * @param requestData - Optional request data to include in the log
      */
     logError(requestData?: { method: string; url: string; status: number }) {
-        const context = LOG_CONTEXTS[LAYER_TO_CONTEXT[this.errorChain[0].layer]];
+        // Determine if this is an expected error based on stored definition
+        const isExpectedError = this.errorDefinition.isExpected;
+
+        const logLevel = isExpectedError ? 'info' : 'error';
+        const layer = this.errorChain[0].layer;
+        const contextKey = LAYER_TO_CONTEXT[layer].toLowerCase() as LogContext;
+
         const logData = {
-            ...(requestData && { request: requestData }),
-            code: this.code,
+            error_code: this.code,
+            error_message: this.message,
+            status_code: this.statusCode,
+            trace_id: this.traceId,
+            timestamp: this.timestamp.toISOString(),
+            error_chain: this.errorChain,
             details: this.details,
-            traceId: this.traceId,
-            chain: this.errorChain,
+            request: requestData,
+            stack: this.stack,
         };
 
-        // Log expected errors (validation, auth, etc.) and client errors (4xx) as warnings
-        if (EXPECTED_ERROR_CODES.includes(this.code) || this.statusCode < 500) {
-            logger.warn(this.message, {
-                context,
-                data: logData,
-            });
-            return;
+        if (logLevel === 'info') {
+            logger.info(this.message, { context: contextKey, data: logData });
+        } else {
+            logger.error(this.message, { context: contextKey, data: logData });
         }
-
-        // Server errors (500+) and unexpected errors are logged with full details
-        logger.error(this.message, {
-            context,
-            data: logData,
-            error: this,
-        });
     }
 
     /**
-     * Tracks error occurrences for monitoring
+     * Tracks error occurrence for monitoring
      *
-     * This maintains an in-memory record of error frequencies and timestamps,
-     * which can be used for monitoring error patterns and rates.
+     * This maintains in-memory metrics about error occurrences that can
+     * be exposed for monitoring and alerting.
      *
      * @private
      */
     private trackError() {
-        const key = `${this.code}:${this.statusCode}`;
-        if (!errorMetrics[key]) {
-            errorMetrics[key] = {
+        if (!errorMetrics[this.code]) {
+            errorMetrics[this.code] = {
                 count: 0,
                 lastOccurred: new Date(),
                 occurrences: [],
             };
         }
 
-        errorMetrics[key].count += 1;
-        errorMetrics[key].lastOccurred = new Date();
-        errorMetrics[key].occurrences.push(new Date());
+        errorMetrics[this.code].count += 1;
+        errorMetrics[this.code].lastOccurred = new Date();
 
-        // Keep only the last 100 occurrences to prevent memory leaks
-        if (errorMetrics[key].occurrences.length > 100) {
-            errorMetrics[key].occurrences = errorMetrics[key].occurrences.slice(-100);
+        // Keep track of the last 100 occurrences
+        errorMetrics[this.code].occurrences.push(new Date());
+        if (errorMetrics[this.code].occurrences.length > 100) {
+            errorMetrics[this.code].occurrences.shift();
         }
     }
 }
 
 /**
- * Retrieves the current error metrics
+ * Gets metrics about error occurrences
  *
- * This provides access to the in-memory error tracking data for monitoring
- * and analysis purposes.
+ * This is useful for monitoring and alerting.
  *
- * @returns A record of error metrics by error code and status
+ * @returns Object with error metrics
  */
 export function getErrorMetrics() {
-    return errorMetrics;
+    return Object.entries(errorMetrics).map(([code, metrics]) => ({
+        code,
+        count: metrics.count,
+        lastOccurred: metrics.lastOccurred,
+        recent: metrics.occurrences.slice(-10),
+    }));
 }

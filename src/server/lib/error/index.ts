@@ -9,6 +9,8 @@
  * - Specialized handling for validation and database errors
  * - Consistent API response formats
  * - Type-safe error handling for Hono RPC
+ * - Error sanitization for public consumption
+ * - Centralized error registry for consistent error definitions
  *
  * The system ensures consistent error handling throughout the application,
  * with detailed error tracking, logging, and standardized API responses.
@@ -20,7 +22,13 @@
 export * from './base';
 export * from './factory';
 export * from './handler';
+export { ErrorRegistry };
+
+// Import and re-export registry items explicitly to avoid naming conflicts
+import { ErrorRegistry } from './registry';
+export * from './registry';
 export * from './response';
+export * from './sanitize';
 export * from './types';
 export * from './validation';
 
