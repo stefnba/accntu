@@ -1,5 +1,3 @@
-import { ContentfulStatusCode } from 'hono/utils/http-status';
-
 /**
  * Registry of public error codes that can be returned to clients
  */
@@ -51,47 +49,49 @@ export type TPublicErrorCodes = DotNotationFromObjectType<typeof PublicErrorCode
 export type TPublicErrorCategories = keyof typeof PublicErrorCodesByCategory;
 
 /**
- * Type for error entries with exact types - permits literal typing
- * while still enforcing the structure
+ * Enhanced error entry type with all properties pre-defined
+ *
+ * @template TCode The specific string literal type for the error code
  */
 type ErrorEntryType<TCode extends string = string> = {
     /**
-     * The code of the error
+     * The unique identifier for this error within its category
+     * This will be combined with the category to form the full error code (e.g., 'AUTH.INVALID_TOKEN')
      */
     readonly code: TCode;
 
     /**
-     * The description of the error
+     * A developer-friendly description of what the error means
+     * This is primarily for internal use and debugging
      */
     readonly description: string;
 
     /**
-     * The status code of the error
+     * The HTTP status code that should be returned for this error
+     * Common values: 400 (bad request), 401 (unauthorized), 404 (not found), 500 (server error)
      */
-    readonly statusCode: ContentfulStatusCode;
+    readonly statusCode: number;
 
     /**
-     * Whether the error is expected
+     * Indicates whether this error is expected during normal operation
+     * true = business logic error that can happen during normal operation (e.g., invalid input)
+     * false = unexpected error that represents a bug or system failure
      */
     readonly isExpected: boolean;
 
     /**
-     * The public code of the error. If not provided, this means the errors needs to be sanitized before being sent to the client.
+     * The public-facing error code that can be returned to clients
+     * Should be one of the predefined codes from PublicErrorCodesByCategory
+     * If not provided, the error is considered not safe for public consumption
      */
     readonly publicCode?: TPublicErrorCodes;
 
     /**
-     * Default public-facing message to use when sanitizing the error. If not provided, the description will be used.
-     * If provided, this means the error needs to be sanitized before being sent to the client.
+     * A user-friendly error message that can be shown to end users
+     * Should not contain sensitive information or technical details
+     * If not provided, description will be used as fallback in getErrorDefinitionFromRegistry
      */
     readonly publicMessage?: string;
-};
-
-/**
- * Type for the registry that preserves literals and ensures the correct structure
- */
-type ErrorRegistryStructure = {
-    readonly [Category in string]: ReadonlyArray<ErrorEntryType<string>>;
 };
 
 /**
@@ -105,18 +105,9 @@ function createErrorEntry<TCode extends string>(
 }
 
 /**
- * Create the error registry with proper type validation
- * This approach validates the structure but preserves literal types
+ * Create the error registry with proper type validation and complete information
  */
 export const ErrorRegistry = {
-    WHAS: [
-        createErrorEntry({
-            code: 'WHAS',
-            description: 'WHAS',
-            statusCode: 401,
-            isExpected: true,
-        }),
-    ],
     AUTH: [
         createErrorEntry({
             code: 'INVALID_TOKEN',
@@ -124,6 +115,7 @@ export const ErrorRegistry = {
             statusCode: 401,
             isExpected: true,
             publicCode: 'AUTH.UNAUTHORIZED',
+            publicMessage: 'You are not authorized to perform this action',
         }),
         createErrorEntry({
             code: 'EXPIRED_TOKEN',
@@ -131,6 +123,7 @@ export const ErrorRegistry = {
             statusCode: 401,
             isExpected: true,
             publicCode: 'AUTH.SESSION_EXPIRED',
+            publicMessage: 'Your session has expired, please sign in again',
         }),
         createErrorEntry({
             code: 'MISSING_TOKEN',
@@ -138,6 +131,7 @@ export const ErrorRegistry = {
             statusCode: 401,
             isExpected: true,
             publicCode: 'AUTH.UNAUTHORIZED',
+            publicMessage: 'Authentication required to access this resource',
         }),
     ],
     USER: [
@@ -147,6 +141,7 @@ export const ErrorRegistry = {
             statusCode: 404,
             isExpected: true,
             publicCode: 'RESOURCE.NOT_FOUND',
+            publicMessage: 'The user you are looking for does not exist',
         }),
         createErrorEntry({
             code: 'ALREADY_EXISTS',
@@ -154,6 +149,7 @@ export const ErrorRegistry = {
             statusCode: 409,
             isExpected: true,
             publicCode: 'RESOURCE.ALREADY_EXISTS',
+            publicMessage: 'A user with this email already exists',
         }),
     ],
     DATA: [
@@ -163,6 +159,7 @@ export const ErrorRegistry = {
             statusCode: 400,
             isExpected: true,
             publicCode: 'VALIDATION.INVALID_INPUT',
+            publicMessage: 'The data you provided is invalid',
         }),
         createErrorEntry({
             code: 'MISSING_FIELD',
@@ -170,6 +167,26 @@ export const ErrorRegistry = {
             statusCode: 400,
             isExpected: true,
             publicCode: 'VALIDATION.MISSING_FIELD',
+            publicMessage: 'Please provide all required fields',
+        }),
+    ],
+    RATE_LIMIT: [
+        createErrorEntry({
+            code: 'TOO_MANY_REQUESTS',
+            description: 'Rate limit exceeded for this endpoint',
+            statusCode: 429,
+            isExpected: true,
+            publicCode: 'RATE_LIMIT.TOO_MANY_REQUESTS',
+            publicMessage: 'You have made too many requests. Please try again later.',
+        }),
+    ],
+    SERVER: [
+        createErrorEntry({
+            code: 'INTERNAL_ERROR',
+            description: 'An unexpected error occurred on the server',
+            statusCode: 500,
+            isExpected: false,
+            // No publicCode or publicMessage means this is not public safe
         }),
     ],
 } as const;
@@ -195,6 +212,9 @@ export type DotNotationFromNestedObjectArray<
  * These will be literal string types like 'AUTH.INVALID_TOKEN'
  */
 export type TErrorCode = DotNotationFromNestedObjectArray<typeof ErrorRegistry>;
+export type TErrorCodeCategory = TErrorCode extends `${infer Category}.${infer _}`
+    ? Category
+    : never;
 
 /**
  * Utility type to get specific error info for a given error code
@@ -207,4 +227,72 @@ export type ErrorEntryForCode<Code extends TErrorCode> =
           >
         : never;
 
-export { PublicErrorCodesByCategory };
+/**
+ * The return type for the getErrorDefinitionFromRegistry function
+ * Includes all properties from ErrorEntryType plus derived properties
+ */
+export type ErrorDefinition<TCode extends TErrorCode = TErrorCode> = Omit<
+    ErrorEntryType,
+    'code' | 'publicMessage'
+> & {
+    /** The original error code from the entry (e.g., 'INVALID_TOKEN') */
+    code: string;
+    /** The full error code with category prefix (e.g., 'AUTH.INVALID_TOKEN') */
+    fullCode: TCode;
+    /** The category of the error code (e.g., 'AUTH') */
+    category: TErrorCodeCategory;
+    /** Whether this error is safe to expose to public clients */
+    isPublicSafe: boolean;
+    /** The message that can be safely shown to users */
+    publicMessage: string;
+    /** The public code category that this maps to */
+    publicCode?: TPublicErrorCodes;
+};
+
+/**
+ * Get error definition directly from the registry with enhanced type safety
+ *
+ * This function looks up an error by its code and returns a complete error definition
+ * with all properties from the registry plus derived fields like isPublicSafe.
+ *
+ * @template T The specific error code literal type
+ * @param {T} code The error code to look up (e.g., 'AUTH.INVALID_TOKEN')
+ * @returns {ErrorDefinition<T>} The complete error definition with derived properties
+ * @throws {Error} If the error category or code is not found in the registry
+ *
+ * @example
+ * // Get a specific error definition
+ * const authError = getErrorDefinitionFromRegistry('AUTH.INVALID_TOKEN');
+ * console.log(authError.statusCode); // 401
+ * console.log(authError.isPublicSafe); // true
+ */
+export function getErrorDefinitionFromRegistry<T extends TErrorCode>(code: T): ErrorDefinition<T> {
+    // Split the code into category and error code parts
+    const [categoryStr, codeStr] = code.split('.') as [TErrorCodeCategory, string];
+
+    // Find the error definition
+    const categoryErrors = ErrorRegistry[categoryStr as keyof typeof ErrorRegistry];
+    if (!categoryErrors) {
+        throw new Error(`Error category not found: ${categoryStr}`);
+    }
+
+    const errorDef = categoryErrors.find((e) => e.code === codeStr);
+    if (!errorDef) {
+        throw new Error(`Error definition not found for code: ${code}`);
+    }
+
+    // Derive isPublicSafe based on presence of publicCode or publicMessage
+    const isPublicSafe = !!(errorDef.publicCode || errorDef.publicMessage);
+
+    // Use publicMessage if defined, otherwise default to description
+    const publicMessage = errorDef.publicMessage || errorDef.description;
+
+    // Return the error definition with derived properties
+    return {
+        ...errorDef,
+        fullCode: code,
+        category: categoryStr,
+        isPublicSafe,
+        publicMessage,
+    };
+}
