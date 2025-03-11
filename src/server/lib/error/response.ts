@@ -1,6 +1,6 @@
 // src/server/error/response.ts
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
-import { APIMutationResponse, APIResponse } from './types';
+import { TAPIMutationResponse, TAPIResponse } from './types';
 
 /**
  * Creates a standardized success response for mutation endpoints
@@ -18,7 +18,7 @@ import { APIMutationResponse, APIResponse } from './types';
  */
 export function createMutationResponse<
     T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
->(data: T): APIMutationResponse<T> {
+>(data: T): TAPIMutationResponse<T> {
     return {
         success: true,
         data,
@@ -41,8 +41,14 @@ export function createMutationResponse<
  * }
  * ```
  */
-export function isMutationResponse<T>(
-    response: APIResponse<T>
-): response is APIMutationResponse<T> {
-    return response.success === true;
+export function isMutationResponse<
+    T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
+>(response: TAPIResponse<T>): response is TAPIMutationResponse<T> {
+    if (response === null || response === undefined) {
+        return false;
+    }
+    if ('success' in response) {
+        return response.success === true;
+    }
+    return false;
 }

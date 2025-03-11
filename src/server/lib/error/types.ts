@@ -2,6 +2,7 @@
 
 import { TErrorCode } from '@/server/lib/error/registry/index';
 import { APIErrorResponseSchema } from '@/server/lib/error/schema';
+import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 import { z } from 'zod';
 
 /**
@@ -58,4 +59,7 @@ export type TAPIErrorResponse = z.infer<typeof APIErrorResponseSchema>;
  *
  * This allows for type-safe handling of both success and error responses.
  */
-export type TAPIResponse<T> = TAPIMutationResponse<T> | TAPIErrorResponse | T;
+export type TAPIResponse<T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue> =
+    | TAPIMutationResponse<T>
+    | TAPIErrorResponse
+    | T;
