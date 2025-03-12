@@ -1,5 +1,3 @@
-'use client';
-
 import { Separator } from '@/components/ui/separator';
 import { ActiveSessions } from '@/features/auth/components/active-sessions';
 import { ProfileForm } from '@/features/user/components/profile-form';
