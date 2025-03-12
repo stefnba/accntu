@@ -1,22 +1,15 @@
-import {
-    APIErrorResponse,
-    APIErrorResponseA,
-    APIErrorResponseSchema,
-    APIResponse,
-    ErrorCode,
-} from '@/server/lib/error/types';
+import { TAPIErrorResponse, TAPIResponse } from '@/server/lib/error';
+import { TPublicErrorCodes } from '@/server/lib/error/registry/public';
+import { APIErrorResponseSchema } from '@/server/lib/error/schema';
+import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 
 /**
- * Type for error handlers
- *
- * This type defines a structure for handling different error codes with
- * specific handler functions. It allows for code-specific error handling
- * with a fallback default handler.
+ * Type for error handlers that can handle both internal and public error codes
  */
 export type ErrorHandler<T = void> = {
-    [key in ErrorCode]?: (error: APIErrorResponse) => T;
+    [key in TPublicErrorCodes]?: (error: TAPIErrorResponse) => T;
 } & {
-    default?: (error: APIErrorResponse) => T;
+    default?: (error: TAPIErrorResponse) => T;
 };
 
 /**
@@ -39,7 +32,7 @@ export type ErrorHandler<T = void> = {
  * ```
  */
 export function handleApiError<T = void>(
-    error: APIErrorResponse,
+    error: TAPIErrorResponse,
     handlers: ErrorHandler<T>
 ): T | undefined {
     const { code } = error.error;
@@ -79,24 +72,37 @@ export function handleApiError<T = void>(
  * );
  * ```
  */
-export function handleApiResponse<T, R = void, E = void>(
-    response: APIResponse<T>,
+export function handleApiResponse<
+    T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
+    R = void,
+    E = void,
+>(
+    response: TAPIResponse<T>,
     onSuccess: (data: T) => R,
-    onError?: ErrorHandler<E> | ((error: APIErrorResponse) => E)
+    onError?: ErrorHandler<E> | ((error: TAPIErrorResponse) => E)
 ): R | E | undefined {
-    if (response.success) {
+    if (!response) {
+        return undefined;
+    }
+
+    // successful mutation response
+    if (isSuccessResponse(response)) {
         return onSuccess(response.data);
     }
 
-    if (typeof onError === 'function') {
-        return onError(response);
-    }
+    // error response
+    if (isErrorResponse(response)) {
+        if (!onError) {
+            return undefined;
+        }
 
-    if (onError) {
+        if (typeof onError === 'function') {
+            return onError(response);
+        }
+
         return handleApiError(response, onError);
     }
 
-    console.error('Unhandled API error:', response);
     return undefined;
 }
 
@@ -120,10 +126,35 @@ export function handleApiResponse<T, R = void, E = void>(
  * }
  * ```
  */
-export function isSuccessResponse<T>(
-    response: APIResponse<T>
-): response is { success: true; data: T } {
-    return response.success === true;
+export function isSuccessResponse<
+    T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
+>(response: TAPIResponse<T>): response is { success: true; data: T } {
+    return (
+        typeof response === 'object' &&
+        response !== null &&
+        'success' in response &&
+        response.success === true
+    );
+}
+
+/**
+ * Checks if an API response is an error response
+ *
+ * This function determines if the given API response is an error
+ * by checking the success property.
+ *
+ * @param response - The API response to check
+ * @returns True if the response is an error response, false otherwise
+ */
+export function isErrorResponse<
+    T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue,
+>(response: TAPIResponse<T>): response is TAPIErrorResponse {
+    return (
+        typeof response === 'object' &&
+        response !== null &&
+        'success' in response &&
+        response.success === false
+    );
 }
 
 /**
@@ -154,7 +185,7 @@ export function isSuccessResponse<T>(
  * });
  * ```
  */
-export function useErrorHandler(defaultHandler: (error: APIErrorResponse) => void) {
+export function useErrorHandler(defaultHandler: (error: TAPIErrorResponse) => void) {
     return function handleError(error: unknown, handlers?: ErrorHandler<void>): void {
         // If it's not an API error response, just log it
         if (
@@ -169,27 +200,27 @@ export function useErrorHandler(defaultHandler: (error: APIErrorResponse) => voi
             defaultHandler({
                 success: false,
                 error: {
-                    code: 'INTERNAL_SERVER_ERROR',
+                    code: 'SERVER.INTERNAL_ERROR',
                     message: 'An unexpected error occurred',
                 },
-                trace_id: 'unknown',
+                request_id: 'unknown',
             });
             return;
         }
 
-        // Now we know it's an API error response
-        const apiError = error as APIErrorResponse;
+        // Try to normalize the error
+        const normalizedError = normalizeApiError(error);
 
         if (handlers) {
             // Try to handle with specific handlers
-            const result = handleApiError(apiError, handlers);
+            const result = handleApiError(normalizedError, handlers);
             if (result !== undefined) {
                 return;
             }
         }
 
         // Fall back to default handler
-        defaultHandler(apiError);
+        defaultHandler(normalizedError);
     };
 }
 
@@ -200,24 +231,27 @@ export function useErrorHandler(defaultHandler: (error: APIErrorResponse) => voi
  * object if the response is in our error format. If the response is not in
  * our error format, it returns a default error object.
  *
+ * The function attempts to parse both internal and public error responses.
+ *
  * @param error - The API error response to handle
  * @returns A standardized error object
  */
-export const normalizeApiError = (error: any): APIErrorResponseA => {
-    const parsedErrorResult = APIErrorResponseSchema.safeParse(error);
-
-    if (parsedErrorResult.success) {
-        return parsedErrorResult.data;
+export const normalizeApiError = (error: any): TAPIErrorResponse => {
+    // First try to parse as an internal error response
+    const parsedInternalResult = APIErrorResponseSchema.safeParse(error);
+    if (parsedInternalResult.success) {
+        return parsedInternalResult.data;
     }
 
+    // If neither format matches, create a default error
     return {
         success: false,
         error: {
             message: 'An unknown error occurred',
-            code: 'INTERNAL_SERVER_ERROR',
+            code: 'SERVER.INTERNAL_ERROR',
             details: error,
         },
-        trace_id: 'client-generated',
+        request_id: 'client-generated',
     };
 };
 

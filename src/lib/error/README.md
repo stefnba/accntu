@@ -14,35 +14,37 @@ The system is built around the `ErrorHandler` type, which allows for code-specif
 
 ```typescript
 type ErrorHandler<T = void> = {
-    [key in ErrorCode]?: (error: APIErrorResponse) => T;
+    [key in TPublicErrorCodes]?: (error: TAPIErrorResponse) => T;
 } & {
-    default?: (error: APIErrorResponse) => T;
+    default?: (error: TAPIErrorResponse) => T;
 };
 ```
 
-This type enables you to define specific handlers for different error codes, with a fallback default handler.
+This type enables you to define specific handlers for error codes, with a fallback default handler.
 
 ### 2. Error Normalization
 
 The `normalizeApiError` function ensures all errors follow a consistent format:
 
 ```typescript
-const normalizeApiError = (error: any): APIErrorResponseA => {
+const normalizeApiError = (error: any): TAPIErrorResponse => {
     // Normalizes any error into a standard format
+    // Handles different error response formats
 };
 ```
 
-This is crucial for consistent error handling regardless of the error source.
+This is crucial for consistent error handling regardless of the error source and format.
 
-### 3. Error Handler Processing
+### 3. Error Type Guards
 
-The `handleErrorHandlers` function centralizes the logic for processing error handlers:
+The system provides type guard functions to safely check response types:
 
 ```typescript
-const handleErrorHandlers = (error: any, handlers?: ErrorHandler<void>) => {
-    // Processes error handlers based on error code
-};
+function isSuccessResponse<T>(response: TAPIResponse<T>): response is { success: true; data: T };
+function isErrorResponse<T>(response: TAPIResponse<T>): response is TAPIErrorResponse;
 ```
+
+These functions safely determine if a response is a success or error, with proper null checks.
 
 ### 4. API Integration
 
@@ -52,6 +54,31 @@ The error handling system is integrated with our API utilities:
 - **Query Hooks**: `createQuery` in `src/lib/api/query.ts`
 
 Both utilities accept an `errorHandlers` option that allows components to specify how different errors should be handled.
+
+## Response Formats
+
+The backend system returns responses in a consistent format:
+
+### Success Response
+```typescript
+{
+    success: true,
+    data: { ... } // The actual data
+}
+```
+
+### Error Response
+```typescript
+{
+    success: false,
+    error: {
+        code: 'SERVER.INTERNAL_ERROR', // Error code
+        message: 'An error occurred', // User-friendly message
+        details: { ... } // Optional additional details
+    },
+    request_id: '123abc'
+}
+```
 
 ## Usage Guide
 
@@ -70,13 +97,11 @@ export const useUserEndpoints = {
 // In your component
 const { mutate } = useUserEndpoints.update({
     errorHandlers: {
+        // Handle specific error codes
         'VALIDATION.INVALID_INPUT': (err) => {
             toast.error('Please check your input');
         },
-        'AUTH.SESSION_EXPIRED': () => {
-            toast.error('Your session has expired');
-            window.location.href = '/login';
-        },
+        // Default handler for any other errors
         default: (err) => {
             toast.error(err.error.message || 'An error occurred');
         }
@@ -135,8 +160,8 @@ function UserProfile() {
             'VALIDATION.INVALID_INPUT': (err) => {
                 setFormErrors(err.error.details);
             },
-            'AUTH.SESSION_EXPIRED': () => {
-                router.push('/login');
+            'RESOURCE.NOT_FOUND': () => {
+                setNotFound(true);
             }
         })
     });
@@ -154,7 +179,8 @@ try {
     const response = await apiClient.user.get();
     if (!isSuccessResponse(response)) {
         handleApiError(response, {
-            'AUTH.USER_NOT_FOUND': () => showNotFoundMessage(),
+            'SERVICE.NOT_FOUND': () => showNotFoundMessage(),
+            'RESOURCE.NOT_FOUND': () => showNotFoundMessage(),
             default: (err) => showGenericError(err.error.message)
         });
         return;
@@ -172,45 +198,81 @@ try {
 
 1. **Always Use Error Handlers**: Provide error handlers for all API calls to ensure a good user experience.
 
-2. **Handle Common Error Codes**: Always handle common error codes like:
-   - `AUTH.SESSION_EXPIRED`: Redirect to login
-   - `VALIDATION.INVALID_INPUT`: Show validation errors
-   - `INTERNAL_SERVER_ERROR`: Show a generic error message
+2. **Use Type Guards Safely**: Always use the provided type guards (`isSuccessResponse`, `isErrorResponse`) to safely check response types.
 
-3. **Provide Default Handlers**: Always include a default handler to catch unexpected errors.
+3. **Handle Common Error Codes**: Always handle common error codes like:
+   - `AUTH.SESSION_EXPIRED`: Authentication expired
+   - `VALIDATION.INVALID_INPUT`: Input validation issues
+   - `RESOURCE.NOT_FOUND`: Resource not found
+   - `SERVER.INTERNAL_ERROR`: Generic server errors
 
-4. **Use Toast Notifications**: Use toast notifications for transient errors that don't require user action.
+4. **Provide Default Handlers**: Always include a default handler to catch unexpected errors.
 
-5. **Centralize Common Error Handling**: For errors that should be handled the same way across the application, create centralized error handlers.
+5. **Use Toast Notifications**: Use toast notifications for transient errors that don't require user action.
 
-## Error Codes
+6. **Centralize Common Error Handling**: For errors that should be handled the same way across the application, create centralized error handlers.
 
-The system uses the following error codes (imported from the server):
+## Type Safety
 
-### Authentication Errors
-- `AUTH.SESSION_NOT_FOUND`: Session not found
+Our error handling system is designed with TypeScript in mind:
+
+1. **Response Types**: The `TAPIResponse<T>` and `TAPIErrorResponse` types provide strong typing for API responses.
+
+2. **Type Guards**: The `isSuccessResponse` and `isErrorResponse` functions act as type guards to safely narrow types.
+
+3. **Error Handlers**: The `ErrorHandler<T>` type provides type safety for error handling functions.
+
+## Integration with React Query
+
+When using React Query, integrate our error handling system:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { useErrorHandler } from '@/lib/error';
+
+function UserData() {
+    const handleError = useErrorHandler((err) => {
+        toast.error(err.error.message);
+    });
+
+    const { data } = useQuery({
+        queryKey: ['user'],
+        queryFn: async () => {
+            const response = await apiClient.user.get();
+            if (!isSuccessResponse(response)) {
+                throw response; // Will be caught by onError
+            }
+            return response.data;
+        },
+        onError: (error) => handleError(error, {
+            'AUTH.SESSION_EXPIRED': () => {
+                navigate('/login');
+            }
+        })
+    });
+
+    // Rest of component
+}
+```
+
+## Error Codes and Categories
+
+### Internal Error Codes
+The system uses detailed internal error codes (imported from the server):
+
 - `AUTH.SESSION_EXPIRED`: Session expired
-- `AUTH.USER_NOT_FOUND`: User not found
-- `AUTH.INVALID_CREDENTIALS`: Invalid credentials
-
-### Validation Errors
 - `VALIDATION.INVALID_INPUT`: Invalid input data
-- `VALIDATION.MISSING_FIELD`: Required field is missing
-
-### Database Errors
 - `DB.QUERY_FAILED`: Database query failed
-- `DB.UNIQUE_VIOLATION`: Unique constraint violation
-- `DB.FOREIGN_KEY_VIOLATION`: Foreign key constraint violation
+- And many more specific codes
 
-### Service Errors
-- `SERVICE.CREATE_FAILED`: Failed to create resource
-- `SERVICE.UPDATE_FAILED`: Failed to update resource
-- `SERVICE.DELETE_FAILED`: Failed to delete resource
-- `SERVICE.NOT_FOUND`: Resource not found
-- `SERVICE.ALREADY_EXISTS`: Resource already exists
+### Public Error Categories
+For sanitized public responses, broader categories are used:
 
-### Generic Errors
-- `INTERNAL_SERVER_ERROR`: Generic server error
+- `AUTH_ERROR`: Authentication/authorization issues
+- `VALIDATION_ERROR`: Input validation issues
+- `RESOURCE_ERROR`: Resource not found, already exists, etc.
+- `RATE_LIMIT_ERROR`: Rate limiting or quota issues
+- `SERVER_ERROR`: Generic server errors
 
 ## Integration with React Query
 
@@ -227,6 +289,9 @@ const { data, isLoading } = useGetUser(
         errorHandlers: {
             'SERVICE.NOT_FOUND': () => {
                 setNotFound(true);
+            },
+            'RESOURCE_ERROR': () => {
+                setNotFound(true);
             }
         }
     }
@@ -240,13 +305,56 @@ const { mutate } = useUpdateUser({
     errorHandlers: {
         'VALIDATION.INVALID_INPUT': (err) => {
             setValidationErrors(err.error.details);
+        },
+        'VALIDATION_ERROR': (err) => {
+            // Handle sanitized validation errors
+            toast.error(err.error.message);
         }
     }
 });
 ```
 
+## Error Registry Integration
+
+The client error handling system is designed to work seamlessly with the server's error registry system. The modular structure of the error registry makes it easier to handle errors in a type-safe way on the client side.
+
+### Public Error Codes
+
+The client error system uses the public error codes defined in the server's `public-error-codes.ts` file. These codes are used to match error handlers to specific error types:
+
+```typescript
+import { handleApiError } from '@/lib/error';
+
+handleApiError(error, {
+  'AUTH.UNAUTHORIZED': (err) => redirectToLogin(),
+  'VALIDATION.INVALID_INPUT': (err) => showFormErrors(err),
+  default: (err) => showGenericError(err.error.message)
+});
+```
+
+### Benefits of the Modular Registry
+
+The modular structure of the error registry provides several benefits for client-side error handling:
+
+1. **Type Safety**: The client can import the `TPublicErrorCodes` type to ensure error handlers match actual error codes
+2. **Consistent Error Messages**: Public error messages defined in the registry are used consistently across the application
+3. **Better DX**: Developers get autocompletion for error codes when writing error handlers
+4. **Easy Extensibility**: New error types can be added to the registry and immediately be available for client handling
+
+### Error Handling Best Practices
+
+When handling errors on the client side, follow these best practices:
+
+1. **Always Use the Helper Functions**: Use `handleApiError` and `handleApiResponse` for consistent error handling
+2. **Match Specific Error Codes First**: Handle specific error codes before falling back to generic handlers
+3. **Provide User-Friendly Messages**: Show the `publicMessage` from the error response to users
+4. **Handle Retry Logic**: Check the `shouldRetry` property for temporary errors that might succeed if retried
+5. **Group Related Error Handlers**: Group error handlers by feature or domain for better organization
+
+The modular registry system makes it easier to follow these best practices by providing a consistent, well-documented set of error codes and messages.
+
 ## Conclusion
 
 The frontend error handling system provides a robust, type-safe way to handle errors across the application. By using this system consistently, you can ensure a smooth user experience even when errors occur.
 
-For more information on the server-side error handling, see the [Server Error Handling README](/src/server/lib/error/README.md).
+For more information on the server-side error handling, see the [Server Error Handling README](/src/server/lib/error/README.md)
