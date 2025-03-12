@@ -56,7 +56,7 @@ export const verifyLoginWithEmailOTP = async ({
     if (!verification) {
         throw errorFactory.createAuthError({
             message: 'Invalid or expired OTP',
-            code: 'AUTH.OTP_INVALID',
+            code: 'AUTH.INVALID_OTP',
         });
     }
 

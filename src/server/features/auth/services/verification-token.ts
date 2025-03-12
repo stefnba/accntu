@@ -28,6 +28,8 @@ export const generateOtp = async ({ email, userId }: { email?: string; userId?: 
 
     const hashedCode = hashOtp(code);
 
+    console.log('hashedCode', code);
+
     // Store the OTP in the database
     const otpRecord = await verificationTokenQueries.createVerificationTokenRecord({
         email,
@@ -88,7 +90,7 @@ export const verifyOtp = async ({ token, otp }: { token: string; otp: string }) 
         await verificationTokenQueries.incrementVerificationTokenRecordAttempts({ token });
         throw errorFactory.createAuthError({
             message: 'Invalid OTP',
-            code: 'AUTH.OTP_INVALID',
+            code: 'AUTH.INVALID_OTP',
         });
     }
 
