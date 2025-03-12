@@ -13,9 +13,9 @@ import {
     ServerErrorStatusCode,
     SuccessStatusCode,
 } from 'hono/utils/http-status';
-import { BaseError } from './base';
 import { errorFactory } from './factory';
 import { TAPIErrorResponse } from './types';
+import { isBaseError } from './utils';
 
 export type ErrorReponseCode = ServerErrorStatusCode | ClientErrorStatusCode;
 export type SuccessResponseCode = SuccessStatusCode;
@@ -53,7 +53,7 @@ export function handleRouteError(
     error: unknown
 ): TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'> {
     // Handle BaseError with proper type narrowing for RPC
-    if (error instanceof BaseError) {
+    if (isBaseError(error)) {
         const errorStatusCode = ensureErrorStatusCode(error.statusCode || 500);
 
         // IMPORTANT: This conditional block is required for Hono RPC type safety

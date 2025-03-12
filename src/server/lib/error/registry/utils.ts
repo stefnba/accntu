@@ -117,29 +117,6 @@ export const PublicErrorCodes = Object.entries(PublicErrorCodesByCategory).flatM
 ) as [TPublicErrorCodes, ...TPublicErrorCodes[]];
 
 /**
- * Gets a list of all public-safe error codes in the registry
- * These are errors that can be safely exposed to clients
- *
- * @returns Array of public-safe error codes
- *
- * @example
- * ```typescript
- * const safeErrorCodes = getPublicSafeErrorCodes();
- * // ['AUTH.INVALID_TOKEN', 'RESOURCE.NOT_FOUND', ...]
- * ```
- */
-export function getPublicSafeErrorCodes(): TErrorCode[] {
-    return getAllErrorCodes().filter((code) => {
-        try {
-            const def = getErrorDefinitionFromRegistry(code);
-            return def.isPublicSafe;
-        } catch (e) {
-            return false;
-        }
-    });
-}
-
-/**
  * Gets a list of all expected error codes in the registry
  * These are errors that can occur during normal operation
  *
@@ -188,4 +165,37 @@ export function getPublicErrorCodes(): string[] {
     });
 
     return Array.from(publicCodes);
+}
+
+/**
+ * Singleton cache for error definitions to avoid repeated lookups
+ */
+export class ErrorDefinitionCache {
+    private static instance: ErrorDefinitionCache;
+    private cache = new Map<TErrorCode, ErrorDefinition<TErrorCode>>();
+
+    private constructor() {}
+
+    public static getInstance(): ErrorDefinitionCache {
+        if (!ErrorDefinitionCache.instance) {
+            ErrorDefinitionCache.instance = new ErrorDefinitionCache();
+        }
+        return ErrorDefinitionCache.instance;
+    }
+
+    public getDefinition<T extends TErrorCode>(code: T): ErrorDefinition<T> {
+        if (!this.cache.has(code)) {
+            this.cache.set(code, getErrorDefinitionFromRegistry(code));
+        }
+        return this.cache.get(code) as ErrorDefinition<T>;
+    }
+
+    public clearCache(): void {
+        this.cache.clear();
+    }
+}
+
+// For backwards compatibility, provide a function that uses the singleton
+export function getCachedErrorDefinition<T extends TErrorCode>(code: T): ErrorDefinition<T> {
+    return ErrorDefinitionCache.getInstance().getDefinition(code);
 }

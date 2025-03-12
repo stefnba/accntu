@@ -1,7 +1,7 @@
 import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { BaseError } from './base';
 import { errorFactory } from './factory';
+import { isBaseError, isError } from './utils';
 
 /**
  * Global error handler for Hono applications
@@ -18,7 +18,7 @@ import { errorFactory } from './factory';
  * @param c - The Hono context
  * @returns A JSON response with the appropriate error information
  */
-export const handleError = (error: Error, c: Context) => {
+export const handleError = (error: unknown, c: Context) => {
     const requestData = {
         method: c.req.method,
         url: c.req.url,
@@ -26,8 +26,13 @@ export const handleError = (error: Error, c: Context) => {
     };
 
     // Handle our custom BaseError
-    if (error instanceof BaseError) {
-        error.logError(requestData);
+    if (isBaseError(error)) {
+        // Use full logging for unexpected errors, simplified for expected ones
+        const isExpectedError = error.errorDefinition.isExpected;
+        error.logError(requestData, {
+            includeChain: true, // Always include chain in logs
+            includeStack: !isExpectedError, // Only include stack for unexpected errors
+        });
         return c.json(error.toResponse(), error.statusCode);
     }
 
@@ -45,11 +50,12 @@ export const handleError = (error: Error, c: Context) => {
 
     // Handle unknown errors as critical errors
     const baseError = errorFactory.createError({
-        message: 'An unexpected error occurred',
+        message: isError(error) ? error.message : 'An unexpected error occurred',
         code: 'SERVER.INTERNAL_ERROR',
         statusCode: 500,
-        cause: error instanceof Error ? error : undefined,
+        cause: isError(error) ? error : undefined,
         layer: 'route',
+        details: isError(error) ? { stack: error.stack } : {},
     });
     baseError.logError(requestData);
     return c.json(baseError.toResponse(), 500);

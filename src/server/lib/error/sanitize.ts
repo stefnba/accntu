@@ -78,6 +78,7 @@ export function sanitizeErrorForPublic(
         publicResponse.error.details = {
             ...details,
             originalCode: internalCode,
+            originalMessage: errorDefinition.description,
         };
     }
 

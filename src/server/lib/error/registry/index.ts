@@ -18,6 +18,22 @@ export const ErrorRegistry = {
     // Authentication errors
     AUTH: [
         createErrorEntry({
+            code: 'EMPTY_SESSION_TOKEN',
+            description: 'The session token is empty',
+            statusCode: 401,
+            isExpected: true,
+            publicCode: 'AUTH.UNAUTHORIZED',
+            publicMessage: 'You are not authorized to perform this action',
+        }),
+        createErrorEntry({
+            code: 'SESSION_NOT_FOUND',
+            description: 'The provided session ID is invalid',
+            statusCode: 401,
+            isExpected: true,
+            publicCode: 'AUTH.UNAUTHORIZED',
+            publicMessage: 'You are not authorized to perform this action',
+        }),
+        createErrorEntry({
             code: 'INVALID_TOKEN',
             description: 'The provided authentication token is invalid',
             statusCode: 401,

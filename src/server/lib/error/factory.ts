@@ -2,14 +2,14 @@
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { BaseError } from './base';
 import { TErrorCode } from './registry';
-import { getErrorDefinitionFromRegistry } from './registry/utils';
+import { getCachedErrorDefinition } from './registry/utils';
 import { ErrorOptions } from './types';
 
 /**
  * Parameters for creating an error
  */
 export type ErrorParams = {
-    message: string;
+    message?: string;
     code: TErrorCode;
     statusCode?: ContentfulStatusCode;
     cause?: Error;
@@ -34,11 +34,15 @@ class ErrorFactory {
      * @param params - Object containing error parameters
      * @returns A new BaseError instance
      */
-    createError(params: ErrorParams): BaseError {
+    createError(params: TErrorCode | ErrorParams): BaseError {
+        if (typeof params === 'string') {
+            params = { code: params };
+        }
+
         const { message, code, statusCode, cause, layer, details } = params;
 
         // Get default values from the registry
-        const errorDefinition = getErrorDefinitionFromRegistry(code);
+        const errorDefinition = getCachedErrorDefinition(code);
 
         // Create the BaseError with object parameters
         return new BaseError({
@@ -154,9 +158,10 @@ class ErrorFactory {
      * @param params - Object containing error parameters
      * @returns A new BaseError instance with authentication layer context
      */
-    createAuthError(params: Omit<ErrorParams, 'layer'>): BaseError {
+    createAuthError(params: TErrorCode | Omit<ErrorParams, 'layer'>): BaseError {
+        const paramsToUse = typeof params === 'string' ? { code: params } : params;
         return this.createError({
-            ...params,
+            ...paramsToUse,
             layer: 'service',
         });
     }

@@ -1,11 +1,11 @@
 import { TErrorCode } from '@/server/lib/error/registry/index';
 import { ErrorDefinition } from '@/server/lib/error/registry/types';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
-import { nanoid } from 'nanoid';
 import { logger } from '../logger';
 import { LogContext } from '../logger/types';
 import { sanitizeErrorForPublic, SanitizeErrorOptions } from './sanitize';
 import { ErrorChainItem, ErrorLayer, ErrorOptions, TAPIErrorResponse } from './types';
+import { generateErrorId } from './utils';
 
 // Metric tracking for errors
 const errorMetrics: Record<
@@ -16,6 +16,43 @@ const errorMetrics: Record<
         occurrences: Date[];
     }
 > = {};
+
+// Buffer for batching error metrics updates
+const ERROR_METRICS_BUFFER: Record<string, { count: number; timestamps: Date[] }> = {};
+
+// Configuration for metrics flushing
+const METRICS_FLUSH_INTERVAL = 5000; // 5 seconds
+let metricsFlushIntervalId: NodeJS.Timeout | null = null;
+
+/**
+ * Flushes buffered error metrics to the main metrics store
+ * Called periodically by the flush interval
+ */
+function flushErrorMetrics() {
+    Object.entries(ERROR_METRICS_BUFFER).forEach(([code, { count, timestamps }]) => {
+        if (!errorMetrics[code]) {
+            errorMetrics[code] = { count: 0, lastOccurred: new Date(), occurrences: [] };
+        }
+
+        errorMetrics[code].count += count;
+        errorMetrics[code].lastOccurred = timestamps[timestamps.length - 1];
+
+        // Add new occurrences while maintaining max length
+        errorMetrics[code].occurrences.push(...timestamps);
+        if (errorMetrics[code].occurrences.length > 100) {
+            errorMetrics[code].occurrences = errorMetrics[code].occurrences.slice(-100);
+        }
+    });
+
+    // Reset buffer
+    Object.keys(ERROR_METRICS_BUFFER).forEach((key) => delete ERROR_METRICS_BUFFER[key]);
+}
+
+// Start the flush interval when this module is loaded
+if (typeof window === 'undefined' && !metricsFlushIntervalId) {
+    // Server-side only
+    metricsFlushIntervalId = setInterval(flushErrorMetrics, METRICS_FLUSH_INTERVAL);
+}
 
 /**
  * Maps error layer to log context
@@ -73,8 +110,32 @@ export class BaseError extends Error {
 
     /**
      * Chain of errors that led to this error
+     * Lazily constructed on first access
      */
-    public readonly errorChain: ErrorChainItem[];
+    private _errorChain?: ErrorChainItem[];
+
+    /**
+     * Get the error chain
+     * Constructed lazily on first access
+     */
+    public get errorChain(): ErrorChainItem[] {
+        if (!this._errorChain) {
+            this._errorChain = [
+                {
+                    layer: this.originalLayer,
+                    error: this.message,
+                    code: this.code,
+                    timestamp: this.timestamp,
+                },
+            ];
+        }
+        return this._errorChain;
+    }
+
+    /**
+     * The original layer where the error occurred
+     */
+    private readonly originalLayer: ErrorLayer;
 
     /**
      * Error definition from registry
@@ -90,6 +151,16 @@ export class BaseError extends Error {
      * HTTP status code for this error
      */
     public readonly statusCode: ContentfulStatusCode;
+
+    /**
+     * Cached public response - cleared when options change
+     */
+    private _cachedResponse?: TAPIErrorResponse;
+
+    /**
+     * Cached response options to detect changes
+     */
+    private _cachedOptions?: string;
 
     /**
      * Creates a new BaseError
@@ -113,20 +184,13 @@ export class BaseError extends Error {
         this.statusCode = statusCode || errorDefinition.statusCode;
 
         this.name = 'BaseError';
-        this.traceId = nanoid();
+        this.traceId = generateErrorId();
         this.timestamp = new Date();
         this.details = details;
         this.originalError = options.cause;
 
-        // Create the initial error chain
-        this.errorChain = [
-            {
-                layer: options.layer || 'route',
-                error: errorMessage,
-                code: this.code,
-                timestamp: this.timestamp,
-            },
-        ];
+        // Store the original layer
+        this.originalLayer = options.layer || 'route';
 
         // Track this error occurrence
         this.trackError();
@@ -143,6 +207,7 @@ export class BaseError extends Error {
      * @returns this (for method chaining)
      */
     addToChain(layer: ErrorLayer, error: string, code: TErrorCode) {
+        // Ensure the chain is initialized by accessing the getter
         this.errorChain.push({
             layer,
             error,
@@ -157,10 +222,25 @@ export class BaseError extends Error {
      *
      * This standardizes the format of error responses across the application.
      *
+     * @param options - Options for customizing the sanitization
      * @returns A standardized API error response
      */
     toResponse(options?: SanitizeErrorOptions): TAPIErrorResponse {
-        return sanitizeErrorForPublic(this.errorDefinition, this.traceId, this.details, options);
+        // Generate an options key for cache comparison
+        const optionsKey = options ? JSON.stringify(options) : '';
+
+        // Only regenerate response if options changed or no cached response exists
+        if (!this._cachedResponse || this._cachedOptions !== optionsKey) {
+            this._cachedResponse = sanitizeErrorForPublic(
+                this.errorDefinition,
+                this.traceId,
+                this.details,
+                options
+            );
+            this._cachedOptions = optionsKey;
+        }
+
+        return this._cachedResponse;
     }
 
     /**
@@ -171,8 +251,14 @@ export class BaseError extends Error {
      * Unexpected errors are logged at error level.
      *
      * @param requestData - Optional request data to include in the log
+     * @param options - Additional options for logging
      */
-    logError(requestData?: { method: string; url: string; status: number }) {
+    logError(
+        requestData?: { method: string; url: string; status: number },
+        options: { includeChain?: boolean; includeStack?: boolean } = {}
+    ) {
+        const { includeChain = true, includeStack = true } = options;
+
         // Determine if this is an expected error based on stored definition
         const isExpectedError = this.errorDefinition.isExpected;
 
@@ -180,16 +266,27 @@ export class BaseError extends Error {
         const layer = this.errorChain[0].layer;
         const contextKey = LAYER_TO_CONTEXT[layer].toLowerCase() as LogContext;
 
+        // Create formatted chain for logging if needed
+        const formattedChain = includeChain
+            ? this.errorChain
+                  .map(
+                      (item) =>
+                          `[${item.layer.toUpperCase()}] ${item.code}: ${item.error} (${item.timestamp.toISOString()})`
+                  )
+                  .join(' → ')
+            : undefined;
+
         const logData = {
             error_code: this.code,
             error_message: this.message,
             status_code: this.statusCode,
             trace_id: this.traceId,
             timestamp: this.timestamp.toISOString(),
-            error_chain: this.errorChain,
+            error_chain: includeChain ? this.errorChain : undefined,
+            formatted_chain: formattedChain,
             details: this.details,
             request: requestData,
-            stack: this.stack,
+            stack: includeStack ? this.stack : undefined,
         };
 
         if (logLevel === 'info') {
@@ -208,22 +305,12 @@ export class BaseError extends Error {
      * @private
      */
     private trackError() {
-        if (!errorMetrics[this.code]) {
-            errorMetrics[this.code] = {
-                count: 0,
-                lastOccurred: new Date(),
-                occurrences: [],
-            };
+        if (!ERROR_METRICS_BUFFER[this.code]) {
+            ERROR_METRICS_BUFFER[this.code] = { count: 0, timestamps: [] };
         }
 
-        errorMetrics[this.code].count += 1;
-        errorMetrics[this.code].lastOccurred = new Date();
-
-        // Keep track of the last 100 occurrences
-        errorMetrics[this.code].occurrences.push(new Date());
-        if (errorMetrics[this.code].occurrences.length > 100) {
-            errorMetrics[this.code].occurrences.shift();
-        }
+        ERROR_METRICS_BUFFER[this.code].count += 1;
+        ERROR_METRICS_BUFFER[this.code].timestamps.push(new Date());
     }
 }
 
@@ -235,6 +322,9 @@ export class BaseError extends Error {
  * @returns Object with error metrics
  */
 export function getErrorMetrics() {
+    // Flush any pending metrics before returning
+    flushErrorMetrics();
+
     return Object.entries(errorMetrics).map(([code, metrics]) => ({
         code,
         count: metrics.count,

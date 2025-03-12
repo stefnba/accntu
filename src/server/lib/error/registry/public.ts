@@ -49,6 +49,7 @@ export const PublicErrorCodesByCategory = {
     ],
 } as const;
 
+// todo change to TPublicErrorCode
 /**
  * Type for public error codes in dot notation format
  */

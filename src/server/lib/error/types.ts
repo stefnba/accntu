@@ -63,3 +63,5 @@ export type TAPIResponse<T extends JSONValue | SimplifyDeepArray<unknown> | Inva
     | TAPIMutationResponse<T>
     | TAPIErrorResponse
     | T;
+
+export type { TErrorCode };
