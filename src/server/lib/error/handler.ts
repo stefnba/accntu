@@ -22,7 +22,6 @@ export const handleError = (error: unknown, c: Context) => {
     const requestData = {
         method: c.req.method,
         url: c.req.url,
-        status: c.res.status,
     };
 
     // Handle our custom BaseError

@@ -254,7 +254,7 @@ export class BaseError extends Error {
      * @param options - Additional options for logging
      */
     logError(
-        requestData?: { method: string; url: string; status: number },
+        requestData?: { method: string; url: string },
         options: { includeChain?: boolean; includeStack?: boolean } = {}
     ) {
         const { includeChain = true, includeStack = true } = options;
