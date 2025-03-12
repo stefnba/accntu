@@ -126,19 +126,21 @@ export function getCookieValue<T>(
         return cookieValue;
     }
 
-    try {
-        return outputSchema.parse(cookieValue);
-    } catch (error) {
-        throw errorFactory.createValidationError({
-            message: 'Invalid cookie value',
-            code: 'COOKIE.INVALID_VALUE',
-            statusCode: 400,
-            details: {
-                cookieKey,
-                cookieValue,
-            },
-        });
+    const parsed = outputSchema.safeParse(cookieValue);
+
+    if (parsed.success) {
+        return parsed.data;
     }
+
+    throw errorFactory.createValidationError({
+        message: 'Invalid cookie value',
+        code: 'COOKIE.INVALID_VALUE',
+        statusCode: 400,
+        details: {
+            cookieKey,
+            error: parsed.error,
+        },
+    });
 }
 
 /**
