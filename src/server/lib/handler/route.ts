@@ -2,7 +2,7 @@ import { ErrorReponseCode, handleRouteError, SuccessResponseCode } from '@/serve
 import { Context, TypedResponse } from 'hono';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
-import { APIErrorResponse, APIMutationResponse, createMutationResponse } from '../error';
+import { createMutationResponse, TAPIErrorResponse, TAPIMutationResponse } from '../error';
 
 /**
  * Wraps a route handler with error handling
@@ -32,7 +32,7 @@ export async function withRoute<
     statusCode: ContentfulStatusCode = 200
 ): Promise<
     | TypedResponse<T, SuccessResponseCode, 'json'>
-    | TypedResponse<APIErrorResponse, ErrorReponseCode, 'json'>
+    | TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'>
 > {
     try {
         const result = await handler();
@@ -67,7 +67,7 @@ export async function withQueryRoute<
     c: Context,
     handler: () => Promise<T>
 ): Promise<
-    TypedResponse<T, 200, 'json'> | TypedResponse<APIErrorResponse, ErrorReponseCode, 'json'>
+    TypedResponse<T, 200, 'json'> | TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'>
 > {
     try {
         const result = await handler();
@@ -103,13 +103,13 @@ export async function withMutationRoute<
     c: Context,
     handler: () => Promise<T>
 ): Promise<
-    | TypedResponse<APIMutationResponse<Awaited<T>>, 201, 'json'>
-    | TypedResponse<APIErrorResponse, ErrorReponseCode, 'json'>
+    | TypedResponse<TAPIMutationResponse<Awaited<T>>, 201, 'json'>
+    | TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'>
 > {
     try {
         const result = await handler();
         return c.json(createMutationResponse(result), 201) as unknown as TypedResponse<
-            APIMutationResponse<Awaited<T>>,
+            TAPIMutationResponse<Awaited<T>>,
             201,
             'json'
         >;
