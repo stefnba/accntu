@@ -51,18 +51,13 @@ export const verifyLoginWithEmailOTP = async ({
     otp: string;
     email: string;
 }) => {
-    const verification = await verifyOtp({ token, otp });
+    // check if valid, throw respective auth error if not
+    await verifyOtp({ token, otp });
 
-    if (!verification) {
-        throw errorFactory.createAuthError({
-            message: 'Invalid or expired OTP',
-            code: 'AUTH.INVALID_OTP',
-        });
-    }
-
+    // token is valid at this point
     let user = await userQueries.getUserRecordByEmail({ email });
 
-    // TODO: Check create new user if not found
+    // create new user if not found
     if (!user) {
         const newUser = await userServices.signupNewUser({
             email,

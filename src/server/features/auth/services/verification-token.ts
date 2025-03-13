@@ -44,6 +44,7 @@ export const generateOtp = async ({ email, userId }: { email?: string; userId?: 
 
 /**
  * Verify an OTP
+ *
  * @param params - The verification parameters
  * @param params.token - The token associated with the OTP
  * @param params.otp - The OTP to verify
@@ -93,6 +94,9 @@ export const verifyOtp = async ({ token, otp }: { token: string; otp: string }) 
             code: 'AUTH.INVALID_OTP',
         });
     }
+
+    // token is now valid
+    await verificationTokenQueries.markVerificationTokenRecordAsUsed({ token });
 
     return true;
 };
