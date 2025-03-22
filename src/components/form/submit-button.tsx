@@ -1,5 +1,5 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import { Button } from '@/components/ui/button';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { FieldValues } from 'react-hook-form';
 
 type FormSubmitButtonProps<TFieldValues extends FieldValues> = Omit<

@@ -192,9 +192,3 @@ export function createFormSchema<TSchema extends z.ZodType<any, any, any>>(
         defaultValues,
     };
 }
-
-/**
- * Legacy hook name for backward compatibility
- * @deprecated Use useZodForm instead
- */
-export const useForm = useZodForm;

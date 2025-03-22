@@ -7,7 +7,7 @@ import { FormSelect } from './select';
 import { FormSubmitButton } from './submit-button';
 import { FormSwitch } from './switch';
 import { FormTextarea } from './textarea';
-import { createFormSchema, useZodForm as useForm } from './use-form';
+import { createFormSchema, useZodForm } from './use-form';
 
 export {
     createFormSchema,
@@ -20,5 +20,5 @@ export {
     FormSubmitButton,
     FormSwitch,
     FormTextarea,
-    useForm,
+    useZodForm as useForm,
 };
