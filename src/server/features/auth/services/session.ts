@@ -40,8 +40,14 @@ export const getSessionById = async ({ sessionId }: { sessionId: string }) => {
  * @param params.userId - The user ID
  * @returns Array of sessions
  */
-export const getSessionsByUserId = async ({ userId }: { userId: string }) => {
-    return sessionQueries.getSessionRecordsByUserId({ userId });
+export const getSessionsByUserId = async ({
+    userId,
+    currentSessionId,
+}: {
+    userId: string;
+    currentSessionId: string;
+}) => {
+    return sessionQueries.getSessionRecordsByUserId({ userId, currentSessionId });
 };
 
 /**
@@ -58,10 +64,17 @@ export const updateSessionActivity = async ({ sessionId }: { sessionId: string }
  * Delete a session
  * @param params - Session deletion parameters
  * @param params.sessionId - The session ID
+ * @param params.userId - The user ID
  * @returns True if successful
  */
-export const deleteSession = async ({ sessionId }: { sessionId: string }) => {
-    await sessionQueries.deleteSessionRecord({ sessionId });
+export const deleteSession = async ({
+    sessionId,
+    userId,
+}: {
+    sessionId: string;
+    userId: string;
+}) => {
+    await sessionQueries.deleteSessionRecord({ sessionId, userId });
     return true;
 };
 
@@ -125,7 +138,7 @@ export const revokeSession = async ({
         });
     }
 
-    await deleteSession({ sessionId });
+    await deleteSession({ sessionId, userId });
     return true;
 };
 

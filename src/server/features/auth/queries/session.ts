@@ -2,7 +2,7 @@ import { db } from '@/server/db';
 import { InsertSessionSchema, SelectSessionSchema, session } from '@/server/db/schemas';
 import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, gte, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 // Session queries
@@ -50,16 +50,34 @@ export const getSessionRecordById = async ({ sessionId }: { sessionId: string })
     });
 
 /**
- * Get all session records by user ID
+ * Get all session records by user ID that are not expired
  * @param params - The query parameters
  * @param params.userId - The ID of the user
  * @returns The session records
  */
-export const getSessionRecordsByUserId = async ({ userId }: { userId: string }) =>
+export const getSessionRecordsByUserId = async ({
+    userId,
+    currentSessionId,
+}: {
+    userId: string;
+    currentSessionId: string;
+}) =>
     withDbQuery({
         operation: 'get session records by user id',
         // outputSchema: z.array(SelectSessionSchema),
-        queryFn: async () => db.select().from(session).where(eq(session.userId, userId)),
+        queryFn: async () =>
+            db
+                .select({
+                    id: session.id,
+                    ipAddress: session.ipAddress,
+                    userAgent: session.userAgent,
+                    userId: session.userId,
+                    expiresAt: session.expiresAt,
+                    lastActiveAt: session.lastActiveAt,
+                    isCurrent: sql<boolean>`${session.id} = ${currentSessionId}`,
+                })
+                .from(session)
+                .where(and(eq(session.userId, userId), gte(session.expiresAt, new Date()))),
     });
 
 /**
@@ -78,15 +96,23 @@ export const updateSessionLastActive = async ({ sessionId }: { sessionId: string
  * Delete a session record
  * @param params - The delete parameters
  * @param params.sessionId - The ID of the session
+ * @param params.userId - The ID of the user
  */
-export const deleteSessionRecord = async ({ sessionId }: { sessionId: string }) =>
+export const deleteSessionRecord = async ({
+    sessionId,
+    userId,
+}: {
+    sessionId: string;
+    userId: string;
+}) =>
     withDbQuery({
         operation: 'delete session record',
-        queryFn: () => db.delete(session).where(eq(session.id, sessionId)),
+        queryFn: () =>
+            db.delete(session).where(and(eq(session.id, sessionId), eq(session.userId, userId))),
     });
 
 /**
- * Delete all session records for a user except one
+ * Delete all session records for a user except one that is currently used
  * @param params - The delete parameters
  * @param params.userId - The ID of the user
  * @param params.exceptSessionId - The ID of the session to preserve (optional)

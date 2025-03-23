@@ -1,6 +1,6 @@
 import { UpdateUserSchema } from '@/server/db/schemas/user';
 import { sessionServices } from '@/server/features/auth/services';
-import { getUserFromContext } from '@/server/features/auth/services/auth';
+import { getSessionIdFromContext, getUserFromContext } from '@/server/features/auth/services/auth';
 import { getUserProfile, updateUserProfile } from '@/server/features/user/services';
 import { getCookieValue } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
@@ -50,7 +50,12 @@ const app = new Hono()
     .get('/sessions', async (c) =>
         withQueryRoute(c, async () => {
             const user = getUserFromContext(c);
-            const sessions = await sessionServices.getSessionsByUserId({ userId: user.id });
+            const currentSessionId = getSessionIdFromContext(c);
+
+            const sessions = await sessionServices.getSessionsByUserId({
+                userId: user.id,
+                currentSessionId,
+            });
             return { sessions };
         })
     )

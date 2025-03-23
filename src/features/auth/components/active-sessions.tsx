@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -96,6 +97,11 @@ export function ActiveSessions() {
                                     <Shield className="mr-2 h-4 w-4" />
                                 )}
                                 {session.userAgent?.split('/')?.[0] || 'Unknown Device'}
+                                {session.isCurrent && (
+                                    <Badge variant="outline" className="ml-2">
+                                        Current
+                                    </Badge>
+                                )}
                             </CardTitle>
                             <CardDescription>
                                 {session.lastActiveAt
