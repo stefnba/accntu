@@ -2,17 +2,13 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DeviceIcon } from '@/components/user-agent-device-icon';
 import { useAuthEndpoints } from '@/features/auth/api';
+import { parseUserAgent } from '@/lib/utils/user-agent';
+import { Loader2, LogOut, Trash2 } from 'lucide-react';
 
-import { Loader2, LogOut, Shield, Smartphone } from 'lucide-react';
 import { useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -87,52 +83,65 @@ export function ActiveSessions() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {sessions.map((session) => (
-                    <Card key={session.id}>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                {session.userAgent?.includes('Mobile') ? (
-                                    <Smartphone className="mr-2 h-4 w-4" />
-                                ) : (
-                                    <Shield className="mr-2 h-4 w-4" />
+                {sessions.map((session) => {
+                    const deviceInfo = parseUserAgent(session.userAgent);
+
+                    return (
+                        <Card key={session.id} className="relative">
+                            <CardHeader className="pb-2">
+                                {!session.isCurrent && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                className="absolute right-4 top-4 h-8 w-8 rounded-md p-1.5 text-muted-foreground opacity-70 transition-opacity hover:bg-muted hover:opacity-100 disabled:pointer-events-none disabled:opacity-30"
+                                                onClick={() => handleRevokeSession(session.id)}
+                                                disabled={session.isCurrent || isRevokingSession}
+                                                aria-label="Revoke session"
+                                            >
+                                                {isRevokingSession ? (
+                                                    <Loader2 className="h-full w-full animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-full w-full" />
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Revoke this session</TooltipContent>
+                                    </Tooltip>
                                 )}
-                                {session.userAgent?.split('/')?.[0] || 'Unknown Device'}
-                                {session.isCurrent && (
-                                    <Badge variant="outline" className="ml-2">
-                                        Current
-                                    </Badge>
-                                )}
-                            </CardTitle>
-                            <CardDescription>
-                                {session.lastActiveAt
-                                    ? `Last active ${new Date(session.lastActiveAt).toLocaleString()}`
-                                    : 'Never active'}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-sm text-muted-foreground">
-                                <p>IP: {session.ipAddress || 'Unknown'}</p>
-                                <p>Expires: {new Date(session.expiresAt).toLocaleString()}</p>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => handleRevokeSession(session.id)}
-                                disabled={isRevokingSession}
-                            >
-                                {isRevokingSession ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                )}
-                                Revoke Session
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
+                                <CardTitle className="flex items-center">
+                                    <DeviceIcon userAgent={session.userAgent} />
+                                    {deviceInfo.shortName}
+                                    {session.isCurrent && (
+                                        <Badge variant="outline" className="ml-2">
+                                            Current
+                                        </Badge>
+                                    )}
+                                </CardTitle>
+                                <CardDescription>
+                                    {session.lastActiveAt
+                                        ? `Last active ${new Date(session.lastActiveAt).toLocaleString()}`
+                                        : 'Never active'}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-sm text-muted-foreground">
+                                    <p>IP: {session.ipAddress || 'Unknown'}</p>
+                                    <p>Expires: {new Date(session.expiresAt).toLocaleString()}</p>
+                                    <p>
+                                        Device: {deviceInfo.device.vendor} {deviceInfo.device.model}
+                                    </p>
+                                    <p>
+                                        Broser: {deviceInfo.browser.name}{' '}
+                                        {deviceInfo.browser.version}
+                                    </p>
+                                    <p>
+                                        System: {deviceInfo.os.name} {deviceInfo.os.version}
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
 
                 {!sessions.length && (
                     <div className="col-span-full text-center py-8 text-muted-foreground">
