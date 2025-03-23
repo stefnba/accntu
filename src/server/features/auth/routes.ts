@@ -2,6 +2,11 @@ import { OAuthProviderSchema } from '@/server/db/schemas';
 import { EmailLoginSchema, OTPVerifySchema, SignupSchema } from '@/server/features/auth/schemas';
 import { sessionServices } from '@/server/features/auth/services';
 import {
+    getSessionIdFromContext,
+    getUserFromContext,
+    logout,
+} from '@/server/features/auth/services/auth';
+import {
     initiateLoginWithEmailOTP,
     verifyLoginWithEmailOTP,
 } from '@/server/features/auth/services/email-otp';
@@ -96,14 +101,26 @@ const app = new Hono()
         })
     )
 
+    // Logout the user, i.e. delete the session
     .post('/logout', async (c) =>
         withMutationRoute(c, async () => {
-            clearCookie(c, 'AUTH_SESSION');
-            return { message: 'Logout successful' };
+            try {
+                const user = getUserFromContext(c);
+                const sessionId = getSessionIdFromContext(c);
+                // Logout the user, i.e. delete the session
+                await logout({ userId: user.id, sessionId });
+                return { message: 'Logout successful' };
+            } catch (error) {
+                // todo better error handling for this
+                console.error('Error logging out', error);
+            } finally {
+                // Clear session cookie, even if logout fails
+                clearCookie(c, 'AUTH_SESSION');
+            }
         })
     )
 
-    // GitHub oauth
+    // oauth
     .get(
         '/:provider/authorize',
         zValidator('param', z.object({ provider: OAuthProviderSchema })),

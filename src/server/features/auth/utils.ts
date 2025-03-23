@@ -62,16 +62,55 @@ export const generateSecureToken = (length: number = 32): string => {
  * - Exact matches: '/api/auth/login'
  * - Wildcards: '/api/auth/*' (matches any path starting with '/api/auth/')
  * - Path parameters: '/api/auth/:provider/callback' (matches '/api/auth/github/callback', etc.)
+ * - Exclusions in wildcards using ![...] syntax:
+ *   - Single exclusion: '/api/auth/*![logout]'
+ *   - Multiple exclusions: '/api/auth/*![logout, settings/profile]'
+ *   - Full path exclusions: '/api/auth/*![/api/auth/logout]'
+ *   - Mixed paths: '/api/auth/*![logout, /api/auth/settings/profile]'
+ *   Note: Relative paths in exclusions are automatically prefixed with the base pattern path
  *
  * @param path The actual path to check
  * @param pattern The pattern to match against
- * @returns true if the path matches the pattern
+ * @returns true if the path matches the pattern and doesn't match any exclusions
  */
 export const matchPath = (path: string, pattern: string): boolean => {
+    // Parse exclusions from pattern if it contains !
+    let excludePatterns: string[] = [];
+    let basePattern = pattern;
+
+    if (pattern.includes('!')) {
+        const [patternBase, exclusions] = pattern.split('![');
+        if (exclusions) {
+            basePattern = patternBase;
+            // Remove trailing ] and split by comma
+            const exclusionList = exclusions
+                .replace(/\]$/, '')
+                .split(',')
+                .map((s) => s.trim());
+            excludePatterns = exclusionList.map((exclude) => {
+                // If exclude path doesn't start with /, prepend the base pattern's path
+                if (!exclude.startsWith('/')) {
+                    const basePath = basePattern.replace('/*', '');
+                    return `${basePath}/${exclude}`;
+                }
+                return exclude;
+            });
+        }
+    }
+
+    // Check exclusions first
+    if (excludePatterns.length > 0) {
+        for (const exclude of excludePatterns) {
+            if (matchPath(path, exclude)) {
+                return false;
+            }
+        }
+    }
+
     // Normalize paths by removing trailing slashes and ensuring leading slash
     const normalizedPath = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
     const normalizedPattern =
-        pattern.endsWith('/') && pattern !== '/' ? pattern.slice(0, -1) : pattern;
+        basePattern.endsWith('/') && basePattern !== '/' ? basePattern.slice(0, -1) : basePattern;
 
     // Handle wildcard at the end (e.g., '/api/auth/*')
     if (normalizedPattern.endsWith('/*')) {

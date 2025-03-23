@@ -215,15 +215,14 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
         setAuthMethod(undefined);
 
         const handleLogout = () => {
-            // First, cancel all pending queries to prevent unnecessary retries
-            queryClient.cancelQueries();
+            // Instead of canceling all queries, only remove auth-related ones
+            queryClient.setQueryData(['user'], null);
+            queryClient.setQueryData(['sessions'], null);
 
-            // Then remove specific queries we want to clear
-            queryClient.removeQueries({ queryKey: ['user'] });
-            queryClient.removeQueries({ queryKey: ['sessions'] });
-
-            // Redirect to login page
-            router.push(LOGIN_URL);
+            // Use replace instead of push to prevent back navigation
+            router.replace(LOGIN_URL, {
+                scroll: false, // Prevent scroll reset
+            });
         };
 
         logoutMutate(

@@ -1,17 +1,14 @@
+import { TUserRole } from '@/server/db/schemas';
+import { HTTP_METHOD as THTTPMethods } from 'next/dist/server/web/http';
+
 /**
- * List of public API routes that don't require authentication
+ * List of public API routes that don't require authentication, any path listed here will be skipped in middleware.
+ *
+ * We can use wildcards or detailed routes.
  */
 export const PUBLIC_API_ROUTES = [
-    // Auth routes
-    '/api/auth/request-otp',
-    '/api/auth/verify-otp',
-    '/api/auth/signup',
-    '/api/auth/logout',
-    '/api/auth/:provider/authorize',
-    '/api/auth/:provider/callback',
-
-    // Alternatively, use wildcards for all auth routes
-    // '/api/auth/*',
+    // Auth routes - all except logout
+    '/api/auth/*![logout]',
 
     // Health check and other public endpoints
     '/api/health',
@@ -19,16 +16,18 @@ export const PUBLIC_API_ROUTES = [
 ];
 
 /**
- * Method-specific public routes
+ * Method-specific public API routes that don't require authentication.
+ * These are checked in the globalAuthMiddleware after the path-only PUBLIC_API_ROUTES.
+ *
  * Format: [HTTP method, path]
  * Use '*' for the method to match any HTTP method
+ *
+ * In the middleware, these are checked to see if the HTTP method and path match before allowing unauthenticated access.
+ * This means that only the listed methods will be allowed for the listed paths.
  */
-export const METHOD_PUBLIC_API_ROUTES: Array<[string, string]> = [
-    // Allow GET requests to products without auth
-    ['GET', '/api/products/*'],
-
+export const METHOD_PUBLIC_API_ROUTES: Array<[THTTPMethods | '*', string]> = [
     // All methods for auth routes are public
-    ['*', '/api/auth/*'],
+    // ['*', '/api/auth/*'],
 
     // Health check endpoints
     ['GET', '/api/health'],
@@ -39,9 +38,9 @@ export const METHOD_PUBLIC_API_ROUTES: Array<[string, string]> = [
  * Role-based protected routes
  * Routes that require specific user roles
  */
-export const ROLE_PROTECTED_ROUTES: Record<string, string[]> = {
+export const ROLE_PROTECTED_ROUTES: Record<TUserRole, string[]> = {
     admin: ['/api/admin/*', '/api/settings/*'],
-    manager: ['/api/reports/*', '/api/analytics/*'],
+    user: [],
 };
 
 /**

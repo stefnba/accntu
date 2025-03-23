@@ -1,9 +1,9 @@
 import { TUser } from '@/server/db/schemas/user';
+import { getSessionIdFromContext } from '@/server/features/auth/services/auth';
 import { validateSession } from '@/server/features/auth/services/session';
-import { clearCookie, getCookieValue } from '@/server/lib/cookies';
+import { clearCookie } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
 import { Context, Next } from 'hono';
-import { z } from 'zod';
 import { METHOD_PUBLIC_API_ROUTES, PUBLIC_API_ROUTES, ROLE_PROTECTED_ROUTES } from './config';
 import { isMethodPathMatch, isPathMatch } from './utils';
 
@@ -35,20 +35,13 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
 
     // Skip auth for public routes (method + path)
     if (isMethodPathMatch(method, path, METHOD_PUBLIC_API_ROUTES)) {
+        console.log('skipping auth for public route (method + path)', path);
         return next();
     }
 
     try {
-        // Get session ID from cookie
-        const sessionId = getCookieValue(c, 'AUTH_SESSION', z.string().optional().nullable());
-
-        // User is not logged in
-        if (!sessionId) {
-            // Clear the session cookie
-            clearCookie(c, 'AUTH_SESSION');
-
-            throw errorFactory.createAuthError('AUTH.EMPTY_SESSION_TOKEN');
-        }
+        // Get session ID from cookie, getSessionIdFromContext throws error if not found
+        const sessionId = getSessionIdFromContext(c, true);
 
         // Validate session and get user
         const user = await validateSession({ sessionId });
@@ -60,6 +53,7 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
         if (user.role) {
             for (const [role, patterns] of Object.entries(ROLE_PROTECTED_ROUTES)) {
                 if (isPathMatch(path, patterns) && user.role !== role) {
+                    // todo update error message
                     throw errorFactory.createAuthError({
                         message: 'Forbidden - insufficient permissions',
                         code: 'AUTH.INVALID_CREDENTIALS',
