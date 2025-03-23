@@ -2,7 +2,7 @@ import { db } from '@/server/db';
 import { InsertSessionSchema, SelectSessionSchema, session } from '@/server/db/schemas';
 import { withDbQuery } from '@/server/lib/handler';
 import { createId } from '@paralleldrive/cuid2';
-import { and, eq, gte, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 // Session queries
@@ -77,7 +77,8 @@ export const getSessionRecordsByUserId = async ({
                     isCurrent: sql<boolean>`${session.id} = ${currentSessionId}`,
                 })
                 .from(session)
-                .where(and(eq(session.userId, userId), gte(session.expiresAt, new Date()))),
+                .where(and(eq(session.userId, userId), gte(session.expiresAt, new Date())))
+                .orderBy(desc(session.lastActiveAt)),
     });
 
 /**
@@ -134,4 +135,36 @@ export const deleteAllSessionRecordsExcept = async ({
                         ? and(eq(session.userId, userId), ne(session.id, exceptSessionId))
                         : eq(session.userId, userId)
                 ),
+    });
+
+/**
+ * Update the last active timestamp and optionally the IP and user agent for a session
+ * @param params - The update parameters
+ * @param params.sessionId - The ID of the session
+ * @param params.ipAddress - The current IP address (optional)
+ * @param params.userAgent - The current user agent (optional)
+ */
+export const updateSessionActivity = async ({
+    sessionId,
+    ipAddress,
+    userAgent,
+}: {
+    sessionId: string;
+    ipAddress?: string;
+    userAgent?: string;
+}) =>
+    withDbQuery({
+        operation: 'update session activity',
+        queryFn: async () => {
+            // Build update object
+            const updateData: Record<string, unknown> = {
+                lastActiveAt: new Date(),
+            };
+
+            // Only include IP/user agent if provided
+            if (ipAddress) updateData.ipAddress = ipAddress;
+            if (userAgent) updateData.userAgent = userAgent;
+
+            return db.update(session).set(updateData).where(eq(session.id, sessionId));
+        },
     });

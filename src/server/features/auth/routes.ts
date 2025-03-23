@@ -19,6 +19,7 @@ import {
 } from '@/server/lib/cookies';
 import { zValidator } from '@/server/lib/error/validation';
 import { withMutationRoute } from '@/server/lib/handler';
+import { getRequestMetadata } from '@/server/lib/request';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -65,8 +66,7 @@ const app = new Hono()
                 // Create session
                 const { id: sessionId } = await sessionServices.createSession({
                     userId: user.id,
-                    ipAddress: c.req.header('x-forwarded-for'),
-                    userAgent: c.req.header('user-agent'),
+                    ...getRequestMetadata(c),
                 });
 
                 setSessionCookie(c, 'AUTH_SESSION', sessionId);

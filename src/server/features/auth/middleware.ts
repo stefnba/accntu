@@ -1,8 +1,10 @@
 import { TUser } from '@/server/db/schemas/user';
+import { updateSessionActivity } from '@/server/features/auth/queries/session';
 import { getSessionIdFromContext } from '@/server/features/auth/services/auth';
 import { validateSession } from '@/server/features/auth/services/session';
 import { clearCookie } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
+import { getRequestMetadata } from '@/server/lib/request';
 import { Context, Next } from 'hono';
 import { METHOD_PUBLIC_API_ROUTES, PUBLIC_API_ROUTES, ROLE_PROTECTED_ROUTES } from './config';
 import { isMethodPathMatch, isPathMatch } from './utils';
@@ -35,7 +37,6 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
 
     // Skip auth for public routes (method + path)
     if (isMethodPathMatch(method, path, METHOD_PUBLIC_API_ROUTES)) {
-        console.log('skipping auth for public route (method + path)', path);
         return next();
     }
 
@@ -48,6 +49,19 @@ export const globalAuthMiddleware = async (c: Context<AuthContext>, next: Next) 
 
         // Set user on context
         c.set('user', user);
+
+        // Update the session activity with current request information
+        // Using the utility function to get IP and user agent
+        const { ipAddress, userAgent } = getRequestMetadata(c);
+
+        // Using fire-and-forget pattern to avoid waiting for the update
+        updateSessionActivity({
+            sessionId,
+            ipAddress,
+            userAgent,
+        }).catch((err) => {
+            console.error('Failed to update session activity:', err);
+        });
 
         // Check role-based access
         if (user.role) {
