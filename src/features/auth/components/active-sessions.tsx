@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DeviceIcon } from '@/components/user-agent-device-icon';
 import { useAuthEndpoints } from '@/features/auth/api';
+import { formatDateTime, formatSmartDate } from '@/lib/utils/date-formatter';
 import { parseUserAgent } from '@/lib/utils/user-agent';
 import { Loader2, LogOut, Trash2 } from 'lucide-react';
 
@@ -118,15 +119,36 @@ export function ActiveSessions() {
                                     )}
                                 </CardTitle>
                                 <CardDescription>
-                                    {session.lastActiveAt
-                                        ? `Last active ${new Date(session.lastActiveAt).toLocaleString()}`
-                                        : 'Never active'}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span>
+                                                {session.lastActiveAt
+                                                    ? `Last active ${formatSmartDate(session.lastActiveAt)}`
+                                                    : 'Never active'}
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {session.lastActiveAt
+                                                ? formatDateTime(session.lastActiveAt)
+                                                : 'Never active'}
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-sm text-muted-foreground">
+                                    <p>
+                                        Expires{' '}
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span>{formatSmartDate(session.expiresAt)}</span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {formatDateTime(session.expiresAt)}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </p>
                                     <p>IP: {session.ipAddress || 'Unknown'}</p>
-                                    <p>Expires: {new Date(session.expiresAt).toLocaleString()}</p>
                                     <p>
                                         Device: {deviceInfo.device.vendor} {deviceInfo.device.model}
                                     </p>
