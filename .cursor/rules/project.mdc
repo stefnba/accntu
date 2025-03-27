@@ -1,5 +1,5 @@
 ---
-description: General project rules
+description: 
 globs: 
 alwaysApply: true
 ---
@@ -48,22 +48,8 @@ project-root/
         │   ├── store/            # Zustand/Nuqs state management
     │   │   ├── api/              # TanStack Query API hooks
     │   │   └── utils/            # Feature utilities
-    │   └── shared/               # Shared components and utilities
-    ├── server/                   # Server-side code
-    │   ├── db/                   # Database configuration
-    │   │   ├── schemas/          # Drizzle schema
-    │   │   └── index.ts          # DB client
-    │   ├── features/             # Feature-based server organization
-    │   │   └── [feature]/        # Feature
-    │   │       ├── routes.ts     # Feature routes
-    │   │       ├── queries.ts    # Database queries using Drizzle ORM
-    │   │       ├── services.ts   # Feature Business logic
-    │   │       └── utils.ts      # Feature utilities
-    │   │       └── schemas.ts    # Zod validation schemas
-    │   ├── lib/                  # Server-side shared libraries
-    │   ├── middleware/           # Shared middleware
-    │   ├── utils/                # Shared server utilities
-    │   └── index.ts              # Main Hono API setup
+    │   └── shared/               # Shared components and utilities    
+    └── server/                   # Backend using Hono
     └── lib/                      # Shared libraries (client-side)
     └── components/               # Shared UI components
         │   ├── ui/               # Reusable UI elements (modals, buttons, inputs, tables)
@@ -95,11 +81,7 @@ project-root/
 - Store API hooks in `features/[feature]/api/`, ever call API endpoints directly from a component.
 - Implement **error handling, caching**, and **loading states**.
 
-### **Backend (Hono)**
-- Use **Hono** as backend for all API routes, no server actions.
-- Implement **middleware for auth, error handling**.
-- Use **Zod for validation** of request params/body.
-- Follow a **consistent API response structure**.
+
 
 ### **Type Safety**
 - Use Hono's RPC to achieve a **type-safe API client**.
@@ -140,10 +122,6 @@ project-root/
 - Implement **error boundaries**.
 - **Graceful UI degradation** for failed requests.
 
-### **Server-Side**
-- **Consistent API error responses**.
-- Proper **logging & monitoring**.
-- **Graceful handling of missing or invalid data**.
 
 ---
 
@@ -199,11 +177,7 @@ project-root/
 - Define reusable query hooks in `features/[feature]/api/`
 - Configure with reasonable defaults (staleTime, retry policies)
 
-### Hono for backend
-- Use Hono for API routes in Next.js
-- Use consistent response format
-- Proper error handling and status codes, see more below
-- use zod validator for validating request params, etc.
+
 
 ### Type Safety
 - Use type-safe API client for all requests
@@ -213,17 +187,7 @@ project-root/
 
 ## 4. Authentication
 
-### Methods
-- Support multiple auth providers (GitHub, Google, Passkey, email OTP), no password auth
-- Implement session cookies
-- Use secure HTTP-only cookies
-- Handle auth state persistently
 
-### Security
-- Implement proper CSRF protection
-- Use secure cookie settings
-- Implement rate limiting
-- Proper error handling and user feedback
 
 ## 6. UI Components
 
@@ -372,49 +336,7 @@ When working with database operations:
 
 2. **Provide operation descriptions**: Always include a descriptive operation name as the second parameter to `withDb` and `withDbNullable`.
 
-## Validation
 
-For data validation:
-
-1. **Use Zod schemas**: Define Zod schemas for all data validation.
-
-2. **Use the zValidator middleware**: Validate request data using the `zValidator` middleware:
-
-   ```typescript
-   import { zValidator } from '@hono/zod-validator';
-
-   const UserSchema = z.object({
-     name: z.string(),
-     email: z.string().email(),
-   });
-
-   app.post('/users', zValidator('json', UserSchema), async (c) => {
-     const data = c.req.valid('json');
-     // Process validated data
-   });
-   ```
-
-3. **Handle validation errors**: The global error handler will catch and format Zod validation errors automatically.
-
-## API Responses
-
-For API responses:
-
-1. **Use createSuccessResponse**: Always use the `createSuccessResponse` utility for success responses:
-
-   ```typescript
-   import { createSuccessResponse } from '../lib/error/response';
-
-   return c.json(createSuccessResponse({ user }));
-   ```
-
-2. **Check response types**: Use the `isSuccessResponse` type guard to safely access response data:
-
-   ```typescript
-   if (isSuccessResponse(response)) {
-     // Safe to access response.data
-   }
-   ```
 
 
 
