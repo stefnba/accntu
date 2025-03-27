@@ -34,19 +34,6 @@ You are a Senior Developer and you're thoughtful, give nuanced answers, and are 
 - Avoid using `as` type assertion for TypeScript
 
 
-### Optimization and Best Practices
-- Minimize the use of `'use client'`, `useEffect`, and `setState`; favor React Server Components (RSC) and Next.js SSR features.
-- Implement dynamic imports for code splitting and optimization.
-
-- Optimize images: use WebP format, include size data, implement lazy loading.
-
-### Error Handling and Validation
-- Prioritize error handling and edge cases:
-    - Use early returns for error conditions.
-    - Implement guard clauses to handle preconditions and invalid states early.
-    - Use custom error types for consistent error handling.
-
-
 ### Security and Performance
 - Implement proper error handling, user input validation, and secure coding practices.
 - Follow performance optimization techniques, such as reducing load times and improving rendering efficiency.

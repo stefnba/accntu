@@ -257,3 +257,4 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 5. **Mobile First**: Design components for mobile first, then adapt for larger screens
 6. **Performance**: Avoid unnecessary re-renders and optimize for performance
 7. **Testing**: Write tests for critical components and functionality
+8. **React & Next**: Minimize the use of `'use client'`, `useEffect`, and `setState`; favor React Server Components (RSC) and Next.js SSR features. 
