@@ -1,5 +1,3 @@
-import { Separator } from '@/components/ui/separator';
-import { ActiveSessions } from '@/features/auth/components/active-sessions';
 import { ProfileForm } from '@/features/user/components/profile-form';
 
 export default function AccountPage() {
@@ -11,11 +9,7 @@ export default function AccountPage() {
                     This is how others will see you on the site.
                 </p>
             </div>
-            <Separator />
             <ProfileForm />
-
-            <Separator className="my-6" />
-            <ActiveSessions />
         </div>
     );
 }

@@ -10,7 +10,9 @@ export type TAppRoute = {
     icon?: React.ElementType;
 };
 
-// Define public routes that are always accessible without authentication
+/**
+ * Define public routes that are always accessible without authentication
+ */
 export const PUBLIC_ROUTES = [
     // Auth routes
     '/login',
@@ -35,6 +37,9 @@ export const PUBLIC_ROUTES = [
 export const LOGIN_REDIRECT_URL: RoutePath = '/dashboard';
 export const LOGIN_URL: RoutePath = '/login';
 
+/**
+ * Routes for the main sidebar.
+ */
 export const appRoutes: TAppRoute[] = [
     {
         path: '/dashboard',
@@ -53,6 +58,9 @@ export const appRoutes: TAppRoute[] = [
     },
 ] as const;
 
+/**
+ * Routes for the user dropdown menu.
+ */
 export const userRoutes: TAppRoute[] = [
     {
         path: '/user/account',
