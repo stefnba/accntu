@@ -1,6 +1,6 @@
 ---
-description: 
-globs: src/server/**
+description: Guidelines for backend development
+globs: 
 alwaysApply: false
 ---
 # Backend Development Rules
