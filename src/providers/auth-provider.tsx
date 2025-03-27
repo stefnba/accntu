@@ -7,8 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
-import { LOGIN_REDIRECT_URL, LOGIN_URL } from '@/lib/config';
 import { ErrorHandler, handleErrorHandlers } from '@/lib/error';
+import { LOGIN_REDIRECT_URL, LOGIN_URL } from '@/lib/routes';
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 type TAuthState = 'loggedIn' | 'loggedOut' | 'loading';

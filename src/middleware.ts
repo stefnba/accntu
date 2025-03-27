@@ -1,4 +1,4 @@
-import { LOGIN_URL, PUBLIC_ROUTES } from '@/lib/config';
+import { LOGIN_URL, PUBLIC_ROUTES } from '@/lib/routes';
 import { isPathMatch } from '@/server/features/auth/utils';
 import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies/constants';
 import type { NextRequest } from 'next/server';
