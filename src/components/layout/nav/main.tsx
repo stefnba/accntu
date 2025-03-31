@@ -36,6 +36,7 @@ export function NavMain() {
                         <SidebarMenuItem key={String(path)}>
                             <Link href={path}>
                                 <SidebarMenuButton
+                                    className="cursor-pointer"
                                     isActive={isActivePathname(pathname, String(path))}
                                     tooltip={label}
                                 >
