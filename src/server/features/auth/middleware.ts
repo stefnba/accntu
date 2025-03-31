@@ -1,4 +1,4 @@
-import { TUser } from '@/server/db/schemas/user';
+import { TUser } from '@/features/user/server/db/schema';
 import { updateSessionActivity } from '@/server/features/auth/queries/session';
 import { getSessionIdFromContext } from '@/server/features/auth/services/auth';
 import { validateSession } from '@/server/features/auth/services/session';

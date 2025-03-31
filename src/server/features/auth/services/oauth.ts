@@ -1,5 +1,5 @@
+import * as userQueries from '@/features/user/server/db/queries';
 import { InsertAccountSchema, TOAuthProvider } from '@/server/db/schemas/auth';
-import * as UserQueries from '@/server/features/user/queries';
 import { errorFactory } from '@/server/lib/error';
 import { z } from 'zod';
 import * as oauthQueries from '../queries/oauth';
@@ -25,7 +25,7 @@ export const linkOAuthAccount = async ({
     data: Omit<z.infer<typeof InsertAccountSchema>, 'userId' | 'provider' | 'providerAccountId'>;
 }) => {
     // Check if the user exists
-    const user = await UserQueries.getUserRecordById({ userId });
+    const user = await userQueries.getUserRecordById({ userId });
     if (!user) {
         throw errorFactory.createServiceError({
             message: 'User not found',

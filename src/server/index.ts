@@ -1,7 +1,7 @@
-import { TUser } from '@/server/db/schemas/user';
+import userEndpoints from '@/features/user/server/endpoints';
+import { TUser } from '@/server/db/schemas';
 import { globalAuthMiddleware } from '@/server/features/auth/middleware';
 import authRoutes from '@/server/features/auth/routes';
-import userRoutes from '@/server/features/user/routes';
 import { logger } from 'hono/logger';
 
 import { handleError } from '@/server/lib/error/handler';
@@ -32,7 +32,7 @@ app.use('*', globalAuthMiddleware);
 app.onError(handleError);
 
 // Routes
-const routes = app.route('/user', userRoutes).route('/auth', authRoutes);
+const routes = app.route('/user', userEndpoints).route('/auth', authRoutes);
 
 export type AppType = typeof routes;
 export { app, routes };

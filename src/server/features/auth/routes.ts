@@ -1,3 +1,4 @@
+import * as userServices from '@/features/user/server/services';
 import { OAuthProviderSchema } from '@/server/db/schemas';
 import { EmailLoginSchema, OTPVerifySchema, SignupSchema } from '@/server/features/auth/schemas';
 import { sessionServices } from '@/server/features/auth/services';
@@ -10,7 +11,6 @@ import {
     initiateLoginWithEmailOTP,
     verifyLoginWithEmailOTP,
 } from '@/server/features/auth/services/email-otp';
-import * as userServices from '@/server/features/user/services';
 import {
     clearCookie,
     getCookieValue,

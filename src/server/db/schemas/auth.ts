@@ -1,7 +1,7 @@
+import { user } from '@/features/user/server/db/schema';
 import { integer, pgEnum, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { user } from './user';
 
 // Provider enum for auth providers
 const oauthProviderOptions = ['github', 'google', 'apple'] as const;

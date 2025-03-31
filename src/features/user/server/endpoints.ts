@@ -1,9 +1,9 @@
-import { UpdateUserSchema } from '@/server/db/schemas/user';
 import { sessionServices } from '@/server/features/auth/services';
 import { getSessionIdFromContext, getUserFromContext } from '@/server/features/auth/services/auth';
-import { getUserProfile, updateUserProfile } from '@/server/features/user/services';
 import { getCookieValue } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
+import { UpdateUserSchema } from './db/schema';
+import { getUserProfile, updateUserProfile } from './services';
 
 import { zValidator } from '@/server/lib/error/validation';
 import { withMutationRoute, withQueryRoute, withRoute } from '@/server/lib/handler';

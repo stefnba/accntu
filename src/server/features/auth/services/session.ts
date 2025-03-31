@@ -1,5 +1,5 @@
+import * as userQueries from '@/features/user/server/db/queries';
 import { InsertSessionSchema } from '@/server/db/schemas/auth';
-import * as userQueries from '@/server/features/user/queries';
 import { errorFactory } from '@/server/lib/error';
 import { z } from 'zod';
 import * as sessionQueries from '../queries/session';

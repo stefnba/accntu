@@ -1,7 +1,7 @@
+import * as userQueries from '@/features/user/server/db/queries';
+import * as userServices from '@/features/user/server/services';
 import { verificationTokenQueries } from '@/server/features/auth/queries';
 import { generateOtp, verifyOtp } from '@/server/features/auth/services/verification-token';
-import * as userQueries from '@/server/features/user/queries';
-import * as userServices from '@/server/features/user/services';
 import { errorFactory } from '@/server/lib/error';
 
 /**

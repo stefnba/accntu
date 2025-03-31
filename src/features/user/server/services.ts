@@ -1,6 +1,6 @@
 import { TUserCreateParams, TUserUpdateParams } from '@/server/db/schemas';
-import * as UserQueries from '@/server/features/user/queries';
 import { errorFactory } from '@/server/lib/error';
+import * as UserQueries from './db/queries';
 
 /**
  * Get a user by ID
