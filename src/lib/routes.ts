@@ -2,7 +2,7 @@ import { IconDatabase, IconLock, IconNotification, IconUserCircle } from '@table
 import { LucideLayoutDashboard, LucideWallet } from 'lucide-react';
 import { UrlObject } from 'url';
 
-type RoutePath = __next_route_internal_types__.RouteImpl<UrlObject>;
+export type RoutePath = __next_route_internal_types__.RouteImpl<UrlObject>;
 
 export type TAppRoute = {
     path: RoutePath;
@@ -63,8 +63,8 @@ export const appRoutes: TAppRoute[] = [
  */
 export const userRoutes: TAppRoute[] = [
     {
-        path: '/user/account',
-        label: 'Account',
+        path: '/user/profile',
+        label: 'Profile',
         icon: IconUserCircle,
     },
     {
