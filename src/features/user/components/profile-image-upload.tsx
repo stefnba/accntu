@@ -4,8 +4,7 @@ import { useAuth } from '@/hooks';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { DialogHeader } from '@/components/ui/dialog';
-import { Description, Header } from '@/components/ui/font';
+import { Description } from '@/components/ui/font';
 import { Label } from '@/components/ui/label';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { UserImageForm } from '@/features/user/components/forms/user-image-form';
@@ -47,11 +46,12 @@ export function ProfileImageUpload() {
                 </Description>
 
                 <div className="flex gap-2 mt-2">
-                    <ResponsiveModal open={open} onOpenChange={setOpen}>
-                        <DialogHeader>
-                            <Header>Upload Profile Image</Header>
-                            <Description>Upload an image for your profile</Description>
-                        </DialogHeader>
+                    <ResponsiveModal
+                        open={open}
+                        onOpenChange={setOpen}
+                        title="Upload Profile Image"
+                        description="Upload an image for your profile"
+                    >
                         <UserImageForm />
                     </ResponsiveModal>
                     <Button variant="outline" size="sm" onClick={() => setOpen(true)}>

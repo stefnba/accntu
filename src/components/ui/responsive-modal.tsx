@@ -1,13 +1,27 @@
 'use client';
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerHeader,
+    DrawerTitle,
+} from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     children: React.ReactNode;
+    title?: string;
+    description?: string;
 }
 
 /**
@@ -16,13 +30,23 @@ interface Props {
  * @param open - Whether the modal is open.
  * @param onOpenChange - The function to call when the modal is opened or closed.
  */
-export const ResponsiveModal: React.FC<Props> = ({ children, open, onOpenChange }) => {
+export const ResponsiveModal: React.FC<Props> = ({
+    children,
+    title,
+    description,
+    open,
+    onOpenChange,
+}) => {
     const isMobile = useIsMobile();
 
     if (!isMobile) {
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="w-full sm:max-w-lg p-4 border-none overflow-y-auto max-h-[85vh]">
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                        <DialogDescription>{description}</DialogDescription>
+                    </DialogHeader>
                     {children}
                 </DialogContent>
             </Dialog>
@@ -32,6 +56,10 @@ export const ResponsiveModal: React.FC<Props> = ({ children, open, onOpenChange 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
             <DrawerContent className="pb-4 px-4">
+                <DrawerHeader>
+                    <DrawerTitle>{title}</DrawerTitle>
+                    <DrawerDescription>{description}</DrawerDescription>
+                </DrawerHeader>
                 <div className="overflow-y-auto hide-scrollbar max-h-[85vh] pt-4">{children}</div>
             </DrawerContent>
         </Drawer>
