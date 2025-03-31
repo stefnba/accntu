@@ -14,8 +14,8 @@ import * as React from 'react';
 
 import { NavDocuments, NavMain, NavSecondary, NavUser } from '@/components/layout/nav';
 
-import { SidebarLogo } from '@/components/layout/sidebar-logo';
 import { Sidebar, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarLogo } from './logo';
 
 const data = {
     navClouds: [

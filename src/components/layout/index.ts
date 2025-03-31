@@ -1,2 +1,2 @@
-export { AppSidebar } from './app-sidebar';
+export { AppSidebar } from './sidebar/sidebar';
 export { SiteHeader } from './site-header';
