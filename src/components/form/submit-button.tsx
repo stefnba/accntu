@@ -1,5 +1,6 @@
 import { UseZodFormReturn } from '@/components/form/use-form';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { VariantProps } from 'class-variance-authority';
 import { FieldValues } from 'react-hook-form';
 
 type FormSubmitButtonProps<TFieldValues extends FieldValues> = Omit<
@@ -9,7 +10,7 @@ type FormSubmitButtonProps<TFieldValues extends FieldValues> = Omit<
     form: UseZodFormReturn<TFieldValues>;
     loadingText?: string;
     disabledBeforeValid?: boolean;
-};
+} & Pick<VariantProps<typeof buttonVariants>, 'size' | 'variant'>;
 
 export function FormSubmitButton<TFieldValues extends FieldValues>({
     form,
@@ -17,6 +18,8 @@ export function FormSubmitButton<TFieldValues extends FieldValues>({
     loadingText = 'Submitting...',
     disabled,
     disabledBeforeValid = true,
+    size,
+    variant,
     ...buttonProps
 }: FormSubmitButtonProps<TFieldValues>) {
     const isFormValid = form.formState.isValid;
@@ -25,6 +28,8 @@ export function FormSubmitButton<TFieldValues extends FieldValues>({
     return (
         <Button
             type="submit"
+            size={size}
+            variant={variant}
             disabled={disabled || isSubmitting || (disabledBeforeValid && !isFormValid)}
             {...buttonProps}
         >
