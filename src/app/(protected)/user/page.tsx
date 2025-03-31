@@ -52,7 +52,7 @@ export const userNavItems: TNavItem[] = [
 export default async function UserPage() {
     return (
         <div>
-            <PageHeader title="User Account" description="Manage your account & settings" />
+            <PageHeader title="Account Center" description="Manage your account & settings" />
 
             <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {userNavItems.map(({ description, href, title, avatar }) => (

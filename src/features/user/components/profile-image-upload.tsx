@@ -28,10 +28,14 @@ export function ProfileImageUpload() {
                         {user?.lastName?.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
+
                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+                    <button
+                        className="size-full flex items-center justify-center cursor-pointer"
+                        onClick={() => setOpen(true)}
+                    >
                         <IconCamera className="w-6 h-6 text-white" />
-                    </Button>
+                    </button>
                 </div>
             </div>
 
