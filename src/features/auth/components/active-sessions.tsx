@@ -1,14 +1,13 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DeviceIcon } from '@/components/user-agent-device-icon';
 import { useAuthEndpoints } from '@/features/auth/api';
 import { formatDateTime, formatSmartDate } from '@/lib/utils/date-formatter';
 import { parseUserAgent } from '@/lib/utils/user-agent';
-import { Loader2, LogOut, Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 
 import { useCallback } from 'react';
 import { toast } from 'react-hot-toast';
@@ -62,27 +61,6 @@ export function ActiveSessions() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Active Sessions</h2>
-                    <p className="text-muted-foreground">
-                        Manage your active sessions across different devices.
-                    </p>
-                </div>
-                <Button
-                    variant="destructive"
-                    onClick={handleRevokeAllSessions}
-                    disabled={isRevokingAll || !sessions.length}
-                >
-                    {isRevokingAll ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <LogOut className="mr-2 h-4 w-4" />
-                    )}
-                    Revoke All Other Sessions
-                </Button>
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {sessions.map((session) => {
                     const deviceInfo = parseUserAgent(session.userAgent);
