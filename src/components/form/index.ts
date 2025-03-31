@@ -1,4 +1,5 @@
 import { FormCheckbox } from './checkbox';
+import { FormFileDropzone } from './file-dropzone';
 import { Form } from './form-provider';
 import { FormInput } from './input';
 import { FormOTPInput } from './input-opt';
@@ -13,6 +14,7 @@ export {
     createFormSchema,
     Form,
     FormCheckbox,
+    FormFileDropzone,
     FormInput,
     FormOTPInput,
     FormRadioGroup,
