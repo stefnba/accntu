@@ -1,5 +1,5 @@
-import { IconDatabase, IconLock, IconNotification, IconUserCircle } from '@tabler/icons-react';
-import { LucideLayoutDashboard, LucideWallet } from 'lucide-react';
+import * as Icons from '@/components/icons';
+import { IconType } from 'react-icons';
 import { UrlObject } from 'url';
 
 export type RoutePath = __next_route_internal_types__.RouteImpl<UrlObject>;
@@ -7,7 +7,7 @@ export type RoutePath = __next_route_internal_types__.RouteImpl<UrlObject>;
 export type TAppRoute = {
     path: RoutePath;
     label: string;
-    icon?: React.ElementType;
+    icon?: IconType;
 };
 
 /**
@@ -44,17 +44,17 @@ export const appRoutes: TAppRoute[] = [
     {
         path: '/dashboard',
         label: 'Dashboard',
-        icon: LucideLayoutDashboard,
+        icon: Icons.Dashboard,
     },
     {
         path: '/transaction',
         label: 'Transactions',
-        icon: IconDatabase,
+        icon: Icons.Database,
     },
     {
         path: '/budget',
         label: 'Budget',
-        icon: LucideWallet,
+        icon: Icons.Wallet,
     },
 ] as const;
 
@@ -63,18 +63,18 @@ export const appRoutes: TAppRoute[] = [
  */
 export const userRoutes: TAppRoute[] = [
     {
-        path: '/user/profile',
-        label: 'Profile',
-        icon: IconUserCircle,
+        path: '/user',
+        label: 'Account Center',
+        icon: Icons.User,
     },
     {
-        path: '/user/notification',
-        label: 'Notifications',
-        icon: IconNotification,
+        path: '/user/profile',
+        label: 'Profile',
+        icon: Icons.User,
     },
     {
         path: '/user/security',
         label: 'Security',
-        icon: IconLock,
+        icon: Icons.Security,
     },
 ];

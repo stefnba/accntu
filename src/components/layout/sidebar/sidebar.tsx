@@ -7,10 +7,10 @@ import {
     IconFileDescription,
     IconFileWord,
     IconReport,
-    IconSearch,
-    IconSettings,
 } from '@tabler/icons-react';
 import * as React from 'react';
+
+import * as Icons from '@/components/icons';
 
 import { NavDocuments, NavMain, NavSecondary, NavUser } from '@/components/layout/nav';
 
@@ -70,12 +70,12 @@ const data = {
         {
             title: 'Settings',
             url: '#',
-            icon: IconSettings,
+            icon: Icons.Settings,
         },
         {
             title: 'Search',
             url: '#',
-            icon: IconSearch,
+            icon: Icons.Search,
         },
     ],
     documents: [
