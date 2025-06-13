@@ -5,7 +5,12 @@
  * to define and work with standardized error codes and their properties.
  */
 
-import { TPublicErrorCodes } from '@/server/lib/error/registry/public';
+import {
+    TErrorCodeCategory,
+    TErrorShortCode,
+    type TErrorFullCode,
+} from '@/server/lib/error/registry';
+import { TPublicErrorCode } from '@/server/lib/error/registry/public';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 
 /**
@@ -42,10 +47,10 @@ export type DotNotationFromObjectType<T extends Record<string, readonly string[]
  * ```
  */
 export type DotNotationFromNestedObjectArray<
-    T extends Record<string, readonly { code: unknown; description: string }[]>,
+    T extends Record<string, readonly { code: unknown; message: string }[]>,
 > = {
     [K in keyof T]: T[K] extends readonly (infer I)[]
-        ? I extends { code: infer C; description: string }
+        ? I extends { code: infer C; message: string }
             ? C extends string
                 ? `${K & string}.${C}`
                 : never
@@ -58,7 +63,7 @@ export type DotNotationFromNestedObjectArray<
  *
  * @template TCode The specific string literal type for the error code
  */
-export type ErrorEntryType<TCode extends string = string> = {
+export type TErrorEntryType<TCode extends string = string> = {
     /**
      * The unique identifier for this error within its category
      * This will be combined with the category to form the full error code (e.g., 'AUTH.INVALID_TOKEN')
@@ -66,10 +71,10 @@ export type ErrorEntryType<TCode extends string = string> = {
     readonly code: TCode;
 
     /**
-     * A developer-friendly description of what the error means
-     * This is primarily for internal use and debugging
+     * A developer-friendly message of what the error means
+     * This is primarily for internal use and debugging but can be shown to users in case no public message is available
      */
-    readonly description: string;
+    readonly message: string;
 
     /**
      * The HTTP status code that should be returned for this error
@@ -82,20 +87,13 @@ export type ErrorEntryType<TCode extends string = string> = {
      * true = business logic error that can happen during normal operation (e.g., invalid input)
      * false = unexpected error that represents a bug or system failure
      */
-    readonly isExpected: boolean;
+    readonly isExpected?: boolean;
 
     /**
-     * The public-facing error code that can be returned to clients
-     * Should be one of the predefined codes from PublicErrorCodesByCategory
+     * The public-facing error entry that can be returned to clients
+     * Should be one of the predefined codes from PublicErrorCodesByCategory and a public message
      */
-    readonly publicCode: TPublicErrorCodes;
-
-    /**
-     * A user-friendly error message that can be shown to end users
-     * Should not contain sensitive information or technical details
-     * If not provided, description will be used as fallback in getErrorDefinitionFromRegistry
-     */
-    readonly publicMessage?: string;
+    readonly public?: TPublicErrorCode | { code: TPublicErrorCode; message?: string };
 
     /**
      * Indicates whether the client should retry the operation
@@ -112,23 +110,48 @@ export type ErrorEntryType<TCode extends string = string> = {
 };
 
 /**
+ * The public-facing error entry that can be returned to clients
+ */
+export type TPublicErrorEntry<T extends string = string> = {
+    /**
+     * The public error code that can be returned to clients
+     */
+    readonly code: T;
+
+    /**
+     * The public error message that can be returned to clients
+     */
+    readonly message: string;
+};
+
+/**
  * The return type for the getErrorDefinitionFromRegistry function
  * Includes all properties from ErrorEntryType plus derived properties
  */
-export type ErrorDefinition<TCode extends string = string> = Omit<
-    ErrorEntryType,
-    'code' | 'publicMessage'
-> & {
+export type TErrorDefinition<
+    TFullCode extends TErrorFullCode = TErrorFullCode,
+    TCode extends TErrorShortCode = TErrorShortCode,
+    TCategory extends TErrorCodeCategory = TErrorCodeCategory,
+> = Omit<TErrorEntryType, 'code'> & {
     /** The original error code from the entry (e.g., 'INVALID_TOKEN') */
-    code: string;
+    code: TCode;
     /** The full error code with category prefix (e.g., 'AUTH.INVALID_TOKEN') */
-    fullCode: TCode;
+    fullCode: TFullCode;
     /** The category of the error code (e.g., 'AUTH') */
-    category: string;
-    /** Whether this error is safe to expose to public clients */
-    isPublicSafe: boolean;
-    /** The message that can be safely shown to users */
-    publicMessage: string;
-    /** The public code category that this maps to */
-    publicCode: TPublicErrorCodes;
+    category: TCategory;
+    /** The public error entry that can be returned to clients */
+    public: TPublicErrorEntry<TPublicErrorCode>;
+    /** The details of the error */
+    details?: Record<string, unknown>;
 };
+
+/**
+ * Type helper to get only the short error codes (without the category prefix) for a specific category
+ * @example
+ * ```typescript
+ * // Returns "UNAUTHORIZED" | "LOGIN_FAILED" | ... (without the "AUTH." prefix)
+ * type AuthShortCodes = ErrorShortCodesByCategory<"AUTH">;
+ * ```
+ */
+export type ErrorCodesByCategory<T extends TErrorCodeCategory> =
+    Extract<TErrorFullCode, `${T}.${string}`> extends `${T}.${infer ShortCode}` ? ShortCode : never;

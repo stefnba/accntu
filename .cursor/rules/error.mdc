@@ -1,0 +1,162 @@
+---
+description: Error handling on server
+globs: 
+alwaysApply: false
+---
+# Error Handling Guidelines
+
+## Core Principles
+
+1. **Use Factory Methods**
+   - ALWAYS use `errorFactory` methods to create errors
+   - NEVER instantiate `BaseError` directly
+   - Include `cause` when chaining errors
+
+2. **Error Codes**
+   - Follow format: `CATEGORY.ACTION`
+   - Use existing codes from registry
+   - Keep messages user-friendly
+   - Include actionable details
+
+3. **Error Chaining**
+   - Chain errors when crossing layers
+   - Preserve original error as cause
+   - Add context at each layer
+   - Keep chain depth reasonable (max 3-4)
+
+## Code Examples
+
+### ✅ DO
+
+```typescript
+// Use factory methods
+throw errorFactory.createServiceError({
+  code: 'USER.NOT_FOUND',
+  details: { userId }
+});
+
+// Chain errors properly
+try {
+  await db.query();
+} catch (error) {
+  throw errorFactory.createServiceError({
+    code: 'USER.FETCH_FAILED',
+    cause: error,
+    details: { userId }
+  });
+}
+
+// Include relevant details
+throw errorFactory.createValidationError({
+  code: 'VALIDATION.INVALID_INPUT',
+  details: {
+    field: 'email',
+    value: email,
+    constraint: 'format'
+  }
+});
+```
+
+### ❌ DON'T
+
+```typescript
+// Don't throw raw errors
+throw new Error('User not found');
+
+// Don't use generic error codes
+throw errorFactory.createServiceError({
+  code: 'SERVICE.ERROR', // Too generic
+  message: 'Something went wrong'
+});
+
+// Don't lose error context
+try {
+  await db.query();
+} catch (error) {
+  throw error; // Lost context
+}
+```
+
+## Layer-Specific Guidelines
+
+### API Layer
+- Use `createApiError` for route-level errors
+- Always return standardized responses
+- Include request IDs
+- Sanitize error details
+
+### Service Layer
+- Use `createServiceError` for business logic errors
+- Chain database/external service errors
+- Add business context to errors
+- Log with appropriate level
+
+### Database Layer
+- Use `createDatabaseError` for DB operations
+- Include query context when safe
+- Chain connection/constraint errors
+- Handle transactions properly
+
+### Validation Layer
+- Use `createValidationError` for input validation
+- Include field-level details
+- Group related validation errors
+- Use zod for schema validation
+
+## Error Response Format
+
+```typescript
+{
+  success: false,
+  error: {
+    code: 'CATEGORY.ACTION',
+    message: 'User-friendly message',
+    details?: {
+      // Relevant, safe details
+    }
+  },
+  request_id: 'trace_id'
+}
+```
+
+## Logging Guidelines
+
+1. **Error Context**
+   - Include trace ID
+   - Add request data
+   - Log user context if available
+   - Include error chain
+
+2. **Log Levels**
+   - ERROR: Unexpected errors
+   - WARN: Expected errors
+   - INFO: Important operations
+   - DEBUG: Detailed debugging
+
+## Performance Considerations
+
+1. **Avoid**
+   - Deep error chains (>4 levels)
+   - Large error details objects
+   - Synchronous operations in error handlers
+   - Redundant error logging
+
+2. **Optimize**
+   - Use error definition cache
+   - Batch error metrics
+   - Lazy load error chains
+   - Cache error responses
+
+## Testing Requirements
+
+1. **Unit Tests**
+   - Test error creation
+   - Verify error chains
+   - Check error details
+   - Validate responses
+
+2. **Integration Tests**
+   - Test error handling flow
+   - Verify error logging
+   - Check metrics collection
+   - Test recovery mechanisms

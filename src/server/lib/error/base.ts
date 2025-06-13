@@ -1,11 +1,12 @@
-import { TErrorCode } from '@/server/lib/error/registry/index';
-import { ErrorDefinition } from '@/server/lib/error/registry/types';
+import { TErrorFullCode } from '@/server/lib/error/registry/index';
+import { TErrorDefinition } from '@/server/lib/error/registry/types';
+import { getCachedErrorDefinition } from '@/server/lib/error/registry/utils';
+import { sanitizeErrorForPublic, SanitizeErrorOptions } from '@/server/lib/error/response/sanitize';
+import { TAPIErrorResponse } from '@/server/lib/error/response/types';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { logger } from '../logger';
-import { LogContext } from '../logger/types';
-import { sanitizeErrorForPublic, SanitizeErrorOptions } from './sanitize';
-import { ErrorChainItem, ErrorLayer, ErrorOptions, TAPIErrorResponse } from './types';
-import { generateErrorId } from './utils';
+import { ErrorChainItem, ErrorOptions, TErrorRequestData, TErrorType } from './types';
+import { convertToAppError, generateErrorId } from './utils';
 
 // Metric tracking for errors
 const errorMetrics: Record<
@@ -22,53 +23,81 @@ const ERROR_METRICS_BUFFER: Record<string, { count: number; timestamps: Date[] }
 
 // Configuration for metrics flushing
 const METRICS_FLUSH_INTERVAL = 5000; // 5 seconds
+const METRICS_BUFFER_THRESHOLD = 50; // Flush when any error type hits this count
 let metricsFlushIntervalId: NodeJS.Timeout | null = null;
+let lastFlushTime = Date.now();
 
 /**
  * Flushes buffered error metrics to the main metrics store
- * Called periodically by the flush interval
+ * Called periodically by the flush interval or when buffer threshold is reached
  */
 function flushErrorMetrics() {
-    Object.entries(ERROR_METRICS_BUFFER).forEach(([code, { count, timestamps }]) => {
-        if (!errorMetrics[code]) {
-            errorMetrics[code] = { count: 0, lastOccurred: new Date(), occurrences: [] };
-        }
+    // Skip if buffer is empty
+    if (Object.keys(ERROR_METRICS_BUFFER).length === 0) {
+        return;
+    }
 
-        errorMetrics[code].count += count;
-        errorMetrics[code].lastOccurred = timestamps[timestamps.length - 1];
+    // Update last flush time
+    lastFlushTime = Date.now();
 
-        // Add new occurrences while maintaining max length
-        errorMetrics[code].occurrences.push(...timestamps);
-        if (errorMetrics[code].occurrences.length > 100) {
-            errorMetrics[code].occurrences = errorMetrics[code].occurrences.slice(-100);
-        }
-    });
+    try {
+        Object.entries(ERROR_METRICS_BUFFER).forEach(([code, { count, timestamps }]) => {
+            if (!errorMetrics[code]) {
+                errorMetrics[code] = { count: 0, lastOccurred: new Date(), occurrences: [] };
+            }
 
-    // Reset buffer
-    Object.keys(ERROR_METRICS_BUFFER).forEach((key) => delete ERROR_METRICS_BUFFER[key]);
+            errorMetrics[code].count += count;
+            errorMetrics[code].lastOccurred = timestamps[timestamps.length - 1];
+
+            // Add new occurrences while maintaining max length
+            errorMetrics[code].occurrences.push(...timestamps);
+            if (errorMetrics[code].occurrences.length > 100) {
+                errorMetrics[code].occurrences = errorMetrics[code].occurrences.slice(-100);
+            }
+        });
+
+        // Reset buffer
+        Object.keys(ERROR_METRICS_BUFFER).forEach((key) => delete ERROR_METRICS_BUFFER[key]);
+    } catch (e) {
+        console.error('Error during metrics flush:', e);
+        // Still clear buffer to avoid memory leaks even if processing failed
+        Object.keys(ERROR_METRICS_BUFFER).forEach((key) => delete ERROR_METRICS_BUFFER[key]);
+    }
+}
+
+// Check if buffer should be flushed based on size or time
+function shouldFlushBuffer(): boolean {
+    // Check if any error type has reached the threshold
+    const bufferExceeded = Object.values(ERROR_METRICS_BUFFER).some(
+        ({ count }) => count >= METRICS_BUFFER_THRESHOLD
+    );
+
+    // Check if enough time has passed since last flush
+    const timeSinceLastFlush = Date.now() - lastFlushTime;
+    const timeThresholdMet = timeSinceLastFlush >= METRICS_FLUSH_INTERVAL;
+
+    return bufferExceeded || timeThresholdMet;
 }
 
 // Start the flush interval when this module is loaded
 if (typeof window === 'undefined' && !metricsFlushIntervalId) {
     // Server-side only
-    metricsFlushIntervalId = setInterval(flushErrorMetrics, METRICS_FLUSH_INTERVAL);
+    metricsFlushIntervalId = setInterval(
+        () => {
+            if (shouldFlushBuffer()) {
+                flushErrorMetrics();
+            }
+        },
+        Math.min(METRICS_FLUSH_INTERVAL, 1000)
+    ); // Check at least every second
 }
-
-/**
- * Maps error layer to log context
- */
-const LAYER_TO_CONTEXT: Record<ErrorLayer, string> = {
-    query: 'database',
-    service: 'service',
-    route: 'route',
-};
 
 /**
  * Parameters for creating a BaseError
  */
 export interface BaseErrorParams {
     /** Error definition from registry */
-    errorDefinition: ErrorDefinition<TErrorCode>;
+    errorCode: TErrorFullCode;
     /** Human-readable error message (defaults to errorDefinition.description) */
     message?: string;
     /** HTTP status code (defaults to errorDefinition.statusCode) */
@@ -120,14 +149,30 @@ export class BaseError extends Error {
      */
     public get errorChain(): ErrorChainItem[] {
         if (!this._errorChain) {
+            // Start with current error
             this._errorChain = [
                 {
-                    layer: this.originalLayer,
-                    error: this.message,
-                    code: this.code,
+                    type: this.originalType,
+                    message: this.message,
+                    code: this.errorDefinition.code,
+                    fullCode: this.errorDefinition.fullCode,
                     timestamp: this.timestamp,
+                    details: this.details,
                 },
             ];
+
+            // Add cause to chain   if it exists - using getErrorData for consistent extraction
+            if (this.originalError) {
+                const { error } = convertToAppError(this.originalError);
+                this._errorChain.push({
+                    type: error.errorDefinition.category,
+                    message: error.message,
+                    code: error.errorDefinition.code,
+                    fullCode: error.errorDefinition.fullCode,
+                    timestamp: this.timestamp,
+                    details: error.details,
+                });
+            }
         }
         return this._errorChain;
     }
@@ -135,22 +180,12 @@ export class BaseError extends Error {
     /**
      * The original layer where the error occurred
      */
-    private readonly originalLayer: ErrorLayer;
+    private readonly originalType: TErrorType;
 
     /**
      * Error definition from registry
      */
-    public readonly errorDefinition: ErrorDefinition<TErrorCode>;
-
-    /**
-     * Error code for this error
-     */
-    public readonly code: TErrorCode;
-
-    /**
-     * HTTP status code for this error
-     */
-    public readonly statusCode: ContentfulStatusCode;
+    public readonly errorDefinition: TErrorDefinition<TErrorFullCode>;
 
     /**
      * Cached public response - cleared when options change
@@ -163,34 +198,50 @@ export class BaseError extends Error {
     private _cachedOptions?: string;
 
     /**
+     * The error code
+     */
+    public readonly code: TErrorFullCode;
+
+    /**
+     * The status code
+     */
+    public readonly statusCode: ContentfulStatusCode;
+
+    /**
      * Creates a new BaseError
      *
      * @param params - Parameters for creating the error
      */
     constructor(params: BaseErrorParams) {
-        const { errorDefinition, message, statusCode, details = {}, options = {} } = params;
+        const { errorCode, message, statusCode, details = {}, options = {} } = params;
 
+        // Get the error definition
+        const errorDefinition = getCachedErrorDefinition(errorCode);
         // Use provided message or default from error definition
-        const errorMessage = message || errorDefinition.description;
+        const errorMessage = message || errorDefinition.message;
+
+        // Initialize the error
         super(errorMessage);
 
         // Store error definition
-        this.errorDefinition = errorDefinition;
+        this.errorDefinition = {
+            ...errorDefinition,
+            message: errorMessage,
+            statusCode: statusCode || errorDefinition.statusCode,
+        };
 
-        // Use provided code or default from error definition
+        // Store the error code and status code directly on the instance for easier access
         this.code = errorDefinition.fullCode;
+        this.statusCode = this.errorDefinition.statusCode;
 
-        // Use provided status code or default from error definition
-        this.statusCode = statusCode || errorDefinition.statusCode;
-
-        this.name = 'BaseError';
+        this.name = 'AppError';
         this.traceId = generateErrorId();
         this.timestamp = new Date();
         this.details = details;
         this.originalError = options.cause;
 
         // Store the original layer
-        this.originalLayer = options.layer || 'route';
+        this.originalType = errorDefinition.category || 'SERVICE';
 
         // Track this error occurrence
         this.trackError();
@@ -202,17 +253,23 @@ export class BaseError extends Error {
      * This is used when an error is caught and re-thrown with additional context.
      *
      * @param layer - The layer where the error was caught
-     * @param error - Human-readable error message
+     * @param message - Human-readable error message
      * @param code - Error code for this layer
      * @returns this (for method chaining)
      */
-    addToChain(layer: ErrorLayer, error: string, code: TErrorCode) {
+    addToChain(error: unknown) {
         // Ensure the chain is initialized by accessing the getter
+        const {
+            error: { errorDefinition },
+        } = convertToAppError(error);
+
         this.errorChain.push({
-            layer,
-            error,
-            code,
-            timestamp: new Date(),
+            type: errorDefinition.category,
+            message: errorDefinition.message,
+            code: errorDefinition.code,
+            fullCode: errorDefinition.fullCode,
+            timestamp: this.timestamp,
+            details: errorDefinition.details,
         });
         return this;
     }
@@ -254,7 +311,7 @@ export class BaseError extends Error {
      * @param options - Additional options for logging
      */
     logError(
-        requestData?: { method: string; url: string },
+        requestData?: TErrorRequestData,
         options: { includeChain?: boolean; includeStack?: boolean } = {}
     ) {
         const { includeChain = true, includeStack = true } = options;
@@ -262,24 +319,24 @@ export class BaseError extends Error {
         // Determine if this is an expected error based on stored definition
         const isExpectedError = this.errorDefinition.isExpected;
 
-        const logLevel = isExpectedError ? 'info' : 'error';
-        const layer = this.errorChain[0].layer;
-        const contextKey = LAYER_TO_CONTEXT[layer].toLowerCase() as LogContext;
+        // Auth errors are always logged as errors even if they're expected
+        const logLevel = !isExpectedError ? 'error' : 'info';
 
         // Create formatted chain for logging if needed
+
         const formattedChain = includeChain
             ? this.errorChain
                   .map(
                       (item) =>
-                          `[${item.layer.toUpperCase()}] ${item.code}: ${item.error} (${item.timestamp.toISOString()})`
+                          `[${item.type.toUpperCase()}] ${item.code}: ${item.message} (${item.timestamp.toISOString()})`
                   )
                   .join(' → ')
             : undefined;
 
         const logData = {
-            error_code: this.code,
-            error_message: this.message,
-            status_code: this.statusCode,
+            error_code: this.errorDefinition.fullCode,
+            status_code: this.errorDefinition.statusCode,
+            error_message: this.errorDefinition.message,
             trace_id: this.traceId,
             timestamp: this.timestamp.toISOString(),
             error_chain: includeChain ? this.errorChain : undefined,
@@ -290,9 +347,9 @@ export class BaseError extends Error {
         };
 
         if (logLevel === 'info') {
-            logger.info(this.message, { context: contextKey, data: logData });
+            logger.info(this.message, { data: logData });
         } else {
-            logger.error(this.message, { context: contextKey, data: logData });
+            logger.error(this.message, { data: logData });
         }
     }
 
@@ -300,17 +357,23 @@ export class BaseError extends Error {
      * Tracks error occurrence for monitoring
      *
      * This maintains in-memory metrics about error occurrences that can
-     * be exposed for monitoring and alerting.
+     * be exposed for monitoring and alerting. If buffer threshold is reached,
+     * metrics are flushed immediately.
      *
      * @private
      */
     private trackError() {
-        if (!ERROR_METRICS_BUFFER[this.code]) {
-            ERROR_METRICS_BUFFER[this.code] = { count: 0, timestamps: [] };
+        if (!ERROR_METRICS_BUFFER[this.errorDefinition.fullCode]) {
+            ERROR_METRICS_BUFFER[this.errorDefinition.fullCode] = { count: 0, timestamps: [] };
         }
 
-        ERROR_METRICS_BUFFER[this.code].count += 1;
-        ERROR_METRICS_BUFFER[this.code].timestamps.push(new Date());
+        ERROR_METRICS_BUFFER[this.errorDefinition.fullCode].count += 1;
+        ERROR_METRICS_BUFFER[this.errorDefinition.fullCode].timestamps.push(new Date());
+
+        // Flush immediately if threshold is exceeded
+        if (ERROR_METRICS_BUFFER[this.errorDefinition.fullCode].count >= METRICS_BUFFER_THRESHOLD) {
+            flushErrorMetrics();
+        }
     }
 }
 

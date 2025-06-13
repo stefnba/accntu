@@ -1,4 +1,5 @@
-import { DotNotationFromObjectType } from './types';
+import { DotNotationFromNestedObjectArray } from './types';
+import { createPublicErrorEntry } from './utils';
 
 /**
  * Public error codes that can be returned to clients
@@ -12,50 +13,113 @@ import { DotNotationFromObjectType } from './types';
  * Registry of public error codes organized by category
  * These are the error codes that can be safely returned to clients
  */
-export const PublicErrorCodesByCategory = {
+export const PUBLIC_ERROR_REGISTRY = {
     AUTH: [
-        'UNAUTHORIZED', // User doesn't have permission
-        'LOGIN_FAILED', // Invalid credentials
-        'SESSION_EXPIRED', // Session is no longer valid
-        'VERIFICATION_FAILED', // OTP/email verification issues
-        'ACCOUNT_LOCKED', // Account is locked for security reasons
+        // User doesn't have permission
+        createPublicErrorEntry({
+            code: 'UNAUTHORIZED',
+            message: 'You are not authorized to access this resource',
+        }),
+        // Invalid credentials
+        createPublicErrorEntry({
+            code: 'LOGIN_FAILED',
+            message: 'Invalid credentials provided',
+        }),
+        // Session is no longer valid
+        createPublicErrorEntry({
+            code: 'SESSION_EXPIRED',
+            message: 'Your session has expired. Please sign in again',
+        }),
+        // OTP/email verification issues
+        createPublicErrorEntry({
+            code: 'VERIFICATION_FAILED',
+            message: 'OTP/email verification issues',
+        }),
+        // Account is locked for security reasons
+        createPublicErrorEntry({
+            code: 'ACCOUNT_LOCKED',
+            message: 'Your account is locked for security reasons',
+        }),
     ],
     VALIDATION: [
-        'INVALID_INPUT', // General invalid input
-        'MISSING_FIELD', // Required field is missing
-        'INVALID_FORMAT', // Input format is incorrect (email, phone, etc.)
-        'DUPLICATE_ENTRY', // Trying to create something that already exists
+        // General invalid input
+        createPublicErrorEntry({
+            code: 'INVALID_INPUT',
+            message: 'General invalid input',
+        }),
+        // Required field is missing
+        createPublicErrorEntry({
+            code: 'MISSING_FIELD',
+            message: 'Required field is missing',
+        }),
+        // Input format is incorrect (email, phone, etc.)
+        createPublicErrorEntry({
+            code: 'INVALID_FORMAT',
+            message: 'Input format is incorrect (email, phone, etc.)',
+        }),
     ],
     RESOURCE: [
-        'NOT_FOUND', // Resource doesn't exist
-        'ALREADY_EXISTS', // Resource already exists
-        'ACCESS_DENIED', // User doesn't have access to this resource
-        'CONFLICT', // Operation conflicts with current state
+        // Resource doesn't exist
+        createPublicErrorEntry({
+            code: 'NOT_FOUND',
+            message: 'Resource does not exist',
+        }),
+        // Resource already exists
+        createPublicErrorEntry({
+            code: 'ALREADY_EXISTS',
+            message: 'Resource already exists',
+        }),
     ],
     OPERATION: [
-        'CREATE_FAILED', // Failed to create resource
-        'UPDATE_FAILED', // Failed to update resource
-        'DELETE_FAILED', // Failed to delete resource
-        'OPERATION_REJECTED', // Operation rejected by business rules
+        // Failed to create resource
+        createPublicErrorEntry({
+            code: 'CREATE_FAILED',
+            message: 'Failed to create resource',
+        }),
+        // Failed to update resource
+        createPublicErrorEntry({
+            code: 'UPDATE_FAILED',
+            message: 'Failed to update resource',
+        }),
+        // Failed to delete resource
+        createPublicErrorEntry({
+            code: 'DELETE_FAILED',
+            message: 'Failed to delete resource',
+        }),
     ],
     RATE_LIMIT: [
-        'TOO_MANY_REQUESTS', // Rate limit exceeded
-        'TEMPORARY_BLOCK', // Temporarily blocked due to suspicious activity
+        // Rate limit exceeded
+        createPublicErrorEntry({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Rate limit exceeded',
+        }),
+        // Temporarily blocked due to suspicious activity
+        createPublicErrorEntry({
+            code: 'TEMPORARY_BLOCK',
+            message: 'Temporarily blocked due to suspicious activity',
+        }),
     ],
     SERVER: [
-        'INTERNAL_ERROR', // Unexpected server error
-        'SERVICE_UNAVAILABLE', // Service is temporarily unavailable
-        'MAINTENANCE', // System is under maintenance
+        // Unexpected server error
+        createPublicErrorEntry({
+            code: 'INTERNAL_ERROR',
+            message: 'An unexpected server error occurred',
+        }),
+        // Service is temporarily unavailable
+        createPublicErrorEntry({
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Service is temporarily unavailable',
+        }),
+        // System is under maintenance
+        createPublicErrorEntry({
+            code: 'MAINTENANCE',
+            message: 'System is under maintenance',
+        }),
     ],
 } as const;
 
-// todo change to TPublicErrorCode
-/**
- * Type for public error codes in dot notation format
- */
-export type TPublicErrorCodes = DotNotationFromObjectType<typeof PublicErrorCodesByCategory>;
-
-/**
- * Type for public error categories
- */
-export type TPublicErrorCategories = keyof typeof PublicErrorCodesByCategory;
+export type TPublicErrorCode = DotNotationFromNestedObjectArray<typeof PUBLIC_ERROR_REGISTRY>;
+export type TPublicErrorCategory = keyof typeof PUBLIC_ERROR_REGISTRY;
+export type TPublicErrorShortCode = TPublicErrorCode extends `${infer _}.${infer Name}`
+    ? Name
+    : never;

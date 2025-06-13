@@ -1,13 +1,17 @@
-import { TAPIErrorResponse, TAPIResponse } from '@/server/lib/error';
-import { TPublicErrorCodes } from '@/server/lib/error/registry/public';
-import { APIErrorResponseSchema } from '@/server/lib/error/schema';
+import { TPublicErrorCode } from '@/server/lib/error/registry/public';
+import {
+    APIErrorResponseSchema,
+    TAPIErrorResponse,
+    TAPIResponse,
+} from '@/server/lib/error/response';
+
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 
 /**
  * Type for error handlers that can handle both internal and public error codes
  */
 export type ErrorHandler<T = void> = {
-    [key in TPublicErrorCodes]?: (error: TAPIErrorResponse) => T;
+    [key in TPublicErrorCode]?: (error: TAPIErrorResponse) => T;
 } & {
     default?: (error: TAPIErrorResponse) => T;
 };

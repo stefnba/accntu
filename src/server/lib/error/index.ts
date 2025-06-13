@@ -22,18 +22,9 @@
 export * from './base';
 export * from './factory';
 export * from './handler';
-export { ErrorRegistry };
 
 // Import and re-export registry items explicitly to avoid naming conflicts
-import { ErrorRegistry } from './registry';
+
 export * from './registry';
-export * from './response';
-export * from './sanitize';
+
 export * from './types';
-export * from './validation';
-
-// Error handling utilities
-export * from './db';
-export * from './route';
-
-// Note: For database and route handler utilities, prefer importing from '@/server/lib/handler'

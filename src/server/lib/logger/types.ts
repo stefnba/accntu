@@ -9,7 +9,7 @@ export const LOG_LEVELS = {
 export type LogLevel = keyof typeof LOG_LEVELS;
 
 // Define all possible logging contexts
-export const LOG_CONTEXTS = {
+export const LOG_CONTEXT = {
     // Application layers
     ROUTE: 'route',
     SERVICE: 'service',
@@ -37,14 +37,14 @@ export const LOG_CONTEXTS = {
     SHUTDOWN: 'shutdown',
 } as const;
 
-export type LogContext = (typeof LOG_CONTEXTS)[keyof typeof LOG_CONTEXTS];
+export type TLogContext = (typeof LOG_CONTEXT)[keyof typeof LOG_CONTEXT];
 
 // Log message structure
 export interface LogMessage {
     timestamp: string;
     level: LogLevel;
     message: string;
-    context?: LogContext;
+    context?: TLogContext;
     data?: unknown;
     error?: {
         name: string;
@@ -55,7 +55,7 @@ export interface LogMessage {
 }
 
 export interface LogOptions {
-    context?: LogContext;
+    context?: TLogContext;
     data?: unknown;
     error?: Error;
 }

@@ -1,8 +1,14 @@
-import { ErrorReponseCode, handleRouteError, SuccessResponseCode } from '@/server/lib/error/route';
+import { handleRouteError } from '@/server/lib/error/handler';
+
+import { ErrorReponseCode, SuccessResponseCode } from '@/server/lib/error/handler/route';
+import {
+    createMutationResponse,
+    TAPIErrorResponse,
+    TAPIMutationResponse,
+} from '@/server/lib/error/response';
 import { Context, TypedResponse } from 'hono';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
-import { createMutationResponse, TAPIErrorResponse, TAPIMutationResponse } from '../error';
 
 /**
  * Wraps a route handler with error handling

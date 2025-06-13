@@ -1,4 +1,4 @@
-import { AuthProvider, QueryProvider, ThemeProvider } from '@/providers';
+import { QueryProvider, ThemeProvider } from '@/providers';
 import { Inter } from 'next/font/google';
 
 import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies';
@@ -22,9 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <QueryProvider>
                     <Toaster />
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                        <AuthProvider initialSession={{ sessionId: session?.value }}>
-                            <main className="">{children}</main>
-                        </AuthProvider>
+                        <main className="">{children}</main>
                     </ThemeProvider>
                 </QueryProvider>
             </body>

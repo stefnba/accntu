@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { LOG_CONTEXTS, LOG_LEVELS, LogLevel, LogMessage, LogOptions, LoggerOptions } from './types';
+import { LOG_CONTEXT, LOG_LEVELS, LogLevel, LogMessage, LogOptions, LoggerOptions } from './types';
 
 export class Logger {
     private minLevel: number;
@@ -139,7 +139,7 @@ export class Logger {
         const level = status >= 500 ? 'ERROR' : status >= 400 ? 'WARN' : 'INFO';
         void this.log(`${method} ${url} ${status} ${duration}ms`, {
             level,
-            context: LOG_CONTEXTS.REQUEST,
+            context: LOG_CONTEXT.REQUEST,
         });
     }
 }

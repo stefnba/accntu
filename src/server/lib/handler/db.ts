@@ -123,9 +123,9 @@ export async function withDbQuery<
         const validatedInputParsed = inputSchema.safeParse(inputData);
 
         if (validatedInputParsed.error) {
-            throw errorFactory.createValidationError({
+            throw errorFactory.createDatabaseError({
                 message: `Invalid input data for ${operation}`,
-                code: 'DB.INVALID_INPUT',
+                code: 'INVALID_INPUT',
                 cause: validatedInputParsed.error,
                 details: { zodErrors: validatedInputParsed.error.errors },
             });
@@ -146,9 +146,9 @@ export async function withDbQuery<
             const validatedOutputParsed = outputSchema.safeParse(result);
 
             if (validatedOutputParsed.error) {
-                throw errorFactory.createValidationError({
-                    message: `Invalid output data from ${operation}`,
-                    code: 'DB.INVALID_OUTPUT',
+                throw errorFactory.createDatabaseError({
+                    message: `Invalid output data from '${operation}'`,
+                    code: 'INVALID_OUTPUT',
                     cause: validatedOutputParsed.error,
                     details: { zodErrors: validatedOutputParsed.error.errors },
                 });
@@ -160,8 +160,8 @@ export async function withDbQuery<
         // Handle null results when no output schema is provided
         if (result === null && !allowNull) {
             throw errorFactory.createDatabaseError({
-                message: `Database returned null for ${operation}`,
-                code: 'DB.QUERY_NULL_RETURNED',
+                message: `Database returned null for '${operation}'`,
+                code: 'QUERY_NULL_RETURNED',
                 cause: new Error(`Database returned null for ${operation}`),
             });
         }
@@ -175,15 +175,23 @@ export async function withDbQuery<
         // Check if it's a database error (PostgreSQL error codes start with numbers)
         if (error instanceof Error && 'code' in error && /^\d/.test(String(error.code))) {
             throw errorFactory.createDatabaseError({
-                message: `Database error in ${operation}: ${error.message}`,
-                code: 'DB.OPERATION_FAILED',
+                message: `Database error in '${operation}': ${error.message}`,
+                code: 'OPERATION_FAILED',
+                cause: error,
+            });
+        }
+
+        if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
+            throw errorFactory.createDatabaseError({
+                message: `Database connection refused in '${operation}'`,
+                code: 'CONNECTION_ERROR',
                 cause: error,
             });
         }
 
         throw errorFactory.createDatabaseError({
-            message: `Unknown error in ${operation}`,
-            code: 'DB.OPERATION_FAILED',
+            message: `Unknown error in '${operation}'`,
+            code: 'OPERATION_FAILED',
             cause: error instanceof Error ? error : undefined,
         });
     }

@@ -1,10 +1,11 @@
+import { isPathMatch } from '@/lib/auth/utils';
 import { LOGIN_REDIRECT_URL, LOGIN_URL, PUBLIC_ROUTES } from '@/lib/routes';
-import { isPathMatch } from '@/server/features/auth/utils';
 import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies/constants';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
+    return NextResponse.next();
     const { pathname } = request.nextUrl;
 
     // Check if the path is a public route

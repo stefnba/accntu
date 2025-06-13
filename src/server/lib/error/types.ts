@@ -1,16 +1,24 @@
 // src/server/error/types.ts
 
-import { TErrorCode } from '@/server/lib/error/registry/index';
-import { APIErrorResponseSchema } from '@/server/lib/error/schema';
-import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
-import { z } from 'zod';
+import {
+    TErrorCodeCategory,
+    TErrorFullCode,
+    TErrorShortCode,
+} from '@/server/lib/error/registry/index';
+
+import { ContentfulStatusCode } from 'hono/utils/http-status';
+
+export type TErrorRequestData = {
+    method: string;
+    url: string;
+    userId: string | undefined | null;
+    status: ContentfulStatusCode;
+};
 
 /**
- * Application layers where errors can occur
- *
- * This helps track where in the application stack an error originated.
+ * The type of error that occurred
  */
-export type ErrorLayer = 'query' | 'service' | 'route';
+export type TErrorType = TErrorCodeCategory;
 
 /**
  * Structure for an error in the error chain
@@ -19,10 +27,12 @@ export type ErrorLayer = 'query' | 'service' | 'route';
  * different layers of the application.
  */
 export type ErrorChainItem = {
-    layer: ErrorLayer;
-    error: string;
-    code: TErrorCode;
+    type: TErrorType;
+    message: string;
+    code: TErrorShortCode;
+    fullCode: TErrorFullCode;
     timestamp: Date;
+    details?: Record<string, unknown>;
 };
 
 /**
@@ -32,36 +42,7 @@ export type ErrorChainItem = {
  */
 export type ErrorOptions = {
     cause?: Error;
-    layer?: ErrorLayer;
     details?: Record<string, unknown>;
 };
 
-/**
- * Standard structure for succesful API mutation responses
- *
- * This ensures all success responses follow the same format.
- */
-export type TAPIMutationResponse<T> = {
-    success: true;
-    data: T;
-};
-
-/**
- * Standard structure for API error responses
- *
- * This ensures all error responses follow the same format,
- * making client-side error handling more predictable.
- */
-export type TAPIErrorResponse = z.infer<typeof APIErrorResponseSchema>;
-
-/**
- * Union type for all possible API responses
- *
- * This allows for type-safe handling of both success and error responses.
- */
-export type TAPIResponse<T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue> =
-    | TAPIMutationResponse<T>
-    | TAPIErrorResponse
-    | T;
-
-export type { TErrorCode };
+export type { TErrorFullCode };

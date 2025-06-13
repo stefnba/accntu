@@ -1,3 +1,5 @@
+'use client';
+
 import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/error';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
@@ -12,7 +14,7 @@ import { StatusCode } from 'hono/utils/http-status';
 export function createQuery<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 200,
->(endpoint: TEndpoint, defaultQueryKey?: string | string[]) {
+>(endpoint: TEndpoint, defaultQueryKey?: string | readonly string[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
     type TResponseError = InferResponseType<

@@ -1,7 +1,7 @@
 import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
 import { PageHeader } from '@/components/page-header';
-import { ActiveSessions } from '@/features/auth/components/active-sessions';
-import { RevokeAllSessionsButton } from '@/features/auth/components/revoke-all-sessions-button';
+import { ListActiveSessions } from '@/features/user/components/security/list-sessions';
+import { RevokeAllSessionsButton } from '@/features/user/components/security/revoke-all-sessions-button';
 
 const item = getNavItem(userNavItems, '/user/security');
 
@@ -13,7 +13,7 @@ export default function SecurityPage() {
                 description={item.description}
                 actionBar={<>{<RevokeAllSessionsButton />}</>}
             />
-            <ActiveSessions />
+            <ListActiveSessions />
         </div>
     );
 }

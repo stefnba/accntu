@@ -1,11 +1,9 @@
 import { createFormSchema } from '@/components/form';
-import { OTPVerifySchema } from '@/server/features/auth/schemas';
+
 import { z } from 'zod';
 
-export { OTPVerifySchema };
-
-export const OTPVerifyFormSchema = createFormSchema(OTPVerifySchema, {
-    code: '',
+export const emailOTPVerifySchema = z.object({
+    code: z.string().min(8, 'Please enter the 6-digit code sent to your email'),
 });
 
 export const loginEmailSchema = z.object({

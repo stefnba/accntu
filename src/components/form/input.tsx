@@ -1,3 +1,4 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import {
     FormControl,
     FormDescription,
@@ -7,7 +8,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { InputHTMLAttributes } from 'react';
 import { FieldPath, FieldValues } from 'react-hook-form';
 

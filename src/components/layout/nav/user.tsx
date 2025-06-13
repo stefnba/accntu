@@ -18,14 +18,15 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks';
+
 import Link from 'next/link';
 
+import { useAuth } from '@/lib/auth/client';
 import { userRoutes } from '@/lib/routes';
 
 export function NavUser() {
     const { isMobile } = useSidebar();
-    const { user, logout } = useAuth();
+    const { user, signOut } = useAuth();
 
     return (
         <SidebarMenu>
@@ -36,16 +37,19 @@ export function NavUser() {
                             size="lg"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
                         >
-                            <Avatar className="h-8 w-8 rounded-lg grayscale">
-                                <AvatarImage src={user?.image ?? ''} alt={user?.firstName ?? ''} />
+                            <Avatar className="h-8 w-8 rounded-lg">
+                                <AvatarImage
+                                    src={user?.image ?? undefined}
+                                    alt={user?.name ?? ''}
+                                />
                                 <AvatarFallback className="rounded-lg">
-                                    {user?.firstName?.charAt(0)}
-                                    {user?.lastName?.charAt(0)}
+                                    {user?.name?.charAt(0).toUpperCase()}
+                                    {user?.lastName?.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-medium">
-                                    {user?.firstName} {user?.lastName}
+                                    {user?.name} {user?.lastName}
                                 </span>
                                 <span className="text-muted-foreground truncate text-xs">
                                     {user?.email}
@@ -64,17 +68,17 @@ export function NavUser() {
                             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                 <Avatar className="h-8 w-8 rounded-lg">
                                     <AvatarImage
-                                        src={user?.image ?? ''}
-                                        alt={user?.firstName ?? ''}
+                                        src={user?.image ?? undefined}
+                                        alt={user?.name ?? ''}
                                     />
                                     <AvatarFallback className="rounded-lg">
-                                        {user?.firstName?.charAt(0)}
-                                        {user?.lastName?.charAt(0)}
+                                        {user?.name?.charAt(0).toUpperCase()}
+                                        {user?.lastName?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">
-                                        {user?.firstName} {user?.lastName}
+                                        {user?.name} {user?.lastName}
                                     </span>
                                     <span className="text-muted-foreground truncate text-xs">
                                         {user?.email}
@@ -94,7 +98,7 @@ export function NavUser() {
                             ))}
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => logout()}>
+                        <DropdownMenuItem onClick={() => signOut()}>
                             <IconLogout />
                             Log out
                         </DropdownMenuItem>
