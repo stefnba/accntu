@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 export default function TransactionPage() {
     return (
         <div className="flex flex-col gap-4">
-            <PageHeader title="Transactions" actionBar={<Button>Add Transaction</Button>} />
+            <PageHeader title="Transaction Imports" actionBar={<Button>New Import</Button>} />
         </div>
     );
 }
