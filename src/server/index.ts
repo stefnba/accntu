@@ -35,7 +35,7 @@ app.onError(handleGlobalError);
 
 // Routes
 const routes = app
-    .route('/banks', bankEndpoints)
+    .route('/bank', bankEndpoints)
     .route('/user', userEndpoints)
     .route('/auth', authEndpoints)
     .route('/status', statusEndpoints);
