@@ -11,6 +11,8 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
 export const bankIntegrationTypeEnum = pgEnum('bank_integration_type', ['csv', 'api']);
 export const accountTypeEnum = pgEnum('account_type', [
@@ -214,3 +216,54 @@ export type ConnectedBank = typeof connectedBank.$inferSelect;
 export type NewConnectedBank = typeof connectedBank.$inferInsert;
 export type ConnectedBankAccount = typeof connectedBankAccount.$inferSelect;
 export type NewConnectedBankAccount = typeof connectedBankAccount.$inferInsert;
+
+// Zod schemas for validation
+export const SelectGlobalBankSchema = createSelectSchema(globalBank);
+export const InsertGlobalBankSchema = createInsertSchema(globalBank);
+export const SelectGlobalBankAccountSchema = createSelectSchema(globalBankAccount);
+export const InsertGlobalBankAccountSchema = createInsertSchema(globalBankAccount);
+export const SelectConnectedBankSchema = createSelectSchema(connectedBank);
+export const InsertConnectedBankSchema = createInsertSchema(connectedBank);
+export const SelectConnectedBankAccountSchema = createSelectSchema(connectedBankAccount);
+export const InsertConnectedBankAccountSchema = createInsertSchema(connectedBankAccount);
+
+// Custom validation schemas for API endpoints
+export const CreateConnectedBankSchema = InsertConnectedBankSchema.pick({
+    userId: true,
+    globalBankId: true,
+    apiCredentials: true,
+}).extend({
+    userId: z.string().min(1),
+    globalBankId: z.string().min(1),
+    apiCredentials: z.record(z.any()).optional(),
+});
+
+export const CreateConnectedBankAccountSchema = InsertConnectedBankAccountSchema.pick({
+    connectedBankId: true,
+    globalBankAccountId: true,
+    name: true,
+    type: true,
+    accountNumber: true,
+    iban: true,
+    routingNumber: true,
+    currency: true,
+    customCsvConfig: true,
+}).extend({
+    connectedBankId: z.string().min(1),
+    globalBankAccountId: z.string().optional(),
+    name: z.string().min(1),
+    type: z.enum(['checking', 'savings', 'credit_card', 'investment']),
+    currency: z.string().length(3).optional(),
+    customCsvConfig: z
+        .object({
+            duckdbQuery: z.string().optional(),
+            fieldMappings: z.any().optional(),
+            csvConfig: z.any().optional(),
+        })
+        .optional(),
+});
+
+export const SearchGlobalBanksSchema = z.object({
+    query: z.string().optional(),
+    country: z.string().length(2).optional(),
+});
