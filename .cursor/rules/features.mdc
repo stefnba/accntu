@@ -16,7 +16,7 @@ src/features/[feature-name]/
 ├── server/
 │   ├── db/
 │   │   ├── schema.ts          # Database schemas with embedded relations
-│   │   └── queries.ts         # Database query functions
+│   │   └── queries.ts         # Database query functions with withDbQuery wrapper
 │   ├── endpoints.ts           # Hono API endpoints
 │   └── [optional-services].ts # Additional server-side services
 ├── lib/
@@ -91,64 +91,93 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ```typescript
 // src/features/[feature]/server/db/queries.ts
 import { db } from '@/server/db';
+import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import { [featureName], type [FeatureName], type New[FeatureName] } from './schema';
 
-// CRUD Operations
-export const create[FeatureName] = async (data: New[FeatureName]): Promise<[FeatureName]> => {
-  const [result] = await db.insert([featureName]).values(data).returning();
-  return result;
-};
+// CRUD Operations with withDbQuery wrapper
+export const create[FeatureName] = async ({ data }: { data: New[FeatureName] }): Promise<[FeatureName]> =>
+  withDbQuery({
+    operation: 'create [feature-name]',
+    queryFn: async () => {
+      const [result] = await db.insert([featureName]).values(data).returning();
+      return result;
+    },
+  });
 
-export const get[FeatureName]sByUserId = async (userId: string): Promise<[FeatureName][]> => {
-  return await db
-    .select()
-    .from([featureName])
-    .where(and(eq([featureName].userId, userId), eq([featureName].isActive, true)))
-    .orderBy([featureName].name);
-};
+export const get[FeatureName]sByUserId = async ({ userId }: { userId: string }): Promise<[FeatureName][]> =>
+  withDbQuery({
+    operation: 'get [feature-name]s by user ID',
+    queryFn: async () => {
+      return await db
+        .select()
+        .from([featureName])
+        .where(and(eq([featureName].userId, userId), eq([featureName].isActive, true)))
+        .orderBy([featureName].name);
+    },
+  });
 
-export const get[FeatureName]ById = async (id: string): Promise<[FeatureName] | null> => {
-  const [result] = await db
-    .select()
-    .from([featureName])
-    .where(eq([featureName].id, id))
-    .limit(1);
+export const get[FeatureName]ById = async ({ id }: { id: string }): Promise<[FeatureName] | null> =>
+  withDbQuery({
+    operation: 'get [feature-name] by ID',
+    queryFn: async () => {
+      const [result] = await db
+        .select()
+        .from([featureName])
+        .where(eq([featureName].id, id))
+        .limit(1);
+      return result || null;
+    },
+  });
 
-  return result || null;
-};
+export const update[FeatureName] = async ({
+  id,
+  data
+}: {
+  id: string;
+  data: Partial<New[FeatureName]>
+}): Promise<[FeatureName] | null> =>
+  withDbQuery({
+    operation: 'update [feature-name]',
+    queryFn: async () => {
+      const [updated] = await db
+        .update([featureName])
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq([featureName].id, id))
+        .returning();
+      return updated || null;
+    },
+  });
 
-export const update[FeatureName] = async (id: string, data: Partial<New[FeatureName]>): Promise<[FeatureName] | null> => {
-  const [updated] = await db
-    .update([featureName])
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq([featureName].id, id))
-    .returning();
-
-  return updated || null;
-};
-
-export const delete[FeatureName] = async (id: string): Promise<void> => {
-  await db
-    .update([featureName])
-    .set({ isActive: false, updatedAt: new Date() })
-    .where(eq([featureName].id, id));
-};
+export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void> =>
+  withDbQuery({
+    operation: 'delete [feature-name]',
+    queryFn: async () => {
+      await db
+        .update([featureName])
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq([featureName].id, id));
+    },
+  });
 ```
 
 ### Query Patterns
-1. **Always return typed results** using the exported types
-2. **Use soft deletes** by updating `isActive` or `isDeleted` fields
-3. **Include userId filtering** for user-scoped queries
-4. **Update timestamps** on all update operations
-5. **Use proper error handling** with try-catch where appropriate
-6. **Order results consistently** (usually by name or createdAt)
+1. **Use withDbQuery wrapper** for all database operations for consistent error handling
+2. **Use destructured object parameters** instead of positional parameters
+3. **Always return typed results** using the exported types
+4. **Use soft deletes** by updating `isActive` or `isDeleted` fields
+5. **Include userId filtering** for user-scoped queries
+6. **Update timestamps** on all update operations
+7. **Include operation description** for debugging and logging
+8. **Order results consistently** (usually by name or createdAt)
 
 ## API Endpoints Pattern
 
 ### Endpoint Organization
 ```typescript
 // src/features/[feature]/server/endpoints.ts
+import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
@@ -162,23 +191,22 @@ const app = new Hono();
 const Create[FeatureName]Schema = z.object({
   name: z.string().min(1, '[FeatureName] name is required').max(100),
   description: z.string().optional(),
-  userId: z.string(),
 });
 
-const Update[FeatureName]Schema = Create[FeatureName]Schema.partial().omit({ userId: true });
+const Update[FeatureName]Schema = Create[FeatureName]Schema.partial();
 
-// CRUD endpoints
-app.get('/[feature-name]/user/:userId', zValidator('param', z.object({ userId: z.string() })), async (c) =>
+// CRUD endpoints - Use getUser(c) for authentication, not URL parameters
+app.get('/[feature-name]s', async (c) =>
   withRoute(c, async () => {
-    const { userId } = c.req.valid('param');
-    return await queries.get[FeatureName]sByUserId(userId);
+    const user = getUser(c);
+    return await queries.get[FeatureName]sByUserId({ userId: user.id });
   })
 );
 
-app.get('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+app.get('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
   withRoute(c, async () => {
     const { id } = c.req.valid('param');
-    const result = await queries.get[FeatureName]ById(id);
+    const result = await queries.get[FeatureName]ById({ id });
 
     if (!result) {
       throw new Error('[FeatureName] not found');
@@ -188,23 +216,24 @@ app.get('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() }))
   })
 );
 
-app.post('/[feature-name]', zValidator('json', Create[FeatureName]Schema), async (c) =>
+app.post('/[feature-name]s', zValidator('json', Create[FeatureName]Schema), async (c) =>
   withRoute(
     c,
     async () => {
+      const user = getUser(c);
       const data = c.req.valid('json');
-      return await queries.create[FeatureName](mdc:data);
+      return await queries.create[FeatureName](mdc:{ data: { ...data, userId: user.id } });
     },
     201
   )
 );
 
-app.put('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), zValidator('json', Update[FeatureName]Schema), async (c) =>
+app.put('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })), zValidator('json', Update[FeatureName]Schema), async (c) =>
   withRoute(c, async () => {
     const { id } = c.req.valid('param');
     const data = c.req.valid('json');
 
-    const updated = await queries.update[FeatureName](mdc:id, data);
+    const updated = await queries.update[FeatureName](mdc:{ id, data });
 
     if (!updated) {
       throw new Error('[FeatureName] not found');
@@ -214,10 +243,10 @@ app.put('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() }))
   })
 );
 
-app.delete('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+app.delete('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
   withRoute(c, async () => {
     const { id } = c.req.valid('param');
-    await queries.delete[FeatureName](mdc:id);
+    await queries.delete[FeatureName](mdc:{ id });
     return { success: true };
   })
 );
@@ -228,11 +257,13 @@ export default app;
 ### Endpoint Patterns
 1. **Use Hono framework** for all API endpoints (never Next.js server actions)
 2. **Use withRoute wrapper** for consistent error handling
-3. **Validate all inputs** with Zod schemas and zValidator
-4. **Follow RESTful conventions** for endpoint naming
-5. **Return appropriate HTTP status codes** (201 for creation, 200 for updates, etc.)
-6. **Handle not found cases** with proper error messages
-7. **Use consistent response formats** (success objects for deletions)
+3. **Use getUser(c) for authentication** - Never include userId in URL parameters
+4. **Validate all inputs** with Zod schemas and zValidator
+5. **Follow RESTful conventions** for endpoint naming
+6. **Return appropriate HTTP status codes** (201 for creation, 200 for updates, etc.)
+7. **Handle not found cases** with proper error messages
+8. **Use consistent response formats** (success objects for deletions)
+9. **Extract user from context**, not from URL parameters
 
 ## Client API Pattern
 
@@ -242,19 +273,19 @@ export default app;
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
 export const [FEATURE_NAME]_QUERY_KEYS = {
-  [FEATURE_NAME]S: (userId: string) => ['[feature-name]s', userId] as const,
+  [FEATURE_NAME]S: () => ['[feature-name]s'] as const,
   [FEATURE_NAME]: (id: string) => ['[feature-name]', id] as const,
   // Add more specific query keys as needed
 } as const;
 
 export const use[FeatureName]Endpoints = {
   /**
-   * Get all [feature-name]s for a user
+   * Get all [feature-name]s for the authenticated user
    */
-  get[FeatureName]s: (userId: string) =>
+  get[FeatureName]s: () =>
     createQuery(
-      apiClient.[featureName]['[feature-name]']['user'][':userId'].$get,
-      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S(userId)
+      apiClient.[featureName]['[feature-name]s'].$get,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S()
     ),
 
   /**
@@ -262,17 +293,17 @@ export const use[FeatureName]Endpoints = {
    */
   get[FeatureName]: (id: string) =>
     createQuery(
-      apiClient.[featureName]['[feature-name]'][':id'].$get,
+      apiClient.[featureName]['[feature-name]s'][':id'].$get,
       [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
     ),
 
   /**
    * Create a new [feature-name]
    */
-  create[FeatureName]: (userId: string) =>
+  create[FeatureName]: () =>
     createMutation(
-      apiClient.[featureName]['[feature-name]'].$post,
-      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S(userId)
+      apiClient.[featureName]['[feature-name]s'].$post,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S()
     ),
 
   /**
@@ -280,7 +311,7 @@ export const use[FeatureName]Endpoints = {
    */
   update[FeatureName]: (id: string) =>
     createMutation(
-      apiClient.[featureName]['[feature-name]'][':id'].$put,
+      apiClient.[featureName]['[feature-name]s'][':id'].$put,
       [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
     ),
 
@@ -289,7 +320,7 @@ export const use[FeatureName]Endpoints = {
    */
   delete[FeatureName]: (id: string) =>
     createMutation(
-      apiClient.[featureName]['[feature-name]'][':id'].$delete,
+      apiClient.[featureName]['[feature-name]s'][':id'].$delete,
       [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
     ),
 };
@@ -302,6 +333,7 @@ export const use[FeatureName]Endpoints = {
 4. **Use createQuery for GET operations** and createMutation for POST/PUT/DELETE
 5. **Pass only 2 arguments to createMutation** (apiMethod, queryKey)
 6. **Group related endpoints** in logical objects
+7. **Remove userId from query keys** since authentication is handled server-side
 
 ## Utility Functions Pattern
 
@@ -371,19 +403,21 @@ When creating a new feature, ensure it's properly integrated:
 
 1. **Consistency**: Follow the exact patterns established in existing features
 2. **Type Safety**: Use TypeScript throughout with proper type definitions
-3. **Error Handling**: Implement comprehensive error handling at all levels
+3. **Error Handling**: Implement comprehensive error handling at all levels with withDbQuery
 4. **Validation**: Validate all inputs with Zod schemas
-5. **Documentation**: Include JSDoc comments for all public functions
-6. **Testing**: Write tests for critical business logic
-7. **Performance**: Consider query optimization and caching strategies
-8. **Security**: Always include user authorization checks
-9. **Maintainability**: Keep functions focused and modular
-10. **Scalability**: Design for future feature expansion
+5. **Authentication**: Always use getUser(c) for user identification, never URL parameters
+6. **Documentation**: Include JSDoc comments for all public functions
+7. **Testing**: Write tests for critical business logic
+8. **Performance**: Consider query optimization and caching strategies
+9. **Security**: Always include user authorization checks
+10. **Maintainability**: Keep functions focused and modular
+11. **Scalability**: Design for future feature expansion
 
 ## Examples
 
-Reference the `bank` and `tag` features as complete examples of this architecture:
+Reference the `bank`, `tag`, and `label` features as complete examples of this architecture:
 - `src/features/bank/` - Complex feature with multiple related entities
-- `src/features/tag/` - Feature with hierarchical data and auto-tagging logic
+- `src/features/tag/` - Feature with hierarchical data and transaction relationships
+- `src/features/label/` - Feature with hierarchical structure and validation
 
 These features demonstrate all the patterns and conventions outlined in this document.
