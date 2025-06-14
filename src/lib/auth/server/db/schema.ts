@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const user = pgTable('user', {
     id: text('id').primaryKey(),
@@ -71,4 +72,33 @@ export const authPasskey = pgTable('auth_passkey', {
     backedUp: boolean('backed_up').notNull(),
     transports: text('transports'),
     createdAt: timestamp('created_at'),
+});
+
+// // Schemas for type safety
+export const SelectSessionSchema = createSelectSchema(authSession);
+export const InsertSessionSchema = createInsertSchema(authSession).pick({
+    userId: true,
+    expiresAt: true,
+    ipAddress: true,
+    userAgent: true,
+});
+export const UpdateSessionSchema = InsertSessionSchema;
+
+export const SelectAuthAccountSchema = createSelectSchema(authAccount);
+export const InsertAuthAccountSchema = createInsertSchema(authAccount);
+export const UpdateAuthAccountSchema = createUpdateSchema(authAccount);
+
+export const SelectAuthVerificationSchema = createSelectSchema(authVerification);
+export const InsertAuthVerificationSchema = createInsertSchema(authVerification);
+export const UpdateAuthVerificationSchema = createUpdateSchema(authVerification);
+
+export const SelectAuthPasskeySchema = createSelectSchema(authPasskey);
+export const InsertAuthPasskeySchema = createInsertSchema(authPasskey);
+
+export const SelectUserSchema = createSelectSchema(user);
+export const InsertUserSchema = createInsertSchema(user);
+export const UpdateUserSchema = createUpdateSchema(user).pick({
+    name: true,
+    lastName: true,
+    image: true,
 });
