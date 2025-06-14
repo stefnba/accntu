@@ -1,5 +1,8 @@
 import bankEndpoints from '@/features/bank/server/endpoints';
+import labelEndpoints from '@/features/label/server/endpoints';
+import tagEndpoints from '@/features/tag/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
+
 import { authEndpoints, authMiddleware, type TSession, type TUser } from '@/lib/auth';
 import statusEndpoints from '@/server/endpoints';
 import { logger } from 'hono/logger';
@@ -36,6 +39,8 @@ app.onError(handleGlobalError);
 // Routes
 const routes = app
     .route('/bank', bankEndpoints)
+    .route('/label', labelEndpoints)
+    .route('/tag', tagEndpoints)
     .route('/user', userEndpoints)
     .route('/auth', authEndpoints)
     .route('/status', statusEndpoints);
