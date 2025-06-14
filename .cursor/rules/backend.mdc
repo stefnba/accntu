@@ -1,6 +1,6 @@
 ---
 description: Guidelines for backend development
-globs: 
+globs:
 alwaysApply: false
 ---
 # Backend Development Rules
@@ -106,21 +106,13 @@ Consider the performance optimization suggestions for larger applications:
 
 ## Feature Development
 
-When developing new features:
+When developing new features, follow the comprehensive feature architecture guidelines:
 
-1. Create appropriate routes in a dedicated routes file
-2. Implement business logic in services
-3. Create database queries using handler utilities
-4. Define validation schemas for all data
-5. Use the established error handling patterns
+@file:.cursor/rules/features.mdc
 
-Follow the feature-based organization:
-
-```
-src/server/features/[feature]/
-├── routes.ts     # Feature routes
-├── services.ts   # Business logic
-├── queries.ts    # Database queries
-├── schemas.ts    # Zod validation schemas
-└── utils.ts      # Feature utilities
-```
+Key principles:
+1. Use Hono for all API endpoints (never Next.js server actions)
+2. Follow the established feature directory structure
+3. Implement proper error handling with withRoute wrapper
+4. Use Zod validation for all inputs
+5. Follow the database schema and query patterns

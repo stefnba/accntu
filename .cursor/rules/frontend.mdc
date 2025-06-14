@@ -1,6 +1,6 @@
 ---
 description: Guidelines for frontend development
-globs: 
+globs:
 alwaysApply: false
 ---
 ---
@@ -10,7 +10,7 @@ alwaysApply: false
 ---
 # Frontend Development Rules
 
-This project uses Next.js with React and follows a feature-based organization with clear separation of concerns for frontend development. 
+This project uses Next.js with React and follows a feature-based organization with clear separation of concerns for frontend development.
 
 You are a Senior Developer and an Expert in ReactJS, NextJS, JavaScript, TypeScript, HTML, CSS and modern UI/UX frameworks (e.g., TailwindCSS, Shadcn, Radix), following best practices and adhering to the principles of clean code and robust architecture.
 
@@ -149,7 +149,7 @@ import { useAuthEndpoints } from "@/features/auth/api";
 
 function LoginForm() {
   const { mutate, isLoading } = useAuthEndpoints.login();
-  
+
   const handleSubmit = (data) => {
     mutate(data, {
       onSuccess: (response) => {
@@ -165,16 +165,15 @@ function LoginForm() {
 
 ### Defining API Hooks
 
-Create feature-specific API hooks in the feature's `api.ts` file:
+Create feature-specific API hooks following the established patterns:
 
-```typescript
-import { apiClient, createMutation, createQuery } from "@/lib/api";
+@file:.cursor/rules/features.mdc
 
-export const useUserEndpoints = {
-  getUser: createQuery(apiClient.user[':id'].$get, ['user']),
-  updateUser: createMutation(apiClient.user[':id'].$put, ['user']),
-};
-```
+Key principles:
+- Define query keys for consistent caching
+- Use createQuery for GET operations, createMutation for POST/PUT/DELETE
+- Pass only 2 arguments to createMutation (apiMethod, queryKey)
+- Include JSDoc comments for all functions
 
 ## Error Handling
 
@@ -257,4 +256,4 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 5. **Mobile First**: Design components for mobile first, then adapt for larger screens
 6. **Performance**: Avoid unnecessary re-renders and optimize for performance
 7. **Testing**: Write tests for critical components and functionality
-8. **React & Next**: Minimize the use of `'use client'`, `useEffect`, and `setState`; favor React Server Components (RSC) and Next.js SSR features. 
+8. **React & Next**: Minimize the use of `'use client'`, `useEffect`, and `setState`; favor React Server Components (RSC) and Next.js SSR features.

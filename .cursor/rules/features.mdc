@@ -1,0 +1,389 @@
+---
+description: Feature-based architecture guidelines for consistent development patterns across all features. Covers database schemas, API endpoints, client-side hooks, and utility functions with established naming conventions and structural patterns.
+globs:
+alwaysApply: false
+---
+# Feature Architecture Rules
+
+This project follows a strict feature-based architecture with consistent patterns across all features. Each feature is self-contained with its own database schemas, API endpoints, business logic, and client-side code.
+
+## Feature Structure
+
+Every feature must follow this exact directory structure:
+
+```
+src/features/[feature-name]/
+├── server/
+│   ├── db/
+│   │   ├── schema.ts          # Database schemas with embedded relations
+│   │   └── queries.ts         # Database query functions
+│   ├── endpoints.ts           # Hono API endpoints
+│   └── [optional-services].ts # Additional server-side services
+├── lib/
+│   └── utils.ts               # Feature-specific utility functions
+├── components/                # Feature-specific React components
+├── api.ts                     # Client-side API hooks
+└── schemas.ts                 # Shared Zod validation schemas
+```
+
+## Naming Conventions
+
+### Feature Names
+- Use **singular** feature names (e.g., `tag`, `bank`, `transaction`, not `tags`, `banks`, `transactions`)
+- Use lowercase with hyphens for multi-word features (e.g., `bank-account`)
+
+### Database Tables
+- Use **singular** table names (e.g., `tag`, `bank`, `transaction`)
+- Follow the pattern: `[feature-name]` for main tables
+- Use descriptive names for junction/relation tables (e.g., `transactionTag`, `connectedBank`)
+
+### File Names
+- Use singular feature names in directory structure
+- Use descriptive file names that indicate their purpose
+
+## Database Schema Patterns
+
+### Schema Organization
+```typescript
+// src/features/[feature]/server/db/schema.ts
+import { createId } from '@paralleldrive/cuid2';
+import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+
+// Main entity table
+export const [featureName] = pgTable('[feature_name]', {
+  id: text().primaryKey().notNull().$defaultFn(() => createId()),
+  userId: text().notNull(), // Always include userId for user-scoped data
+
+  // Feature-specific fields
+  name: text().notNull(),
+  description: text(),
+
+  // Standard audit fields
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+
+  // Soft delete pattern
+  isActive: boolean().notNull().default(true), // or isDeleted: boolean().notNull().default(false)
+});
+
+// Embedded relations (no separate relations file)
+export const [featureName]Relations = relations([featureName], ({ one, many }) => ({
+  // Define relations here
+}));
+
+// Export types
+export type [FeatureName] = typeof [featureName].$inferSelect;
+export type New[FeatureName] = typeof [featureName].$inferInsert;
+```
+
+### Key Schema Patterns
+1. **Always use CUID2** for primary keys with `createId()`
+2. **Include userId** for user-scoped data
+3. **Use timestamp fields** for `createdAt` and `updatedAt`
+4. **Implement soft deletes** with `isActive` or `isDeleted` boolean fields
+5. **Embed relations** directly in schema files (no separate relations files)
+6. **Export TypeScript types** for both select and insert operations
+
+## Database Queries Pattern
+
+### Query Organization
+```typescript
+// src/features/[feature]/server/db/queries.ts
+import { db } from '@/server/db';
+import { and, eq, isNull, sql } from 'drizzle-orm';
+import { [featureName], type [FeatureName], type New[FeatureName] } from './schema';
+
+// CRUD Operations
+export const create[FeatureName] = async (data: New[FeatureName]): Promise<[FeatureName]> => {
+  const [result] = await db.insert([featureName]).values(data).returning();
+  return result;
+};
+
+export const get[FeatureName]sByUserId = async (userId: string): Promise<[FeatureName][]> => {
+  return await db
+    .select()
+    .from([featureName])
+    .where(and(eq([featureName].userId, userId), eq([featureName].isActive, true)))
+    .orderBy([featureName].name);
+};
+
+export const get[FeatureName]ById = async (id: string): Promise<[FeatureName] | null> => {
+  const [result] = await db
+    .select()
+    .from([featureName])
+    .where(eq([featureName].id, id))
+    .limit(1);
+
+  return result || null;
+};
+
+export const update[FeatureName] = async (id: string, data: Partial<New[FeatureName]>): Promise<[FeatureName] | null> => {
+  const [updated] = await db
+    .update([featureName])
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq([featureName].id, id))
+    .returning();
+
+  return updated || null;
+};
+
+export const delete[FeatureName] = async (id: string): Promise<void> => {
+  await db
+    .update([featureName])
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(eq([featureName].id, id));
+};
+```
+
+### Query Patterns
+1. **Always return typed results** using the exported types
+2. **Use soft deletes** by updating `isActive` or `isDeleted` fields
+3. **Include userId filtering** for user-scoped queries
+4. **Update timestamps** on all update operations
+5. **Use proper error handling** with try-catch where appropriate
+6. **Order results consistently** (usually by name or createdAt)
+
+## API Endpoints Pattern
+
+### Endpoint Organization
+```typescript
+// src/features/[feature]/server/endpoints.ts
+import { withRoute } from '@/server/lib/handler';
+import { zValidator } from '@hono/zod-validator';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import * as queries from './db/queries';
+
+// Create Hono app
+const app = new Hono();
+
+// Validation schemas
+const Create[FeatureName]Schema = z.object({
+  name: z.string().min(1, '[FeatureName] name is required').max(100),
+  description: z.string().optional(),
+  userId: z.string(),
+});
+
+const Update[FeatureName]Schema = Create[FeatureName]Schema.partial().omit({ userId: true });
+
+// CRUD endpoints
+app.get('/[feature-name]/user/:userId', zValidator('param', z.object({ userId: z.string() })), async (c) =>
+  withRoute(c, async () => {
+    const { userId } = c.req.valid('param');
+    return await queries.get[FeatureName]sByUserId(userId);
+  })
+);
+
+app.get('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+  withRoute(c, async () => {
+    const { id } = c.req.valid('param');
+    const result = await queries.get[FeatureName]ById(id);
+
+    if (!result) {
+      throw new Error('[FeatureName] not found');
+    }
+
+    return result;
+  })
+);
+
+app.post('/[feature-name]', zValidator('json', Create[FeatureName]Schema), async (c) =>
+  withRoute(
+    c,
+    async () => {
+      const data = c.req.valid('json');
+      return await queries.create[FeatureName](mdc:data);
+    },
+    201
+  )
+);
+
+app.put('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), zValidator('json', Update[FeatureName]Schema), async (c) =>
+  withRoute(c, async () => {
+    const { id } = c.req.valid('param');
+    const data = c.req.valid('json');
+
+    const updated = await queries.update[FeatureName](mdc:id, data);
+
+    if (!updated) {
+      throw new Error('[FeatureName] not found');
+    }
+
+    return updated;
+  })
+);
+
+app.delete('/[feature-name]/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+  withRoute(c, async () => {
+    const { id } = c.req.valid('param');
+    await queries.delete[FeatureName](mdc:id);
+    return { success: true };
+  })
+);
+
+export default app;
+```
+
+### Endpoint Patterns
+1. **Use Hono framework** for all API endpoints (never Next.js server actions)
+2. **Use withRoute wrapper** for consistent error handling
+3. **Validate all inputs** with Zod schemas and zValidator
+4. **Follow RESTful conventions** for endpoint naming
+5. **Return appropriate HTTP status codes** (201 for creation, 200 for updates, etc.)
+6. **Handle not found cases** with proper error messages
+7. **Use consistent response formats** (success objects for deletions)
+
+## Client API Pattern
+
+### API Client Organization
+```typescript
+// src/features/[feature]/api.ts
+import { apiClient, createMutation, createQuery } from '@/lib/api';
+
+export const [FEATURE_NAME]_QUERY_KEYS = {
+  [FEATURE_NAME]S: (userId: string) => ['[feature-name]s', userId] as const,
+  [FEATURE_NAME]: (id: string) => ['[feature-name]', id] as const,
+  // Add more specific query keys as needed
+} as const;
+
+export const use[FeatureName]Endpoints = {
+  /**
+   * Get all [feature-name]s for a user
+   */
+  get[FeatureName]s: (userId: string) =>
+    createQuery(
+      apiClient.[featureName]['[feature-name]']['user'][':userId'].$get,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S(userId)
+    ),
+
+  /**
+   * Get [feature-name] by ID
+   */
+  get[FeatureName]: (id: string) =>
+    createQuery(
+      apiClient.[featureName]['[feature-name]'][':id'].$get,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+    ),
+
+  /**
+   * Create a new [feature-name]
+   */
+  create[FeatureName]: (userId: string) =>
+    createMutation(
+      apiClient.[featureName]['[feature-name]'].$post,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME]S(userId)
+    ),
+
+  /**
+   * Update a [feature-name]
+   */
+  update[FeatureName]: (id: string) =>
+    createMutation(
+      apiClient.[featureName]['[feature-name]'][':id'].$put,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+    ),
+
+  /**
+   * Delete a [feature-name]
+   */
+  delete[FeatureName]: (id: string) =>
+    createMutation(
+      apiClient.[featureName]['[feature-name]'][':id'].$delete,
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+    ),
+};
+```
+
+### API Client Patterns
+1. **Define query keys** for consistent caching and invalidation
+2. **Use descriptive function names** that match the backend operations
+3. **Include JSDoc comments** for all exported functions
+4. **Use createQuery for GET operations** and createMutation for POST/PUT/DELETE
+5. **Pass only 2 arguments to createMutation** (apiMethod, queryKey)
+6. **Group related endpoints** in logical objects
+
+## Utility Functions Pattern
+
+### Utility Organization
+```typescript
+// src/features/[feature]/lib/utils.ts
+import { type [FeatureName] } from '../server/db/schema';
+
+// Type extensions for complex operations
+export interface [FeatureName]WithChildren extends [FeatureName] {
+  children?: [FeatureName]WithChildren[];
+}
+
+// Business logic utilities
+export const validate[FeatureName]Name = (
+  name: string,
+  existing[FeatureName]s: [FeatureName][],
+  excludeId?: string
+): string | null => {
+  if (!name.trim()) return '[FeatureName] name is required';
+  if (name.length > 100) return '[FeatureName] name must be 100 characters or less';
+
+  const isDuplicate = existing[FeatureName]s.some(
+    (item) => item.name.toLowerCase() === name.toLowerCase() && item.id !== excludeId
+  );
+
+  if (isDuplicate) return 'A [feature-name] with this name already exists';
+
+  return null;
+};
+
+// Data transformation utilities
+export const build[FeatureName]Hierarchy = ([featureName]s: [FeatureName][]): [FeatureName]WithChildren[] => {
+  // Implementation for hierarchical data
+};
+
+// Helper functions
+export const generate[FeatureName]Color = (): string => {
+  // Implementation for generating colors, etc.
+};
+```
+
+### Utility Patterns
+1. **Export type extensions** for complex operations
+2. **Include validation functions** for business rules
+3. **Provide data transformation utilities** for complex data structures
+4. **Use descriptive function names** that indicate their purpose
+5. **Include proper TypeScript typing** for all functions
+
+## Integration Patterns
+
+### Feature Registration
+When creating a new feature, ensure it's properly integrated:
+
+1. **Add to API routes** in the main server configuration
+2. **Export from feature index** if needed
+3. **Update database migrations** with new schemas
+4. **Add to API client** type definitions
+
+### Cross-Feature Dependencies
+- **Minimize cross-feature dependencies** where possible
+- **Use shared utilities** in `src/lib/` for common functionality
+- **Import types** from other features when necessary for relationships
+- **Avoid circular dependencies** between features
+
+## Best Practices
+
+1. **Consistency**: Follow the exact patterns established in existing features
+2. **Type Safety**: Use TypeScript throughout with proper type definitions
+3. **Error Handling**: Implement comprehensive error handling at all levels
+4. **Validation**: Validate all inputs with Zod schemas
+5. **Documentation**: Include JSDoc comments for all public functions
+6. **Testing**: Write tests for critical business logic
+7. **Performance**: Consider query optimization and caching strategies
+8. **Security**: Always include user authorization checks
+9. **Maintainability**: Keep functions focused and modular
+10. **Scalability**: Design for future feature expansion
+
+## Examples
+
+Reference the `bank` and `tag` features as complete examples of this architecture:
+- `src/features/bank/` - Complex feature with multiple related entities
+- `src/features/tag/` - Feature with hierarchical data and auto-tagging logic
+
+These features demonstrate all the patterns and conventions outlined in this document.
