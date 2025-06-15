@@ -1,7 +1,7 @@
 import { type TInsertConnectedBank } from '@/features/bank/schemas';
+import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../../../../server/db';
 import { connectedBank, type ConnectedBank } from '../schemas';
 
 /**
@@ -9,14 +9,17 @@ import { connectedBank, type ConnectedBank } from '../schemas';
  * @param userId - The id of the user
  * @returns All connected banks by user id
  */
-export const getAll = async ({ userId }: { userId: string }): Promise<ConnectedBank[]> =>
+export const getAll = async ({ userId }: { userId: string }) =>
     withDbQuery({
         operation: 'get connected banks by user ID',
         queryFn: async () => {
-            return await db
-                .select()
-                .from(connectedBank)
-                .where(and(eq(connectedBank.userId, userId), eq(connectedBank.isActive, true)));
+            return await db.query.connectedBank.findMany({
+                where: and(eq(connectedBank.userId, userId), eq(connectedBank.isActive, true)),
+                with: {
+                    globalBank: true,
+                    connectedBankAccounts: true,
+                },
+            });
         },
     });
 
