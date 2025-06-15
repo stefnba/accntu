@@ -52,8 +52,8 @@ export const appRoutes: TAppRoute[] = [
         icon: Icons.Database,
     },
     {
-        path: '/budget',
-        label: 'Budget',
+        path: '/bank',
+        label: 'Connected Banks',
         icon: Icons.Wallet,
     },
 ] as const;

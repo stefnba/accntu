@@ -41,9 +41,7 @@ const {
     deletePasskey,
 } = endpoints;
 
-const app = new Hono();
-
-app
+const app = new Hono()
     /**
      * Sign up
      */

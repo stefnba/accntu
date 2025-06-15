@@ -1,13 +1,10 @@
 import { db } from '@/server/db';
-import { withDbQuery, withRoute } from '@/server/lib/handler';
+import { withDbQuery, withQueryRoute } from '@/server/lib/handler';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-// Create a new Hono app for user routes
-const app = new Hono();
-
-app.get('/', async (c) =>
-    withRoute(c, async () => {
+const app = new Hono().get('/', async (c) =>
+    withQueryRoute(c, async () => {
         const result = await withDbQuery({
             queryFn: async () => db.execute(sql`SELECT 1`),
             operation: 'test database connection',

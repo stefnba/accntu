@@ -1,15 +1,12 @@
 import bankEndpoints from '@/features/bank/server/endpoints';
-import labelEndpoints from '@/features/label/server/endpoints';
-import tagEndpoints from '@/features/tag/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
-
-import { authEndpoints, authMiddleware, type TSession, type TUser } from '@/lib/auth';
+import { authMiddleware, type TSession, type TUser } from '@/lib/auth';
+import authEndpoints from '@/lib/auth/server/endpoints';
 import statusEndpoints from '@/server/endpoints';
-import { logger } from 'hono/logger';
-
 import { handleGlobalError } from '@/server/lib/error/handler';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
 import { timing } from 'hono/timing';
 
 // Extend Hono's Context type to include our user
@@ -38,12 +35,11 @@ app.onError(handleGlobalError);
 
 // Routes
 const routes = app
-    .route('/bank', bankEndpoints)
-    .route('/label', labelEndpoints)
-    .route('/tag', tagEndpoints)
+    .route('/status', statusEndpoints)
+    .route('/banks', bankEndpoints)
+    // .route('/label', labelEndpoints)
+    // .route('/tag', tagEndpoints)
     .route('/user', userEndpoints)
-    .route('/auth', authEndpoints)
-    .route('/status', statusEndpoints);
-
+    .route('/auth', authEndpoints);
 export type AppType = typeof routes;
 export { app, routes };
