@@ -4,6 +4,7 @@ import {
     boolean,
     char,
     decimal,
+    json,
     jsonb,
     pgEnum,
     pgTable,
@@ -11,8 +12,6 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
 
 export const bankIntegrationTypeEnum = pgEnum('bank_integration_type', ['csv', 'api']);
 export const accountTypeEnum = pgEnum('account_type', [
@@ -21,14 +20,10 @@ export const accountTypeEnum = pgEnum('account_type', [
     'credit_card',
     'investment',
 ]);
-export const accountStatusEnum = pgEnum('account_status', [
-    'active',
-    'inactive',
-    'closed',
-    'pending',
-]);
 
+// ===============================
 // Global bank registry - all available banks
+// ===============================
 export const globalBank = pgTable('global_bank', {
     id: text()
         .primaryKey()
@@ -47,21 +42,9 @@ export const globalBank = pgTable('global_bank', {
 
     integrationTypes: bankIntegrationTypeEnum().notNull(),
 
-    // // API Configuration
-    // apiConfig: jsonb().$type<{
-    //     baseUrl?: string;
-    //     authType?: 'oauth2' | 'api_key' | 'basic';
-    //     scopes?: string[];
-    //     endpoints?: {
-    //         accounts?: string;
-    //         transactions?: string;
-    //         balance?: string;
-    //     };
-    // }>(),
-
     isActive: boolean().notNull().default(true),
     createdAt: timestamp().notNull().defaultNow(),
-    updatedAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp(),
 });
 
 // Account templates for each global bank with CSV parsing support
@@ -99,10 +82,12 @@ export const globalBankAccount = pgTable('global_bank_account', {
 
     isActive: boolean().notNull().default(true),
     createdAt: timestamp().notNull().defaultNow(),
-    updatedAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp(),
 });
 
+// ===============================
 // User's connection to a specific bank
+// ===============================
 export const connectedBank = pgTable(
     'connected_bank',
     {
@@ -116,7 +101,7 @@ export const connectedBank = pgTable(
             .references(() => globalBank.id, { onDelete: 'restrict' }),
 
         // API credentials (encrypted)
-        apiCredentials: jsonb().$type<{
+        apiCredentials: json().$type<{
             accessToken?: string;
             refreshToken?: string;
             apiKey?: string;
@@ -126,7 +111,7 @@ export const connectedBank = pgTable(
 
         isActive: boolean().notNull().default(true),
         createdAt: timestamp().notNull().defaultNow(),
-        updatedAt: timestamp().notNull().defaultNow(),
+        updatedAt: timestamp(),
     },
     (table) => [uniqueIndex('connected_bank_user_bank_unique').on(table.userId, table.globalBankId)]
 );
@@ -146,36 +131,29 @@ export const connectedBankAccount = pgTable('connected_bank_account', {
 
     name: text().notNull(), // User-defined name like "Main Checking"
     description: text(),
-    type: accountTypeEnum().notNull(),
+    type: accountTypeEnum(), // globalBankAccount has type already, but we can override it here
+    currency: char({ length: 3 }), // globalBankAccount has currency already, but we can override it here
 
     // Account identifiers
-    accountNumber: text(), // Masked/partial for display
+    accountNumber: text(),
     iban: text(), // International Bank Account Number
-    routingNumber: text(),
 
     // Balance tracking
     currentBalance: decimal({ precision: 12, scale: 2 }),
-    availableBalance: decimal({ precision: 12, scale: 2 }),
-    creditLimit: decimal({ precision: 12, scale: 2 }), // For credit cards
-    currency: char({ length: 3 }).notNull().default('USD'),
 
     // Provider account details
-    providerAccountId: text(), // Provider's account ID
+    providerAccountId: text(), // Provider's account ID used for API only
 
-    // Custom CSV parsing overrides (if different from global template)
-    customCsvConfig: jsonb().$type<{
-        duckdbQuery?: string; // Override DuckDB query
-        fieldMappings?: any; // Override field mappings
-        csvConfig?: any; // Override CSV config
-    }>(),
+    isSharedAccount: boolean().notNull().default(false), // Whether the account is shared with other people
 
-    status: accountStatusEnum().notNull().default('active'),
     isActive: boolean().notNull().default(true),
     createdAt: timestamp().notNull().defaultNow(),
-    updatedAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp(),
 });
 
+// ===============================
 // Relations
+// ===============================
 export const globalBankRelations = relations(globalBank, ({ many }) => ({
     globalBankAccounts: many(globalBankAccount),
     connectedBanks: many(connectedBank),
@@ -208,6 +186,8 @@ export const connectedBankAccountRelations = relations(connectedBankAccount, ({ 
     }),
 }));
 
+// ===============================
+
 export type GlobalBank = typeof globalBank.$inferSelect;
 export type NewGlobalBank = typeof globalBank.$inferInsert;
 export type GlobalBankAccount = typeof globalBankAccount.$inferSelect;
@@ -216,54 +196,3 @@ export type ConnectedBank = typeof connectedBank.$inferSelect;
 export type NewConnectedBank = typeof connectedBank.$inferInsert;
 export type ConnectedBankAccount = typeof connectedBankAccount.$inferSelect;
 export type NewConnectedBankAccount = typeof connectedBankAccount.$inferInsert;
-
-// Zod schemas for validation
-export const SelectGlobalBankSchema = createSelectSchema(globalBank);
-export const InsertGlobalBankSchema = createInsertSchema(globalBank);
-export const SelectGlobalBankAccountSchema = createSelectSchema(globalBankAccount);
-export const InsertGlobalBankAccountSchema = createInsertSchema(globalBankAccount);
-export const SelectConnectedBankSchema = createSelectSchema(connectedBank);
-export const InsertConnectedBankSchema = createInsertSchema(connectedBank);
-export const SelectConnectedBankAccountSchema = createSelectSchema(connectedBankAccount);
-export const InsertConnectedBankAccountSchema = createInsertSchema(connectedBankAccount);
-
-// Custom validation schemas for API endpoints
-export const CreateConnectedBankSchema = InsertConnectedBankSchema.pick({
-    userId: true,
-    globalBankId: true,
-    apiCredentials: true,
-}).extend({
-    userId: z.string().min(1),
-    globalBankId: z.string().min(1),
-    apiCredentials: z.record(z.any()).optional(),
-});
-
-export const CreateConnectedBankAccountSchema = InsertConnectedBankAccountSchema.pick({
-    connectedBankId: true,
-    globalBankAccountId: true,
-    name: true,
-    type: true,
-    accountNumber: true,
-    iban: true,
-    routingNumber: true,
-    currency: true,
-    customCsvConfig: true,
-}).extend({
-    connectedBankId: z.string().min(1),
-    globalBankAccountId: z.string().optional(),
-    name: z.string().min(1),
-    type: z.enum(['checking', 'savings', 'credit_card', 'investment']),
-    currency: z.string().length(3).optional(),
-    customCsvConfig: z
-        .object({
-            duckdbQuery: z.string().optional(),
-            fieldMappings: z.any().optional(),
-            csvConfig: z.any().optional(),
-        })
-        .optional(),
-});
-
-export const SearchGlobalBanksSchema = z.object({
-    query: z.string().optional(),
-    country: z.string().length(2).optional(),
-});
