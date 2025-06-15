@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 
 import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies';
 import { cookies } from 'next/headers';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
@@ -20,10 +21,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
                 <QueryProvider>
-                    <Toaster />
-                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                        <main className="">{children}</main>
-                    </ThemeProvider>
+                    <NuqsAdapter>
+                        <Toaster />
+                        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                            <main className="">{children}</main>
+                        </ThemeProvider>
+                    </NuqsAdapter>
                 </QueryProvider>
             </body>
         </html>
