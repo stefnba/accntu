@@ -17,7 +17,11 @@ export const getAll = async ({ userId }: { userId: string }) =>
                 where: and(eq(connectedBank.userId, userId), eq(connectedBank.isActive, true)),
                 with: {
                     globalBank: true,
-                    connectedBankAccounts: true,
+                    connectedBankAccounts: {
+                        with: {
+                            globalBankAccount: true,
+                        },
+                    },
                 },
             });
         },
@@ -29,22 +33,22 @@ export const getAll = async ({ userId }: { userId: string }) =>
  * @param userId - The id of the user
  * @returns The connected bank
  */
-export const getById = async ({
-    id,
-    userId,
-}: {
-    id: string;
-    userId: string;
-}): Promise<ConnectedBank | null> =>
+export const getById = async ({ id, userId }: { id: string; userId: string }) =>
     withDbQuery({
         operation: 'get connected bank by ID',
         queryFn: async () => {
-            const result = await db
-                .select()
-                .from(connectedBank)
-                .where(and(eq(connectedBank.id, id), eq(connectedBank.userId, userId)))
-                .limit(1);
-            return result[0] || null;
+            const result = await db.query.connectedBank.findFirst({
+                where: and(eq(connectedBank.id, id), eq(connectedBank.userId, userId)),
+                with: {
+                    globalBank: true,
+                    connectedBankAccounts: {
+                        with: {
+                            globalBankAccount: true,
+                        },
+                    },
+                },
+            });
+            return result || null;
         },
     });
 

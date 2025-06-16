@@ -1,16 +1,17 @@
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { AddBankModal, BankList } from '@/features/bank/components';
+import { AddBankModal } from '@/features/bank/components';
+import { ConnectedBanksList } from '@/features/bank/components/connected-banks-list';
 
-export default function BankPage() {
+export default function BanksPage() {
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
                 title="Connected Banks"
-                description="Manage your connected bank accounts and view your financial data"
+                description="Manage your connected banks and view account information"
                 actionBar={<Button>Add Bank</Button>}
             />
-            <BankList />
+            <ConnectedBanksList />
             <AddBankModal />
         </div>
     );

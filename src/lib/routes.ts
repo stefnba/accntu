@@ -52,7 +52,7 @@ export const appRoutes: TAppRoute[] = [
         icon: Icons.Database,
     },
     {
-        path: '/bank',
+        path: '/banks',
         label: 'Connected Banks',
         icon: Icons.Wallet,
     },

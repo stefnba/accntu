@@ -91,7 +91,7 @@ export const BankList: React.FC<BankListProps> = () => {
 
             {hasAccounts && (
                 <div className="text-center text-sm text-muted-foreground">
-                    {banksData.length} account{banksData.length !== 1 ? 's' : ''} connected
+                    {banksData.length} bank{banksData.length !== 1 ? 's' : ''} connected
                 </div>
             )}
         </div>

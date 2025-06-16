@@ -78,20 +78,25 @@ const data = {
             icon: Icons.Search,
         },
     ],
-    documents: [
+    budgeting: [
         {
-            name: 'Data Library',
-            url: '#',
+            name: 'Income & Expenses',
+            url: '/budget',
             icon: IconDatabase,
         },
         {
-            name: 'Reports',
-            url: '#',
+            name: 'Labels',
+            url: '/labels',
             icon: IconReport,
         },
         {
-            name: 'Word Assistant',
-            url: '#',
+            name: 'Tags',
+            url: '/tags',
+            icon: IconFileWord,
+        },
+        {
+            name: 'Buckets',
+            url: '/buckets',
             icon: IconFileWord,
         },
     ],
@@ -103,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarLogo />
             <SidebarContent>
                 <NavMain />
-                <NavDocuments items={data.documents} />
+                <NavDocuments items={data.budgeting} />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
