@@ -1,4 +1,5 @@
 import bankEndpoints from '@/features/bank/server/endpoints';
+import labelEndpoints from '@/features/label/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import { authMiddleware, type TSession, type TUser } from '@/lib/auth';
@@ -38,6 +39,7 @@ app.onError(handleGlobalError);
 const routes = app
     .route('/status', statusEndpoints)
     .route('/banks', bankEndpoints)
+    .route('/labels', labelEndpoints)
     .route('/tags', tagEndpoints)
     .route('/user', userEndpoints)
     .route('/auth', authEndpoints);

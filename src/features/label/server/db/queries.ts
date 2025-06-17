@@ -1,45 +1,16 @@
+import { type TInsertLabel, type TLabel } from '@/features/label/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, isNull } from 'drizzle-orm';
-import { z } from 'zod';
-import { label, type Label, type NewLabel } from './schema';
-
-// Validation schemas
-const LabelSchema = z.object({
-    id: z.string(),
-    userId: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-    color: z.string().nullable(),
-    rank: z.number(),
-    level: z.number(),
-    parentId: z.string().nullable(),
-    firstParentId: z.string().nullable(),
-    isDeleted: z.boolean(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-});
-
-const LabelsArraySchema = z.array(LabelSchema);
-const CreateLabelInputSchema = z.object({
-    userId: z.string(),
-    name: z.string(),
-    description: z.string().optional(),
-    color: z.string().optional(),
-    rank: z.number().default(0),
-    level: z.number().default(0),
-    parentId: z.string().optional(),
-    firstParentId: z.string().optional(),
-});
+import { label } from './schema';
 
 /**
  * Create a new label
  * @param data - The data for the new label
  * @returns The created label
  */
-export const createLabel = async (data: NewLabel): Promise<Label> =>
+export const createLabel = async ({ data }: { data: TInsertLabel }): Promise<TLabel> =>
     withDbQuery({
-        outputSchema: LabelSchema,
         operation: 'create label',
         queryFn: async () => {
             const [newLabel] = await db.insert(label).values(data).returning();
@@ -52,9 +23,8 @@ export const createLabel = async (data: NewLabel): Promise<Label> =>
  * @param userId - The ID of the user
  * @returns The labels for the user
  */
-export const getLabelsByUserId = async ({ userId }: { userId: string }): Promise<Label[]> =>
+export const getLabelsByUserId = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
     withDbQuery({
-        outputSchema: LabelsArraySchema,
         operation: 'get labels by user ID',
         queryFn: async () => {
             return await db
@@ -70,9 +40,8 @@ export const getLabelsByUserId = async ({ userId }: { userId: string }): Promise
  * @param id - The ID of the label
  * @returns The label
  */
-export const getLabelById = async ({ id }: { id: string }): Promise<Label | null> =>
+export const getLabelById = async ({ id }: { id: string }): Promise<TLabel | null> =>
     withDbQuery({
-        outputSchema: LabelSchema.nullable(),
         operation: 'get label by ID',
         queryFn: async () => {
             const [result] = await db.select().from(label).where(eq(label.id, id)).limit(1);
@@ -91,10 +60,9 @@ export const updateLabel = async ({
     data,
 }: {
     id: string;
-    data: Partial<NewLabel>;
-}): Promise<Label | null> =>
+    data: Partial<TInsertLabel>;
+}): Promise<TLabel | null> =>
     withDbQuery({
-        outputSchema: LabelSchema.nullable(),
         operation: 'update label',
         queryFn: async () => {
             const [updated] = await db
@@ -107,13 +75,12 @@ export const updateLabel = async ({
     });
 
 /**
- * Delete a label
+ * Delete a label (soft delete)
  * @param id - The ID of the label
- * @returns The deleted label
+ * @returns void
  */
 export const deleteLabel = async ({ id }: { id: string }): Promise<void> =>
     withDbQuery({
-        outputSchema: z.void(),
         operation: 'delete label',
         queryFn: async () => {
             await db
@@ -128,9 +95,8 @@ export const deleteLabel = async ({ id }: { id: string }): Promise<void> =>
  * @param userId - The ID of the user
  * @returns The hierarchy of labels
  */
-export const getLabelHierarchy = async ({ userId }: { userId: string }): Promise<Label[]> =>
+export const getLabelHierarchy = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
     withDbQuery({
-        outputSchema: LabelsArraySchema,
         operation: 'get label hierarchy',
         queryFn: async () => {
             return await db
@@ -146,9 +112,8 @@ export const getLabelHierarchy = async ({ userId }: { userId: string }): Promise
  * @param userId - The ID of the user
  * @returns The root labels
  */
-export const getRootLabels = async ({ userId }: { userId: string }): Promise<Label[]> =>
+export const getRootLabels = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
     withDbQuery({
-        outputSchema: LabelsArraySchema,
         operation: 'get root labels',
         queryFn: async () => {
             return await db
@@ -170,9 +135,8 @@ export const getRootLabels = async ({ userId }: { userId: string }): Promise<Lab
  * @param parentId - The ID of the parent label
  * @returns The child labels
  */
-export const getChildLabels = async ({ parentId }: { parentId: string }): Promise<Label[]> =>
+export const getChildLabels = async ({ parentId }: { parentId: string }): Promise<TLabel[]> =>
     withDbQuery({
-        outputSchema: LabelsArraySchema,
         operation: 'get child labels',
         queryFn: async () => {
             return await db

@@ -1,16 +1,16 @@
-import { type Label } from './server/db/schema';
+import { type TLabel } from './schemas';
 
 // Extended types for hierarchy
-export interface LabelWithChildren extends Label {
+export interface LabelWithChildren extends TLabel {
     children?: LabelWithChildren[];
 }
 
 // Label utility functions
-export const buildLabelHierarchy = (labels: Label[]): LabelWithChildren[] => {
+export const buildLabelHierarchy = (labels: TLabel[]): LabelWithChildren[] => {
     const rootLabels = labels.filter((label) => !label.parentId);
     const childLabels = labels.filter((label) => label.parentId);
 
-    const addChildren = (parentLabel: Label): LabelWithChildren => {
+    const addChildren = (parentLabel: TLabel): LabelWithChildren => {
         const children = childLabels
             .filter((child) => child.parentId === parentLabel.id)
             .sort((a, b) => a.rank - b.rank);
@@ -24,7 +24,7 @@ export const buildLabelHierarchy = (labels: Label[]): LabelWithChildren[] => {
     return rootLabels.sort((a, b) => a.rank - b.rank).map(addChildren);
 };
 
-export const getLabelPath = (label: Label, allLabels: Label[]): string[] => {
+export const getLabelPath = (label: TLabel, allLabels: TLabel[]): string[] => {
     const path: string[] = [label.name];
 
     let currentLabel = label;
@@ -38,13 +38,13 @@ export const getLabelPath = (label: Label, allLabels: Label[]): string[] => {
     return path;
 };
 
-export const getLabelBreadcrumb = (label: Label, allLabels: Label[]): string => {
+export const getLabelBreadcrumb = (label: TLabel, allLabels: TLabel[]): string => {
     return getLabelPath(label, allLabels).join(' > ');
 };
 
 export const validateLabelName = (
     name: string,
-    existingLabels: Label[],
+    existingLabels: TLabel[],
     excludeId?: string
 ): string | null => {
     if (!name.trim()) return 'Label name is required';
@@ -62,7 +62,7 @@ export const validateLabelName = (
 export const validateLabelHierarchy = (
     parentId: string,
     childId: string,
-    allLabels: Label[]
+    allLabels: TLabel[]
 ): string | null => {
     // Check if parent is a descendant of child (would create circular reference)
     const isDescendant = (potentialParentId: string, potentialChildId: string): boolean => {
