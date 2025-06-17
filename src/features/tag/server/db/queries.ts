@@ -1,40 +1,12 @@
+import { type TInsertTag, type TTag } from '@/features/tag/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
-import { and, eq, isNull, sql } from 'drizzle-orm';
-import { z } from 'zod';
-import { tag, transactionTag, type NewTag, type Tag } from './schema';
-
-// Validation schemas
-const TagSchema = z.object({
-    id: z.string(),
-    userId: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-    color: z.string(),
-    icon: z.string().nullable(),
-    type: z.enum(['category', 'merchant', 'project', 'location', 'custom']),
-    parentTagId: z.string().nullable(),
-    autoTagRules: z.array(z.string()).nullable(),
-    transactionCount: z.number().nullable(),
-    isActive: z.boolean(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-});
-
-const TagsArraySchema = z.array(TagSchema);
-
-const TransactionTagSchema = z.object({
-    transactionId: z.string(),
-    tagId: z.string(),
-    confidence: z.string().nullable(),
-    source: z.string(),
-    createdAt: z.date(),
-});
+import { and, eq, sql } from 'drizzle-orm';
+import { tag, transactionTag } from './schema';
 
 // Tag queries
-export const createTag = async ({ data }: { data: NewTag }): Promise<Tag> =>
+export const createTag = async ({ data }: { data: TInsertTag }): Promise<TTag> =>
     withDbQuery({
-        outputSchema: TagSchema,
         operation: 'create tag',
         queryFn: async () => {
             const [newTag] = await db.insert(tag).values(data).returning();
@@ -42,9 +14,8 @@ export const createTag = async ({ data }: { data: NewTag }): Promise<Tag> =>
         },
     });
 
-export const getTagsByUserId = async ({ userId }: { userId: string }): Promise<Tag[]> =>
+export const getTagsByUserId = async ({ userId }: { userId: string }): Promise<TTag[]> =>
     withDbQuery({
-        outputSchema: TagsArraySchema,
         operation: 'get tags by user ID',
         queryFn: async () => {
             return await db
@@ -55,9 +26,8 @@ export const getTagsByUserId = async ({ userId }: { userId: string }): Promise<T
         },
     });
 
-export const getTagById = async ({ id }: { id: string }): Promise<Tag | null> =>
+export const getTagById = async ({ id }: { id: string }): Promise<TTag | null> =>
     withDbQuery({
-        outputSchema: TagSchema.nullable(),
         operation: 'get tag by ID',
         queryFn: async () => {
             const [result] = await db.select().from(tag).where(eq(tag.id, id)).limit(1);
@@ -70,10 +40,9 @@ export const updateTag = async ({
     data,
 }: {
     id: string;
-    data: Partial<NewTag>;
-}): Promise<Tag | null> =>
+    data: Partial<TInsertTag>;
+}): Promise<TTag | null> =>
     withDbQuery({
-        outputSchema: TagSchema.nullable(),
         operation: 'update tag',
         queryFn: async () => {
             const [updated] = await db
@@ -87,52 +56,12 @@ export const updateTag = async ({
 
 export const deleteTag = async ({ id }: { id: string }): Promise<void> =>
     withDbQuery({
-        outputSchema: z.void(),
         operation: 'delete tag',
         queryFn: async () => {
             await db
                 .update(tag)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(eq(tag.id, id));
-        },
-    });
-
-export const getTagHierarchy = async ({ userId }: { userId: string }): Promise<Tag[]> =>
-    withDbQuery({
-        outputSchema: TagsArraySchema,
-        operation: 'get tag hierarchy',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(tag)
-                .where(and(eq(tag.userId, userId), eq(tag.isActive, true)))
-                .orderBy(tag.parentTagId, tag.name);
-        },
-    });
-
-export const getRootTags = async ({ userId }: { userId: string }): Promise<Tag[]> =>
-    withDbQuery({
-        outputSchema: TagsArraySchema,
-        operation: 'get root tags',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(tag)
-                .where(and(eq(tag.userId, userId), eq(tag.isActive, true), isNull(tag.parentTagId)))
-                .orderBy(tag.name);
-        },
-    });
-
-export const getChildTags = async ({ parentTagId }: { parentTagId: string }): Promise<Tag[]> =>
-    withDbQuery({
-        outputSchema: TagsArraySchema,
-        operation: 'get child tags',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(tag)
-                .where(and(eq(tag.parentTagId, parentTagId), eq(tag.isActive, true)))
-                .orderBy(tag.name);
         },
     });
 
@@ -149,7 +78,6 @@ export const addTagToTransaction = async ({
     confidence?: string;
 }) =>
     withDbQuery({
-        outputSchema: TransactionTagSchema,
         operation: 'add tag to transaction',
         queryFn: async () => {
             const [result] = await db
@@ -183,7 +111,6 @@ export const removeTagFromTransaction = async ({
     tagId: string;
 }) =>
     withDbQuery({
-        outputSchema: z.void(),
         operation: 'remove tag from transaction',
         queryFn: async () => {
             await db
@@ -208,12 +135,6 @@ export const removeTagFromTransaction = async ({
 
 export const getTransactionTags = async ({ transactionId }: { transactionId: string }) =>
     withDbQuery({
-        outputSchema: z.array(
-            z.object({
-                tag: TagSchema,
-                transactionTag: TransactionTagSchema,
-            })
-        ),
         operation: 'get transaction tags',
         queryFn: async () => {
             return await db
@@ -231,9 +152,8 @@ export const getTagsForTransaction = async ({
     transactionId,
 }: {
     transactionId: string;
-}): Promise<Tag[]> =>
+}): Promise<TTag[]> =>
     withDbQuery({
-        outputSchema: TagsArraySchema,
         operation: 'get tags for transaction',
         queryFn: async () => {
             const result = await db
@@ -246,28 +166,8 @@ export const getTagsForTransaction = async ({
         },
     });
 
-// Auto-tagging functionality
-export const getTagsWithAutoRules = async ({ userId }: { userId: string }): Promise<Tag[]> =>
-    withDbQuery({
-        outputSchema: TagsArraySchema,
-        operation: 'get tags with auto rules',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(tag)
-                .where(
-                    and(
-                        eq(tag.userId, userId),
-                        eq(tag.isActive, true),
-                        sql`${tag.autoTagRules} IS NOT NULL AND array_length(${tag.autoTagRules}, 1) > 0`
-                    )
-                );
-        },
-    });
-
 export const updateTagTransactionCount = async ({ tagId }: { tagId: string }) =>
     withDbQuery({
-        outputSchema: z.void(),
         operation: 'update tag transaction count',
         queryFn: async () => {
             const [result] = await db

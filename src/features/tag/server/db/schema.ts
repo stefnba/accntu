@@ -36,12 +36,6 @@ export const tag = pgTable(
         icon: text(), // Icon name/identifier
         type: tagTypeEnum().notNull().default('custom'),
 
-        // Hierarchy support (optional parent tag)
-        parentTagId: text(),
-
-        // Auto-tagging rules
-        autoTagRules: text().array(), // Array of regex patterns or keywords
-
         transactionCount: integer().default(0),
         isActive: boolean().notNull().default(true),
         createdAt: timestamp().notNull().defaultNow(),
@@ -62,7 +56,7 @@ export const transactionTag = pgTable(
             .references(() => tag.id, { onDelete: 'cascade' }),
 
         // Metadata for the relationship
-        confidence: text(), // For auto-tagged: 'high', 'medium', 'low'
+        confidence: text(), // Confidence level: 'high', 'medium', 'low'
         source: text().notNull().default('manual'), // 'manual', 'auto', 'imported'
 
         createdAt: timestamp().notNull().defaultNow(),
@@ -71,12 +65,7 @@ export const transactionTag = pgTable(
 );
 
 // Relations
-export const tagRelations = relations(tag, ({ one, many }) => ({
-    parentTag: one(tag, {
-        fields: [tag.parentTagId],
-        references: [tag.id],
-    }),
-    childTags: many(tag),
+export const tagRelations = relations(tag, ({ many }) => ({
     transactionTags: many(transactionTag),
 }));
 

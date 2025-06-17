@@ -1,4 +1,5 @@
 import bankEndpoints from '@/features/bank/server/endpoints';
+import tagEndpoints from '@/features/tag/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import { authMiddleware, type TSession, type TUser } from '@/lib/auth';
 import authEndpoints from '@/lib/auth/server/endpoints';
@@ -37,8 +38,7 @@ app.onError(handleGlobalError);
 const routes = app
     .route('/status', statusEndpoints)
     .route('/banks', bankEndpoints)
-    // .route('/label', labelEndpoints)
-    // .route('/tag', tagEndpoints)
+    .route('/tags', tagEndpoints)
     .route('/user', userEndpoints)
     .route('/auth', authEndpoints);
 export type AppType = typeof routes;
