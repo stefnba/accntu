@@ -1,3 +1,4 @@
+import { MainContent } from '@/components/layout/main';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { AccountDetailsView, BankBreadcrumb } from '@/features/bank/components';
@@ -11,7 +12,7 @@ interface AccountPageProps {
 
 export default function AccountPage({ params }: AccountPageProps) {
     return (
-        <div className="flex flex-col gap-6">
+        <MainContent>
             <BankBreadcrumb bankId={params.bankId} accountId={params.accountId} />
             <PageHeader
                 title="Account Details"
@@ -25,6 +26,6 @@ export default function AccountPage({ params }: AccountPageProps) {
                 }
             />
             <AccountDetailsView bankId={params.bankId} accountId={params.accountId} />
-        </div>
+        </MainContent>
     );
 }

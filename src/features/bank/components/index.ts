@@ -1,6 +1,6 @@
 export { AccountDetailsView } from './account-details-view';
 export { BankBreadcrumb } from './bank-breadcrumb';
-export { BankDetailsView } from './bank-details-view';
+export { BankDetailsView } from './bank-details-view-test';
 export { BankSettingsView } from './bank-settings-view';
 export { ConnectedBanksList } from './connected-banks-list';
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useConnectedBankEndpoints } from '@/features/bank/api';
+import { cn } from '@/lib/utils';
 import { Building2, ChevronRight, Home, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -8,9 +9,10 @@ import { usePathname } from 'next/navigation';
 interface BankBreadcrumbProps {
     bankId?: string;
     accountId?: string;
+    className?: string;
 }
 
-export const BankBreadcrumb = ({ bankId, accountId }: BankBreadcrumbProps) => {
+export const BankBreadcrumb = ({ bankId, accountId, className }: BankBreadcrumbProps) => {
     const pathname = usePathname();
     const { data: bank } = useConnectedBankEndpoints.getById({
         param: { id: bankId || '' },
@@ -52,10 +54,10 @@ export const BankBreadcrumb = ({ bankId, accountId }: BankBreadcrumbProps) => {
     }
 
     return (
-        <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-6">
+        <nav className={cn('flex items-center space-x-1 text-sm text-gray-500', className)}>
             {breadcrumbs.map((breadcrumb, index) => (
                 <div key={breadcrumb.href} className="flex items-center">
-                    {index > 0 && <ChevronRight className="h-4 w-4 mx-2" />}
+                    {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
                     <Link
                         href={(breadcrumb.href as any) || '/'}
                         className="flex items-center gap-2 hover:text-gray-700 transition-colors"
