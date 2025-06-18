@@ -1,6 +1,6 @@
 import { Description, Title } from '@/components/ui/font';
 
-interface PageHeaderProps {
+export interface PageHeaderProps {
     title: string;
     description?: string;
     actionBar?: React.ReactNode;

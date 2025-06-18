@@ -31,7 +31,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                 <AppSidebar variant="sidebar" collapsible="icon" />
                 <div className="w-full">
                     <SiteHeader />
-                    <main className="flex flex-1 flex-col h-screen p-6">{children}</main>
+                    <main className="flex flex-1 flex-col h-screen">{children}</main>
                 </div>
             </SidebarProvider>
         </ProtectedRoute>

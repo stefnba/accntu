@@ -1,10 +1,16 @@
-import { PageHeader } from '@/components/page-header';
+import { MainContent } from '@/components/layout/main';
 import { Button } from '@/components/ui/button';
 
 export default function TransactionPage() {
     return (
-        <div className="flex flex-col gap-4">
-            <PageHeader title="Transactions" actionBar={<Button>Add Transaction</Button>} />
-        </div>
+        <MainContent
+            pageHeader={{
+                title: 'Transactions',
+                description: 'View and manage your transactions',
+                actionBar: <Button>Add Transaction</Button>,
+            }}
+        >
+            <div>Transactions</div>
+        </MainContent>
     );
 }
