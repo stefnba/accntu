@@ -1,0 +1,63 @@
+---
+description: LL icons must be managed through the centralized icon component library at `src/components/icons.tsx`
+globs:
+alwaysApply: false
+---
+# Icons
+
+## Icon Management Guidelines
+
+### Core Principle
+**ALL icons must be managed through the centralized icon component library at `src/components/icons.tsx`**
+
+### Rules
+
+1. **Never import icons directly from icon libraries**
+   - ❌ `import { LuUser } from 'react-icons/lu'`
+   - ❌ `import { User } from 'lucide-react'`
+   - ✅ `import { User } from '@/components/icons'`
+
+2. **Add new icons to the central library first**
+   - Before using any new icon, add it to `src/components/icons.tsx`
+   - Use consistent naming conventions (PascalCase, descriptive names)
+   - Import from react-icons/lu (Lucide) for consistency
+
+3. **Icon naming conventions**
+   - Use descriptive, semantic names (not technical names)
+   - Example: `Dashboard` instead of `LuLayoutDashboard`
+   - Example: `Security` instead of `LuLock`
+
+4. **Adding new icons process**
+   ```tsx
+   // In src/components/icons.tsx
+   import { LuNewIconName } from 'react-icons/lu';
+   export const SemanticName = LuNewIconName;
+
+   // In your component
+   import { SemanticName } from '@/components/icons';
+   ```
+
+5. **Icon library structure**
+   - Group related icons together
+   - Keep exports alphabetical when possible
+   - Use consistent import source (prefer react-icons/lu)
+
+### Current Icon Library
+The centralized icon library is located at `src/components/icons.tsx` and includes:
+- User, Security, Notification, Settings, Appearance
+- Dashboard, Wallet, Database, Search
+
+### Benefits
+- Consistent icon library across the entire application
+- Easy to swap icon libraries if needed
+- Centralized control over icon usage
+- Better tree-shaking and bundle optimization
+- Easier maintenance and updates
+
+### Enforcement
+- All icon imports should come from `@/components/icons`
+- No direct imports from icon libraries allowed
+- Add icons to central library before using them
+- Use semantic naming for better code readability
+
+wh
