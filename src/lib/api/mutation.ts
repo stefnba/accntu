@@ -4,17 +4,18 @@ import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/erro
 import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
+import { extractQueryKeyParams } from './utils';
 
 /**
  * Creates a type-safe mutation hook for a Hono endpoint
  * @param endpoint - The Hono endpoint to create a mutation for
- * @param queryKey - Optional query key to invalidate on success
+ * @param baseQueryKey - Base query key to invalidate (params will be auto-extracted and appended)
  * @returns A type-safe mutation hook
  */
 export function createMutation<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 201 | 204,
->(endpoint: TEndpoint, queryKey?: string | readonly string[]) {
+>(endpoint: TEndpoint, baseQueryKey?: string | readonly string[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
     type TResponseError = InferResponseType<
@@ -72,11 +73,21 @@ export function createMutation<
 
                     const data = await response.json();
 
-                    // Invalidate related queries if a queryKey was provided
-                    if (queryKey) {
-                        queryClient.invalidateQueries({
-                            queryKey: Array.isArray(queryKey) ? queryKey : [queryKey],
-                        });
+                    // Smart invalidation using parameter extraction
+                    if (baseQueryKey) {
+                        const baseKey = Array.isArray(baseQueryKey) ? baseQueryKey : [baseQueryKey];
+
+                        // Extract parameters from mutation variables
+                        const extractedParams = extractQueryKeyParams(variables);
+
+                        // Always invalidate the base query (for lists)
+                        queryClient.invalidateQueries({ queryKey: baseKey });
+
+                        // If there are extracted parameters, also invalidate the specific resource
+                        if (extractedParams.length > 0) {
+                            const specificQueryKey = [...baseKey, ...extractedParams];
+                            queryClient.invalidateQueries({ queryKey: specificQueryKey });
+                        }
                     }
 
                     return data;

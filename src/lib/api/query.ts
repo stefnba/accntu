@@ -4,17 +4,26 @@ import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/erro
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
+import { extractQueryKeyParams } from './utils';
+
+// Re-export for backward compatibility
+export { previewQueryKey } from './utils';
 
 /**
  * Creates a type-safe query hook for a Hono endpoint
  * @param endpoint - The Hono endpoint to create a query for
  * @param defaultQueryKey - The default query key
+ * @param keyExtractor - Optional custom function to extract query key parts from params
  * @returns A type-safe query hook
  */
 export function createQuery<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 200,
->(endpoint: TEndpoint, defaultQueryKey?: string | readonly (string | undefined)[]) {
+>(
+    endpoint: TEndpoint,
+    defaultQueryKey?: string | readonly (string | undefined)[],
+    keyExtractor?: (params: InferRequestType<typeof endpoint>) => unknown[]
+) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
     type TResponseError = InferResponseType<
@@ -31,9 +40,12 @@ export function createQuery<
             errorHandlers?: ErrorHandler;
         }
     ) => {
+        // Use custom key extractor or default extraction logic
+        const extractedParams = keyExtractor ? keyExtractor(params) : extractQueryKeyParams(params);
+
         const queryKey = Array.isArray(defaultQueryKey)
-            ? [...defaultQueryKey, params]
-            : [defaultQueryKey, params];
+            ? [...defaultQueryKey, ...extractedParams]
+            : [defaultQueryKey, ...extractedParams];
 
         // Extract errorHandlers from options
         const { errorHandlers, ...queryOptions } = options || {};
