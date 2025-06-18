@@ -3,6 +3,7 @@ import { apiClient, createQuery } from '@/lib/api';
 const GLOBAL_BANK_QUERY_KEYS = {
     GLOBAL_BANKS: 'global_banks',
     GLOBAL_BANK: 'global_bank',
+    GLOBAL_BANKS_BY_COUNTRY: 'global_banks_by_country',
 } as const;
 
 /**

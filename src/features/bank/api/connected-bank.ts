@@ -9,6 +9,8 @@ const CONNECTED_BANK_QUERY_KEYS = {
  * Connected Bank API endpoints with integrated error handling
  */
 export const useConnectedBankEndpoints = {
+    // === QUERIES ===
+
     /**
      * Get connected banks for a user
      */
@@ -24,6 +26,8 @@ export const useConnectedBankEndpoints = {
         apiClient.banks['connected-banks'][':id'].$get,
         CONNECTED_BANK_QUERY_KEYS.CONNECTED_BANK
     ),
+
+    // === MUTATIONS ===
 
     /**
      * Create a new connected bank
