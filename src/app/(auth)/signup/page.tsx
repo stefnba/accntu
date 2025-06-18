@@ -1,6 +1,6 @@
 import { SignupForm } from '@/features/auth/components/forms/signup-form';
 
-export default function LoginPage() {
+export default function SignupPage() {
     return (
         <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10 bg-muted">
             <div className="w-full max-w-sm">

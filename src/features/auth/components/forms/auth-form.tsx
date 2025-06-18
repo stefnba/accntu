@@ -1,16 +1,10 @@
 'use client';
 
-import { GalleryVerticalEnd } from 'lucide-react';
-
 import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import {
-    loginEmailFormSchema,
-    signupEmailFormSchema,
-    SocialProvider,
-} from '@/features/auth/schemas';
+import { loginEmailFormSchema, signupEmailFormSchema } from '@/features/auth/schemas';
 import { useAuth } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
 
@@ -20,12 +14,8 @@ import { cn } from '@/lib/utils';
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     const { signIn, isLoading } = useAuth();
 
-    const handleSocialLogin = async (provider: SocialProvider) => {
-        signInSocial({
-            json: {
-                provider,
-            },
-        });
+    const handleSocialLogin = async (provider: 'github' | 'google') => {
+        signIn.social(provider);
     };
 
     return (
@@ -68,8 +58,6 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     const { isLoading, signIn } = useAuth();
 
-    const initiateSignInWithEmailOTP = signIn.emailOTP.initiate();
-
     const isLogin = action === 'Login';
 
     // Login form
@@ -79,7 +67,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             defaultValues: loginEmailFormSchema.defaultValues,
             onSubmit: (data) => {
                 try {
-                    initiateSignInWithEmailOTP.mutate(data.email);
+                    signIn.emailOTP.initiate(data.email);
                 } catch (error) {
                     console.log('Login failed:', error);
                 }
@@ -94,7 +82,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                 <Form form={form} className="grid gap-4">
                     <FormInput placeholder="Enter your Email" name="email" form={form} />
                     <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
-                        {initiateSignInWithEmailOTP.isPending ? `${action}...` : action}
+                        {isLoading ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>
@@ -104,15 +92,17 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
         );
     };
 
-    // Signup form
-    const SignupFormComponent = () => {
+    // Sign up form
+    const SignUpFormComponent = () => {
         const form = useForm({
-            ...signupEmailFormSchema,
+            schema: signupEmailFormSchema.schema,
+            defaultValues: signupEmailFormSchema.defaultValues,
             onSubmit: async (data) => {
                 try {
-                    await signupWithEmail(data.email, data.name);
+                    // Implement sign up logic here
+                    console.log('Sign up data:', data);
                 } catch (error) {
-                    console.log('Signup failed:', error);
+                    console.log('Sign up failed:', error);
                 }
             },
             onError: (errors) => {
@@ -123,15 +113,10 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
         return (
             <div className="flex flex-col gap-6">
                 <Form form={form} className="grid gap-4">
-                    <FormInput label="Name" placeholder="Enter your Name" name="name" form={form} />
-                    <FormInput
-                        label="Email"
-                        placeholder="Enter your Email"
-                        name="email"
-                        form={form}
-                    />
+                    <FormInput placeholder="Enter your Name" name="name" form={form} />
+                    <FormInput placeholder="Enter your Email" name="email" form={form} />
                     <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
-                        {authMethod === 'email' ? `${action}...` : action}
+                        {isLoading ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>
@@ -141,42 +126,31 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
         );
     };
 
-    // Render the appropriate form based on mode
-    return isLogin ? <LoginFormComponent /> : <SignupFormComponent />;
+    return isLogin ? <LoginFormComponent /> : <SignUpFormComponent />;
 };
 
-type AuthFormProps = React.ComponentPropsWithoutRef<'div'> & {
+type AuthFormProps = React.ComponentProps<'div'> & {
     mode: 'login' | 'signup';
 };
 
-/**
- * AuthForm component
- */
 export function AuthForm({ className, mode, ...props }: AuthFormProps) {
     const isLogin = mode === 'login';
     const action = isLogin ? 'Login' : 'Sign up';
-    const title = isLogin ? 'Welcome back' : 'Create an account';
-    const description = isLogin
-        ? 'Login with your Google or GitHub account'
-        : 'Sign up with your Google or GitHub account';
     const toggleText = isLogin ? "Don't have an account?" : 'Already have an account?';
-    const toggleLink = isLogin ? 'Sign up' : 'Login';
-    const toggleHref = isLogin ? '/signup' : '/login';
+    const toggleLink = isLogin ? 'Sign up' : 'Sign in';
+    const toggleHref = isLogin ? '/auth/signup' : '/auth/login';
 
     return (
         <div className={cn('flex flex-col gap-6', className)} {...props}>
-            <Card>
-                <CardHeader className="text-center">
-                    <a href="#" className="flex flex-col items-center gap-2 font-medium">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                            <GalleryVerticalEnd className="size-6" />
-                        </div>
-                        <span className="sr-only">Accntu</span>
-                    </a>
-
-                    <CardTitle className="text-xl font-bold">{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
+            <Card className="mx-auto w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-2xl">{action}</CardTitle>
+                    <CardDescription>
+                        {isLogin && <>Enter your email below to login to your account</>}
+                        {!isLogin && <>Enter your information to create an account</>}
+                    </CardDescription>
                 </CardHeader>
+
                 <CardContent>
                     <div className="flex flex-col gap-6">
                         <SocialAuth action={action} />
