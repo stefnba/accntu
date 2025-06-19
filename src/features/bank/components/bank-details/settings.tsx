@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BankSettingsView } from '@/features/bank/components/bank-settings-view';
 
 interface BankDetailsSettingsProps {
     bank: any;
@@ -90,6 +91,7 @@ export const BankDetailsSettings = ({ bank }: BankDetailsSettingsProps) => {
                     </CardContent>
                 </Card>
             </div>
+            <BankSettingsView bankId={bank.id} />
         </div>
     );
 };

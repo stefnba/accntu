@@ -1,4 +1,10 @@
-import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import {
+    parseAsArrayOf,
+    parseAsBoolean,
+    parseAsString,
+    parseAsStringLiteral,
+    useQueryState,
+} from 'nuqs';
 
 type Step = 'intro' | 'country' | 'bank-selection' | 'account-selection' | 'loading' | 'success';
 
@@ -98,5 +104,21 @@ export const useAddBankModal = () => {
         handleSelectCountry,
         handleSelectBank,
         handleAccountToggle,
+    };
+};
+
+const BANK_DETAILS_VIEWS = ['overview', 'activity', 'analytics', 'settings'] as const;
+export type TBankDetailsView = (typeof BANK_DETAILS_VIEWS)[number];
+
+export const useBankDetailsView = () => {
+    const [view, setView] = useQueryState(
+        'view',
+        parseAsStringLiteral(BANK_DETAILS_VIEWS).withDefault(BANK_DETAILS_VIEWS[0])
+    );
+
+    return {
+        views: BANK_DETAILS_VIEWS,
+        currentView: view,
+        setView,
     };
 };

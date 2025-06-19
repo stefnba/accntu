@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConnectedBankEndpoints } from '@/features/bank/api';
 import { BankBreadcrumb } from '@/features/bank/components/bank-breadcrumb';
+import { BankDetailsTabNavigation } from '@/features/bank/components/bank-details';
+import { useBankDetailsView } from '@/features/bank/hooks';
 import { ArrowLeft, ArrowUpRight, Building2, DollarSign, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import {
     BankDetailsHeader,
     BankDetailsOverview,
@@ -20,7 +21,7 @@ interface BankDetailsViewProps {
 
 export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'settings'>('overview');
+    const { currentView } = useBankDetailsView();
 
     const {
         data: bank,
@@ -101,23 +102,21 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
     ];
 
     return (
-        <div className="w-full">
+        <div className="w-full space-y-6">
             {/* Header */}
             <BankBreadcrumb className="" bankId={bankId} />
-            <div className="py-6">
-                <BankDetailsHeader
-                    bank={bank}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    tabs={tabs}
-                />
-            </div>
+
+            <BankDetailsHeader bank={bank} />
+
+            {/* Tab Navigation */}
+            <BankDetailsTabNavigation />
 
             {/* Content */}
             <div className="bg-gray-50">
-                {activeTab === 'overview' && <BankDetailsOverview bank={bank} bankId={bankId} />}
-                {activeTab === 'activity' && <BankDetailsRecentActivity bank={bank} />}
-                {activeTab === 'settings' && <BankDetailsSettings bank={bank} />}
+                {currentView === 'overview' && <BankDetailsOverview bank={bank} bankId={bankId} />}
+                {currentView === 'activity' && <BankDetailsRecentActivity bank={bank} />}
+                {currentView === 'settings' && <BankDetailsSettings bank={bank} />}
+                {currentView === 'analytics' && <div>Analytics</div>}
             </div>
         </div>
     );

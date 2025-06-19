@@ -5,29 +5,17 @@ import { Building2, CreditCard, RefreshCw } from 'lucide-react';
 
 interface BankDetailsHeaderProps {
     bank: any;
-    activeTab: 'overview' | 'activity' | 'settings';
-    setActiveTab: (tab: 'overview' | 'activity' | 'settings') => void;
-    tabs: Array<{
-        id: 'overview' | 'activity' | 'settings';
-        label: string;
-        icon: any;
-    }>;
 }
 
-export const BankDetailsHeader = ({
-    bank,
-    activeTab,
-    setActiveTab,
-    tabs,
-}: BankDetailsHeaderProps) => {
+export const BankDetailsHeader = ({ bank }: BankDetailsHeaderProps) => {
     return (
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-            <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
+            <div className="p-6">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         {bank.globalBank?.logo ? (
                             <div
-                                className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm border"
+                                className="size-20 rounded-2xl flex items-center justify-center shadow-sm border"
                                 style={{
                                     backgroundColor: bank.globalBank.color || '#f8fafc',
                                 }}
@@ -35,16 +23,16 @@ export const BankDetailsHeader = ({
                                 <img
                                     src={bank.globalBank.logo}
                                     alt={bank.globalBank.name}
-                                    className="w-12 h-12 object-contain"
+                                    className="size-12 object-contain"
                                 />
                             </div>
                         ) : (
-                            <div className="w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center shadow-sm border">
+                            <div className="size-20 rounded-2xl bg-gray-50 flex items-center justify-center shadow-sm border">
                                 <Building2 className="h-10 w-10 text-gray-600" />
                             </div>
                         )}
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            <h1 className="text-3xl font-semibold text-gray-900 mb-2">
                                 {bank.globalBank?.name || 'Unknown Bank'}
                             </h1>
                             <div className="flex items-center gap-4 text-gray-600 text-sm">
@@ -77,7 +65,7 @@ export const BankDetailsHeader = ({
                 </div>
 
                 {/* Custom Tab Navigation */}
-                <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-md w-fit">
+                {/* <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-md w-fit">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         return (
@@ -98,7 +86,7 @@ export const BankDetailsHeader = ({
                             </button>
                         );
                     })}
-                </div>
+                </div> */}
             </div>
         </div>
     );
