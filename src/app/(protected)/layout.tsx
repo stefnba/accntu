@@ -1,4 +1,4 @@
-import { AppSidebar, SiteHeader } from '@/components/layout';
+import { AppSidebar } from '@/components/layout';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ProtectedRoute } from '@/lib/auth/components/protected-route';
@@ -29,10 +29,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <ProtectedRoute initialSession={sessionData}>
             <SidebarProvider defaultOpen={defaultOpen}>
                 <AppSidebar variant="sidebar" collapsible="icon" />
-                <div className="w-full">
-                    <SiteHeader />
-                    <main className="flex flex-1 flex-col h-screen">{children}</main>
-                </div>
+                <main className="flex flex-1 flex-col h-screen w-full">{children}</main>
             </SidebarProvider>
         </ProtectedRoute>
     );
