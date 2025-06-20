@@ -37,10 +37,17 @@ export const useImportModal = () => {
         setModalOpen(true);
         setCurrentStep(accountId ? 'upload' : defaultStep);
         console.log('accountId', accountId);
+
+        // Reset only the form fields that should be cleared when opening
+        setImportId('', { clearOnDefault: true });
+        setFileName('', { clearOnDefault: true });
+
+        // Set the account ID if provided, otherwise clear it
         if (accountId) {
             setConnectedBankAccountId(accountId);
+        } else {
+            setConnectedBankAccountId('', { clearOnDefault: true });
         }
-        resetFormState();
     };
 
     const closeModal = () => {
