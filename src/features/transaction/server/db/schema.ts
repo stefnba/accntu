@@ -1,3 +1,5 @@
+import { connectedBankAccount } from '@/features/bank/server/db/schemas';
+import { transactionImportFile } from '@/features/transaction-import/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
@@ -6,7 +8,6 @@ import {
     date,
     decimal,
     index,
-    integer,
     jsonb,
     pgEnum,
     pgTable,
@@ -14,7 +15,6 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { connectedBankAccount } from '../../../bank/server/db/schema';
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['transfer', 'credit', 'debit']);
 export const transactionStatusEnum = pgEnum('transaction_status', [
@@ -24,47 +24,6 @@ export const transactionStatusEnum = pgEnum('transaction_status', [
     'cancelled',
 ]);
 export const importSourceEnum = pgEnum('import_source', ['csv', 'api', 'manual']);
-
-// Import sessions
-export const transactionImport = pgTable('transaction_import', {
-    id: text()
-        .primaryKey()
-        .notNull()
-        .$defaultFn(() => createId()),
-    userId: text().notNull(),
-    connectedBankAccountId: text()
-        .notNull()
-        .references(() => connectedBankAccount.id, { onDelete: 'cascade' }),
-
-    importedTransactionCount: integer().default(0),
-    fileCount: integer().default(0),
-    importedFileCount: integer().default(0),
-
-    createdAt: timestamp().notNull().defaultNow(),
-    successAt: timestamp(),
-});
-
-// Files within an import session
-export const transactionImportFile = pgTable('transaction_import_file', {
-    id: text()
-        .primaryKey()
-        .notNull()
-        .$defaultFn(() => createId()),
-    importId: text()
-        .notNull()
-        .references(() => transactionImport.id, { onDelete: 'cascade' }),
-
-    url: text().notNull(),
-    filename: text().notNull(),
-    type: text().notNull(), // MIME type
-
-    importedAt: timestamp(),
-    transactionCount: integer(),
-    importedTransactionCount: integer(),
-
-    createdAt: timestamp().notNull().defaultNow(),
-    updatedAt: timestamp().notNull().defaultNow(),
-});
 
 export const transaction = pgTable(
     'transaction',
@@ -156,22 +115,6 @@ export const transaction = pgTable(
 );
 
 // Relations
-export const transactionImportRelations = relations(transactionImport, ({ one, many }) => ({
-    account: one(connectedBankAccount, {
-        fields: [transactionImport.connectedBankAccountId],
-        references: [connectedBankAccount.id],
-    }),
-    files: many(transactionImportFile),
-    transactions: many(transaction),
-}));
-
-export const transactionImportFileRelations = relations(transactionImportFile, ({ one, many }) => ({
-    import: one(transactionImport, {
-        fields: [transactionImportFile.importId],
-        references: [transactionImport.id],
-    }),
-    transactions: many(transaction),
-}));
 
 export const transactionRelations = relations(transaction, ({ one }) => ({
     account: one(connectedBankAccount, {
@@ -185,9 +128,5 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     // Note: label relation will be added after label table is created to avoid circular imports
 }));
 
-export type TransactionImport = typeof transactionImport.$inferSelect;
-export type NewTransactionImport = typeof transactionImport.$inferInsert;
-export type TransactionImportFile = typeof transactionImportFile.$inferSelect;
-export type NewTransactionImportFile = typeof transactionImportFile.$inferInsert;
 export type Transaction = typeof transaction.$inferSelect;
 export type NewTransaction = typeof transaction.$inferInsert;
