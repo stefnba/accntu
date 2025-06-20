@@ -1,7 +1,7 @@
+import { connectedBankAccount } from '@/features/bank/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import { boolean, integer, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
-import { connectedBankAccount } from '../../../bank/server/db/schemas';
 
 export const transactionImport = pgTable('transaction_import', {
     id: text()
@@ -12,7 +12,7 @@ export const transactionImport = pgTable('transaction_import', {
         .notNull()
         .references(() => connectedBankAccount.id, {
             onDelete: 'cascade',
-            onUpdate: 'cascade'
+            onUpdate: 'cascade',
         }),
     status: varchar({ length: 50 }).notNull().default('pending'),
     importedTransactionCount: integer().default(0),
@@ -33,7 +33,7 @@ export const transactionImportFile = pgTable('transaction_import_file', {
         .notNull()
         .references(() => transactionImport.id, {
             onDelete: 'cascade',
-            onUpdate: 'cascade'
+            onUpdate: 'cascade',
         }),
     fileName: text().notNull(),
     fileUrl: text().notNull(),

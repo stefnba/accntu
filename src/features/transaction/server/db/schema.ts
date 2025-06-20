@@ -1,5 +1,5 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
-import { transactionImportFile } from '@/features/transaction-import/server/db/schema';
+import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {

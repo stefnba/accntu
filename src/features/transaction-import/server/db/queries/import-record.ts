@@ -6,7 +6,7 @@ import {
     transactionImportFile,
     type NewTransactionImport,
     type TransactionImport,
-} from '../schema';
+} from '../schemas';
 
 export const getAll = async ({ userId }: { userId: string }) =>
     withDbQuery({

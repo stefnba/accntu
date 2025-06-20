@@ -1,7 +1,11 @@
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
-import { transactionImportFile, type NewTransactionImportFile, type TransactionImportFile } from '../schema';
+import {
+    transactionImportFile,
+    type NewTransactionImportFile,
+    type TransactionImportFile,
+} from '../schemas';
 
 export const getAll = async ({ importId }: { importId: string }) =>
     withDbQuery({
@@ -37,7 +41,11 @@ export const getById = async ({ id }: { id: string }) =>
         },
     });
 
-export const create = async ({ data }: { data: NewTransactionImportFile }): Promise<TransactionImportFile> =>
+export const create = async ({
+    data,
+}: {
+    data: NewTransactionImportFile;
+}): Promise<TransactionImportFile> =>
     withDbQuery({
         operation: 'create transaction import file',
         queryFn: async () => {
@@ -100,9 +108,11 @@ export const updateStatus = async ({
             };
 
             if (transactionCount !== undefined) updateData.transactionCount = transactionCount;
-            if (importedTransactionCount !== undefined) updateData.importedTransactionCount = importedTransactionCount;
+            if (importedTransactionCount !== undefined)
+                updateData.importedTransactionCount = importedTransactionCount;
             if (parseErrors !== undefined) updateData.parseErrors = parseErrors;
-            if (parsedTransactions !== undefined) updateData.parsedTransactions = parsedTransactions;
+            if (parsedTransactions !== undefined)
+                updateData.parsedTransactions = parsedTransactions;
             if (status === 'imported') updateData.importedAt = new Date();
 
             const [updated] = await db
