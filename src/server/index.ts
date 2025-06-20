@@ -1,9 +1,11 @@
 import bankEndpoints from '@/features/bank/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
+import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import { authMiddleware, type TSession, type TUser } from '@/lib/auth';
 import authEndpoints from '@/lib/auth/server/endpoints';
+import uploadEndpoints from '@/lib/upload/endpoints';
 import statusEndpoints from '@/server/endpoints';
 import { handleGlobalError } from '@/server/lib/error/handler';
 import { Hono } from 'hono';
@@ -42,6 +44,9 @@ const routes = app
     .route('/labels', labelEndpoints)
     .route('/tags', tagEndpoints)
     .route('/user', userEndpoints)
-    .route('/auth', authEndpoints);
+    .route('/auth', authEndpoints)
+    .route('/transaction-import', transactionImportEndpoints)
+    .route('/upload', uploadEndpoints);
+
 export type AppType = typeof routes;
 export { app, routes };
