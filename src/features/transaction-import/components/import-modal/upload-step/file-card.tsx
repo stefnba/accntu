@@ -2,8 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle2, Download, Upload, X } from 'lucide-react';
-import { formatFileSize, getFileIconComponent } from '../../../file-utils';
 import type { FileUpload } from '../../../types';
+import { formatFileSize, getFileIconComponent } from '../../../utils';
 
 interface FileCardProps {
     fileUpload: FileUpload;
@@ -17,7 +17,7 @@ export const FileCard = ({ fileUpload, onRetry, onRemove, onDownload }: FileCard
 
     return (
         <Card className="border-gray-200 overflow-hidden w-full max-w-full">
-            <CardContent className="p-4">
+            <CardContent className="">
                 <div className="flex items-center gap-3 w-full">
                     {/* File Icon */}
                     <div className="flex-shrink-0">

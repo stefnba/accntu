@@ -12,9 +12,20 @@ export const getFileIconComponent = (file: File) => {
 
 /**
  * Format file size in a human-readable format
+ * @param bytes - The file size in bytes
+ * @returns The file size in a human-readable format
  */
 export const formatFileSize = (bytes: number): string => {
-    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(2)} KB`;
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+        return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    }
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
 };
 
 /**

@@ -1,14 +1,20 @@
 import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { allowedFileTypes, maxFileSize } from './config';
+import { useFileUploadStore } from './store/file-upload-store';
 
-export type ImportStep = 'accountSelection' | 'upload' | 'processing' | 'preview' | 'success';
+import type { FileUpload } from './types';
 
 const IMPORT_STEPS = ['accountSelection', 'upload', 'processing', 'preview', 'success'] as const;
+export type TImportStep = (typeof IMPORT_STEPS)[number];
 
 /**
  * Hook to manage the import modal state
+ * @returns The import modal state
  */
 export const useImportModal = () => {
-    const defaultStep: ImportStep = 'accountSelection';
+    const defaultStep: TImportStep = 'accountSelection';
 
     const [modalOpen, setModalOpen] = useQueryState(
         'importModal',
@@ -21,8 +27,6 @@ export const useImportModal = () => {
     );
 
     const [importId, setImportId] = useQueryState('importId', parseAsString.withDefault(''));
-
-    const [fileName, setFileName] = useQueryState('fileName', parseAsString.withDefault(''));
 
     const [connectedBankAccountId, setConnectedBankAccountId] = useQueryState(
         'importAccountId',
@@ -39,7 +43,6 @@ export const useImportModal = () => {
 
         // Reset only the form fields that should be cleared when opening
         setImportId('', { clearOnDefault: true });
-        setFileName('', { clearOnDefault: true });
 
         // Set the account ID if provided, otherwise clear it
         if (accountId) {
@@ -56,7 +59,6 @@ export const useImportModal = () => {
 
     const resetFormState = () => {
         setImportId('', { clearOnDefault: true });
-        setFileName('', { clearOnDefault: true });
         setConnectedBankAccountId('', { clearOnDefault: true });
         setCurrentStep(defaultStep, { clearOnDefault: true });
     };
@@ -80,8 +82,6 @@ export const useImportModal = () => {
         // Form state
         importId: importId || null,
         setImportId: (id: string | null) => setImportId(id || '', { clearOnDefault: !id }),
-        fileName: fileName || null,
-        setFileName: (name: string | null) => setFileName(name || '', { clearOnDefault: !name }),
         connectedBankAccountId: connectedBankAccountId || null,
         setConnectedBankAccountId: (id: string | null) =>
             setConnectedBankAccountId(id || '', { clearOnDefault: !id }),
@@ -92,113 +92,62 @@ export const useImportModal = () => {
     };
 };
 
-import { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { useImportFileEndpoints } from './api';
-import { allowedFileTypes, maxFileSize } from './config';
-// import { uploadFileToS3 } from './s3-utils';
-import { uploadFileToS3WithSignedUrl } from '@/lib/upload/cloud/s3/services';
-import type { FileUpload } from './types';
-
+/**
+ * Hook to manage file uploads.
+ * This hook is used to manage the file uploads and the file upload store.
+ * It is used to add files to the store, remove files from the store, and upload files to the store.
+ * It is also used to get the files from the store, the completed files count, the has errors, and the completed files.
+ * It is also used to get the dropzone props.
+ * It is also used to retry uploading a file.
+ * It is also used to get the files from the store, the completed files count, the has errors, and the completed files.
+ * It is also used to get the dropzone props.
+ */
 export const useFileUpload = () => {
-    const [files, setFiles] = useState<FileUpload[]>([]);
-
-    const getSignedUrlQuery = useImportFileEndpoints.getSignedUrl;
-
-    /**
-     * Upload a file to S3
-     * @param fileUpload - The file to upload
-     * @returns - The signed URL
-     */
-    const uploadFileToS3 = async (fileUpload: FileUpload) => {
-        // Get signed URL
-        const { data } = getSignedUrlQuery({
-            query: {
-                fileType: fileUpload.file.type,
-                fileSize: fileUpload.file.size.toString(),
-                checksum: fileUpload.file.name,
-                bucket: process.env.NEXT_PUBLIC_S3_BUCKET || 'accntu-uploads',
-            },
-        });
-
-        if (!data) {
-            throw new Error('Failed to get signed URL');
-        }
-
-        const { success } = await uploadFileToS3WithSignedUrl(data.url, fileUpload.file);
-
-        return { success, key: data.key, bucket: data.bucket };
-    };
-
-    const uploadFile = async (fileUpload: FileUpload) => {
-        try {
-            setFiles((prev) =>
-                prev.map((f) =>
-                    f.id === fileUpload.id ? { ...f, status: 'uploading' as const, progress: 0 } : f
-                )
-            );
-
-            const { success, key, bucket } = await uploadFileToS3(fileUpload);
-
-            if (!success) {
-                throw new Error('Failed to upload file to S3');
-            }
-
-            setFiles((prev) =>
-                prev.map((f) =>
-                    f.id === fileUpload.id
-                        ? { ...f, status: 'completed' as const, progress: 100, key }
-                        : f
-                )
-            );
-        } catch (error) {
-            setFiles((prev) =>
-                prev.map((f) =>
-                    f.id === fileUpload.id
-                        ? {
-                              ...f,
-                              status: 'error' as const,
-                              error: error instanceof Error ? error.message : 'Upload failed',
-                          }
-                        : f
-                )
-            );
-            throw error;
-        }
-    };
+    const {
+        files,
+        addFiles,
+        removeFile,
+        uploadFile,
+        getCompletedFilesCount,
+        getHasErrors,
+        getCompletedFiles,
+    } = useFileUploadStore();
 
     /**
      * Handle file drops
      * @param acceptedFiles - The accepted files
      * @param rejectedFiles - The rejected files
      */
-    const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-        // Handle rejected files
-        rejectedFiles.forEach(({ file, errors }) => {
-            console.error(`File ${file.name} rejected:`, errors);
-        });
+    const onDrop = useCallback(
+        (acceptedFiles: File[], rejectedFiles: any[]) => {
+            // Handle rejected files
+            rejectedFiles.forEach(({ file, errors }) => {
+                console.error(`File ${file.name} rejected:`, errors);
+            });
 
-        // Add accepted files to upload queue
-        const newFiles: FileUpload[] = acceptedFiles.map((file) => ({
-            id: `${Date.now()}-${Math.random()}`,
-            file,
-            progress: 0,
-            status: 'pending' as const,
-        }));
+            // Add accepted files to upload queue
+            const newFiles: FileUpload[] = acceptedFiles.map((file) => ({
+                id: file.name + file.size + file.lastModified,
+                file,
+                progress: 0,
+                status: 'pending',
+            }));
 
-        setFiles((prev) => [...prev, ...newFiles]);
+            // Add files to the store - this returns only the actually added files (excludes duplicates)
+            const actuallyAddedFiles = addFiles(newFiles);
 
-        // Start uploading files automatically
-        newFiles.forEach((fileUpload) => {
-            uploadFile(fileUpload);
-        });
-    }, []);
+            // Start uploading only the files that were actually added (not duplicates)
+            actuallyAddedFiles.forEach((fileUpload) => {
+                uploadFile(fileUpload);
+            });
+        },
+        [addFiles, uploadFile]
+    );
 
     /**
      * Use the dropzone hook to handle file uploads
-     * @returns - The root props, input props, and whether the dropzone is active
      */
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const dropzoneProps = useDropzone({
         onDrop,
         accept: allowedFileTypes,
         maxSize: maxFileSize,
@@ -206,37 +155,23 @@ export const useFileUpload = () => {
     });
 
     /**
-     * Remove a file from the upload queue
-     * @param fileId - The ID of the file to remove
-     */
-    const removeFile = (fileId: string) => {
-        setFiles((prev) => prev.filter((f) => f.id !== fileId));
-    };
-
-    /**
-     * Remove a file from the upload queue
-     * @param fileId - The ID of the file to remove
+     * Retry uploading a file
+     * @param fileId - The ID of the file to retry
      */
     const retryUpload = (fileId: string) => {
-        const fileUpload = files.find((f) => f.id === fileId);
+        const fileUpload = files.find((f: FileUpload) => f.id === fileId);
         if (fileUpload) {
             uploadFile(fileUpload);
         }
     };
 
-    const completedFilesCount = files.filter((f) => f.status === 'completed').length;
-    const hasErrors = files.some((f) => f.status === 'error');
-
     return {
         files,
         removeFile,
         retryUpload,
-        completedFilesCount,
-        hasErrors,
-        dropZoneProps: {
-            getRootProps,
-            getInputProps,
-            isDragActive,
-        },
+        completedFilesCount: getCompletedFilesCount(),
+        hasErrors: getHasErrors(),
+        completedFiles: getCompletedFiles(),
+        dropzoneProps,
     };
 };

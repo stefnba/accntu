@@ -1,8 +1,10 @@
+export type TFileUploadStatus = 'pending' | 'uploading' | 'completed' | 'error';
+
 export interface FileUpload {
     id: string;
     file: File;
     progress: number;
-    status: 'pending' | 'uploading' | 'completed' | 'error';
+    status: TFileUploadStatus;
     error?: string;
     uploadUrl?: string;
     s3Key?: string;

@@ -8,19 +8,18 @@ import { useState } from 'react';
 import { FileDropzone } from '@/features/transaction-import/components/import-modal/upload-step/file-dropzone';
 import { FileList } from '@/features/transaction-import/components/import-modal/upload-step/file-list';
 import { UploadActions } from '@/features/transaction-import/components/import-modal/upload-step/upload-actions';
-import { UploadHeader } from '@/features/transaction-import/components/import-modal/upload-step/upload-header';
 import { UploadStatus } from '@/features/transaction-import/components/import-modal/upload-step/upload-status';
 import { useFileUpload } from '@/features/transaction-import/hooks';
 
 export const UploadStep = () => {
-    const { setCurrentStep, setImportId, setFileName, connectedBankAccountId } = useImportModal();
+    const { setCurrentStep, setImportId, connectedBankAccountId } = useImportModal();
 
     const [isProcessing, setIsProcessing] = useState(false);
 
     const { data: banksData } = useConnectedBankEndpoints.getAll({});
     const { mutate: createImport } = useImportFileEndpoints.create({
         onSuccess: (data) => {
-            setImportId(data.transactionImport.id);
+            setImportId(data.id);
             setCurrentStep('processing');
         },
         errorHandlers: {
@@ -31,11 +30,17 @@ export const UploadStep = () => {
         },
     });
 
-    const { files, dropZoneProps, removeFile, retryUpload, completedFilesCount, hasErrors } =
-        useFileUpload();
+    const {
+        files,
+        dropzoneProps,
+        removeFile,
+        retryUpload,
+        completedFilesCount,
+        hasErrors,
+        completedFiles,
+    } = useFileUpload();
 
     const handleContinue = async () => {
-        const completedFiles = files.filter((f) => f.status === 'completed');
         if (completedFiles.length === 0) {
             alert('Please upload at least one file');
             return;
@@ -44,15 +49,18 @@ export const UploadStep = () => {
         setIsProcessing(true);
         // You can process multiple files or just take the first one
         const firstFile = completedFiles[0];
-        setFileName(firstFile.file.name);
 
         // Create import record with the uploaded file
         // You'll need to modify your API to handle S3 keys
         createImport({
             json: {
-                connectedBankAccountId: connectedBankAccountId!,
+                importId: 'temp-import-id', // This should come from somewhere else
                 fileName: firstFile.file.name,
-                s3Key: firstFile.s3Key,
+                fileUrl: firstFile.uploadUrl || '',
+                fileType: firstFile.file.type,
+                fileSize: firstFile.file.size,
+                storageType: 's3' as const,
+                key: firstFile.s3Key,
                 // Add other relevant data
             },
         });
@@ -65,9 +73,9 @@ export const UploadStep = () => {
 
     return (
         <div className="space-y-8 py-8 w-full max-w-full overflow-hidden">
-            <UploadHeader />
+            {/* <UploadHeader /> */}
 
-            <FileDropzone {...dropZoneProps} />
+            <FileDropzone {...dropzoneProps} />
 
             <FileList
                 files={files}
