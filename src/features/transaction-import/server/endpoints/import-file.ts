@@ -1,4 +1,5 @@
 import { getUser } from '@/lib/auth';
+import { createUploadToS3Endpoints } from '@/lib/upload/cloud/s3/create-endpoints';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
@@ -85,6 +86,20 @@ const app = new Hono()
             return {
                 success: true,
             };
+        })
+    )
+
+    // upload to s3
+    .route(
+        '/upload',
+        createUploadToS3Endpoints({
+            allowedFileTypes: [
+                'text/csv',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-excel',
+            ],
+            maxFileSize: 10 * 1024 * 1024, // 10MB in bytes
+            bucket: process.env.NEXT_PUBLIC_S3_BUCKET || 'accntu-uploads',
         })
     );
 

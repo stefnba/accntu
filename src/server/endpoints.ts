@@ -10,7 +10,6 @@ import tagEndpoints from '@/features/tag/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import authEndpoints from '@/lib/auth/server/endpoints';
-import uploadEndpoints from '@/lib/upload/endpoints';
 
 // Status endpoints
 const statusEndpoints = new Hono().get('/', async (c) =>
@@ -34,5 +33,4 @@ export const appEndpoints = {
     transactionImport: transactionImportEndpoints,
     user: userEndpoints,
     auth: authEndpoints,
-    upload: uploadEndpoints,
 };

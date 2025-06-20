@@ -6,14 +6,14 @@ import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
 
-import { allowedFileTypes, maxFileSize } from './config';
 import { S3UploadError } from './error';
-import { SignedS3UrlInputSchema } from './schema';
+import { SignedS3UrlInputSchema, TS3UploadConfig } from './schema';
 
 /**
  * Delete an object that was uploaded to S3.
  */
-export const deleteObject = async (bucket: string, key: string) => {
+export const deleteS3Object = async (bucket: string, key: string) => {
+    // todo check if the user has permission to delete the file
     try {
         await s3Client.send(
             new DeleteObjectCommand({
@@ -36,29 +36,32 @@ export const deleteObject = async (bucket: string, key: string) => {
 /**
  * Create a signed URL for uploading a file to S3.
  */
-export const getSignedS3Url = async (
-    values: z.infer<typeof SignedS3UrlInputSchema>,
-    userId: string
-) => {
-    // const { fileType, fileSize, checksum, key, bucket } = values;
-
+export const getSignedS3Url = async ({
+    fileInput,
+    config,
+    userId,
+}: {
+    fileInput: z.infer<typeof SignedS3UrlInputSchema>;
+    config: TS3UploadConfig;
+    userId: string;
+}) => {
     // first just make sure in our code that we're only allowing the file types we want
-    if (!allowedFileTypes.includes(values.fileType)) {
+    if (!config.allowedFileTypes.includes(fileInput.fileType)) {
         throw new S3UploadError('File type not allowed');
     }
 
-    if (values.fileSize > maxFileSize) {
+    if (fileInput.fileSize > config.maxFileSize) {
         throw new S3UploadError('File size too large');
     }
 
-    const key = values.key || generateRandonFileName();
+    const key = fileInput.key || generateRandonFileName();
 
     const putObjectCommand = new PutObjectCommand({
-        Bucket: values.bucket,
+        Bucket: fileInput.bucket,
         Key: key,
-        ContentType: values.fileType,
-        ContentLength: values.fileSize,
-        ChecksumSHA256: values.checksum,
+        ContentType: fileInput.fileType,
+        ContentLength: fileInput.fileSize,
+        ChecksumSHA256: fileInput.checksum,
         Metadata: {
             userId: userId,
         },
@@ -70,5 +73,30 @@ export const getSignedS3Url = async (
         { expiresIn: 60 } // 60 seconds,
     );
 
-    return { url, key, bucket: values.bucket };
+    return { url, key, bucket: config.bucket };
+};
+
+/**
+ * Upload a file to S3 using a signed URL.
+ * @param url - The signed URL for the file.
+ * @param file - The file to upload.
+ * @returns - The response from the S3 upload.
+ */
+export const uploadFileToS3WithSignedUrl = async (url: string, file: File) => {
+    const response = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+            'Content-Type': file.type,
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload file to S3: ${errorText}`);
+    }
+
+    return {
+        success: true,
+    };
 };

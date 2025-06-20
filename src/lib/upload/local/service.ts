@@ -1,9 +1,8 @@
 import { withDbQuery } from '@/server/lib/handler';
 import fs from 'fs/promises';
 import path from 'path';
-import { generateRandomFileName } from '@/features/upload/lib/utils';
-import { createUploadSchemas, type UploadConfig } from '@/features/upload/schemas';
 import type { LocalUploadConfig } from './config';
+import { generateRandomFileName } from './utils';
 
 export const createLocalUploadService = (config: UploadConfig, localConfig: LocalUploadConfig) => {
     const { CreateSignedUrlSchema, DeleteFileSchema } = createUploadSchemas(config);
@@ -18,7 +17,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
         file,
         fileName,
         userId,
-        subDirectory
+        subDirectory,
     }: {
         file: File;
         fileName?: string;
@@ -33,21 +32,22 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
                     fileSize: file.size,
                     checksum: '', // Local uploads don't require checksum
                     fileName,
-                    bucket: 'local' // Use 'local' as bucket identifier
+                    bucket: 'local', // Use 'local' as bucket identifier
                 });
 
-                const finalFileName = localConfig.preserveFileName && fileName 
-                    ? fileName 
-                    : generateRandomFileName() + path.extname(fileName || '');
+                const finalFileName =
+                    localConfig.preserveFileName && fileName
+                        ? fileName
+                        : generateRandomFileName() + path.extname(fileName || '');
 
                 const userDir = path.join(localConfig.baseDir, userId);
                 const uploadDir = subDirectory ? path.join(userDir, subDirectory) : userDir;
-                
+
                 await ensureDirectoryExists(uploadDir);
 
                 const filePath = path.join(uploadDir, finalFileName);
                 const buffer = Buffer.from(await file.arrayBuffer());
-                
+
                 await fs.writeFile(filePath, buffer);
 
                 return {
@@ -55,7 +55,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
                     fileName: finalFileName,
                     relativePath: path.relative(localConfig.baseDir, filePath),
                     size: file.size,
-                    type: file.type
+                    type: file.type,
                 };
             },
         });
@@ -63,7 +63,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
 
     const deleteFile = async ({
         filePath,
-        relativePath
+        relativePath,
     }: {
         filePath?: string;
         relativePath?: string;
@@ -72,7 +72,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
             operation: 'delete local file',
             queryFn: async () => {
                 const fullPath = filePath || path.join(localConfig.baseDir, relativePath!);
-                
+
                 try {
                     await fs.unlink(fullPath);
                     return { success: true };
@@ -88,7 +88,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
 
     const getFileInfo = async ({
         filePath,
-        relativePath
+        relativePath,
     }: {
         filePath?: string;
         relativePath?: string;
@@ -97,7 +97,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
             operation: 'get local file info',
             queryFn: async () => {
                 const fullPath = filePath || path.join(localConfig.baseDir, relativePath!);
-                
+
                 try {
                     const stats = await fs.stat(fullPath);
                     return {
@@ -106,7 +106,7 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
                         createdAt: stats.birthtime,
                         modifiedAt: stats.mtime,
                         path: fullPath,
-                        relativePath: path.relative(localConfig.baseDir, fullPath)
+                        relativePath: path.relative(localConfig.baseDir, fullPath),
                     };
                 } catch (error) {
                     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -123,6 +123,6 @@ export const createLocalUploadService = (config: UploadConfig, localConfig: Loca
         deleteFile,
         getFileInfo,
         config,
-        localConfig
+        localConfig,
     };
 };

@@ -60,8 +60,16 @@ export const useImportFileEndpoints = {
     /**
      * Get signed URL for file upload
      */
-    getSignedUrl: createQuery(
-        apiClient.upload.cloud.s3['get-signed-url'].$get,
+    getS3SignedUrl: createQuery(
+        apiClient['transaction-import'].files.upload['get-signed-url'].$get,
+        TRANSACTION_IMPORT_FILE_QUERY_KEYS.FILE
+    ),
+
+    /**
+     * Delete file from S3
+     */
+    deleteS3File: createMutation(
+        apiClient['transaction-import'].files.upload['delete-file'].$delete,
         TRANSACTION_IMPORT_FILE_QUERY_KEYS.FILE
     ),
 };

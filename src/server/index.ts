@@ -38,8 +38,7 @@ const routes = app
     .route('/tags', appEndpoints.tags)
     .route('/user', appEndpoints.user)
     .route('/auth', appEndpoints.auth)
-    .route('/transaction-import', appEndpoints.transactionImport)
-    .route('/upload', appEndpoints.upload);
+    .route('/transaction-import', appEndpoints.transactionImport);
 
 export type AppType = typeof routes;
 export { app, routes };
