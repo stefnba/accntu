@@ -1,12 +1,5 @@
-import bankEndpoints from '@/features/bank/server/endpoints';
-import labelEndpoints from '@/features/label/server/endpoints';
-import tagEndpoints from '@/features/tag/server/endpoints';
-import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
-import userEndpoints from '@/features/user/server/endpoints';
 import { authMiddleware, type TSession, type TUser } from '@/lib/auth';
-import authEndpoints from '@/lib/auth/server/endpoints';
-import uploadEndpoints from '@/lib/upload/endpoints';
-import statusEndpoints from '@/server/endpoints';
+import { appEndpoints } from '@/server/endpoints';
 import { handleGlobalError } from '@/server/lib/error/handler';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -39,14 +32,14 @@ app.onError(handleGlobalError);
 
 // Routes
 const routes = app
-    .route('/status', statusEndpoints)
-    .route('/banks', bankEndpoints)
-    .route('/labels', labelEndpoints)
-    .route('/tags', tagEndpoints)
-    .route('/user', userEndpoints)
-    .route('/auth', authEndpoints)
-    .route('/transaction-import', transactionImportEndpoints)
-    .route('/upload', uploadEndpoints);
+    .route('/status', appEndpoints.status)
+    .route('/banks', appEndpoints.banks)
+    .route('/labels', appEndpoints.labels)
+    .route('/tags', appEndpoints.tags)
+    .route('/user', appEndpoints.user)
+    .route('/auth', appEndpoints.auth)
+    .route('/transaction-import', appEndpoints.transactionImport)
+    .route('/upload', appEndpoints.upload);
 
 export type AppType = typeof routes;
 export { app, routes };
