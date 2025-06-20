@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConnectedBankAccountEndpoints } from '@/features/bank/api';
+import { BankBreadcrumb } from '@/features/bank/components/bank-breadcrumb';
 import {
     Activity,
     Building2,
@@ -176,6 +177,9 @@ export const AccountDetailsView = ({ bankId, accountId }: AccountDetailsViewProp
 
     return (
         <div className="space-y-6">
+            {/* Breadcrumb */}
+            <BankBreadcrumb bankId={bankId} accountId={accountId} />
+
             {/* Account Header */}
             <AccountHeader account={account} />
 

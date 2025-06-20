@@ -1,7 +1,5 @@
 import { MainContent } from '@/components/layout/main';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { AccountDetailsView, BankBreadcrumb } from '@/features/bank/components';
+import { AccountDetailsView } from '@/features/bank/components';
 
 interface AccountPageProps {
     params: {
@@ -10,22 +8,12 @@ interface AccountPageProps {
     };
 }
 
-export default function AccountPage({ params }: AccountPageProps) {
+export default async function AccountPage({ params }: AccountPageProps) {
+    const { bankId, accountId } = await params;
+
     return (
         <MainContent>
-            <BankBreadcrumb bankId={params.bankId} accountId={params.accountId} />
-            <PageHeader
-                title="Account Details"
-                description="View account information, transactions, and analytics"
-                actionBar={
-                    <div className="flex gap-2">
-                        <Button variant="outline">Export Data</Button>
-                        <Button variant="outline">Sync Transactions</Button>
-                        <Button>Edit Account</Button>
-                    </div>
-                }
-            />
-            <AccountDetailsView bankId={params.bankId} accountId={params.accountId} />
+            <AccountDetailsView bankId={bankId} accountId={accountId} />
         </MainContent>
     );
 }

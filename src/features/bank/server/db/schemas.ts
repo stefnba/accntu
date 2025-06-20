@@ -1,3 +1,4 @@
+import { transactionImport } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
@@ -175,7 +176,7 @@ export const connectedBankRelations = relations(connectedBank, ({ one, many }) =
     connectedBankAccounts: many(connectedBankAccount),
 }));
 
-export const connectedBankAccountRelations = relations(connectedBankAccount, ({ one }) => ({
+export const connectedBankAccountRelations = relations(connectedBankAccount, ({ one, many }) => ({
     connectedBank: one(connectedBank, {
         fields: [connectedBankAccount.connectedBankId],
         references: [connectedBank.id],
@@ -184,6 +185,7 @@ export const connectedBankAccountRelations = relations(connectedBankAccount, ({ 
         fields: [connectedBankAccount.globalBankAccountId],
         references: [globalBankAccount.id],
     }),
+    transactionImports: many(transactionImport),
 }));
 
 // ===============================

@@ -3,6 +3,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useImportModal } from '@/features/transaction-import';
+import { ImportModal } from '@/features/transaction-import/components/import-modal/import-modal';
 import { cn } from '@/lib/utils';
 import { Building2, Copy, CreditCard, Eye, EyeOff, TrendingUp, Wallet } from 'lucide-react';
 import { useState } from 'react';
@@ -71,6 +73,7 @@ export const AccountHeader = ({ account }: AccountHeaderProps) => {
     };
 
     const accountType = account.type || 'checking';
+    const { openModal } = useImportModal();
 
     return (
         <Card className="border-gray-200">
@@ -135,19 +138,21 @@ export const AccountHeader = ({ account }: AccountHeaderProps) => {
                                 <Badge variant="outline" className="bg-green-50 text-green-700">
                                     {account.isActive ? 'Active' : 'Inactive'}
                                 </Badge>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Last updated:{' '}
+                                    {new Date(
+                                        account.updatedAt || account.createdAt
+                                    ).toLocaleString()}
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="text-right">
-                        <p className="text-sm text-gray-500 mb-1">Current Balance</p>
-                        <p className="text-4xl font-bold text-gray-900">
-                            {formatBalance(account.currentBalance, account.currency)}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-2">
-                            Last updated:{' '}
-                            {new Date(account.updatedAt || account.createdAt).toLocaleString()}
-                        </p>
+                        <Button variant="outline" size="sm" onClick={() => openModal(account.id)}>
+                            New Transaction
+                        </Button>
+                        <ImportModal />
                     </div>
                 </div>
             </CardContent>

@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Building2, CreditCard, RefreshCw } from 'lucide-react';
 
@@ -36,6 +37,9 @@ export const BankDetailsHeader = ({ bank }: BankDetailsHeaderProps) => {
                                 {bank.globalBank?.name || 'Unknown Bank'}
                             </h1>
                             <div className="flex items-center gap-4 text-gray-600 text-sm">
+                                <Badge variant="outline" className="bg-green-50 text-green-700">
+                                    Upload
+                                </Badge>
                                 <span className="flex items-center gap-1">
                                     <CreditCard className="h-4 w-4" />
                                     {bank.connectedBankAccounts?.length || 0} accounts

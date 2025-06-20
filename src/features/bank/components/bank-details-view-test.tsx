@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConnectedBankEndpoints } from '@/features/bank/api';
 import { BankBreadcrumb } from '@/features/bank/components/bank-breadcrumb';
-import { BankDetailsTabNavigation } from '@/features/bank/components/bank-details';
+import {
+    BankDetailsAnalytics,
+    BankDetailsTabNavigation,
+} from '@/features/bank/components/bank-details';
 import { useBankDetailsView } from '@/features/bank/hooks';
-import { ArrowLeft, ArrowUpRight, Building2, DollarSign, Settings } from 'lucide-react';
+import { ArrowLeft, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
     BankDetailsHeader,
@@ -33,6 +36,9 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
         },
     });
 
+    // ===============
+    // LOADING
+    // ===============
     if (isLoading) {
         return (
             <div className="min-h-screen">
@@ -68,6 +74,9 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
         );
     }
 
+    // ===============
+    // ERRORS
+    // ===============
     if (error || !bank) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -88,24 +97,15 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
         );
     }
 
-    const totalBalance =
-        bank.connectedBankAccounts?.reduce(
-            (sum, account) =>
-                sum + (account.currentBalance ? parseFloat(account.currentBalance.toString()) : 0),
-            0
-        ) || 0;
-
-    const tabs = [
-        { id: 'overview' as const, label: 'Overview', icon: DollarSign },
-        { id: 'activity' as const, label: 'Recent Activity', icon: ArrowUpRight },
-        { id: 'settings' as const, label: 'Settings', icon: Settings },
-    ];
-
+    // ===============
+    // CONTENT
+    // ===============
     return (
         <div className="w-full space-y-6">
-            {/* Header */}
+            {/* Breadcrumb */}
             <BankBreadcrumb className="" bankId={bankId} />
 
+            {/* Header */}
             <BankDetailsHeader bank={bank} />
 
             {/* Tab Navigation */}
@@ -116,7 +116,7 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
                 {currentView === 'overview' && <BankDetailsOverview bank={bank} bankId={bankId} />}
                 {currentView === 'activity' && <BankDetailsRecentActivity bank={bank} />}
                 {currentView === 'settings' && <BankDetailsSettings bank={bank} />}
-                {currentView === 'analytics' && <div>Analytics</div>}
+                {currentView === 'analytics' && <BankDetailsAnalytics />}
             </div>
         </div>
     );
