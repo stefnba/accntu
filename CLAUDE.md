@@ -75,7 +75,10 @@ src/features/[feature-name]/
 │   │   └── entity-two.ts      # HTTP handling only
 │   └── endpoints.ts           # Main router
 ├── components/                # Feature-specific React components
-├── api.ts                     # Client-side API hooks
+├── api/
+│   ├── entity-one.ts          # Client-side API hooks for entity one
+│   ├── entity-two.ts          # Client-side API hooks for entity two
+│   └── index.ts               # Exports all API hooks
 ├── schemas.ts                 # Zod validation schemas
 └── hooks.ts                   # Feature hooks
 ```
@@ -93,6 +96,7 @@ src/features/[feature-name]/
 
 **API Endpoints:**
 - Use Hono framework exclusively (never Next.js server actions)
+- **CRITICAL**: Always use method chaining for Hono instantiation: `const app = new Hono().get().post().put()` - never declare `const app = new Hono();` followed by separate method calls
 - Use `withRoute` wrapper for error handling
 - Use `getUser(c)` for authentication (never userId in URL params)
 - Validate inputs with Zod schemas and `zValidator`
@@ -126,6 +130,8 @@ src/features/[feature-name]/
 - Use `createMutation` for POST/PUT/DELETE operations
 - Define query keys for cache management
 - Include JSDoc comments for all functions
+- **Complex Features**: Split API hooks into separate files per entity in `api/` directory with `index.ts` for exports
+- **Simple Features**: Use single `api.ts` file
 
 ### Authentication
 - Never include `userId` in URL parameters
@@ -152,11 +158,12 @@ src/features/[feature-name]/
 - Write tests for critical business logic
 
 ### File Organization
-- **Simple Features**: Use single files (queries.ts, endpoints.ts, schema.ts)
+- **Simple Features**: Use single files (queries.ts, endpoints.ts, schema.ts, api.ts)
 - **Complex Features**: Use nested directories when feature has multiple related entities
   - `queries/` directory with one file per entity (entity-name.ts)
   - `services/` directory with one file per entity (entity-name.ts)  
   - `endpoints/` directory with one file per entity (entity-name.ts)
+  - `api/` directory with one file per entity (entity-name.ts) and `index.ts` for exports
 - **Decision Criteria**: Use complex structure when you have 2+ related tables or 200+ lines per file
 - **Reference Examples**: 
   - Simple: `tag` (single entity), `label` (single entity)
