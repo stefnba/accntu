@@ -13,23 +13,20 @@ export const useImportRecordEndpoints = {
      * Create a new transaction import
      */
     create: createMutation(
-        apiClient['transaction-import'].imports.$post,
+        apiClient['transaction-import'].$post,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORTS
     ),
 
     /**
      * Get all transaction imports for the authenticated user
      */
-    list: createQuery(
-        apiClient['transaction-import'].imports.$get,
-        TRANSACTION_IMPORT_QUERY_KEYS.IMPORTS
-    ),
+    list: createQuery(apiClient['transaction-import'].$get, TRANSACTION_IMPORT_QUERY_KEYS.IMPORTS),
 
     /**
      * Get transaction import by ID
      */
     get: createQuery(
-        apiClient['transaction-import'].imports[':id'].$get,
+        apiClient['transaction-import'][':id'].$get,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORT
     ),
 
@@ -37,7 +34,7 @@ export const useImportRecordEndpoints = {
      * Update transaction import
      */
     update: createMutation(
-        apiClient['transaction-import'].imports[':id'].$put,
+        apiClient['transaction-import'][':id'].$put,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORT
     ),
 
@@ -45,7 +42,7 @@ export const useImportRecordEndpoints = {
      * Delete transaction import
      */
     delete: createMutation(
-        apiClient['transaction-import'].imports[':id'].$delete,
+        apiClient['transaction-import'][':id'].$delete,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORTS
     ),
 };

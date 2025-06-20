@@ -5,8 +5,6 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as importFileServices from '../db/services/import-file';
 
-const app = new Hono();
-
 const CreateImportFileSchema = z.object({
     importId: z.string().min(1, 'Import ID is required'),
     fileName: z.string().min(1, 'File name is required'),
@@ -27,59 +25,67 @@ const UpdateFileStatusSchema = z.object({
     parsedTransactions: z.array(z.unknown()).optional(),
 });
 
-app.get('/import/:importId', 
-    zValidator('param', z.object({ importId: z.string() })), 
-    async (c) =>
+const app = new Hono()
+    .get('/import/:importId', zValidator('param', z.object({ importId: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { importId } = c.req.valid('param');
             return await importFileServices.getFilesByImport({ importId });
         })
-);
-
-app.get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-    withRoute(c, async () => {
-        const { id } = c.req.valid('param');
-        return await importFileServices.getFileById({ fileId: id });
-    })
-);
-
-app.post('/', zValidator('json', CreateImportFileSchema), async (c) =>
-    withRoute(c, async () => {
-        const user = getUser(c);
-        const data = c.req.valid('json');
-        
-        return await importFileServices.uploadFileToImport({
-            userId: user.id,
-            ...data,
-        });
-    }, 201)
-);
-
-app.put('/:id/status',
-    zValidator('param', z.object({ id: z.string() })),
-    zValidator('json', UpdateFileStatusSchema),
-    async (c) =>
+    )
+    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
-            const data = c.req.valid('json');
-            
-            return await importFileServices.updateFileStatus({
+            return await importFileServices.getFileById({ fileId: id });
+        })
+    )
+    .post('/', zValidator('json', CreateImportFileSchema), async (c) =>
+        withRoute(
+            c,
+            async () => {
+                const user = getUser(c);
+                const data = c.req.valid('json');
+
+                return await importFileServices.uploadFileToImport({
+                    userId: user.id,
+                    ...data,
+                });
+            },
+            201
+        )
+    )
+    .put(
+        '/:id/status',
+        zValidator('param', z.object({ id: z.string() })),
+        zValidator('json', UpdateFileStatusSchema),
+        async (c) =>
+            withRoute(c, async () => {
+                const { id } = c.req.valid('param');
+                const data = c.req.valid('json');
+
+                return await importFileServices.updateFileStatus({
+                    fileId: id,
+                    ...data,
+                });
+            })
+    )
+    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+        withRoute(c, async () => {
+            const user = getUser(c);
+            const { id } = c.req.valid('param');
+
+            return await importFileServices.deleteFile({
                 fileId: id,
-                ...data,
+                userId: user.id,
             });
         })
-);
-
-app.delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-    withRoute(c, async () => {
-        const user = getUser(c);
-        const { id } = c.req.valid('param');
-        
-        return await importFileServices.deleteFile({
-            fileId: id,
-            userId: user.id,
-        });
-    })
-);
+    )
+    .post('/:id/parse', zValidator('param', z.object({ id: z.string() })), async (c) =>
+        withRoute(c, async () => {
+            const { id } = c.req.valid('param');
+            return {
+                success: true,
+            };
+        })
+    );
 
 export default app;

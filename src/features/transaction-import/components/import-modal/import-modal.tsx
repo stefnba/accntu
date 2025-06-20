@@ -83,7 +83,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
     return (
         <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen}>
             {/* Content with better spacing and transitions */}
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 ">
                 <div className="transition-all duration-300 ease-in-out">{renderCurrentStep()}</div>
             </div>
         </ResponsiveModal>
