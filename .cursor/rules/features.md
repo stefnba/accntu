@@ -1,55 +1,44 @@
----
-description: Feature-based architecture guidelines for consistent development patterns across all features. Covers database schemas, API endpoints, client-side hooks, and utility functions with established naming conventions and structural patterns.
-globs:
-alwaysApply: false
----
 # Feature Architecture Rules
 
 This project follows a strict feature-based architecture with consistent patterns across all features. Each feature is self-contained with its own database schemas, API endpoints, business logic, and client-side code.
 
 ## Feature Structure
 
-### Simple Features
-For features with a single main entity, use this structure:
+Every feature must follow this exact directory structure:
 
 ```
 src/features/[feature-name]/
 ├── server/
 │   ├── db/
 │   │   ├── schema.ts          # Database schemas with embedded relations
-│   │   └── queries.ts         # Database query functions with withDbQuery wrapper
-│   └── endpoints.ts           # Hono API endpoints
+│   │   └── queries/           # Directory with separate query files OR queries.ts file
+│   │       ├── index.ts       # Re-exports with namespacing (if using directory)
+│   │       ├── entity-1.ts    # Specific entity queries
+│   │       └── entity-2.ts    # Specific entity queries
+│   ├── endpoints.ts           # Hono API endpoints
+│   └── [optional-services].ts # Additional server-side services
 ├── lib/
 │   └── utils.ts               # Feature-specific utility functions
 ├── components/                # Feature-specific React components
-├── api.ts                     # Client-side API hooks
-└── schemas.ts                 # Shared Zod validation schemas
+├── api.ts                     # Client-side API hooks OR api/ directory
+├── schemas.ts                 # Shared Zod validation schemas OR schemas/ directory
+└── hooks.ts                   # Feature hooks OR hooks/ directory
 ```
 
-### Complex Features
-For features with multiple related entities (2+ tables), use this layered structure:
+### File vs Directory Structure Pattern
 
-```
-src/features/[feature-name]/
-├── server/
-│   ├── db/
-│   │   ├── queries/
-│   │   │   ├── entity-one.ts  # Pure data access queries
-│   │   │   └── entity-two.ts  # Pure data access queries
-│   │   ├── services/
-│   │   │   ├── entity-one.ts  # Business logic & validation
-│   │   │   └── entity-two.ts  # Business logic & validation
-│   │   └── schema.ts          # Database schemas with relations
-│   ├── endpoints/
-│   │   ├── entity-one.ts      # HTTP handling only
-│   │   └── entity-two.ts      # HTTP handling only
-│   └── endpoints.ts           # Main router
-├── lib/
-│   └── utils.ts               # Feature-specific utility functions
-├── components/                # Feature-specific React components
-├── api.ts                     # Client-side API hooks
-└── schemas.ts                 # Shared Zod validation schemas
-```
+For most features, use **single files** for:
+- `queries.ts` - All database queries in one file
+- `api.ts` - All client-side API hooks
+- `schemas.ts` - All validation schemas
+- `hooks.ts` - All feature hooks
+- `utils.ts` - All utility functions
+
+Only create **directories** when files become too complex (>200-300 lines):
+- `queries/` - Split by entity type (e.g., `global-bank.ts`, `connected-bank.ts`)
+- `api/` - Split by domain area or entity
+- `schemas/` - Split by validation groups
+- `hooks/` - Split by functionality groups
 
 ## Naming Conventions
 
@@ -77,9 +66,7 @@ import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 
 // Main entity table
 export const [featureName] = pgTable('[feature_name]', {
-  id: text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
+  id: text().primaryKey().notNull().$defaultFn(() => createId()),
   userId: text().notNull(), // Always include userId for user-scoped data
 
   // Feature-specific fields
@@ -87,11 +74,11 @@ export const [featureName] = pgTable('[feature_name]', {
   description: text(),
 
   // Standard audit fields
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
 
   // Soft delete pattern
-  isActive: boolean().notNull().default(true),
+  isActive: boolean().notNull().default(true), // or isDeleted: boolean().notNull().default(false)
 });
 
 // Embedded relations (no separate relations file)
@@ -107,132 +94,14 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ### Key Schema Patterns
 1. **Always use CUID2** for primary keys with `createId()`
 2. **Include userId** for user-scoped data
-3. **Use timestamp fields** for `createdAt` and `updatedAt` with timezone
+3. **Use timestamp fields** for `createdAt` and `updatedAt`
 4. **Implement soft deletes** with `isActive` or `isDeleted` boolean fields
 5. **Embed relations** directly in schema files (no separate relations files)
 6. **Export TypeScript types** for both select and insert operations
-7. **Modern Drizzle**: Column names no longer required - use `text()` instead of `text('column_name')`
-8. **Critical**: All schemas must be exported from `src/server/db/schemas/index.ts` for relations to work
-
-## Layered Architecture (Complex Features)
-
-### Separation of Concerns
-For complex features with multiple entities, use a strict three-layer architecture:
-
-#### Queries Layer (Pure Data Access)
-```typescript
-// src/features/[feature]/server/db/queries/entity-name.ts
-import { db } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
-import { and, eq } from 'drizzle-orm';
-import { entityTable, type EntityType, type NewEntityType } from '../schema';
-
-// Simple, descriptive function names
-export const getAll = async ({ userId }: { userId: string }) =>
-    withDbQuery({
-        operation: 'get entities by user ID',
-        queryFn: async () => {
-            return await db.query.entityTable.findMany({
-                where: and(eq(entityTable.userId, userId), eq(entityTable.isActive, true)),
-                with: {
-                    relatedEntity: true,
-                },
-                orderBy: (entities, { desc }) => [desc(entities.createdAt)],
-            });
-        },
-    });
-
-export const create = async ({ data }: { data: NewEntityType }) =>
-    withDbQuery({
-        operation: 'create entity',
-        queryFn: async () => {
-            const [result] = await db.insert(entityTable).values(data).returning();
-            return result;
-        },
-    });
-```
-
-#### Services Layer (Business Logic)
-```typescript
-// src/features/[feature]/server/db/services/entity-name.ts
-import * as entityQueries from '../queries/entity-name';
-
-// Descriptive, business-focused function names
-export const createEntity = async ({
-    userId,
-    name,
-}: {
-    userId: string;
-    name: string;
-}) => {
-    // Business validation
-    if (name.length > 100) {
-        throw new Error('Name must be 100 characters or less');
-    }
-
-    // Check for duplicates
-    const existing = await entityQueries.getAll({ userId });
-    if (existing.some(e => e.name === name)) {
-        throw new Error('Entity with this name already exists');
-    }
-
-    // Create entity
-    return await entityQueries.create({
-        data: { userId, name, status: 'pending' },
-    });
-};
-
-export const getUserEntities = async ({ userId }: { userId: string }) => {
-    return await entityQueries.getAll({ userId });
-};
-```
-
-#### Endpoints Layer (HTTP Concerns)
-```typescript
-// src/features/[feature]/server/endpoints/entity-name.ts
-import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
-import { Hono } from 'hono';
-import { z } from 'zod';
-import * as entityServices from '../db/services/entity-name';
-
-const app = new Hono();
-
-const CreateEntitySchema = z.object({
-    name: z.string().min(1, 'Name is required'),
-});
-
-app.get('/', async (c) =>
-    withRoute(c, async () => {
-        const user = getUser(c);
-        return await entityServices.getUserEntities({ userId: user.id });
-    })
-);
-
-app.post('/', zValidator('json', CreateEntitySchema), async (c) =>
-    withRoute(c, async () => {
-        const user = getUser(c);
-        const data = c.req.valid('json');
-        
-        return await entityServices.createEntity({
-            userId: user.id,
-            name: data.name,
-        });
-    }, 201)
-);
-
-export default app;
-```
-
-### Layer Responsibilities
-- **Queries**: Pure data access, no business logic, simple names (`create`, `getAll`, `getById`)
-- **Services**: Business logic, validation, orchestration, descriptive names (`createEntity`, `getUserEntities`)
-- **Endpoints**: HTTP handling, authentication, input validation, delegate to services
 
 ## Database Queries Pattern
 
-### Query Organization (Simple Features)
+### Single File Pattern (Simple Features)
 ```typescript
 // src/features/[feature]/server/db/queries.ts
 import { db } from '@/server/db';
@@ -262,49 +131,143 @@ export const get[FeatureName]sByUserId = async ({ userId }: { userId: string }):
         .orderBy([featureName].name);
     },
   });
+```
 
-export const get[FeatureName]ById = async ({ id }: { id: string }): Promise<[FeatureName] | null> =>
-  withDbQuery({
-    operation: 'get [feature-name] by ID',
-    queryFn: async () => {
-      const [result] = await db
-        .select()
-        .from([featureName])
-        .where(eq([featureName].id, id))
-        .limit(1);
-      return result || null;
-    },
-  });
+### Directory Pattern (Complex Features)
+```typescript
+// src/features/[feature]/server/db/queries/index.ts
+// Namespaced exports for better organization
+import * as entityQueries from './entity';
+import * as relatedEntityQueries from './related-entity';
 
-export const update[FeatureName] = async ({
-  id,
-  data
-}: {
-  id: string;
-  data: Partial<New[FeatureName]>
-}): Promise<[FeatureName] | null> =>
-  withDbQuery({
-    operation: 'update [feature-name]',
-    queryFn: async () => {
-      const [updated] = await db
-        .update([featureName])
-        .set({ ...data, updatedAt: new Date() })
-        .where(eq([featureName].id, id))
-        .returning();
-      return updated || null;
-    },
-  });
+// Clean namespaced exports
+export const Entity = entityQueries;
+export const RelatedEntity = relatedEntityQueries;
 
-export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void> =>
-  withDbQuery({
-    operation: 'delete [feature-name]',
-    queryFn: async () => {
-      await db
-        .update([featureName])
-        .set({ isActive: false, updatedAt: new Date() })
-        .where(eq([featureName].id, id));
-    },
-  });
+// Direct exports for convenience
+export * from './entity';
+export * from './related-entity';
+```
+
+```typescript
+// src/features/[feature]/server/db/queries/entity.ts
+import { withDbQuery } from '@/server/lib/handler';
+import { and, eq } from 'drizzle-orm';
+import { db } from '../../../../../../server/db';
+import { entity, type Entity } from '../schema';
+
+/**
+ * Get all entities
+ * @returns All entities
+ */
+export const getAll = async (): Promise<Entity[]> =>
+    withDbQuery({
+        operation: 'get all entities',
+        queryFn: async () => {
+            return await db.select().from(entity).where(eq(entity.isActive, true));
+        },
+    });
+
+/**
+ * Get entity by id
+ * @param id - The id of the entity
+ * @returns The entity
+ */
+export const getById = async ({ id }: { id: string }): Promise<Entity | null> =>
+    withDbQuery({
+        operation: 'get entity by ID',
+        queryFn: async () => {
+            const [result] = await db
+                .select()
+                .from(entity)
+                .where(eq(entity.id, id))
+                .limit(1);
+            return result || null;
+        },
+    });
+
+/**
+ * Create entity
+ * @param data - The data to create
+ * @returns The created entity
+ */
+export const create = async ({ data }: { data: TInsertEntity }): Promise<Entity> =>
+    withDbQuery({
+        operation: 'create entity',
+        queryFn: async () => {
+            const result = await db.insert(entity).values(data).returning();
+            return result[0];
+        },
+    });
+
+/**
+ * Update entity
+ * @param id - The id of the entity
+ * @param data - The data to update
+ * @returns The updated entity
+ */
+export const update = async ({ id, data }: { id: string; data: Partial<TInsertEntity> }): Promise<Entity | null> =>
+    withDbQuery({
+        operation: 'update entity',
+        queryFn: async () => {
+            const result = await db
+                .update(entity)
+                .set({ ...data, updatedAt: new Date() })
+                .where(eq(entity.id, id))
+                .returning();
+            return result[0] || null;
+        },
+    });
+
+/**
+ * Soft delete entity
+ * @param id - The id of the entity
+ */
+export const softDelete = async ({ id }: { id: string }): Promise<void> =>
+    withDbQuery({
+        operation: 'soft delete entity',
+        queryFn: async () => {
+            await db
+                .update(entity)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(eq(entity.id, id));
+        },
+    });
+```
+
+### Query Function Naming Conventions
+
+**Standard CRUD Functions:**
+- `getAll()` - Get all records with active filter
+- `getById({ id })` - Get single record by ID
+- `create({ data })` - Create new record
+- `update({ id, data })` - Update existing record
+- `softDelete({ id })` - Soft delete record
+
+**Context-Specific Functions:**
+- `getByUserId({ userId })` - Get records by user
+- `getByParentId({ parentId })` - Get child records
+- `getByCountry({ country })` - Get records by specific field
+- `search({ query, filters })` - Search functionality
+
+**Usage Patterns:**
+```typescript
+// Namespaced usage (recommended for complex features)
+import { GlobalBank, ConnectedBank } from '@/features/bank/server/db/queries';
+
+const banks = await GlobalBank.getAll();
+const bankById = await GlobalBank.getById({ id });
+const banksByCountry = await GlobalBank.getByCountry({ country: 'US' });
+
+const userBanks = await ConnectedBank.getByUserId({ userId });
+const newBank = await ConnectedBank.create({ data });
+
+// Direct usage (fine for simple features)
+import { getAllTags, getTagById, createTag } from '@/features/tag/server/db/queries';
+
+const tags = await getAllTags();
+const tag = await getTagById({ id });
+const newTag = await createTag({ data });
 ```
 
 ### Query Patterns
@@ -316,6 +279,8 @@ export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void>
 6. **Update timestamps** on all update operations
 7. **Include operation description** for debugging and logging
 8. **Order results consistently** (usually by name or createdAt)
+9. **Use concise function names** - namespace provides entity context
+10. **Export namespaced functions** for complex features with multiple entities
 
 ## API Endpoints Pattern
 
@@ -367,7 +332,7 @@ app.post('/[feature-name]s', zValidator('json', Create[FeatureName]Schema), asyn
     async () => {
       const user = getUser(c);
       const data = c.req.valid('json');
-      return await queries.create[FeatureName](mdc:{ data: { ...data, userId: user.id } });
+      return await queries.create[FeatureName]({ data: { ...data, userId: user.id } });
     },
     201
   )
@@ -378,7 +343,7 @@ app.put('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })
     const { id } = c.req.valid('param');
     const data = c.req.valid('json');
 
-    const updated = await queries.update[FeatureName](mdc:{ id, data });
+    const updated = await queries.update[FeatureName]({ id, data });
 
     if (!updated) {
       throw new Error('[FeatureName] not found');
@@ -391,7 +356,7 @@ app.put('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })
 app.delete('/[feature-name]s/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
   withRoute(c, async () => {
     const { id } = c.req.valid('param');
-    await queries.delete[FeatureName](mdc:{ id });
+    await queries.delete[FeatureName]({ id });
     return { success: true };
   })
 );
@@ -439,7 +404,7 @@ export const use[FeatureName]Endpoints = {
   get[FeatureName]: (id: string) =>
     createQuery(
       apiClient.[featureName]['[feature-name]s'][':id'].$get,
-      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](id)
     ),
 
   /**
@@ -457,7 +422,7 @@ export const use[FeatureName]Endpoints = {
   update[FeatureName]: (id: string) =>
     createMutation(
       apiClient.[featureName]['[feature-name]s'][':id'].$put,
-      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](id)
     ),
 
   /**
@@ -466,7 +431,7 @@ export const use[FeatureName]Endpoints = {
   delete[FeatureName]: (id: string) =>
     createMutation(
       apiClient.[featureName]['[feature-name]s'][':id'].$delete,
-      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](mdc:id)
+      [FEATURE_NAME]_QUERY_KEYS.[FEATURE_NAME](id)
     ),
 };
 ```
@@ -557,12 +522,14 @@ When creating a new feature, ensure it's properly integrated:
 9. **Security**: Always include user authorization checks
 10. **Maintainability**: Keep functions focused and modular
 11. **Scalability**: Design for future feature expansion
+12. **File Organization**: Use single files until complexity requires directories
+13. **Naming Consistency**: Use concise function names with namespace context
 
 ## Examples
 
 Reference the `bank`, `tag`, and `label` features as complete examples of this architecture:
-- `src/features/bank/` - Complex feature with multiple related entities
-- `src/features/tag/` - Feature with hierarchical data and transaction relationships
-- `src/features/label/` - Feature with hierarchical structure and validation
+- `src/features/bank/` - Complex feature with multiple related entities (uses query directories)
+- `src/features/tag/` - Feature with hierarchical data and transaction relationships (single query file)
+- `src/features/label/` - Feature with hierarchical structure and validation (single query file)
 
 These features demonstrate all the patterns and conventions outlined in this document.
