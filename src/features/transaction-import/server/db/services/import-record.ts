@@ -5,8 +5,14 @@ import * as importRecordQueries from '../queries/import-record';
  * Updates import record counts based on associated files
  * @param importId - The import record ID to update
  */
-export const updateImportCounts = async ({ importId }: { importId: string }): Promise<void> => {
-    const files = await importFileQueries.getAll({ importId });
+export const updateImportCounts = async ({
+    importId,
+    userId,
+}: {
+    importId: string;
+    userId: string;
+}): Promise<void> => {
+    const files = await importFileQueries.getAll({ filters: { importId }, userId });
 
     const fileCount = files.length;
     const importedFileCount = files.filter((f) => f.status === 'imported').length;
@@ -26,7 +32,7 @@ export const updateImportCounts = async ({ importId }: { importId: string }): Pr
         updateData.successAt = new Date();
     }
 
-    await importRecordQueries.update({ id: importId, data: updateData });
+    await importRecordQueries.update({ id: importId, userId, data: updateData });
 };
 
 /**
@@ -68,10 +74,9 @@ export const create = async ({
 }) => {
     const importRecord = await importRecordQueries.create({
         data: {
-            userId,
             connectedBankAccountId,
-            status: 'draft',
         },
+        userId,
     });
 
     return importRecord;
@@ -94,13 +99,7 @@ export const update = async ({
     userId: string;
     data: { status?: 'draft' | 'pending' | 'processing' | 'completed' | 'failed' };
 }) => {
-    // Verify ownership
-    const existing = await importRecordQueries.getById({ id, userId });
-    if (!existing) {
-        throw new Error('Transaction import not found');
-    }
-
-    const updated = await importRecordQueries.update({ id, data });
+    const updated = await importRecordQueries.update({ id, userId, data });
     if (!updated) {
         throw new Error('Failed to update transaction import');
     }
@@ -128,10 +127,8 @@ export const activate = async ({ id, userId }: { id: string; userId: string }) =
 
     const updated = await importRecordQueries.update({
         id,
-        data: {
-            status: 'pending',
-            updatedAt: new Date(),
-        },
+        data: { status: 'pending' },
+        userId,
     });
 
     if (!updated) {
@@ -156,11 +153,11 @@ export const remove = async ({ importId, userId }: { importId: string; userId: s
     }
 
     // Delete all files first
-    const files = await importFileQueries.getAll({ importId });
-    await Promise.all(files.map((file) => importFileQueries.remove({ id: file.id })));
+    const files = await importFileQueries.getAll({ filters: { importId }, userId });
+    await Promise.all(files.map((file) => importFileQueries.remove({ id: file.id, userId })));
 
     // Delete the import record
-    await importRecordQueries.remove({ id: importId });
+    await importRecordQueries.remove({ id: importId, userId });
 
     return { success: true };
 };

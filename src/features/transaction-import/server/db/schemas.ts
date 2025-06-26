@@ -1,24 +1,17 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
+import { user } from '@/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import {
-    boolean,
-    integer,
-    jsonb,
-    pgEnum,
-    pgTable,
-    text,
-    timestamp,
-    varchar,
-} from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 // Define enums for status columns
 export const transactionImportStatusEnum = pgEnum('transaction_import_status', [
-    'draft',
-    'pending',
-    'processing',
-    'completed',
-    'failed',
+    'draft', // User has uploaded a file, but it hasn't been processed yet
+    'pending', // Files have been processed, but the transactions haven't been imported yet
+    'processing', // Transactions are being imported
+    'completed', // Transactions have been imported
+    'failed', // Transactions failed to import
 ]);
 
 export const transactionImportFileStatusEnum = pgEnum('transaction_import_file_status', [
@@ -29,11 +22,21 @@ export const transactionImportFileStatusEnum = pgEnum('transaction_import_file_s
     'failed',
 ]);
 
+export const transactionImportFileStorageTypeEnum = pgEnum('transaction_import_file_storage_type', [
+    's3',
+    'local',
+]);
+
 export const transactionImport = pgTable('transaction_import', {
     id: text()
         .primaryKey()
         .$defaultFn(() => createId()),
-    userId: text().notNull(),
+    userId: text()
+        .notNull()
+        .references(() => user.id, {
+            onDelete: 'cascade',
+            onUpdate: 'cascade',
+        }),
     connectedBankAccountId: text()
         .notNull()
         .references(() => connectedBankAccount.id, {
@@ -44,7 +47,6 @@ export const transactionImport = pgTable('transaction_import', {
     importedTransactionCount: integer().default(0),
     fileCount: integer().default(0),
     importedFileCount: integer().default(0),
-    parseErrors: jsonb(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     successAt: timestamp({ withTimezone: true }),
@@ -65,18 +67,19 @@ export const transactionImportFile = pgTable('transaction_import_file', {
     fileUrl: text().notNull(),
     fileType: text().notNull(),
     fileSize: integer().notNull(),
-    storageType: varchar({ length: 10 }).notNull().default('s3'),
-    bucket: text(),
-    key: text(),
-    relativePath: text(),
+    storageType: transactionImportFileStorageTypeEnum().notNull().default('s3'),
     status: transactionImportFileStatusEnum().notNull().default('uploaded'),
     transactionCount: integer(),
+    userId: text()
+        .notNull()
+        .references(() => user.id, {
+            onDelete: 'cascade',
+            onUpdate: 'cascade',
+        }),
     importedTransactionCount: integer().default(0),
-    parseErrors: jsonb(),
-    parsedTransactions: jsonb(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    importedAt: timestamp({ withTimezone: true }),
+    successAt: timestamp({ withTimezone: true }),
     isActive: boolean().notNull().default(true),
 });
 
@@ -95,7 +98,16 @@ export const transactionImportFileRelations = relations(transactionImportFile, (
     }),
 }));
 
-export type TransactionImport = typeof transactionImport.$inferSelect;
-export type NewTransactionImport = typeof transactionImport.$inferInsert;
-export type TransactionImportFile = typeof transactionImportFile.$inferSelect;
-export type NewTransactionImportFile = typeof transactionImportFile.$inferInsert;
+// ====================
+// Base Database Zod Schemas
+// ====================
+
+// Transaction Import
+export const selectTransactionImportSchema = createSelectSchema(transactionImport);
+export const insertTransactionImportSchema = createInsertSchema(transactionImport);
+export const updateTransactionImportSchema = createUpdateSchema(transactionImport);
+
+// Transaction Import File
+export const selectTransactionImportFileSchema = createSelectSchema(transactionImportFile);
+export const insertTransactionImportFileSchema = createInsertSchema(transactionImportFile);
+export const updateTransactionImportFileSchema = createUpdateSchema(transactionImportFile);
