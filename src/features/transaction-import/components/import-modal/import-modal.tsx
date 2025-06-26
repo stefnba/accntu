@@ -53,8 +53,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
 
     const handleClose = () => {
         reset();
-        setModalOpen(false);
         onSuccess?.();
+    };
+
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            reset();
+        }
+        setModalOpen(open);
     };
 
     const handleBack = () => {
@@ -81,7 +87,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
     const showCloseButton = currentStep !== 'processing';
 
     return (
-        <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen}>
+        <ResponsiveModal open={modalOpen} onOpenChange={handleOpenChange}>
             {/* Content with better spacing and transitions */}
             <div className="px-4 sm:px-6 pb-4 sm:pb-6 ">
                 <div className="transition-all duration-300 ease-in-out">{renderCurrentStep()}</div>

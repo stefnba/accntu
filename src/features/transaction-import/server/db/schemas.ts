@@ -1,7 +1,33 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import { boolean, integer, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+    boolean,
+    integer,
+    jsonb,
+    pgEnum,
+    pgTable,
+    text,
+    timestamp,
+    varchar,
+} from 'drizzle-orm/pg-core';
+
+// Define enums for status columns
+export const transactionImportStatusEnum = pgEnum('transaction_import_status', [
+    'draft',
+    'pending',
+    'processing',
+    'completed',
+    'failed',
+]);
+
+export const transactionImportFileStatusEnum = pgEnum('transaction_import_file_status', [
+    'uploaded',
+    'processing',
+    'processed',
+    'imported',
+    'failed',
+]);
 
 export const transactionImport = pgTable('transaction_import', {
     id: text()
@@ -14,7 +40,7 @@ export const transactionImport = pgTable('transaction_import', {
             onDelete: 'cascade',
             onUpdate: 'cascade',
         }),
-    status: varchar({ length: 50 }).notNull().default('pending'),
+    status: transactionImportStatusEnum().notNull().default('draft'),
     importedTransactionCount: integer().default(0),
     fileCount: integer().default(0),
     importedFileCount: integer().default(0),
@@ -43,7 +69,7 @@ export const transactionImportFile = pgTable('transaction_import_file', {
     bucket: text(),
     key: text(),
     relativePath: text(),
-    status: varchar({ length: 50 }).notNull().default('uploaded'),
+    status: transactionImportFileStatusEnum().notNull().default('uploaded'),
     transactionCount: integer(),
     importedTransactionCount: integer().default(0),
     parseErrors: jsonb(),

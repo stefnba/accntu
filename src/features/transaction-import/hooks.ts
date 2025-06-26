@@ -5,6 +5,7 @@ import { allowedFileTypes, maxFileSize } from './config';
 import { useFileUploadStore } from './store/file-upload-store';
 
 import { useImportFileEndpoints } from '@/features/transaction-import/api';
+import { useImportRecordEndpoints } from '@/features/transaction-import/api/import-record';
 import { uploadFileToS3WithSignedUrl } from '@/lib/upload/cloud/s3/services';
 import { computeSHA256 } from '@/lib/upload/utils';
 import type { FileUpload } from './types';
@@ -36,22 +37,23 @@ export const useImportModal = () => {
         parseAsString.withDefault('')
     );
 
+    // Get access to file store for clearing
+    const { clearFiles } = useFileUploadStore();
+
     // Note: parsedTransactions is complex data that shouldn't be stored in URL
     // We'll handle this separately, possibly with a separate state management solution
     // or by fetching it based on importId when needed
 
     const openModal = (accountId?: string) => {
+        // First clear everything
+        resetFormState();
+
         setModalOpen(true);
         setCurrentStep(accountId ? 'upload' : defaultStep);
 
-        // Reset only the form fields that should be cleared when opening
-        setImportId('', { clearOnDefault: true });
-
-        // Set the account ID if provided, otherwise clear it
+        // Set the account ID if provided
         if (accountId) {
             setConnectedBankAccountId(accountId);
-        } else {
-            setConnectedBankAccountId('', { clearOnDefault: true });
         }
     };
 
@@ -61,9 +63,10 @@ export const useImportModal = () => {
     };
 
     const resetFormState = () => {
-        setImportId('', { clearOnDefault: true });
-        setConnectedBankAccountId('', { clearOnDefault: true });
-        setCurrentStep(defaultStep, { clearOnDefault: true });
+        setImportId(null);
+        setConnectedBankAccountId(null);
+        setCurrentStep(null);
+        clearFiles();
     };
 
     const reset = () => {
@@ -98,12 +101,7 @@ export const useImportModal = () => {
 /**
  * Hook to manage file uploads.
  * This hook is used to manage the file uploads and the file upload store.
- * It is used to add files to the store, remove files from the store, and upload files to the store.
- * It is also used to get the files from the store, the completed files count, the has errors, and the completed files.
- * It is also used to get the dropzone props.
- * It is also used to retry uploading a file.
- * It is also used to get the files from the store, the completed files count, the has errors, and the completed files.
- * It is also used to get the dropzone props.
+ * It creates a draft import on first file upload and creates file records after S3 upload.
  */
 export const useFileUpload = () => {
     const {
@@ -116,8 +114,13 @@ export const useFileUpload = () => {
         getCompletedFiles,
     } = useFileUploadStore();
 
-    // Initialize the signed URL mutation hook at the top level
+    // Get modal state for import ID and account ID
+    const { importId, setImportId, connectedBankAccountId } = useImportModal();
+
+    // Initialize the API hooks
     const { mutateAsync: createSignedUrl } = useImportFileEndpoints.createS3SignedUrl();
+    const { mutateAsync: createDraftImport } = useImportRecordEndpoints.create();
+    const { mutateAsync: createFileFromS3 } = useImportFileEndpoints.createFromS3();
 
     /**
      * Upload a file
@@ -131,6 +134,29 @@ export const useFileUpload = () => {
             try {
                 // Update status to uploading
                 updateFile(fileId, { status: 'uploading', progress: 0 });
+
+                // Create draft import if this is the first file and no import exists yet
+                let currentImportId = importId;
+                if (!currentImportId && connectedBankAccountId) {
+                    try {
+                        const draftImport = await createDraftImport({
+                            json: {
+                                connectedBankAccountId,
+                            },
+                        });
+                        currentImportId = draftImport.id;
+                        setImportId(currentImportId);
+                    } catch (error) {
+                        throw new Error(
+                            'Failed to create draft import: ' +
+                                (error instanceof Error ? error.message : 'Unknown error')
+                        );
+                    }
+                }
+
+                if (!currentImportId) {
+                    throw new Error('No import ID available. Please select an account first.');
+                }
 
                 // Simulate upload progress - more realistic progression
                 let currentProgress = 0;
@@ -168,6 +194,24 @@ export const useFileUpload = () => {
 
                 if (progressInterval) clearInterval(progressInterval);
 
+                // Create file record in database
+                try {
+                    await createFileFromS3({
+                        json: {
+                            importId: currentImportId,
+                            fileName: fileUpload.file.name,
+                            fileType: fileUpload.file.type,
+                            fileSize: fileUpload.file.size,
+                            s3Key: file.filename,
+                        },
+                    });
+                } catch (error) {
+                    throw new Error(
+                        'Failed to create file record: ' +
+                            (error instanceof Error ? error.message : 'Unknown error')
+                    );
+                }
+
                 // Complete upload
                 updateFile(fileId, {
                     status: 'completed',
@@ -183,7 +227,15 @@ export const useFileUpload = () => {
                 });
             }
         },
-        [updateFile, createSignedUrl]
+        [
+            updateFile,
+            createSignedUrl,
+            createDraftImport,
+            createFileFromS3,
+            importId,
+            setImportId,
+            connectedBankAccountId,
+        ]
     );
 
     /**

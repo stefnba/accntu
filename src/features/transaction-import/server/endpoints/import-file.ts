@@ -1,3 +1,7 @@
+import {
+    createFileFromS3Schema,
+    updateFileStatusSchema,
+} from '@/features/transaction-import/schemas';
 import { getUser } from '@/lib/auth';
 import { createUploadToS3Endpoints } from '@/lib/upload/cloud/s3/create-endpoints';
 import { withRoute } from '@/server/lib/handler';
@@ -6,47 +10,38 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as importFileServices from '../db/services/import-file';
 
-const CreateImportFileSchema = z.object({
-    importId: z.string().min(1, 'Import ID is required'),
-    fileName: z.string().min(1, 'File name is required'),
-    fileUrl: z.string().url('Valid file URL is required'),
-    fileType: z.string().min(1, 'File type is required'),
-    fileSize: z.number().min(1, 'File size must be greater than 0'),
-    storageType: z.enum(['s3', 'local']).default('s3'),
-    bucket: z.string().optional(),
-    key: z.string().optional(),
-    relativePath: z.string().optional(),
-});
-
-const UpdateFileStatusSchema = z.object({
-    status: z.enum(['uploaded', 'processing', 'processed', 'imported', 'failed']),
-    transactionCount: z.number().optional(),
-    importedTransactionCount: z.number().optional(),
-    parseErrors: z.array(z.unknown()).optional(),
-    parsedTransactions: z.array(z.unknown()).optional(),
-});
-
 const app = new Hono()
+    /**
+     * Get all files by import ID
+     */
     .get('/import/:importId', zValidator('param', z.object({ importId: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { importId } = c.req.valid('param');
-            return await importFileServices.getFilesByImport({ importId });
+            return await importFileServices.getByImport({ importId });
         })
     )
+
+    /**
+     * Get file by ID
+     */
     .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
-            return await importFileServices.getFileById({ fileId: id });
+            return await importFileServices.getById({ fileId: id });
         })
     )
-    .post('/', zValidator('json', CreateImportFileSchema), async (c) =>
+
+    /**
+     * Create file record from S3 upload
+     */
+    .post('/from-s3', zValidator('json', createFileFromS3Schema), async (c) =>
         withRoute(
             c,
             async () => {
                 const user = getUser(c);
                 const data = c.req.valid('json');
 
-                return await importFileServices.uploadFileToImport({
+                return await importFileServices.createFromS3Upload({
                     userId: user.id,
                     ...data,
                 });
@@ -54,42 +49,57 @@ const app = new Hono()
             201
         )
     )
+
+    /**
+     * Update file status and processing information
+     */
     .put(
         '/:id/status',
         zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', UpdateFileStatusSchema),
+        zValidator('json', updateFileStatusSchema),
         async (c) =>
             withRoute(c, async () => {
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
 
-                return await importFileServices.updateFileStatus({
+                return await importFileServices.updateStatus({
                     fileId: id,
                     ...data,
                 });
             })
     )
+
+    /**
+     * Delete file
+     */
     .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            return await importFileServices.deleteFile({
+            return await importFileServices.remove({
                 fileId: id,
                 userId: user.id,
             });
         })
     )
+
+    /**
+     * Parse file (placeholder for future implementation)
+     */
     .post('/:id/parse', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
             return {
                 success: true,
+                message: 'File parsing will be implemented in future',
             };
         })
     )
 
-    // upload to s3
+    /**
+     * S3 upload endpoints (signed URLs)
+     */
     .route(
         '/upload',
         createUploadToS3Endpoints({

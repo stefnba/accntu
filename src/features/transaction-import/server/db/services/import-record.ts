@@ -1,13 +1,19 @@
-import * as importRecordQueries from '../queries/import-record';
 import * as importFileQueries from '../queries/import-file';
+import * as importRecordQueries from '../queries/import-record';
 
-// Business logic for updating import counts
+/**
+ * Updates import record counts based on associated files
+ * @param importId - The import record ID to update
+ */
 export const updateImportCounts = async ({ importId }: { importId: string }): Promise<void> => {
     const files = await importFileQueries.getAll({ importId });
 
     const fileCount = files.length;
-    const importedFileCount = files.filter(f => f.status === 'imported').length;
-    const totalImportedTransactions = files.reduce((sum, f) => sum + (f.importedTransactionCount || 0), 0);
+    const importedFileCount = files.filter((f) => f.status === 'imported').length;
+    const totalImportedTransactions = files.reduce(
+        (sum, f) => sum + (f.importedTransactionCount || 0),
+        0
+    );
 
     const updateData: any = {
         fileCount,
@@ -23,10 +29,22 @@ export const updateImportCounts = async ({ importId }: { importId: string }): Pr
     await importRecordQueries.update({ id: importId, data: updateData });
 };
 
+/**
+ * Gets all import records for a user
+ * @param userId - The user ID
+ * @returns Array of import records with related data
+ */
 export const getAllImports = async ({ userId }: { userId: string }) => {
     return await importRecordQueries.getAll({ userId });
 };
 
+/**
+ * Gets a specific import record by ID
+ * @param id - The import record ID
+ * @param userId - The user ID for ownership verification
+ * @returns Import record with related data
+ * @throws Error if not found or access denied
+ */
 export const getImportById = async ({ id, userId }: { id: string; userId: string }) => {
     const result = await importRecordQueries.getById({ id, userId });
     if (!result) {
@@ -35,7 +53,13 @@ export const getImportById = async ({ id, userId }: { id: string; userId: string
     return result;
 };
 
-export const createTransactionImport = async ({
+/**
+ * Creates a new transaction import record with draft status
+ * @param userId - The user ID
+ * @param connectedBankAccountId - The connected bank account ID
+ * @returns Created import record
+ */
+export const create = async ({
     userId,
     connectedBankAccountId,
 }: {
@@ -46,21 +70,29 @@ export const createTransactionImport = async ({
         data: {
             userId,
             connectedBankAccountId,
-            status: 'pending',
+            status: 'draft',
         },
     });
 
     return importRecord;
 };
 
-export const updateImport = async ({
+/**
+ * Updates an import record with new data
+ * @param id - The import record ID
+ * @param userId - The user ID for ownership verification
+ * @param data - Update data
+ * @returns Updated import record
+ * @throws Error if not found or access denied
+ */
+export const update = async ({
     id,
     userId,
     data,
 }: {
     id: string;
     userId: string;
-    data: { status?: string };
+    data: { status?: 'draft' | 'pending' | 'processing' | 'completed' | 'failed' };
 }) => {
     // Verify ownership
     const existing = await importRecordQueries.getById({ id, userId });
@@ -76,121 +108,47 @@ export const updateImport = async ({
     return updated;
 };
 
-export const addFileToImport = async ({
-    importId,
-    fileName,
-    fileUrl,
-    fileType,
-    fileSize,
-    storageType = 's3',
-    bucket,
-    key,
-    relativePath,
-}: {
-    importId: string;
-    fileName: string;
-    fileUrl: string;
-    fileType: string;
-    fileSize: number;
-    storageType?: 's3' | 'local';
-    bucket?: string;
-    key?: string;
-    relativePath?: string;
-}) => {
-    const file = await importFileQueries.create({
+/**
+ * Activates a draft import by changing status to pending
+ * @param id - The import record ID
+ * @param userId - The user ID for ownership verification
+ * @returns Updated import record
+ * @throws Error if not found, access denied, or not in draft status
+ */
+export const activate = async ({ id, userId }: { id: string; userId: string }) => {
+    // Verify ownership and that it's a draft
+    const existing = await importRecordQueries.getById({ id, userId });
+    if (!existing) {
+        throw new Error('Transaction import not found');
+    }
+
+    if (existing.status !== 'draft') {
+        throw new Error('Can only activate draft imports');
+    }
+
+    const updated = await importRecordQueries.update({
+        id,
         data: {
-            importId,
-            fileName,
-            fileUrl,
-            fileType,
-            fileSize,
-            storageType,
-            bucket,
-            key,
-            relativePath,
-            status: 'uploaded',
+            status: 'pending',
+            updatedAt: new Date(),
         },
     });
 
-    // Update import counts
-    await updateImportCounts({ importId });
-
-    return file;
-};
-
-export const processImportFile = async ({
-    fileId,
-    transactionCount,
-    parseErrors,
-    parsedTransactions,
-}: {
-    fileId: string;
-    transactionCount?: number;
-    parseErrors?: unknown[];
-    parsedTransactions?: unknown[];
-}) => {
-    const file = await importFileQueries.updateStatus({
-        id: fileId,
-        status: 'processed',
-        transactionCount,
-        parseErrors,
-        parsedTransactions,
-    });
-
-    if (file) {
-        await updateImportCounts({ importId: file.importId });
+    if (!updated) {
+        throw new Error('Failed to activate transaction import');
     }
 
-    return file;
+    return updated;
 };
 
-export const completeImportFile = async ({
-    fileId,
-    importedTransactionCount,
-}: {
-    fileId: string;
-    importedTransactionCount: number;
-}) => {
-    const file = await importFileQueries.updateStatus({
-        id: fileId,
-        status: 'imported',
-        importedTransactionCount,
-    });
-
-    if (file) {
-        await updateImportCounts({ importId: file.importId });
-    }
-
-    return file;
-};
-
-export const failImportFile = async ({
-    fileId,
-    parseErrors,
-}: {
-    fileId: string;
-    parseErrors: unknown[];
-}) => {
-    const file = await importFileQueries.updateStatus({
-        id: fileId,
-        status: 'failed',
-        parseErrors,
-    });
-
-    if (file) {
-        await updateImportCounts({ importId: file.importId });
-    }
-
-    return file;
-};
-
-export const deleteImport = async ({ 
-    importId, 
-    userId 
-}: { 
-    importId: string; 
-    userId: string; 
-}) => {
+/**
+ * Deletes an import record and all associated files
+ * @param importId - The import record ID
+ * @param userId - The user ID for ownership verification
+ * @returns Success result
+ * @throws Error if not found or access denied
+ */
+export const remove = async ({ importId, userId }: { importId: string; userId: string }) => {
     // Verify ownership
     const existing = await importRecordQueries.getById({ id: importId, userId });
     if (!existing) {
@@ -199,18 +157,22 @@ export const deleteImport = async ({
 
     // Delete all files first
     const files = await importFileQueries.getAll({ importId });
-    await Promise.all(files.map(file => importFileQueries.remove({ id: file.id })));
+    await Promise.all(files.map((file) => importFileQueries.remove({ id: file.id })));
 
     // Delete the import record
     await importRecordQueries.remove({ id: importId });
-    
+
     return { success: true };
 };
 
-export const deleteImportFile = async ({ fileId }: { fileId: string }) => {
-    const file = await importFileQueries.getById({ id: fileId });
-    if (file) {
-        await importFileQueries.remove({ id: fileId });
-        await updateImportCounts({ importId: file.importId });
-    }
+/**
+ * Cleans up old draft imports older than specified hours
+ * @param olderThanHours - Hours threshold (default: 24)
+ * @returns Number of imports cleaned up
+ */
+export const cleanupOldDraftImports = async (olderThanHours: number = 24) => {
+    const cutoffDate = new Date();
+    cutoffDate.setHours(cutoffDate.getHours() - olderThanHours);
+
+    return await importRecordQueries.cleanupDraftImports({ cutoffDate });
 };

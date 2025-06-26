@@ -10,10 +10,10 @@ const TRANSACTION_IMPORT_FILE_QUERY_KEYS = {
  */
 export const useImportFileEndpoints = {
     /**
-     * Create/upload a new import file
+     * Create file record from S3 upload
      */
-    create: createMutation(
-        apiClient['transaction-import'].files.$post,
+    createFromS3: createMutation(
+        apiClient['transaction-import'].files['from-s3'].$post,
         TRANSACTION_IMPORT_FILE_QUERY_KEYS.FILES
     ),
 

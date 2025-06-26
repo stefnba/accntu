@@ -1,13 +1,18 @@
-import { db } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
-import { and, eq } from 'drizzle-orm';
 import {
     transactionImport,
     transactionImportFile,
     type NewTransactionImport,
     type TransactionImport,
-} from '../schemas';
+} from '@/features/transaction-import/server/db/schemas';
+import { db } from '@/server/db';
+import { withDbQuery } from '@/server/lib/handler';
+import { and, eq, lt } from 'drizzle-orm';
 
+/**
+ * Get all transaction imports for a user
+ * @param userId - The ID of the user
+ * @returns The transaction imports
+ */
 export const getAll = async ({ userId }: { userId: string }) =>
     withDbQuery({
         operation: 'get transaction imports by user ID',
@@ -37,6 +42,12 @@ export const getAll = async ({ userId }: { userId: string }) =>
         },
     });
 
+/**
+ * Get a transaction import by ID
+ * @param id - The ID of the transaction import
+ * @param userId - The ID of the user
+ * @returns The transaction import
+ */
 export const getById = async ({ id, userId }: { id: string; userId: string }) =>
     withDbQuery({
         operation: 'get transaction import by ID',
@@ -67,6 +78,11 @@ export const getById = async ({ id, userId }: { id: string; userId: string }) =>
         },
     });
 
+/**
+ * Create a transaction import
+ * @param data - The data to create
+ * @returns The created transaction import
+ */
 export const create = async ({
     data,
 }: {
@@ -80,6 +96,12 @@ export const create = async ({
         },
     });
 
+/**
+ * Update a transaction import
+ * @param id - The ID of the transaction import
+ * @param data - The data to update
+ * @returns The updated transaction import
+ */
 export const update = async ({
     id,
     data,
@@ -99,6 +121,11 @@ export const update = async ({
         },
     });
 
+/**
+ * Delete a transaction import
+ * @param id - The ID of the transaction import
+ * @returns The number of deleted transaction imports
+ */
 export const remove = async ({ id }: { id: string }): Promise<void> =>
     withDbQuery({
         operation: 'delete transaction import',
@@ -107,5 +134,30 @@ export const remove = async ({ id }: { id: string }): Promise<void> =>
                 .update(transactionImport)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(eq(transactionImport.id, id));
+        },
+    });
+
+/**
+ * Cleanup old draft imports
+ * @param cutoffDate - The date to cutoff
+ * @returns The number of deleted transaction imports
+ */
+export const cleanupDraftImports = async ({ cutoffDate }: { cutoffDate: Date }): Promise<number> =>
+    withDbQuery({
+        operation: 'cleanup old draft imports',
+        queryFn: async () => {
+            const result = await db
+                .update(transactionImport)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(
+                    and(
+                        eq(transactionImport.status, 'draft'),
+                        lt(transactionImport.createdAt, cutoffDate),
+                        eq(transactionImport.isActive, true)
+                    )
+                )
+                .returning({ id: transactionImport.id });
+
+            return result.length;
         },
     });

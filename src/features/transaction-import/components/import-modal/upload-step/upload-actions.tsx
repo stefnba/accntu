@@ -1,21 +1,21 @@
 import { Button } from '@/components/ui/button';
+import { useImportModal } from '@/features/transaction-import/hooks';
 
 interface UploadActionsProps {
     completedFilesCount: number;
     isProcessing: boolean;
-    onBack: () => void;
     onContinue: () => void;
 }
 
 export const UploadActions = ({
     completedFilesCount,
     isProcessing,
-    onBack,
     onContinue,
 }: UploadActionsProps) => {
+    const { setCurrentStep } = useImportModal();
     return (
         <div className="flex justify-between pt-6">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => setCurrentStep('accountSelection')}>
                 Back
             </Button>
 

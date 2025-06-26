@@ -1,7 +1,6 @@
 'use client';
 
-import { useConnectedBankEndpoints } from '@/features/bank/api';
-import { useImportFileEndpoints } from '@/features/transaction-import/api';
+import { useImportRecordEndpoints } from '@/features/transaction-import/api/import-record';
 import { useImportModal } from '@/features/transaction-import/hooks';
 import { useState } from 'react';
 
@@ -12,14 +11,12 @@ import { UploadStatus } from '@/features/transaction-import/components/import-mo
 import { useFileUpload } from '@/features/transaction-import/hooks';
 
 export const UploadStep = () => {
-    const { setCurrentStep, setImportId, connectedBankAccountId } = useImportModal();
+    const { setCurrentStep, importId } = useImportModal();
 
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const { data: banksData } = useConnectedBankEndpoints.getAll({});
-    const { mutate: createImport } = useImportFileEndpoints.create({
+    const { mutate: activateImport } = useImportRecordEndpoints.activate({
         onSuccess: (data) => {
-            setImportId(data.id);
             setCurrentStep('processing');
         },
         errorHandlers: {
@@ -46,23 +43,16 @@ export const UploadStep = () => {
             return;
         }
 
-        setIsProcessing(true);
-        // You can process multiple files or just take the first one
-        const firstFile = completedFiles[0];
+        if (!importId) {
+            alert('No import session found. Please try uploading files again.');
+            return;
+        }
 
-        // Create import record with the uploaded file
-        // You'll need to modify your API to handle S3 keys
-        createImport({
-            json: {
-                importId: 'temp-import-id', // This should come from somewhere else
-                fileName: firstFile.file.name,
-                fileUrl: firstFile.uploadUrl || '',
-                fileType: firstFile.file.type,
-                fileSize: firstFile.file.size,
-                storageType: 's3' as const,
-                key: firstFile.s3Key,
-                // Add other relevant data
-            },
+        setIsProcessing(true);
+
+        // Activate the draft import to move it to 'pending' status
+        activateImport({
+            param: { id: importId },
         });
     };
 
@@ -88,7 +78,6 @@ export const UploadStep = () => {
             <UploadActions
                 completedFilesCount={completedFilesCount}
                 isProcessing={isProcessing}
-                onBack={() => setCurrentStep('accountSelection')}
                 onContinue={handleContinue}
             />
 

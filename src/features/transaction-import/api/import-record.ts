@@ -10,11 +10,19 @@ const TRANSACTION_IMPORT_QUERY_KEYS = {
  */
 export const useImportRecordEndpoints = {
     /**
-     * Create a new transaction import
+     * Create a new transaction import (always creates as draft)
      */
     create: createMutation(
         apiClient['transaction-import'].$post,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORTS
+    ),
+
+    /**
+     * Activate a draft transaction import
+     */
+    activate: createMutation(
+        apiClient['transaction-import'][':id'].activate.$post,
+        TRANSACTION_IMPORT_QUERY_KEYS.IMPORT
     ),
 
     /**
