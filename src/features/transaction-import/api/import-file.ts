@@ -58,10 +58,10 @@ export const useImportFileEndpoints = {
     ),
 
     /**
-     * Get signed URL for file upload
+     * Create signed URL for file upload
      */
-    getS3SignedUrl: createQuery(
-        apiClient['transaction-import'].files.upload['get-signed-url'].$get,
+    createS3SignedUrl: createMutation(
+        apiClient['transaction-import'].files.upload['signed-url'].$post,
         TRANSACTION_IMPORT_FILE_QUERY_KEYS.FILE
     ),
 

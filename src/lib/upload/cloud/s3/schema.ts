@@ -11,7 +11,6 @@ export const SignedS3UrlInputSchema = z.object({
     fileSize: z.coerce.number(),
     checksum: z.string(),
     key: z.string().optional(),
-    bucket: z.string(),
 });
 
 export const DeleteS3FileSchema = z.object({
@@ -25,6 +24,6 @@ export const DeleteS3FileSchema = z.object({
 export const S3UploadConfigSchema = z.object({
     allowedFileTypes: z.array(z.string()),
     maxFileSize: z.number(),
-    bucket: z.string(),
+    bucket: z.string().optional(),
 });
 export type TS3UploadConfig = z.infer<typeof S3UploadConfigSchema>;

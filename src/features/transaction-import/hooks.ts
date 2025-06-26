@@ -4,6 +4,9 @@ import { useDropzone } from 'react-dropzone';
 import { allowedFileTypes, maxFileSize } from './config';
 import { useFileUploadStore } from './store/file-upload-store';
 
+import { useImportFileEndpoints } from '@/features/transaction-import/api';
+import { uploadFileToS3WithSignedUrl } from '@/lib/upload/cloud/s3/services';
+import { computeSHA256 } from '@/lib/upload/utils';
 import type { FileUpload } from './types';
 
 const IMPORT_STEPS = ['accountSelection', 'upload', 'processing', 'preview', 'success'] as const;
@@ -107,11 +110,81 @@ export const useFileUpload = () => {
         files,
         addFiles,
         removeFile,
-        uploadFile,
+        updateFile,
         getCompletedFilesCount,
         getHasErrors,
         getCompletedFiles,
     } = useFileUploadStore();
+
+    // Initialize the signed URL mutation hook at the top level
+    const { mutateAsync: createSignedUrl } = useImportFileEndpoints.createS3SignedUrl();
+
+    /**
+     * Upload a file
+     * @param fileUpload - The file to upload
+     */
+    const uploadFile = useCallback(
+        async (fileUpload: FileUpload) => {
+            const fileId = fileUpload.id;
+            let progressInterval: NodeJS.Timeout | null = null;
+
+            try {
+                // Update status to uploading
+                updateFile(fileId, { status: 'uploading', progress: 0 });
+
+                // Simulate upload progress - more realistic progression
+                let currentProgress = 0;
+                progressInterval = setInterval(() => {
+                    currentProgress += Math.random() * 15 + 5; // Random progress between 5-20%
+                    const progress = Math.min(currentProgress, 90);
+                    updateFile(fileId, { progress });
+
+                    if (currentProgress >= 90) {
+                        clearInterval(progressInterval!);
+                    }
+                }, 300);
+
+                // Create signed URL from API using mutation
+                const signedUrlData = await createSignedUrl({
+                    json: {
+                        fileType: fileUpload.file.type,
+                        fileSize: fileUpload.file.size,
+                        checksum: await computeSHA256(fileUpload.file),
+                    },
+                });
+
+                if (!signedUrlData?.url) {
+                    throw new Error('Failed to create signed URL');
+                }
+
+                const { success, file } = await uploadFileToS3WithSignedUrl({
+                    url: signedUrlData.url,
+                    file: fileUpload.file,
+                });
+
+                if (!success) {
+                    throw new Error('Failed to upload file to S3');
+                }
+
+                if (progressInterval) clearInterval(progressInterval);
+
+                // Complete upload
+                updateFile(fileId, {
+                    status: 'completed',
+                    progress: 100,
+                    s3Key: file.filename,
+                    uploadUrl: file.url,
+                });
+            } catch (error) {
+                if (progressInterval) clearInterval(progressInterval);
+                updateFile(fileId, {
+                    status: 'error',
+                    error: error instanceof Error ? error.message : 'Upload failed',
+                });
+            }
+        },
+        [updateFile, createSignedUrl]
+    );
 
     /**
      * Handle file drops

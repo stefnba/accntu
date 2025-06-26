@@ -12,7 +12,6 @@ type FileUploadActions = {
     updateFile: (fileId: string, updates: Partial<FileUpload>) => void;
     removeFile: (fileId: string) => void;
     clearFiles: () => void;
-    uploadFile: (fileUpload: FileUpload) => Promise<void>;
 
     // Computed values
     getCompletedFilesCount: () => number;
@@ -80,53 +79,6 @@ export const useFileUploadStore = create<FileUploadState & FileUploadActions>()(
              */
             clearFiles: () => {
                 set({ files: [] });
-            },
-
-            /**
-             * Upload a file to the store
-             * @param fileUpload - The file to upload
-             */
-            uploadFile: async (fileUpload) => {
-                const { updateFile } = get();
-                const fileId = fileUpload.id;
-                let progressInterval: NodeJS.Timeout | null = null;
-
-                try {
-                    // Update status to uploading
-                    updateFile(fileId, { status: 'uploading', progress: 0 });
-
-                    // Simulate upload progress - more realistic progression
-                    let currentProgress = 0;
-                    progressInterval = setInterval(() => {
-                        currentProgress += Math.random() * 15 + 5; // Random progress between 5-20%
-                        const progress = Math.min(currentProgress, 90);
-                        updateFile(fileId, { progress });
-
-                        if (currentProgress >= 90) {
-                            clearInterval(progressInterval!);
-                        }
-                    }, 300);
-
-                    // TODO: Replace with actual upload logic
-                    // For now, simulate successful upload
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-                    if (progressInterval) clearInterval(progressInterval);
-
-                    // Complete upload
-                    updateFile(fileId, {
-                        status: 'completed',
-                        progress: 100,
-                        s3Key: `uploads/${fileUpload.file.name}`,
-                        uploadUrl: 'https://example.com/uploaded-file',
-                    });
-                } catch (error) {
-                    if (progressInterval) clearInterval(progressInterval);
-                    updateFile(fileId, {
-                        status: 'error',
-                        error: error instanceof Error ? error.message : 'Upload failed',
-                    });
-                }
             },
 
             /**

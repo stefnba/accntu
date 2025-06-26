@@ -99,7 +99,7 @@ const app = new Hono()
                 'application/vnd.ms-excel',
             ],
             maxFileSize: 10 * 1024 * 1024, // 10MB in bytes
-            bucket: process.env.NEXT_PUBLIC_S3_BUCKET || 'accntu-uploads',
+            bucket: process.env.AWS_BUCKET_NAME_PRIVATE_UPLOAD,
         })
     );
 

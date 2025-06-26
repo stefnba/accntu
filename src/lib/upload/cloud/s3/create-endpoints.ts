@@ -15,10 +15,10 @@ export const createUploadToS3Endpoints = (config: TS3UploadConfig) => {
     return (
         new Hono()
 
-            // get a signed url to upload a file to s3
-            .get('/get-signed-url', zValidator('query', SignedS3UrlInputSchema), async (c) => {
+            // create a signed url to upload a file to s3
+            .post('/signed-url', zValidator('json', SignedS3UrlInputSchema), async (c) => {
                 const user = getUser(c);
-                const values = c.req.valid('query');
+                const values = c.req.valid('json');
                 const { url, key, bucket } = await getSignedS3Url({
                     fileInput: values,
                     config,

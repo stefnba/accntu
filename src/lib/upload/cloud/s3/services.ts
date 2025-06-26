@@ -55,9 +55,14 @@ export const getSignedS3Url = async ({
     }
 
     const key = fileInput.key || generateRandonFileName();
+    const bucket = config.bucket;
+
+    if (!bucket) {
+        throw new S3UploadError('An existing bucket is required to upload a file to S3');
+    }
 
     const putObjectCommand = new PutObjectCommand({
-        Bucket: fileInput.bucket,
+        Bucket: bucket,
         Key: key,
         ContentType: fileInput.fileType,
         ContentLength: fileInput.fileSize,
@@ -73,16 +78,17 @@ export const getSignedS3Url = async ({
         { expiresIn: 60 } // 60 seconds,
     );
 
-    return { url, key, bucket: config.bucket };
+    return { url, key, bucket };
 };
 
 /**
  * Upload a file to S3 using a signed URL.
+ * !important: this service function is called from the client side.
  * @param url - The signed URL for the file.
  * @param file - The file to upload.
  * @returns - The response from the S3 upload.
  */
-export const uploadFileToS3WithSignedUrl = async (url: string, file: File) => {
+export const uploadFileToS3WithSignedUrl = async ({ url, file }: { url: string; file: File }) => {
     const response = await fetch(url, {
         method: 'PUT',
         body: file,
@@ -96,7 +102,14 @@ export const uploadFileToS3WithSignedUrl = async (url: string, file: File) => {
         throw new Error(`Failed to upload file to S3: ${errorText}`);
     }
 
+    console.log('response from s3', response);
+
     return {
         success: true,
+        file: {
+            url: response.url.split('?')[0],
+            type: file.type,
+            filename: file.name,
+        },
     };
 };
