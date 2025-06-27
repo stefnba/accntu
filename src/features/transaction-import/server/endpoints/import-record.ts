@@ -1,10 +1,7 @@
-import {
-    createTransactionImportSchema,
-    updateTransactionImportSchema,
-} from '@/features/transaction-import/schemas';
+import { transactionImportServiceSchemas } from '@/features/transaction-import/schemas';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { TransactionImportCleanupService } from '../services/cleanup';
@@ -36,7 +33,7 @@ const app = new Hono()
     /**
      * Create new transaction import (always creates as draft)
      */
-    .post('/', zValidator('json', createTransactionImportSchema), async (c) =>
+    .post('/', zValidator('json', transactionImportServiceSchemas.create), async (c) =>
         withRoute(
             c,
             async () => {
@@ -45,7 +42,7 @@ const app = new Hono()
 
                 return await importRecordServices.create({
                     userId: user.id,
-                    connectedBankAccountId: data.connectedBankAccountId,
+                    data,
                 });
             },
             201
@@ -73,7 +70,7 @@ const app = new Hono()
     .put(
         '/:id',
         zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', updateTransactionImportSchema),
+        zValidator('json', transactionImportServiceSchemas.update),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
@@ -97,7 +94,7 @@ const app = new Hono()
             const { id } = c.req.valid('param');
 
             return await importRecordServices.remove({
-                importId: id,
+                id,
                 userId: user.id,
             });
         })

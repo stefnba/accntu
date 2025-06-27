@@ -200,9 +200,10 @@ export const useFileUpload = () => {
                         json: {
                             importId: currentImportId,
                             fileName: fileUpload.file.name,
+                            fileUrl: file.url,
                             fileType: fileUpload.file.type,
                             fileSize: fileUpload.file.size,
-                            s3Key: file.filename,
+                            storageType: 's3',
                         },
                     });
                 } catch (error) {

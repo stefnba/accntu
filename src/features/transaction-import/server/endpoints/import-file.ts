@@ -5,7 +5,7 @@ import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { createUploadToS3Endpoints } from '@/lib/upload/cloud/s3/create-endpoints';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
