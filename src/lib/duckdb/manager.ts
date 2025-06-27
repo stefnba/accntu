@@ -1,4 +1,5 @@
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
+import { z } from 'zod';
 import {
     DuckDBConnectionError,
     DuckDBInitializationError,
@@ -9,12 +10,16 @@ import {
 import type {
     CSVReadOptions,
     DatabaseInfo,
+    DataSource,
     DuckDBConfig,
     JSONReadOptions,
     ParquetReadOptions,
     QueryResult,
     StreamQueryResult,
     TransactionQueryOptions,
+    TransformationConfig,
+    TransformationOptions,
+    TransformationResult,
 } from './types';
 
 export class DuckDBManager {
@@ -25,7 +30,7 @@ export class DuckDBManager {
     constructor(config: DuckDBConfig = {}) {
         this.config = {
             database: ':memory:',
-            enableHttpfs: true,
+            enableHttpfs: false,
             ...config,
         };
     }
@@ -40,7 +45,7 @@ export class DuckDBManager {
             this.connection = await this.instance.connect();
 
             // Install and load httpfs extension for S3 support if enabled
-            if (this.config.enableHttpfs) {
+            if (this.config.enableHttpfs || this.config.s3) {
                 await this.connection.run('INSTALL httpfs;');
                 await this.connection.run('LOAD httpfs;');
             }
@@ -172,19 +177,212 @@ export class DuckDBManager {
     }
 
     /**
-     * Read CSV files from S3 with advanced options
+     * Transform data from S3 with CTE approach and Zod validation
+     *
+     * @example
+     * ```typescript
+     * const result = await db.transformData({
+     *   source: {
+     *     type: 'csv',
+     *     path: 's3://bucket/transactions.csv',
+     *     options: { delim: ';', normalize_names: true }
+     *   },
+     *   transformSql: `
+     *     SELECT
+     *       amount::DECIMAL as amount,
+     *       UPPER(description) as description,
+     *       DATE_TRUNC('month', authorised_on::DATE) as month
+     *     FROM data
+     *     WHERE amount::DECIMAL > 0
+     *   `,
+     *   schema: z.object({
+     *     amount: z.number(),
+     *     description: z.string(),
+     *     month: z.string()
+     *   })
+     * });
+     * ```
      */
-    async readCSVFromS3(
-        s3Path: string | string[],
-        options: CSVReadOptions = {}
-    ): Promise<QueryResult> {
-        const pathStr = Array.isArray(s3Path)
-            ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
-            : `'${s3Path}'`;
+    async transformData<T>(
+        config: TransformationConfig<T>,
+        options: TransformationOptions = {}
+    ): Promise<TransformationResult<T>> {
+        const startTime = Date.now();
+        let readTime = 0;
+        let transformTime = 0;
+        let validationTime = 0;
 
+        const {
+            continueOnValidationError = true,
+            maxValidationErrors = 100,
+            includeInvalidRows = false,
+        } = options;
+
+        try {
+            // Step 1: Build the data source CTE with optional ID generation
+            const readStartTime = Date.now();
+            const dataSourceSql = this.buildDataSourceSql(config.source);
+
+            let fullQuery: string;
+
+            // If idConfig is provided, generate a deterministic ID from the raw data
+            if (config.idConfig) {
+                const idLength = 25; // 25 characters is the max length of a UUID
+                const defaultIdName = 'id';
+
+                // Generate SQL that includes ID generation in the CTE
+                const idFieldName = config.idConfig.fieldName || defaultIdName;
+                const hashColumns = config.idConfig.columns
+                    .map((col) => `COALESCE(CAST("${col}" AS VARCHAR), '')`)
+                    .join(` || '|' || `);
+
+                fullQuery = `
+                    WITH raw_data AS (${dataSourceSql}),
+                    data AS (
+                        SELECT *,
+                            SUBSTR(MD5(${hashColumns}), 1, ${idLength}) as ${idFieldName}
+                        FROM raw_data
+                    )
+                    ${config.transformSql}
+                `;
+            } else {
+                fullQuery = `
+                    WITH data AS (${dataSourceSql})
+                    ${config.transformSql}
+                `;
+            }
+
+            readTime = Date.now() - readStartTime;
+
+            // Step 2: Execute transformation query
+            const transformStartTime = Date.now();
+            const result = await this.query(fullQuery, config.params);
+            transformTime = Date.now() - transformStartTime;
+
+            // Step 3: Validate each row with Zod schema
+            const validationStartTime = Date.now();
+            const validatedData: T[] = [];
+            const validationErrors: Array<{
+                rowIndex: number;
+                row: Record<string, any>;
+                error: z.ZodError;
+            }> = [];
+
+            for (let i = 0; i < result.rows.length; i++) {
+                const row = result.rows[i];
+
+                try {
+                    const validatedRow = config.schema.parse(row);
+                    validatedData.push(validatedRow);
+                } catch (error) {
+                    if (error instanceof z.ZodError) {
+                        validationErrors.push({
+                            rowIndex: i,
+                            row: includeInvalidRows ? row : {},
+                            error,
+                        });
+
+                        // Stop if we've reached max validation errors and not continuing on error
+                        if (
+                            !continueOnValidationError ||
+                            validationErrors.length >= maxValidationErrors
+                        ) {
+                            break;
+                        }
+                    } else {
+                        throw error; // Re-throw non-Zod errors
+                    }
+                }
+            }
+
+            validationTime = Date.now() - validationStartTime;
+            const totalTime = Date.now() - startTime;
+
+            return {
+                data: result.rows,
+                validatedData: validatedData,
+                totalRows: result.rowCount,
+                validRows: validatedData.length,
+                errors: validationErrors,
+                metrics: {
+                    readTimeMs: readTime,
+                    transformTimeMs: transformTime,
+                    validationTimeMs: validationTime,
+                    totalTimeMs: totalTime,
+                },
+            };
+        } catch (error) {
+            if (error instanceof DuckDBQueryError) {
+                throw error;
+            }
+            throw new DuckDBQueryError(
+                `Transformation failed: ${error instanceof Error ? error.message : String(error)}`,
+                config.transformSql,
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * Transform data and return only successfully validated rows as JSON
+     * This is a convenience method for the most common use case
+     */
+    async transformToValidatedJson<T>(
+        config: TransformationConfig<T>,
+        options: TransformationOptions = {}
+    ): Promise<T[]> {
+        const result = await this.transformData(config, options);
+
+        if (result.errors.length > 0 && !options.continueOnValidationError) {
+            throw new DuckDBQueryError(
+                `Validation failed for ${result.errors.length} rows. First error: ${result.errors[0].error.message}`,
+                config.transformSql
+            );
+        }
+
+        return result.validatedData;
+    }
+
+    /**
+     * Build the appropriate data source SQL based on file type
+     * @param source - The data source configuration
+     * @returns The SQL query to read the data source
+     */
+    private buildDataSourceSql(source: DataSource): string {
+        const pathStr = Array.isArray(source.path)
+            ? `[${source.path.map((p) => `'${p}'`).join(', ')}]`
+            : `'${source.path}'`;
+
+        switch (source.type) {
+            case 'csv': {
+                const options = source.options as CSVReadOptions;
+                if (!options || Object.keys(options).length === 0) {
+                    return `SELECT * FROM read_csv_auto(${pathStr})`;
+                }
+                return `SELECT * FROM read_csv(${pathStr}${this.buildCsvOptionsString(options)})`;
+            }
+
+            case 'parquet': {
+                const options = source.options as ParquetReadOptions;
+                return `SELECT * FROM read_parquet(${pathStr}${this.buildParquetOptionsString(options || {})})`;
+            }
+
+            case 'json': {
+                const options = source.options as JSONReadOptions;
+                return `SELECT * FROM read_json(${pathStr}${this.buildJsonOptionsString(options || {})})`;
+            }
+
+            default:
+                throw new DuckDBQueryError(`Unsupported data source type: ${(source as any).type}`);
+        }
+    }
+
+    /**
+     * Build CSV options string for SQL query
+     */
+    private buildCsvOptionsString(options: CSVReadOptions): string {
         let optionsStr = '';
 
-        // Add CSV-specific options using correct parameter names from documentation
         if (options.delim) optionsStr += `, delim = '${options.delim}'`;
         if (options.quote) optionsStr += `, quote = '${options.quote}'`;
         if (options.escape) optionsStr += `, escape = '${options.escape}'`;
@@ -213,6 +411,47 @@ export class DuckDBManager {
             optionsStr += `, column_types = {${colTypes}}`;
         }
 
+        return optionsStr;
+    }
+
+    /**
+     * Build Parquet options string for SQL query
+     */
+    private buildParquetOptionsString(options: ParquetReadOptions): string {
+        let optionsStr = '';
+        if (options.filename) optionsStr += ', filename = true';
+        if (options.hive_partitioning) optionsStr += ', hive_partitioning = true';
+        if (options.union_by_name) optionsStr += ', union_by_name = true';
+        return optionsStr;
+    }
+
+    /**
+     * Build JSON options string for SQL query
+     */
+    private buildJsonOptionsString(options: JSONReadOptions): string {
+        let optionsStr = '';
+        if (options.filename) optionsStr += ', filename = true';
+        if (options.format) optionsStr += `, format = '${options.format}'`;
+        if (options.maximum_object_size)
+            optionsStr += `, maximum_object_size = ${options.maximum_object_size}`;
+        if (options.ignore_errors !== undefined)
+            optionsStr += `, ignore_errors = ${options.ignore_errors}`;
+        return optionsStr;
+    }
+
+    /**
+     * Read CSV files from S3 with advanced options
+     */
+    async readCSVFromS3(
+        s3Path: string | string[],
+        options: CSVReadOptions = {}
+    ): Promise<QueryResult> {
+        const pathStr = Array.isArray(s3Path)
+            ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
+            : `'${s3Path}'`;
+
+        let optionsStr = this.buildCsvOptionsString(options);
+
         // Try read_csv_auto first, then fall back to read_csv with options
         let query = `SELECT * FROM read_csv_auto(${pathStr})`;
 
@@ -235,11 +474,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = '';
-        if (options.filename) optionsStr += ', filename = true';
-        if (options.hive_partitioning) optionsStr += ', hive_partitioning = true';
-        if (options.union_by_name) optionsStr += ', union_by_name = true';
-
+        const optionsStr = this.buildParquetOptionsString(options);
         const query = `SELECT * FROM read_parquet(${pathStr}${optionsStr})`;
         return this.query(query);
     }
@@ -255,14 +490,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = '';
-        if (options.filename) optionsStr += ', filename = true';
-        if (options.format) optionsStr += `, format = '${options.format}'`;
-        if (options.maximum_object_size)
-            optionsStr += `, maximum_object_size = ${options.maximum_object_size}`;
-        if (options.ignore_errors !== undefined)
-            optionsStr += `, ignore_errors = ${options.ignore_errors}`;
-
+        const optionsStr = this.buildJsonOptionsString(options);
         const query = `SELECT * FROM read_json(${pathStr}${optionsStr})`;
         return this.query(query);
     }
@@ -299,36 +527,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = '';
-
-        // Add CSV-specific options using correct parameter names
-        if (options.delim) optionsStr += `, delim = '${options.delim}'`;
-        if (options.quote) optionsStr += `, quote = '${options.quote}'`;
-        if (options.escape) optionsStr += `, escape = '${options.escape}'`;
-        if (options.header !== undefined) optionsStr += `, header = ${options.header}`;
-        if (options.skip) optionsStr += `, skip = ${options.skip}`;
-        if (options.sample_size) optionsStr += `, sample_size = ${options.sample_size}`;
-        if (options.nullstr)
-            optionsStr += `, nullstr = [${options.nullstr.map((s: string) => `'${s}'`).join(', ')}]`;
-        if (options.dateformat) optionsStr += `, dateformat = '${options.dateformat}'`;
-        if (options.timestampformat)
-            optionsStr += `, timestampformat = '${options.timestampformat}'`;
-        if (options.encoding) optionsStr += `, encoding = '${options.encoding}'`;
-        if (options.decimal_separator)
-            optionsStr += `, decimal_separator = '${options.decimal_separator}'`;
-        if (options.thousands) optionsStr += `, thousands = '${options.thousands}'`;
-        if (options.auto_detect !== undefined)
-            optionsStr += `, auto_detect = ${options.auto_detect}`;
-        if (options.normalize_names !== undefined)
-            optionsStr += `, normalize_names = ${options.normalize_names}`;
-        if (options.all_varchar !== undefined)
-            optionsStr += `, all_varchar = ${options.all_varchar}`;
-        if (options.column_types) {
-            const colTypes = Object.entries(options.column_types)
-                .map(([name, type]) => `'${name}': '${type}'`)
-                .join(', ');
-            optionsStr += `, column_types = {${colTypes}}`;
-        }
+        const optionsStr = this.buildCsvOptionsString(options);
 
         // Use read_csv_auto if no options provided, otherwise use read_csv with options
         let query: string;
@@ -353,11 +552,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = '';
-        if (options.filename) optionsStr += ', filename = true';
-        if (options.hive_partitioning) optionsStr += ', hive_partitioning = true';
-        if (options.union_by_name) optionsStr += ', union_by_name = true';
-
+        const optionsStr = this.buildParquetOptionsString(options);
         const query = `CREATE TABLE ${tableName} AS SELECT * FROM read_parquet(${pathStr}${optionsStr})`;
         await this.query(query);
     }
@@ -374,14 +569,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = '';
-        if (options.filename) optionsStr += ', filename = true';
-        if (options.format) optionsStr += `, format = '${options.format}'`;
-        if (options.maximum_object_size)
-            optionsStr += `, maximum_object_size = ${options.maximum_object_size}`;
-        if (options.ignore_errors !== undefined)
-            optionsStr += `, ignore_errors = ${options.ignore_errors}`;
-
+        const optionsStr = this.buildJsonOptionsString(options);
         const query = `CREATE TABLE ${tableName} AS SELECT * FROM read_json(${pathStr}${optionsStr})`;
         await this.query(query);
     }

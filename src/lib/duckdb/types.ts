@@ -1,3 +1,5 @@
+import type { z } from 'zod';
+
 export interface S3Config {
     region?: string;
     accessKeyId?: string;
@@ -72,4 +74,62 @@ export interface DatabaseInfo {
     s3Settings: Record<string, any>[];
     secrets: Record<string, any>[];
     database?: string;
+}
+
+// New types for transformation workflow
+export type DataSource = {
+    type: 'csv' | 'parquet' | 'json';
+    path: string | string[];
+    options?: CSVReadOptions | ParquetReadOptions | JSONReadOptions;
+};
+
+export interface TransformationConfig<T = any> {
+    /** The data source configuration */
+    source: DataSource;
+    /** SQL transformation query that uses 'data' as the CTE name */
+    transformSql: string;
+    /** Zod schema for validating each row */
+    schema: z.ZodSchema<T>;
+    /** Optional parameters for the SQL query */
+    params?: Record<string, any> | any[];
+    /** Configuration for generating deterministic IDs from raw data */
+    idConfig?: {
+        /** Raw column names to use for ID generation (before transformation) */
+        columns: string[];
+        /** Field name to store the generated ID (default: 'id') */
+        fieldName?: string;
+    };
+}
+
+export interface TransformationResult<T = any> {
+    /** Raw rows */
+    data: Record<string, any>[];
+    /** Successfully validated rows */
+    validatedData: T[];
+    /** Total number of rows processed */
+    totalRows: number;
+    /** Number of successfully validated rows */
+    validRows: number;
+    /** Validation errors for failed rows */
+    errors: Array<{
+        rowIndex: number;
+        row: Record<string, any>;
+        error: z.ZodError;
+    }>;
+    /** Performance metrics */
+    metrics: {
+        readTimeMs: number;
+        transformTimeMs: number;
+        validationTimeMs: number;
+        totalTimeMs: number;
+    };
+}
+
+export interface TransformationOptions {
+    /** Continue processing even if some rows fail validation */
+    continueOnValidationError?: boolean;
+    /** Maximum number of validation errors to collect before stopping */
+    maxValidationErrors?: number;
+    /** Whether to return raw rows that failed validation */
+    includeInvalidRows?: boolean;
 }

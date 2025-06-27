@@ -42,6 +42,157 @@ console.log(`Loaded ${result.rowCount} rows`);
 await db.cleanup();
 ```
 
+## Transformation Workflow (New!)
+
+The DuckDB module now supports a powerful transformation workflow that:
+
+1. **Reads** files from S3 (CSV, Parquet, JSON)
+2. **Transforms** data using SQL with CTE approach
+3. **Validates** each row with Zod schemas
+4. **Returns** clean JSON with detailed metrics
+
+### Key Features
+
+- **CTE Approach**: Your SQL uses `FROM data` where `data` is automatically populated from S3
+- **Zod Validation**: Every row is validated against your schema with detailed error reporting
+- **Performance Metrics**: Get timing breakdown for read/transform/validate operations
+- **Flexible Options**: Support all DuckDB CSV/Parquet/JSON options
+- **Error Handling**: Graceful handling with detailed error messages
+
+### Transformation Methods
+
+#### transformData<T>()
+
+Complete transformation with detailed results and error tracking:
+
+```typescript
+import { z } from 'zod';
+
+const TransactionSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  description: z.string(),
+  category: z.string(),
+  date: z.string(),
+  is_expense: z.boolean(),
+});
+
+const result = await db.transformData({
+  source: {
+    type: 'csv',
+    path: 's3://bucket/transactions.csv',
+    options: {
+      delim: ';',
+      normalize_names: true,
+      dateformat: '%d-%m-%Y',
+    },
+  },
+  // Your SQL transformation - 'data' is the CTE
+  transformSql: `
+    SELECT
+      id::VARCHAR as id,
+      amount::DECIMAL as amount,
+      UPPER(TRIM(description)) as description,
+      CASE
+        WHEN LOWER(description) LIKE '%grocery%' THEN 'Food'
+        WHEN LOWER(description) LIKE '%gas%' THEN 'Transportation'
+        ELSE 'Other'
+      END as category,
+      authorised_on::VARCHAR as date,
+      amount::DECIMAL < 0 as is_expense
+    FROM data
+    WHERE amount::DECIMAL != 0
+    ORDER BY authorised_on::DATE DESC
+  `,
+  schema: TransactionSchema,
+}, {
+  continueOnValidationError: true,
+  maxValidationErrors: 100,
+  includeInvalidRows: false,
+});
+
+// Access results
+console.log(`Processed: ${result.validRows}/${result.totalRows} rows`);
+console.log(`Errors: ${result.errors.length}`);
+console.log(`Performance: ${result.metrics.totalTimeMs}ms total`);
+console.log('Valid data:', result.data);
+console.log('Validation errors:', result.errors);
+```
+
+#### transformToValidatedJson<T>()
+
+Simplified method that returns only validated data:
+
+```typescript
+const validTransactions = await db.transformToValidatedJson({
+  source: { type: 'csv', path: 's3://bucket/data.csv' },
+  transformSql: 'SELECT * FROM data WHERE amount > 0',
+  schema: TransactionSchema,
+});
+
+// Returns T[] - only successfully validated rows
+console.log('Valid transactions:', validTransactions);
+```
+
+### Complex SQL Examples
+
+The CTE approach supports any SQL transformation:
+
+```typescript
+// Complex analytics with aggregation
+const analyticsResult = await db.transformToValidatedJson({
+  source: { type: 'csv', path: 's3://bucket/sales.csv' },
+  transformSql: `
+    WITH monthly_sales AS (
+      SELECT
+        product_category,
+        DATE_TRUNC('month', sale_date::DATE) as month,
+        SUM(amount::DECIMAL) as revenue,
+        COUNT(*) as transaction_count
+      FROM data
+      WHERE amount::DECIMAL > 0
+      GROUP BY product_category, DATE_TRUNC('month', sale_date::DATE)
+    ),
+    ranked_categories AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (PARTITION BY month ORDER BY revenue DESC) as rank
+      FROM monthly_sales
+    )
+    SELECT
+      product_category,
+      month::VARCHAR as month,
+      ROUND(revenue, 2) as revenue,
+      transaction_count,
+      rank
+    FROM ranked_categories
+    WHERE rank <= 5  -- Top 5 categories per month
+    ORDER BY month, rank
+  `,
+  schema: z.object({
+    product_category: z.string(),
+    month: z.string(),
+    revenue: z.number(),
+    transaction_count: z.number(),
+    rank: z.number(),
+  }),
+});
+```
+
+### Why CTE Approach?
+
+**✅ Advantages:**
+- **Familiar**: Standard SQL that any developer knows
+- **Flexible**: Supports joins, window functions, complex transformations
+- **Clear**: Clean separation between data source and business logic
+- **Testable**: Easy to test SQL transformations independently
+- **Optimizable**: DuckDB can optimize the entire query plan
+
+**❌ Alternative approaches we considered:**
+- Template replacement (`{{SOURCE}}`) - complex parsing, injection risks
+- Function-based - less flexible, not SQL-native
+- Schema-first - rigid, doesn't support dynamic transformations
+
 ## API Reference
 
 ### Configuration
