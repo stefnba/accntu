@@ -1,18 +1,23 @@
-import * as importFileQueries from '../queries/import-file';
-import * as importRecordQueries from '../queries/import-record';
+import { TTransactionImportServiceSchemas } from '@/features/transaction-import/schemas/import-record';
+import {
+    TQueryDeleteRecord,
+    TQueryInsertRecord,
+    TQuerySelectRecordByIdAndUser,
+    TQuerySelectRecordsFromUser,
+    TQueryUpdateRecord,
+} from '@/lib/schemas';
+import * as importFileQueries from '../db/queries/import-file';
+import * as importRecordQueries from '../db/queries/import-record';
 
 /**
  * Updates import record counts based on associated files
- * @param importId - The import record ID to update
+ * @param id - The import record ID to update
  */
 export const updateImportCounts = async ({
-    importId,
+    id,
     userId,
-}: {
-    importId: string;
-    userId: string;
-}): Promise<void> => {
-    const files = await importFileQueries.getAll({ filters: { importId }, userId });
+}: TQuerySelectRecordByIdAndUser): Promise<void> => {
+    const files = await importFileQueries.getAll({ filters: { importId: id }, userId });
 
     const fileCount = files.length;
     const importedFileCount = files.filter((f) => f.status === 'imported').length;
@@ -32,7 +37,7 @@ export const updateImportCounts = async ({
         updateData.successAt = new Date();
     }
 
-    await importRecordQueries.update({ id: importId, userId, data: updateData });
+    await importRecordQueries.update({ id, userId, data: updateData });
 };
 
 /**
@@ -40,7 +45,7 @@ export const updateImportCounts = async ({
  * @param userId - The user ID
  * @returns Array of import records with related data
  */
-export const getAllImports = async ({ userId }: { userId: string }) => {
+export const getAllImports = async ({ userId }: TQuerySelectRecordsFromUser) => {
     return await importRecordQueries.getAll({ userId });
 };
 
@@ -51,7 +56,7 @@ export const getAllImports = async ({ userId }: { userId: string }) => {
  * @returns Import record with related data
  * @throws Error if not found or access denied
  */
-export const getImportById = async ({ id, userId }: { id: string; userId: string }) => {
+export const getImportById = async ({ id, userId }: TQuerySelectRecordByIdAndUser) => {
     const result = await importRecordQueries.getById({ id, userId });
     if (!result) {
         throw new Error('Transaction import not found');
@@ -67,15 +72,10 @@ export const getImportById = async ({ id, userId }: { id: string; userId: string
  */
 export const create = async ({
     userId,
-    connectedBankAccountId,
-}: {
-    userId: string;
-    connectedBankAccountId: string;
-}) => {
+    data,
+}: TQueryInsertRecord<TTransactionImportServiceSchemas['create']>) => {
     const importRecord = await importRecordQueries.create({
-        data: {
-            connectedBankAccountId,
-        },
+        data,
         userId,
     });
 
@@ -94,11 +94,7 @@ export const update = async ({
     id,
     userId,
     data,
-}: {
-    id: string;
-    userId: string;
-    data: { status?: 'draft' | 'pending' | 'processing' | 'completed' | 'failed' };
-}) => {
+}: TQueryUpdateRecord<TTransactionImportServiceSchemas['update']>) => {
     const updated = await importRecordQueries.update({ id, userId, data });
     if (!updated) {
         throw new Error('Failed to update transaction import');
@@ -145,19 +141,12 @@ export const activate = async ({ id, userId }: { id: string; userId: string }) =
  * @returns Success result
  * @throws Error if not found or access denied
  */
-export const remove = async ({ importId, userId }: { importId: string; userId: string }) => {
-    // Verify ownership
-    const existing = await importRecordQueries.getById({ id: importId, userId });
-    if (!existing) {
-        throw new Error('Transaction import not found');
-    }
-
+export const remove = async ({ id, userId }: TQueryDeleteRecord) => {
     // Delete all files first
-    const files = await importFileQueries.getAll({ filters: { importId }, userId });
-    await Promise.all(files.map((file) => importFileQueries.remove({ id: file.id, userId })));
+    await importFileQueries.removeAll({ userId });
 
     // Delete the import record
-    await importRecordQueries.remove({ id: importId, userId });
+    await importRecordQueries.remove({ id, userId });
 
     return { success: true };
 };

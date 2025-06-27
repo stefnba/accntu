@@ -1,7 +1,12 @@
 import { TTransactionImportFileServiceSchemas } from '@/features/transaction-import/schemas/import-file';
-import { TQueryDeleteRecord, TQueryInsertRecord, TQuerySelectRecordsFromUser } from '@/lib/schemas';
-import * as importFileQueries from '../queries/import-file';
-import * as importRecordQueries from '../queries/import-record';
+import {
+    TQueryDeleteRecord,
+    TQueryInsertRecord,
+    TQuerySelectRecordsFromUser,
+    TQueryUpdateRecord,
+} from '@/lib/schemas';
+import * as importFileQueries from '../db/queries/import-file';
+import * as importRecordQueries from '../db/queries/import-record';
 import { updateImportCounts } from './import-record';
 
 /**
@@ -32,7 +37,7 @@ export const create = async ({
     });
 
     // Update import file counts
-    await updateImportCounts({ importId: data.importId, userId });
+    await updateImportCounts({ id: data.importId, userId });
 
     return file;
 };
@@ -69,7 +74,15 @@ export const getById = async ({ fileId, userId }: { fileId: string; userId: stri
  */
 export const remove = async ({ id, userId }: TQueryDeleteRecord) => {
     await importFileQueries.remove({ id, userId });
-    await updateImportCounts({ importId: id, userId });
+    await updateImportCounts({ id, userId });
 
     return { success: true };
+};
+
+export const update = async ({
+    id,
+    userId,
+    data,
+}: TQueryUpdateRecord<TTransactionImportFileServiceSchemas['update']>) => {
+    return await importFileQueries.update({ id, userId, data });
 };

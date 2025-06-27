@@ -53,7 +53,15 @@ export const getById = async ({ id, userId }: TQuerySelectRecordByIdAndUser) =>
                     eq(transactionImportFile.userId, userId)
                 ),
                 with: {
-                    import: true,
+                    import: {
+                        with: {
+                            connectedBankAccount: {
+                                with: {
+                                    globalBankAccount: true,
+                                },
+                            },
+                        },
+                    },
                 },
             });
             return result || null;
@@ -83,6 +91,12 @@ export const create = async ({
         },
     });
 
+/**
+ * Delete a transaction import file
+ * @param id - The ID of the transaction import file
+ * @param userId - The ID of the user
+ * @returns The deleted transaction import file
+ */
 export const remove = async ({ id, userId }: TQueryDeleteRecord): Promise<void> =>
     withDbQuery({
         operation: 'delete transaction import file',
@@ -93,6 +107,22 @@ export const remove = async ({ id, userId }: TQueryDeleteRecord): Promise<void> 
                 .where(
                     and(eq(transactionImportFile.id, id), eq(transactionImportFile.userId, userId))
                 );
+        },
+    });
+
+/**
+ * Delete all transaction import files
+ * @param userId - The ID of the user
+ * @returns The deleted transaction import files
+ */
+export const removeAll = async ({ userId }: TQuerySelectRecordsFromUser): Promise<void> =>
+    withDbQuery({
+        operation: 'delete all transaction import files',
+        queryFn: async () => {
+            await db
+                .update(transactionImportFile)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(eq(transactionImportFile.userId, userId));
         },
     });
 
