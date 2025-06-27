@@ -41,9 +41,20 @@ export interface JSONReadOptions {
     ignore_errors?: boolean; // Ignore parsing errors
 }
 
+export interface ExcelReadOptions {
+    sheet?: string; // Name of the Excel worksheet (default: first sheet)
+    range?: string; // Cell range to read (e.g., 'A1:B10', 'A5:Z', 'E:Z')
+    header?: boolean; // First row contains headers (auto-detected by default)
+    stop_at_empty?: boolean; // Stop reading at first empty row (default: true when no range, false when range provided)
+    empty_as_varchar?: boolean; // Treat empty cells as VARCHAR instead of DOUBLE (default: false)
+    all_varchar?: boolean; // Read all cells as VARCHAR (default: false)
+    ignore_errors?: boolean; // Replace cells that can't be cast with NULL (default: false)
+}
+
 export interface DuckDBConfig {
     database?: string; // ':memory:' for in-memory, or file path
     enableHttpfs?: boolean;
+    enableExcel?: boolean; // Enable Excel extension
     s3?: S3Config;
 }
 
@@ -78,9 +89,9 @@ export interface DatabaseInfo {
 
 // New types for transformation workflow
 export type DataSource = {
-    type: 'csv' | 'parquet' | 'json';
+    type: 'csv' | 'parquet' | 'json' | 'excel';
     path: string | string[];
-    options?: CSVReadOptions | ParquetReadOptions | JSONReadOptions;
+    options?: CSVReadOptions | ParquetReadOptions | JSONReadOptions | ExcelReadOptions;
 };
 
 export interface TransformationConfig<T = any> {

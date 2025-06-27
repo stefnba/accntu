@@ -12,6 +12,7 @@ import type {
     DatabaseInfo,
     DataSource,
     DuckDBConfig,
+    ExcelReadOptions,
     JSONReadOptions,
     ParquetReadOptions,
     QueryResult,
@@ -31,6 +32,7 @@ export class DuckDBManager {
         this.config = {
             database: ':memory:',
             enableHttpfs: false,
+            enableExcel: false,
             ...config,
         };
     }
@@ -48,6 +50,17 @@ export class DuckDBManager {
             if (this.config.enableHttpfs || this.config.s3) {
                 await this.connection.run('INSTALL httpfs;');
                 await this.connection.run('LOAD httpfs;');
+            }
+
+            // Install and load Excel extension if enabled
+            if (this.config.enableExcel) {
+                // Excel extension is a core extension that should be available by default
+                // We may need to install it depending on the DuckDB version
+                try {
+                    await this.connection.run('LOAD spatial;'); // Required for Excel extension
+                } catch (error) {
+                    console.warn('Excel extension may not be available:', error);
+                }
             }
 
             // Configure S3 using modern secrets approach
@@ -372,6 +385,11 @@ export class DuckDBManager {
                 return `SELECT * FROM read_json(${pathStr}${this.buildJsonOptionsString(options || {})})`;
             }
 
+            case 'excel': {
+                const options = source.options as ExcelReadOptions;
+                return `SELECT * FROM read_xlsx(${pathStr}${this.buildExcelOptionsString(options || {})})`;
+            }
+
             default:
                 throw new DuckDBQueryError(`Unsupported data source type: ${(source as any).type}`);
         }
@@ -440,6 +458,25 @@ export class DuckDBManager {
     }
 
     /**
+     * Build Excel options string for read_xlsx function
+     */
+    private buildExcelOptionsString(options: ExcelReadOptions): string {
+        let optionsStr = '';
+        if (options.sheet) optionsStr += `, sheet = '${options.sheet}'`;
+        if (options.range) optionsStr += `, range = '${options.range}'`;
+        if (options.header !== undefined) optionsStr += `, header = ${options.header}`;
+        if (options.stop_at_empty !== undefined)
+            optionsStr += `, stop_at_empty = ${options.stop_at_empty}`;
+        if (options.empty_as_varchar !== undefined)
+            optionsStr += `, empty_as_varchar = ${options.empty_as_varchar}`;
+        if (options.all_varchar !== undefined)
+            optionsStr += `, all_varchar = ${options.all_varchar}`;
+        if (options.ignore_errors !== undefined)
+            optionsStr += `, ignore_errors = ${options.ignore_errors}`;
+        return optionsStr;
+    }
+
+    /**
      * Read CSV files from S3 with advanced options
      */
     async readCSVFromS3(
@@ -496,11 +533,27 @@ export class DuckDBManager {
     }
 
     /**
+     * Read Excel files from S3 (.xlsx format only)
+     */
+    async readExcelFromS3(
+        s3Path: string | string[],
+        options: ExcelReadOptions = {}
+    ): Promise<QueryResult> {
+        const pathStr = Array.isArray(s3Path)
+            ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
+            : `'${s3Path}'`;
+
+        const optionsStr = this.buildExcelOptionsString(options);
+        const query = `SELECT * FROM read_xlsx(${pathStr}${optionsStr})`;
+        return this.query(query);
+    }
+
+    /**
      * Generic method to read from S3 (maintained for backwards compatibility)
      */
     async readFromS3(
         s3Path: string | string[],
-        format: 'parquet' | 'csv' | 'json' = 'parquet',
+        format: 'parquet' | 'csv' | 'json' | 'excel' = 'parquet',
         options: any = {}
     ): Promise<QueryResult> {
         switch (format) {
@@ -510,6 +563,8 @@ export class DuckDBManager {
                 return this.readParquetFromS3(s3Path, options);
             case 'json':
                 return this.readJSONFromS3(s3Path, options);
+            case 'excel':
+                return this.readExcelFromS3(s3Path, options);
             default:
                 throw new DuckDBQueryError(`Unsupported format: ${format}`);
         }
@@ -571,6 +626,23 @@ export class DuckDBManager {
 
         const optionsStr = this.buildJsonOptionsString(options);
         const query = `CREATE TABLE ${tableName} AS SELECT * FROM read_json(${pathStr}${optionsStr})`;
+        await this.query(query);
+    }
+
+    /**
+     * Create a table from Excel data in S3
+     */
+    async createTableFromExcel(
+        tableName: string,
+        s3Path: string | string[],
+        options: ExcelReadOptions = {}
+    ): Promise<void> {
+        const pathStr = Array.isArray(s3Path)
+            ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
+            : `'${s3Path}'`;
+
+        const optionsStr = this.buildExcelOptionsString(options);
+        const query = `CREATE TABLE ${tableName} AS SELECT * FROM read_xlsx(${pathStr}${optionsStr})`;
         await this.query(query);
     }
 

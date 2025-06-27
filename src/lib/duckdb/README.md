@@ -507,3 +507,152 @@ node --import tsx your-script.ts
 - Use `:memory:` for temporary data
 - Use file-based database for persistent storage
 - Consider `queryStream()` for large datasets
+
+## Excel Support
+
+DuckDB Manager now supports reading Excel files (.xlsx format only) from S3 and local sources.
+
+### Configuration
+
+Enable Excel support when initializing the DuckDBManager:
+
+```typescript
+const manager = new DuckDBManager({
+    enableHttpfs: true,  // Required for S3
+    enableExcel: true,   // Enable Excel extension
+    s3: {
+        region: 'us-east-1',
+        useCredentialChain: true,
+    },
+});
+```
+
+### Reading Excel Files from S3
+
+```typescript
+// Basic Excel reading
+const result = await manager.readExcelFromS3('s3://bucket/data.xlsx');
+
+// Read specific sheet
+const sheetResult = await manager.readExcelFromS3('s3://bucket/data.xlsx', {
+    sheet: 'Sheet2',
+    header: true,
+});
+
+// Read specific range
+const rangeResult = await manager.readExcelFromS3('s3://bucket/data.xlsx', {
+    range: 'A1:E100',
+    header: true,
+    stop_at_empty: false,
+});
+
+// Advanced options
+const advancedResult = await manager.readExcelFromS3('s3://bucket/data.xlsx', {
+    sheet: 'Data',
+    range: 'B5:Z',        // Skip first 4 rows and column A
+    header: true,
+    all_varchar: false,   // Let DuckDB infer types
+    empty_as_varchar: false,
+    ignore_errors: true,  // Replace errors with NULL
+});
+```
+
+### Excel Options
+
+```typescript
+interface ExcelReadOptions {
+    sheet?: string;           // Sheet name (default: first sheet)
+    range?: string;           // Cell range (e.g., 'A1:B10', 'A5:Z', 'E:Z')
+    header?: boolean;         // First row contains headers (auto-detected)
+    stop_at_empty?: boolean;  // Stop at first empty row
+    empty_as_varchar?: boolean; // Treat empty cells as VARCHAR
+    all_varchar?: boolean;    // Read all cells as VARCHAR
+    ignore_errors?: boolean;  // Replace conversion errors with NULL
+}
+```
+
+### Creating Tables from Excel
+
+```typescript
+// Create table from Excel file
+await manager.createTableFromExcel('my_table', 's3://bucket/data.xlsx', {
+    sheet: 'Sheet1',
+    header: true,
+});
+
+// Query the created table
+const tableData = await manager.query('SELECT * FROM my_table LIMIT 10');
+```
+
+### Using Excel in Transformation Pipelines
+
+```typescript
+const result = await manager.transformData({
+    source: {
+        type: 'excel',
+        path: 's3://bucket/financial-data.xlsx',
+        options: {
+            sheet: 'Transactions',
+            range: 'A2:Z',  // Skip header row
+            header: true,
+            ignore_errors: true,
+        },
+    },
+    transformSql: `
+        SELECT
+            date_column::DATE as transaction_date,
+            amount_column::DECIMAL(10,2) as amount,
+            UPPER(description_column) as description
+        FROM data
+        WHERE amount_column IS NOT NULL
+          AND amount_column > 0
+    `,
+    schema: z.object({
+        transaction_date: z.date(),
+        amount: z.number(),
+        description: z.string(),
+    }),
+});
+```
+
+### Excel File Analysis
+
+Before processing large Excel files, you can analyze their structure:
+
+```typescript
+// Read sample to understand structure
+const sample = await manager.readExcelFromS3('s3://bucket/data.xlsx', {
+    range: '1:10',  // First 10 rows only
+});
+
+console.log('Columns:', sample.columns);
+console.log('Sample data:', sample.rows);
+
+// Create temporary table to inspect schema
+await manager.createTableFromExcel('temp_analysis', 's3://bucket/data.xlsx', {
+    range: '1:100',  // Sample for type inference
+    header: true,
+});
+
+const schema = await manager.getTableSchema('temp_analysis');
+console.log('Inferred schema:', schema.rows);
+
+// Clean up
+await manager.query('DROP TABLE temp_analysis');
+```
+
+### Important Notes
+
+- Only `.xlsx` files are supported (not `.xls`)
+- Excel extension requires DuckDB to load the spatial extension
+- Large Excel files may take time to process - consider using `range` parameter for sampling
+- DuckDB automatically infers data types based on cell content and formatting
+- Empty cells are treated as `DOUBLE` by default, use `empty_as_varchar: true` to change this
+- The `ignore_errors: true` option is useful for handling mixed data types in columns
+
+### Common Use Cases
+
+1. **Financial Reports**: Read quarterly reports with multiple sheets
+2. **Data Import**: Convert Excel files to structured database tables
+3. **ETL Pipelines**: Transform Excel data as part of larger data workflows
+4. **Data Analysis**: Query Excel files directly without manual conversion
