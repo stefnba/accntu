@@ -9,6 +9,7 @@ Accntu is a modern personal finance management application built with Next.js 15
 ## Development Commands
 
 ### Core Development
+
 - `bun dev` - Start development server
 - `bun build` - Build production application
 - `bun start` - Start production server
@@ -16,6 +17,7 @@ Accntu is a modern personal finance management application built with Next.js 15
 - `bun lint` - Run ESLint (must pass before commits)
 
 ### Database Operations
+
 - `bun db:push` - Push schema changes to database
 - `bun db:studio` - Open Drizzle Studio for database management
 - `bun db:generate` - Generate database migrations
@@ -24,6 +26,7 @@ Accntu is a modern personal finance management application built with Next.js 15
 - `bun db:reset` - Reset database completely
 
 ### Docker
+
 - `docker-compose up -d db` - Start PostgreSQL database
 - `docker-compose build` - Build Docker image
 - `docker-compose up -d` - Start all services
@@ -42,9 +45,11 @@ Accntu is a modern personal finance management application built with Next.js 15
 ## Architecture
 
 ### Feature-Based Structure
+
 Every feature follows this exact pattern:
 
 **Simple Features:**
+
 ```
 src/features/[feature-name]/
 ├── server/
@@ -55,6 +60,7 @@ src/features/[feature-name]/
 ├── components/                # Feature-specific React components
 ├── api.ts                     # Client-side API hooks
 ├── schemas.ts                 # Zod validation schemas
+├── store.ts                   # Zustand store
 └── hooks.ts                   # Feature hooks
 ```
 
@@ -73,19 +79,30 @@ src/features/[feature-name]/
 │   ├── endpoints/
 │   │   ├── entity-one.ts      # HTTP handling only
 │   │   └── entity-two.ts      # HTTP handling only
-│   └── endpoints.ts           # Main router
+│   │   └── index.ts           # index
 ├── components/                # Feature-specific React components
 ├── api/
 │   ├── entity-one.ts          # Client-side API hooks for entity one
 │   ├── entity-two.ts          # Client-side API hooks for entity two
 │   └── index.ts               # Exports all API hooks
-├── schemas.ts                 # Zod validation schemas
-└── hooks.ts                   # Feature hooks
+├── schemas/
+│   ├── entity-one.ts          # Zod validation schemas for entity one
+│   ├── entity-two.ts          # Zod validation schemas for entity two
+│   └── index.ts               # Exports all schemas
+├── hooks/
+│   ├── entity-one.ts          # Feature hooks for entity one
+│   ├── entity-two.ts          # Feature hooks for entity two
+│   └── index.ts               # Exports all hooks
+├── store/
+│   ├── entity-one.ts          # Zustand store for entity one
+│   ├── entity-two.ts          # Zustand store for entity two
+│   └── index.ts               # Exports all hooks
 ```
 
 ### Key Patterns
 
 **Database Schemas:**
+
 - Use CUID2 for primary keys with `createId()`
 - Include `userId` for user-scoped data
 - Add `createdAt`/`updatedAt` timestamps
@@ -93,26 +110,52 @@ src/features/[feature-name]/
 - Embed relations directly in schema files
 - **Modern Drizzle**: Column names no longer required - use `text()` instead of `text('column_name')`
 - **Critical**: All schemas must be exported from `src/server/db/schemas/index.ts` for relations to work
+- **Schema Integration**: Export base Zod schemas (`selectSchema`, `insertSchema`, `updateSchema`) directly from the database schema file using `createSelectSchema()`, `createInsertSchema()`, `createUpdateSchema()`
 
 **API Endpoints:**
+
 - Use Hono framework exclusively (never Next.js server actions)
 - **CRITICAL**: Always use method chaining for Hono instantiation: `const app = new Hono().get().post().put()` - never declare `const app = new Hono();` followed by separate method calls
 - Use `withRoute` wrapper for error handling
 - Use `getUser(c)` for authentication (never userId in URL params)
 - Validate inputs with Zod schemas and `zValidator`
 
+**Layered Schema Architecture:**
+
+*Database Layer (`server/db/schemas.ts`):*
+
+- Contains Drizzle table definitions AND base Zod schemas
+- Export `selectSchema`, `insertSchema`, `updateSchema` using drizzle-zod
+- Single source of truth for database structure and validation
+
+*Feature Schema Layer (`schemas/`):*
+
+- **Query Layer Schemas**: Filtered versions of base schemas for what queries can handle
+- **Service Layer Schemas**: Further filtered for what services should expose to external callers
+- **Object Grouping**: Use `entityQuerySchemas = { select, insert, update }` pattern
+- **Separate Files**: One file per entity for complex features (`entity-name.ts`)
+- **Index Exports**: Re-export all schemas through `schemas/index.ts`
+
+*Generic Query Types (`lib/schemas.ts`):*
+
+- Standardized parameter patterns: `TQueryInsertRecord<T>`, `TQueryUpdateRecord<T>`, etc.
+- Always include `userId` for security
+- Support optional `filters` for flexible querying
+
 **Layered Architecture (Complex Features):**
 
 *Queries Layer (Pure Data Access):*
 - Use `withDbQuery` wrapper for all database operations
-- Use destructured object parameters
+- Use generic query types combined with feature schemas: `TQueryInsertRecord<EntityQuerySchemas['insert']>`
 - Include operation descriptions for debugging
+- Always include `userId` filtering for security
 - No business logic or validation - return raw data or null
 - Simple function names: `create`, `getAll`, `getById`, `update`, `remove`
 - Use `db.query.tableName.findMany()` for relational queries with `with` clauses
 
 *Services Layer (Business Logic):*
 - Handle user ownership validation
+- Use service layer schemas that omit auto-managed fields
 - Implement business rules (file size limits, type validation, etc.)
 - Orchestrate multiple query operations (cascading updates, counts)
 - Complex error handling with meaningful messages
@@ -160,12 +203,13 @@ src/features/[feature-name]/
 ### File Organization
 - **Simple Features**: Use single files (queries.ts, endpoints.ts, schema.ts, api.ts)
 - **Complex Features**: Use nested directories when feature has multiple related entities
+  - `schemas/` directory with one file per entity (entity-name.ts) and `index.ts` for exports
   - `queries/` directory with one file per entity (entity-name.ts)
-  - `services/` directory with one file per entity (entity-name.ts)  
+  - `services/` directory with one file per entity (entity-name.ts)
   - `endpoints/` directory with one file per entity (entity-name.ts)
   - `api/` directory with one file per entity (entity-name.ts) and `index.ts` for exports
 - **Decision Criteria**: Use complex structure when you have 2+ related tables or 200+ lines per file
-- **Reference Examples**: 
+- **Reference Examples**:
   - Simple: `tag` (single entity), `label` (single entity)
   - Complex: `bank` (4 related entities), `transaction-import` (2 related entities)
 
@@ -241,3 +285,6 @@ const form = useForm({
 - Minimize use of `'use client'`, `useEffect`, and `setState`; favor React Server Components
 - Always implement proper TypeScript typing throughout
 - Include JSDoc comments for functions to improve IDE intellisense
+
+## Miscellaneous Notes
+- Rule '.cursor/rules' is not present
