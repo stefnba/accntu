@@ -1,0 +1,1 @@
+export { DuckDBManager } from './manager';
