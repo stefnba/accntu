@@ -1,6 +1,20 @@
 /*
-Include some basic CRUD types for use in queries.
+Include some basic CRUD type and schemas for use in queries.
 */
+
+import { z } from 'zod';
+
+// ===========================
+// Schemas
+// ===========================
+
+export const endpointSelectSchema = z.object({
+    id: z.string(),
+});
+
+// ===========================
+// Types
+// ===========================
 
 /**
  * Update record schema
