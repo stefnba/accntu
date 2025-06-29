@@ -5,6 +5,7 @@ import {
     LuLock,
     LuSearch,
     LuSettings,
+    LuShield,
     LuSun,
     LuUser,
     LuWallet,
@@ -19,3 +20,5 @@ export const Dashboard = LuLayoutDashboard;
 export const Wallet = LuWallet;
 export const Database = LuDatabase;
 export const Search = LuSearch;
+
+export const Admin = LuShield;

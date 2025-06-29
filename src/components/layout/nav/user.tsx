@@ -21,6 +21,7 @@ import {
 
 import Link from 'next/link';
 
+import { Admin } from '@/components/icons';
 import { useAuth } from '@/lib/auth/client';
 import { userRoutes } from '@/lib/routes';
 
@@ -97,6 +98,17 @@ export function NavUser() {
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuGroup>
+                        {user?.role === 'admin' && (
+                            <DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link href="/admin">
+                                        <Admin className="size-4" />
+                                        Admin
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => signOut()}>
                             <IconLogout />
