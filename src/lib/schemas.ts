@@ -5,7 +5,7 @@ Include some basic CRUD type and schemas for use in queries.
 import { z } from 'zod';
 
 // ===========================
-// Schemas
+// Zod Schemas
 // ===========================
 
 export const endpointSelectSchema = z.object({
@@ -16,13 +16,16 @@ export const endpointSelectSchema = z.object({
 // Types
 // ===========================
 
+type WithUserId = {
+    userId: string;
+};
+
 /**
  * Update record schema
  */
 export type TQueryUpdateRecord<T> = {
     id: string;
     data: Partial<T>;
-    userId: string;
 };
 
 /**
@@ -30,23 +33,20 @@ export type TQueryUpdateRecord<T> = {
  */
 export type TQueryInsertRecord<T> = {
     data: T;
-    userId: string;
 };
 
 /**
- * Select record schema
+ * Select record schema by id and user
  */
-export type TQuerySelectRecordByIdAndUser<TFilter extends object | undefined = undefined> = {
+export type TQuerySelectRecordById<TFilter extends object | undefined = undefined> = {
     id: string;
-    userId: string;
     filters?: TFilter;
 };
 
 /**
- * Select multiple records from user schema
+ * Select multiple records
  */
-export type TQuerySelectRecordsFromUser<TFilter extends object = {}> = {
-    userId: string;
+export type TQuerySelectRecords<TFilter extends object | undefined = undefined> = {
     filters?: TFilter;
 };
 
@@ -55,6 +55,37 @@ export type TQuerySelectRecordsFromUser<TFilter extends object = {}> = {
  */
 export type TQueryDeleteRecord<TFilter extends object | undefined = undefined> = {
     id: string;
-    userId: string;
     filters?: TFilter;
 };
+
+// ===========================
+// Types with userId
+// ===========================
+
+/**
+ * Update record schema
+ */
+export type TQueryUpdateUserRecord<T> = TQueryUpdateRecord<T> & WithUserId;
+
+/**
+ * Insert record schema
+ */
+export type TQueryInsertUserRecord<T> = TQueryInsertRecord<T> & WithUserId;
+
+/**
+ * Select record schema by id and user
+ */
+export type TQuerySelectUserRecordById<TFilter extends object | undefined = undefined> =
+    TQuerySelectRecordById<TFilter> & WithUserId;
+
+/**
+ * Select multiple records from user
+ */
+export type TQuerySelectUserRecords<TFilter extends object | undefined = undefined> =
+    TQuerySelectRecords<TFilter> & WithUserId;
+
+/**
+ * Delete record schema
+ */
+export type TQueryDeleteUserRecord<TFilter extends object | undefined = undefined> =
+    TQueryDeleteRecord<TFilter> & WithUserId;
