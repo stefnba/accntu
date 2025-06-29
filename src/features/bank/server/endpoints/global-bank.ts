@@ -1,5 +1,5 @@
-import { searchGlobalBanksSchema } from '@/features/bank/schemas';
-import { globalBankQueries } from '@/features/bank/server/db/queries';
+import { searchGlobalBanksSchema } from '@/features/bank/schemas/global-bank';
+import { globalBankServices } from '@/features/bank/server/services/global-bank';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
@@ -13,11 +13,12 @@ const app = new Hono()
         withRoute(c, async () => {
             const { query, country } = c.req.valid('query') ?? {};
 
-            if (query || country) {
-                return await globalBankQueries.search({ query: query || '', country });
-            } else {
-                return await globalBankQueries.getAll();
-            }
+            return await globalBankServices.getAll({
+                filters: {
+                    query,
+                    country,
+                },
+            });
         })
     )
 
@@ -27,7 +28,7 @@ const app = new Hono()
     .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
-            const bank = await globalBankQueries.getById({ id });
+            const bank = await globalBankServices.getById({ id });
             if (!bank) {
                 throw new Error('Global bank not found');
             }
@@ -41,7 +42,11 @@ const app = new Hono()
     .get('/country/:country', zValidator('param', z.object({ country: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { country } = c.req.valid('param');
-            return await globalBankQueries.getByCountry({ country });
+            return await globalBankServices.getAll({
+                filters: {
+                    country,
+                },
+            });
         })
     );
 

@@ -1,14 +1,14 @@
 // ====================
 // Global banks
 // ====================
-import * as globalBankQueries from './global-bank';
-import * as globalBankAccountQueries from './global-bank-account';
+import { globalBankQueries } from './global-bank';
+import { globalBankAccountQueries } from './global-bank-account';
 
 // ====================
 // Connected banks
 // ====================
-import * as connectedBankQueries from './connected-bank';
-import * as connectedBankAccountQueries from './connected-bank-account';
+import { connectedBankQueries } from './connected-bank';
+import { connectedBankAccountQueries } from './connected-bank-account';
 
 export const bankQueries = {
     globalBank: globalBankQueries,

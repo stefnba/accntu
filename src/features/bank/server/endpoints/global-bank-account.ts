@@ -1,4 +1,4 @@
-import { globalBankAccountQueries } from '@/features/bank/server/db/queries';
+import { globalBankAccountServices } from '@/features/bank/server/services/global-bank-account';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
@@ -11,7 +11,11 @@ const app = new Hono()
     .get('/by-bank/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
-            return await globalBankAccountQueries.getByBankId({ globalBankId: id });
+            return await globalBankAccountServices.getAll({
+                filters: {
+                    globalBankId: id,
+                },
+            });
         })
     )
 
@@ -21,7 +25,7 @@ const app = new Hono()
     .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const { id } = c.req.valid('param');
-            const account = await globalBankAccountQueries.getById({ id });
+            const account = await globalBankAccountServices.getById({ id });
             if (!account) {
                 throw new Error('Global bank account not found');
             }

@@ -1,6 +1,9 @@
-import { TCreateConnectedBank } from '@/features/bank/schemas';
-import { createConnectedBankAccount } from '@/features/bank/server/services/connected-bank-accounts';
-import { bankQueries } from '../db/queries';
+import {
+    TConnectedBankQuerySchemas,
+    TCreateConnectedBankWithAccounts,
+} from '@/features/bank/schemas/connected-bank';
+import { connectedBankQueries } from '@/features/bank/server/db/queries';
+import { connectedBankAccountServices } from '@/features/bank/server/services/connected-bank-account';
 
 /**
  * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
@@ -8,45 +11,43 @@ import { bankQueries } from '../db/queries';
  * @param data - The data to create the connected bank with
  * @returns The created connected bank
  */
-export const createConnectedBankWithAccounts = async ({
+const createConnectedBankWithAccounts = async ({
     userId,
     data,
 }: {
     userId: string;
-    data: TCreateConnectedBank;
+    data: TCreateConnectedBankWithAccounts;
 }) => {
     const { globalBankId, connectedBankAccounts } = data;
 
-    // Create the connected bank
-    let connectedBank = await bankQueries.connectedBank.create({
+    // Create the connected bank, if it already exists, connectedBank will be null
+    let connectedBank = await connectedBankQueries.create({
         data: {
             userId,
             globalBankId,
         },
+        userId,
     });
 
-    // If the connected bank was not created, it likely already exists for this user
+    // if no connected bank was created, get the existing one
     if (!connectedBank) {
-        connectedBank = await bankQueries.connectedBank.getByGlobalBankId({
+        [connectedBank] = await connectedBankQueries.getAll({
             userId,
-            globalBankId,
+            filters: {
+                globalBankId,
+            },
         });
     }
 
-    // if still no connected bank, throw an error
+    // if no connected bank was found, throw an error
     if (!connectedBank) {
         throw new Error('Failed to create connected bank');
     }
 
-    console.log(
-        'connectedBank',
-        connectedBankAccounts.map((account) => account.globalBankAccountId)
-    );
-
     // Create the connected bank accounts
     const createdAccounts = await Promise.all(
         connectedBankAccounts.map((account) =>
-            createConnectedBankAccount({
+            connectedBankAccountServices.create({
                 userId,
                 data: {
                     connectedBankId: connectedBank.id,
@@ -61,4 +62,60 @@ export const createConnectedBankWithAccounts = async ({
     return {
         ...connectedBank,
     };
+};
+
+/**
+ * Get all connected banks for the current user
+ * @param userId - The id of the user
+ * @returns All connected banks
+ */
+const getAll = async ({ userId }: { userId: string }) => {
+    return await connectedBankQueries.getAll({ userId, filters: undefined });
+};
+
+/**
+ * Get a connected bank by id
+ * @param id - The id of the connected bank
+ * @param userId - The id of the user
+ * @returns The connected bank
+ */
+const getById = async ({ id, userId }: { id: string; userId: string }) => {
+    return await connectedBankQueries.getById({ id, userId });
+};
+
+/**
+ * Update a connected bank
+ * @param id - The id of the connected bank
+ * @param userId - The id of the user
+ * @param data - The data to update the connected bank
+ * @returns The updated connected bank
+ */
+const update = async ({
+    id,
+    userId,
+    data,
+}: {
+    id: string;
+    userId: string;
+    data: TConnectedBankQuerySchemas['update'];
+}) => {
+    return await connectedBankQueries.update({ id, userId, data });
+};
+
+/**
+ * Remove a connected bank
+ * @param id - The id of the connected bank
+ * @param userId - The id of the user
+ * @returns The removed connected bank
+ */
+const remove = async ({ id, userId }: { id: string; userId: string }) => {
+    return await connectedBankQueries.remove({ id, userId });
+};
+
+export const connectedBankServices = {
+    create: createConnectedBankWithAccounts,
+    getAll,
+    getById,
+    update,
+    remove,
 };

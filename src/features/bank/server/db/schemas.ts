@@ -13,6 +13,7 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const bankIntegrationTypeEnum = pgEnum('bank_integration_type', ['csv', 'api']);
 export const accountTypeEnum = pgEnum('account_type', [
@@ -123,6 +124,7 @@ export const connectedBankAccount = pgTable('connected_bank_account', {
         .primaryKey()
         .notNull()
         .$defaultFn(() => createId()),
+    userId: text().notNull(),
     connectedBankId: text()
         .notNull()
         .references(() => connectedBank.id, { onDelete: 'cascade' }),
@@ -189,12 +191,25 @@ export const connectedBankAccountRelations = relations(connectedBankAccount, ({ 
 }));
 
 // ===============================
+// Base Zod Schemas
+// ===============================
 
-export type GlobalBank = typeof globalBank.$inferSelect;
-export type NewGlobalBank = typeof globalBank.$inferInsert;
-export type GlobalBankAccount = typeof globalBankAccount.$inferSelect;
-export type NewGlobalBankAccount = typeof globalBankAccount.$inferInsert;
-export type ConnectedBank = typeof connectedBank.$inferSelect;
-export type NewConnectedBank = typeof connectedBank.$inferInsert;
-export type ConnectedBankAccount = typeof connectedBankAccount.$inferSelect;
-export type NewConnectedBankAccount = typeof connectedBankAccount.$inferInsert;
+// Global Bank schemas
+export const selectGlobalBankSchema = createSelectSchema(globalBank);
+export const insertGlobalBankSchema = createInsertSchema(globalBank);
+export const updateGlobalBankSchema = createUpdateSchema(globalBank);
+
+// Global Bank Account schemas
+export const selectGlobalBankAccountSchema = createSelectSchema(globalBankAccount);
+export const insertGlobalBankAccountSchema = createInsertSchema(globalBankAccount);
+export const updateGlobalBankAccountSchema = createUpdateSchema(globalBankAccount);
+
+// Connected Bank schemas
+export const selectConnectedBankSchema = createSelectSchema(connectedBank);
+export const insertConnectedBankSchema = createInsertSchema(connectedBank);
+export const updateConnectedBankSchema = createUpdateSchema(connectedBank);
+
+// Connected Bank Account schemas
+export const selectConnectedBankAccountSchema = createSelectSchema(connectedBankAccount);
+export const insertConnectedBankAccountSchema = createInsertSchema(connectedBankAccount);
+export const updateConnectedBankAccountSchema = createUpdateSchema(connectedBankAccount);

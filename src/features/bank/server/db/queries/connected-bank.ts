@@ -1,20 +1,38 @@
-import { type TInsertConnectedBank } from '@/features/bank/schemas';
+import { type TConnectedBankQuerySchemas } from '@/features/bank/schemas/connected-bank';
+import {
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
+} from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
-import { connectedBank, type ConnectedBank } from '../schemas';
+import { connectedBank } from '../schemas';
 
 /**
  * Get all connected banks by user id
  * @param userId - The id of the user
  * @returns All connected banks by user id
  */
-export const getAll = async ({ userId }: { userId: string }) =>
+const getAll = async ({ userId, filters }: TQuerySelectUserRecords<{ globalBankId?: string }>) =>
     withDbQuery({
         operation: 'get connected banks by user ID',
         queryFn: async () => {
+            const whereClause = [
+                eq(connectedBank.userId, userId),
+                eq(connectedBank.isActive, true),
+            ];
+
+            if (filters?.globalBankId) {
+                whereClause.push(eq(connectedBank.globalBankId, filters.globalBankId));
+            }
+
+            const where = and(...whereClause);
+
             return await db.query.connectedBank.findMany({
-                where: and(eq(connectedBank.userId, userId), eq(connectedBank.isActive, true)),
+                where,
                 with: {
                     globalBank: true,
                     connectedBankAccounts: {
@@ -33,7 +51,7 @@ export const getAll = async ({ userId }: { userId: string }) =>
  * @param userId - The id of the user
  * @returns The connected bank
  */
-export const getById = async ({ id, userId }: { id: string; userId: string }) =>
+const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
     withDbQuery({
         operation: 'get connected bank by ID',
         queryFn: async () => {
@@ -53,52 +71,64 @@ export const getById = async ({ id, userId }: { id: string; userId: string }) =>
     });
 
 /**
- * Get a connected bank by global bank id
- * @param globalBankId - The id of the global bank
- * @returns The connected bank
- */
-export const getByGlobalBankId = async ({
-    globalBankId,
-    userId,
-}: {
-    globalBankId: string;
-    userId: string;
-}): Promise<ConnectedBank | null> =>
-    withDbQuery({
-        operation: 'get connected bank by global bank ID',
-        queryFn: async () => {
-            const result = await db
-                .select()
-                .from(connectedBank)
-                .where(
-                    and(
-                        eq(connectedBank.globalBankId, globalBankId),
-                        eq(connectedBank.userId, userId)
-                    )
-                );
-            return result[0] || null;
-        },
-    });
-
-/**
  * Create a connected bank
  * @param data - The data to create the connected bank
  * @returns The created connected bank
  */
-export const create = async ({
+const create = async ({
     data,
-}: {
-    data: TInsertConnectedBank;
-}): Promise<ConnectedBank | null> =>
+    userId,
+}: TQueryInsertUserRecord<TConnectedBankQuerySchemas['insert']>) =>
     withDbQuery({
         operation: 'create connected bank',
         queryFn: async () => {
             const result = await db
                 .insert(connectedBank)
-                .values(data)
-                .returning()
-                .onConflictDoNothing();
+                .values({ ...data, userId })
+                .onConflictDoNothing()
+                .returning();
             return result[0];
         },
         allowNull: true,
     });
+
+const update = async ({
+    id,
+    data,
+    userId,
+}: TQueryUpdateUserRecord<TConnectedBankQuerySchemas['update']>) =>
+    withDbQuery({
+        operation: 'update connected bank',
+        queryFn: async () => {
+            const result = await db
+                .update(connectedBank)
+                .set(data)
+                .where(and(eq(connectedBank.id, id), eq(connectedBank.userId, userId)))
+                .returning();
+            return result[0];
+        },
+    });
+
+/**
+ * Remove a connected bank
+ * @param id - The id of the connected bank
+ * @param userId - The id of the user
+ * @returns The removed connected bank
+ */
+const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
+    withDbQuery({
+        operation: 'remove connected bank',
+        queryFn: async () => {
+            return await db
+                .delete(connectedBank)
+                .where(and(eq(connectedBank.id, id), eq(connectedBank.userId, userId)));
+        },
+    });
+
+export const connectedBankQueries = {
+    getAll,
+    getById,
+    update,
+    create,
+    remove,
+};
