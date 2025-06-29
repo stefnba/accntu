@@ -1,5 +1,6 @@
 'use client';
 
+import { CardHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConnectedBankEndpoints } from '@/features/bank/api';
@@ -107,6 +108,12 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
 
             {/* Header */}
             <BankDetailsHeader bank={bank} />
+
+            <CardHeader
+                title="Bank Details"
+                description="View and manage your bank details"
+                icon={<Building2 className="h-10 w-10 text-gray-600" />}
+            />
 
             {/* Tab Navigation */}
             <BankDetailsTabNavigation />

@@ -31,17 +31,6 @@ const app = new Hono()
             }
             return account;
         })
-    )
-
-    /**
-     * Get global bank account with CSV config
-     */
-    .get('/:id/csv-config', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
-            const { id } = c.req.valid('param');
-            // This function needs to be implemented in queries
-            throw new Error('CSV config endpoint not yet implemented');
-        })
     );
 
 export default app;

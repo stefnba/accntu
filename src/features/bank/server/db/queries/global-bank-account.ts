@@ -1,6 +1,12 @@
-import { TGlobalBankAccountQuerySchemas } from '@/features/bank/schemas/global-bank-account';
+import { type TGlobalBankAccountQuery } from '@/features/bank/schemas/global-bank-account';
 import { globalBankAccount } from '@/features/bank/server/db/schemas';
-import { TQuerySelectRecords } from '@/lib/schemas';
+import {
+    TQueryDeleteRecord,
+    TQueryInsertRecord,
+    TQuerySelectRecordById,
+    TQuerySelectRecords,
+    TQueryUpdateRecord,
+} from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
@@ -14,7 +20,7 @@ const getAll = async ({
     filters,
 }: TQuerySelectRecords<{
     globalBankId?: string;
-}>): Promise<TGlobalBankAccountQuerySchemas['select'][]> =>
+}>): Promise<TGlobalBankAccountQuery['select'][]> =>
     withDbQuery({
         operation: 'get all global bank accounts',
         queryFn: async () => {
@@ -38,9 +44,7 @@ const getAll = async ({
  */
 const getById = async ({
     id,
-}: {
-    id: string;
-}): Promise<TGlobalBankAccountQuerySchemas['select'] | null> =>
+}: TQuerySelectRecordById): Promise<TGlobalBankAccountQuery['select'] | null> =>
     withDbQuery({
         operation: 'get global bank account by ID',
         queryFn: async () => {
@@ -59,12 +63,16 @@ const getById = async ({
  * @param data - The data to create the global bank account
  * @returns The created global bank account
  */
-const create = async (data: any): Promise<TGlobalBankAccountQuerySchemas['select'] | null> =>
+const create = async ({
+    data,
+}: TQueryInsertRecord<TGlobalBankAccountQuery['insert']>): Promise<
+    TGlobalBankAccountQuery['select'] | null
+> =>
     withDbQuery({
         operation: 'create global bank account',
         queryFn: async () => {
             const [result] = await db.insert(globalBankAccount).values(data).returning();
-            return result || null;
+            return result;
         },
     });
 
@@ -77,8 +85,10 @@ const create = async (data: any): Promise<TGlobalBankAccountQuerySchemas['select
  */
 const update = async ({
     id,
-    ...data
-}: { id: string } & any): Promise<TGlobalBankAccountQuerySchemas['select'] | null> =>
+    data,
+}: TQueryUpdateRecord<TGlobalBankAccountQuery['update']>): Promise<
+    TGlobalBankAccountQuery['select'] | null
+> =>
     withDbQuery({
         operation: 'update global bank account',
         queryFn: async () => {
@@ -99,9 +109,7 @@ const update = async ({
  */
 const remove = async ({
     id,
-}: {
-    id: string;
-}): Promise<TGlobalBankAccountQuerySchemas['select'] | null> =>
+}: TQueryDeleteRecord): Promise<TGlobalBankAccountQuery['select'] | null> =>
     withDbQuery({
         operation: 'remove global bank account',
         queryFn: async () => {

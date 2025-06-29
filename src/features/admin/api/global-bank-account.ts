@@ -36,4 +36,11 @@ export const useAdminGlobalBankAccountEndpoints = {
      * Delete global bank account (admin only)
      */
     remove: createMutation(apiClient.admin['global-bank-accounts'][':id'].$delete),
+
+    /**
+     * Test global bank account transformation query (admin only)
+     */
+    testTransformQuery: createMutation(
+        apiClient.admin['global-bank-accounts']['test-transform-query'].$post
+    ),
 };

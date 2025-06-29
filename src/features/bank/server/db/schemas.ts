@@ -1,3 +1,5 @@
+import { type TApiCredentials } from '@/features/bank/schemas/connected-bank';
+import { type TTransformConfig } from '@/features/bank/schemas/global-bank-account';
 import { transactionImport } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
@@ -65,18 +67,7 @@ export const globalBankAccount = pgTable('global_bank_account', {
     transformQuery: text().notNull(),
 
     // CSV metadata and configuration
-    transformConfig: jsonb().$type<{
-        delimiter?: string;
-        hasHeader?: boolean;
-        encoding?: string; // 'utf-8', 'iso-8859-1', etc.
-        skipRows?: number; // Number of rows to skip from top
-        dateFormat?: string; // Expected date format in CSV
-        decimalSeparator?: '.' | ',';
-        thousandsSeparator?: ',' | '.' | ' ';
-        quoteChar?: string;
-        escapeChar?: string;
-        nullValues?: string[]; // Values to treat as NULL
-    }>(),
+    transformConfig: jsonb().$type<TTransformConfig>(),
 
     // Sample data for testing/validation
     sampleTransformData: text(), // Sample CSV rows for testing
@@ -102,13 +93,7 @@ export const connectedBank = pgTable(
             .references(() => globalBank.id, { onDelete: 'restrict' }),
 
         // API credentials (encrypted)
-        apiCredentials: jsonb().$type<{
-            accessToken?: string;
-            refreshToken?: string;
-            apiKey?: string;
-            institutionId?: string; // Provider's institution ID
-            expiresAt?: Date;
-        }>(),
+        apiCredentials: jsonb().$type<TApiCredentials>(),
 
         isActive: boolean().notNull().default(true),
         createdAt: timestamp().notNull().defaultNow(),
@@ -212,3 +197,12 @@ export const updateConnectedBankSchema = createUpdateSchema(connectedBank);
 export const selectConnectedBankAccountSchema = createSelectSchema(connectedBankAccount);
 export const insertConnectedBankAccountSchema = createInsertSchema(connectedBankAccount);
 export const updateConnectedBankAccountSchema = createUpdateSchema(connectedBankAccount);
+
+// ===============================
+// Base Type
+// ===============================
+
+export type TGlobalBank = typeof globalBank.$inferSelect;
+export type TGlobalBankAccount = typeof globalBankAccount.$inferSelect;
+export type TConnectedBank = typeof connectedBank.$inferSelect;
+export type TConnectedBankAccount = typeof connectedBankAccount.$inferSelect;

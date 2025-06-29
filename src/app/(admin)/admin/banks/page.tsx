@@ -1,6 +1,6 @@
 import { MainContent } from '@/components/layout/main';
 import { Button } from '@/components/ui/button';
-import { GlobalBankList } from '@/features/admin/components/global-bank/bank-list';
+import { GlobalBankList } from '@/features/admin/components/global-bank/';
 
 export default function AdminBanksPage() {
     return (

@@ -5,22 +5,42 @@ import {
 } from '@/features/bank/server/db/schemas';
 import { z } from 'zod';
 
+/**
+ * API credentials schema for connected bank, required to add validation since drizzle-zod does not support json
+ */
+const apiCredentialsSchema = z
+    .object({
+        accessToken: z.string().optional(),
+        refreshToken: z.string().optional(),
+        apiKey: z.string().optional(),
+        institutionId: z.string().optional(),
+        expiresAt: z.date().optional(),
+    })
+    .optional();
+export type TApiCredentials = z.infer<typeof apiCredentialsSchema>;
+
 // ====================
 // Query Layer
 // ====================
 
 export const connectedBankQuerySchemas = {
     select: selectConnectedBankSchema,
-    insert: insertConnectedBankSchema.pick({
-        userId: true,
-        globalBankId: true,
-        apiCredentials: true,
-        isActive: true,
-    }),
-    update: updateConnectedBankSchema.pick({
-        apiCredentials: true,
-        isActive: true,
-    }),
+    insert: insertConnectedBankSchema
+        .pick({
+            userId: true,
+            globalBankId: true,
+            isActive: true,
+        })
+        .extend({
+            apiCredentials: apiCredentialsSchema,
+        }),
+    update: updateConnectedBankSchema
+        .pick({
+            isActive: true,
+        })
+        .extend({
+            apiCredentials: apiCredentialsSchema,
+        }),
 };
 
 export type TConnectedBankQuerySchemas = {
@@ -47,16 +67,6 @@ export type TConnectedBankServiceSchemas = {
 // Custom Schemas
 // ====================
 
-export const apiCredentialsSchema = z.object({
-    accessToken: z.string().optional(),
-    refreshToken: z.string().optional(),
-    apiKey: z.string().optional(),
-    institutionId: z.string().optional(),
-    expiresAt: z.date().optional(),
-});
-
-export type TApiCredentials = z.infer<typeof apiCredentialsSchema>;
-
 export const createConnectedBankWithAccountsSchema = connectedBankServiceSchemas.create.extend({
     connectedBankAccounts: z.array(
         z.object({
@@ -65,4 +75,6 @@ export const createConnectedBankWithAccountsSchema = connectedBankServiceSchemas
     ),
 });
 
-export type TCreateConnectedBankWithAccounts = z.infer<typeof createConnectedBankWithAccountsSchema>;
+export type TCreateConnectedBankWithAccounts = z.infer<
+    typeof createConnectedBankWithAccountsSchema
+>;

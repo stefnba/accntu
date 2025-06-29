@@ -19,7 +19,7 @@ export const SqlEditor = ({ value, onChange, height = 200, readOnly = false }: S
     return (
         <div className="border rounded-md overflow-hidden w-full h-full">
             <Editor
-                height={height}
+                height="100%"
                 language="sql"
                 // theme="vs-dark"
                 value={value}
@@ -34,8 +34,10 @@ export const SqlEditor = ({ value, onChange, height = 200, readOnly = false }: S
                     automaticLayout: true,
                     formatOnPaste: true,
                     formatOnType: true,
-                    tabSize: 2,
+                    wrappingIndent: 'same',
+                    tabCompletion: 'on',
                     insertSpaces: true,
+                    autoIndent: 'full',
                 }}
             />
         </div>
