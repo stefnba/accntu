@@ -5,7 +5,7 @@ import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { TransactionImportCleanupService } from '../services/cleanup';
-import * as importRecordServices from '../services/import-record';
+import { importRecordServices } from '../services/import-record';
 
 const app = new Hono()
     /**
@@ -14,7 +14,7 @@ const app = new Hono()
     .get('/', async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await importRecordServices.getAllImports({ userId: user.id });
+            return await importRecordServices.getAll({ userId: user.id });
         })
     )
 

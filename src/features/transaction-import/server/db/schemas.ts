@@ -98,9 +98,9 @@ export const transactionImportFileRelations = relations(transactionImportFile, (
     }),
 }));
 
-// ====================
-// Base Database Zod Schemas
-// ====================
+// ===============================
+// Base Zod Schemas
+// ===============================
 
 // Transaction Import
 export const selectTransactionImportSchema = createSelectSchema(transactionImport);

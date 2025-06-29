@@ -1,5 +1,5 @@
 import { DuckDBSingleton } from '@/lib/duckdb';
-import * as importFileServices from './import-file';
+import { importFileServices } from './import-file';
 
 export const parseTransaction = async (fileId: string, userId: string) => {
     const duckdb = await DuckDBSingleton.getInstance();

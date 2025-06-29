@@ -1,13 +1,16 @@
 import { TTransactionImportFileServiceSchemas } from '@/features/transaction-import/schemas/import-file';
 import {
-    TQueryDeleteRecord,
-    TQueryInsertRecord,
-    TQuerySelectRecordsFromUser,
-    TQueryUpdateRecord,
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import * as importFileQueries from '../db/queries/import-file';
-import * as importRecordQueries from '../db/queries/import-record';
-import { updateImportCounts } from './import-record';
+
+import {
+    importFileQueries,
+    importRecordQueries,
+} from '@/features/transaction-import/server/db/queries';
+import { importRecordServices } from './import-record';
 
 /**
  * Creates a file record from S3 upload data
@@ -16,10 +19,10 @@ import { updateImportCounts } from './import-record';
  * @returns The created file record
  * @throws Error if import not found or access denied
  */
-export const create = async ({
+const create = async ({
     data,
     userId,
-}: TQueryInsertRecord<TTransactionImportFileServiceSchemas['create']>) => {
+}: TQueryInsertUserRecord<TTransactionImportFileServiceSchemas['create']>) => {
     // Verify import exists and user owns it
     const importRecord = await importRecordQueries.getById({
         id: data.importId,
@@ -37,7 +40,7 @@ export const create = async ({
     });
 
     // Update import file counts
-    await updateImportCounts({ id: data.importId, userId });
+    await importRecordServices.updateImportCounts({ id: data.importId, userId });
 
     return file;
 };
@@ -48,10 +51,7 @@ export const create = async ({
  * @param userId - The user ID for ownership verification
  * @returns Array of file records
  */
-export const getByImport = async ({
-    filters,
-    userId,
-}: TQuerySelectRecordsFromUser<{ importId: string }>) => {
+const getByImport = async ({ filters, userId }: TQuerySelectUserRecords<{ importId: string }>) => {
     return await importFileQueries.getAll({ filters, userId });
 };
 
@@ -61,7 +61,7 @@ export const getByImport = async ({
  * @param userId - The user ID for ownership verification
  * @returns File record or null if not found
  */
-export const getById = async ({ fileId, userId }: { fileId: string; userId: string }) => {
+const getById = async ({ fileId, userId }: { fileId: string; userId: string }) => {
     return await importFileQueries.getById({ id: fileId, userId });
 };
 
@@ -72,17 +72,32 @@ export const getById = async ({ fileId, userId }: { fileId: string; userId: stri
  * @returns Success result
  * @throws Error if file not found or access denied
  */
-export const remove = async ({ id, userId }: TQueryDeleteRecord) => {
+const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
     await importFileQueries.remove({ id, userId });
-    await updateImportCounts({ id, userId });
+    await importRecordServices.updateImportCounts({ id, userId });
 
     return { success: true };
 };
 
-export const update = async ({
+/**
+ * Updates a file record
+ * @param id - The file record ID
+ * @param userId - The user ID for ownership verification
+ * @param data - The data to update
+ * @returns The updated file record
+ */
+const update = async ({
     id,
     userId,
     data,
-}: TQueryUpdateRecord<TTransactionImportFileServiceSchemas['update']>) => {
+}: TQueryUpdateUserRecord<TTransactionImportFileServiceSchemas['update']>) => {
     return await importFileQueries.update({ id, userId, data });
+};
+
+export const importFileServices = {
+    create,
+    getByImport,
+    getById,
+    remove,
+    update,
 };

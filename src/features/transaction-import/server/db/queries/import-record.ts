@@ -4,11 +4,11 @@ import {
     transactionImportFile,
 } from '@/features/transaction-import/server/db/schemas';
 import {
-    TQueryDeleteRecord,
-    TQueryInsertRecord,
-    TQuerySelectRecordByIdAndUser,
-    TQuerySelectRecordsFromUser,
-    TQueryUpdateRecord,
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
 } from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
@@ -19,7 +19,7 @@ import { and, eq, lt } from 'drizzle-orm';
  * @param userId - The ID of the user
  * @returns The transaction imports
  */
-export const getAll = async ({ userId }: TQuerySelectRecordsFromUser) =>
+const getAll = async ({ userId }: TQuerySelectUserRecords) =>
     withDbQuery({
         operation: 'get transaction imports by user ID',
         queryFn: async () => {
@@ -54,7 +54,7 @@ export const getAll = async ({ userId }: TQuerySelectRecordsFromUser) =>
  * @param userId - The ID of the user
  * @returns The transaction import
  */
-export const getById = async ({ id, userId }: TQuerySelectRecordByIdAndUser) =>
+const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
     withDbQuery({
         operation: 'get transaction import by ID',
         queryFn: async () => {
@@ -90,10 +90,10 @@ export const getById = async ({ id, userId }: TQuerySelectRecordByIdAndUser) =>
  * @param userId - The ID of the user
  * @returns The created transaction import
  */
-export const create = async ({
+const create = async ({
     data,
     userId,
-}: TQueryInsertRecord<TTransactionImportQuerySchemas['insert']>) =>
+}: TQueryInsertUserRecord<TTransactionImportQuerySchemas['insert']>) =>
     withDbQuery({
         operation: 'create transaction import',
         queryFn: async () => {
@@ -114,18 +114,18 @@ export const create = async ({
  * @param data - The data to update
  * @returns The updated transaction import
  */
-export const update = async ({
+const update = async ({
     id,
     data,
     userId,
-}: TQueryUpdateRecord<TTransactionImportQuerySchemas['update']>) =>
+}: TQueryUpdateUserRecord<TTransactionImportQuerySchemas['update']>) =>
     withDbQuery({
         operation: 'update transaction import',
         queryFn: async () => {
             const [updated] = await db
                 .update(transactionImport)
                 .set({ ...data, updatedAt: new Date() })
-                .where(eq(transactionImport.id, id))
+                .where(and(eq(transactionImport.id, id), eq(transactionImport.userId, userId)))
                 .returning();
             return updated || null;
         },
@@ -136,7 +136,7 @@ export const update = async ({
  * @param id - The ID of the transaction import
  * @returns The number of deleted transaction imports
  */
-export const remove = async ({ id, userId }: TQueryDeleteRecord): Promise<void> =>
+const remove = async ({ id, userId }: TQueryDeleteUserRecord): Promise<void> =>
     withDbQuery({
         operation: 'delete transaction import',
         queryFn: async () => {
@@ -152,7 +152,7 @@ export const remove = async ({ id, userId }: TQueryDeleteRecord): Promise<void> 
  * @param cutoffDate - The date to cutoff
  * @returns The number of deleted transaction imports
  */
-export const cleanupDraftImports = async ({ cutoffDate }: { cutoffDate: Date }): Promise<number> =>
+const cleanupDraftImports = async ({ cutoffDate }: { cutoffDate: Date }): Promise<number> =>
     withDbQuery({
         operation: 'cleanup old draft imports',
         queryFn: async () => {
@@ -171,3 +171,12 @@ export const cleanupDraftImports = async ({ cutoffDate }: { cutoffDate: Date }):
             return result.length;
         },
     });
+
+export const importRecordQueries = {
+    getAll,
+    getById,
+    create,
+    update,
+    remove,
+    cleanupDraftImports,
+};

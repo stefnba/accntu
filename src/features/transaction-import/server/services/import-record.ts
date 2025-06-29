@@ -1,51 +1,22 @@
 import { TTransactionImportServiceSchemas } from '@/features/transaction-import/schemas/import-record';
 import {
-    TQueryDeleteRecord,
-    TQueryInsertRecord,
-    TQuerySelectRecordByIdAndUser,
-    TQuerySelectRecordsFromUser,
-    TQueryUpdateRecord,
+    importFileQueries,
+    importRecordQueries,
+} from '@/features/transaction-import/server/db/queries';
+import {
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import * as importFileQueries from '../db/queries/import-file';
-import * as importRecordQueries from '../db/queries/import-record';
-
-/**
- * Updates import record counts based on associated files
- * @param id - The import record ID to update
- */
-export const updateImportCounts = async ({
-    id,
-    userId,
-}: TQuerySelectRecordByIdAndUser): Promise<void> => {
-    const files = await importFileQueries.getAll({ filters: { importId: id }, userId });
-
-    const fileCount = files.length;
-    const importedFileCount = files.filter((f) => f.status === 'imported').length;
-    const totalImportedTransactions = files.reduce(
-        (sum, f) => sum + (f.importedTransactionCount || 0),
-        0
-    );
-
-    const updateData: any = {
-        fileCount,
-        importedFileCount,
-        importedTransactionCount: totalImportedTransactions,
-    };
-
-    // Business rule: mark as successful when all files are imported
-    if (importedFileCount === fileCount && fileCount > 0) {
-        updateData.successAt = new Date();
-    }
-
-    await importRecordQueries.update({ id, userId, data: updateData });
-};
 
 /**
  * Gets all import records for a user
  * @param userId - The user ID
  * @returns Array of import records with related data
  */
-export const getAllImports = async ({ userId }: TQuerySelectRecordsFromUser) => {
+const getAll = async ({ userId }: TQuerySelectUserRecords) => {
     return await importRecordQueries.getAll({ userId });
 };
 
@@ -56,7 +27,7 @@ export const getAllImports = async ({ userId }: TQuerySelectRecordsFromUser) => 
  * @returns Import record with related data
  * @throws Error if not found or access denied
  */
-export const getImportById = async ({ id, userId }: TQuerySelectRecordByIdAndUser) => {
+const getImportById = async ({ id, userId }: TQuerySelectUserRecordById) => {
     const result = await importRecordQueries.getById({ id, userId });
     if (!result) {
         throw new Error('Transaction import not found');
@@ -73,7 +44,7 @@ export const getImportById = async ({ id, userId }: TQuerySelectRecordByIdAndUse
 export const create = async ({
     userId,
     data,
-}: TQueryInsertRecord<TTransactionImportServiceSchemas['create']>) => {
+}: TQueryInsertUserRecord<TTransactionImportServiceSchemas['create']>) => {
     const importRecord = await importRecordQueries.create({
         data,
         userId,
@@ -94,7 +65,7 @@ export const update = async ({
     id,
     userId,
     data,
-}: TQueryUpdateRecord<TTransactionImportServiceSchemas['update']>) => {
+}: TQueryUpdateUserRecord<TTransactionImportServiceSchemas['update']>) => {
     const updated = await importRecordQueries.update({ id, userId, data });
     if (!updated) {
         throw new Error('Failed to update transaction import');
@@ -110,7 +81,7 @@ export const update = async ({
  * @returns Updated import record
  * @throws Error if not found, access denied, or not in draft status
  */
-export const activate = async ({ id, userId }: { id: string; userId: string }) => {
+const activate = async ({ id, userId }: { id: string; userId: string }) => {
     // Verify ownership and that it's a draft
     const existing = await importRecordQueries.getById({ id, userId });
     if (!existing) {
@@ -141,7 +112,7 @@ export const activate = async ({ id, userId }: { id: string; userId: string }) =
  * @returns Success result
  * @throws Error if not found or access denied
  */
-export const remove = async ({ id, userId }: TQueryDeleteRecord) => {
+const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
     // Delete all files first
     await importFileQueries.removeAll({ userId });
 
@@ -156,9 +127,45 @@ export const remove = async ({ id, userId }: TQueryDeleteRecord) => {
  * @param olderThanHours - Hours threshold (default: 24)
  * @returns Number of imports cleaned up
  */
-export const cleanupOldDraftImports = async (olderThanHours: number = 24) => {
+const cleanupOldDraftImports = async (olderThanHours: number = 24) => {
     const cutoffDate = new Date();
     cutoffDate.setHours(cutoffDate.getHours() - olderThanHours);
 
     return await importRecordQueries.cleanupDraftImports({ cutoffDate });
+};
+
+/**
+ * Updates the import record counts based on the associated files
+ * @param id - The import record ID
+ * @param userId - The user ID for ownership verification
+ * @returns The updated import record
+ */
+const updateImportCounts = async ({ id, userId }: TQuerySelectUserRecordById) => {
+    const files = await importFileQueries.getAll({ filters: { importId: id }, userId });
+
+    const fileCount = files.length;
+    const importedFileCount = files.filter((f) => f.status === 'imported').length;
+    const totalImportedTransactions = files.reduce(
+        (sum, f) => sum + (f.importedTransactionCount || 0),
+        0
+    );
+
+    const updateData: any = {
+        fileCount,
+        importedFileCount,
+        importedTransactionCount: totalImportedTransactions,
+    };
+
+    return await importRecordQueries.update({ id, userId, data: updateData });
+};
+
+export const importRecordServices = {
+    update,
+    getAll,
+    getImportById,
+    create,
+    remove,
+    cleanupOldDraftImports,
+    updateImportCounts,
+    activate,
 };

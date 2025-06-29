@@ -1,4 +1,4 @@
-import * as importRecordServices from '@/features/transaction-import/server/services/import-record';
+import { importRecordServices } from '@/features/transaction-import/server/services/import-record';
 
 /**
  * Cleanup service for transaction imports

@@ -1,5 +1,5 @@
 import { transactionImportFileServiceSchemas } from '@/features/transaction-import/schemas/import-file';
-import * as importFileServices from '@/features/transaction-import/server/services/import-file';
+import { importFileServices } from '@/features/transaction-import/server/services/import-file';
 import { parseTransaction } from '@/features/transaction-import/server/services/transaction-parser';
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
