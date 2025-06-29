@@ -40,6 +40,6 @@ export const METHOD_PUBLIC_API_ROUTES: Array<[THTTPMethods | '*', string]> = [
  * Routes that require specific user roles
  */
 export const ROLE_PROTECTED_ROUTES: Record<string, string[]> = {
-    admin: ['/api/admin/*', '/api/settings/*'],
+    admin: ['/api/admin/*'],
     user: [],
 };

@@ -9,9 +9,9 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState('banks');
 
     return (
-        <div className="container mx-auto p-6">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold">Admin Panel</h1>
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-3xl font-bold">Global Bank Management</h1>
                 <p className="text-muted-foreground">Manage global banks and bank accounts</p>
             </div>
 

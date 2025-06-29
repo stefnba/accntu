@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 // App endpoints
+import adminEndpoints from '@/features/admin/server/endpoints';
 import bankEndpoints from '@/features/bank/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
@@ -27,6 +28,7 @@ const statusEndpoints = new Hono().get('/', async (c) =>
 
 export const appEndpoints = {
     status: statusEndpoints,
+    admin: adminEndpoints,
     banks: bankEndpoints,
     labels: labelEndpoints,
     tags: tagEndpoints,

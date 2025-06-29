@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Code, Settings } from 'lucide-react';
-import { useGlobalBankEndpoints } from '@/features/bank/api/global-bank';
-import { useGlobalBankAccountEndpoints } from '@/features/bank/api/global-bank-account';
+import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
+import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { GlobalBankAccountForm } from './global-bank-account-form';
 
 export const GlobalBankAccountManager = () => {
@@ -15,9 +15,9 @@ export const GlobalBankAccountManager = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<any>(null);
 
-    const { data: banks } = useGlobalBankEndpoints.getAll({});
-    const { data: accounts, isLoading } = useGlobalBankAccountEndpoints.getByBankId(
-        { param: { id: selectedBankId } },
+    const { data: banks } = useAdminGlobalBankEndpoints.getAll({ query: {} });
+    const { data: accounts, isLoading } = useAdminGlobalBankAccountEndpoints.getByBankId(
+        { param: { bankId: selectedBankId } },
         { enabled: !!selectedBankId }
     );
 

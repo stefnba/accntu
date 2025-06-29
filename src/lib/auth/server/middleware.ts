@@ -1,18 +1,8 @@
-import { type TSession, type TUser } from '@/lib/auth';
-import { validateAndSetAuthContext } from '@/lib/auth/server/validate';
+import { AuthContext } from '@/lib/auth/server/types';
+import { validateAndSetAuthContext, validateRolePermission } from '@/lib/auth/server/validate';
 import { Context, Next } from 'hono';
 import { isMethodPathMatch, isPathMatch } from '../utils';
 import { METHOD_PUBLIC_API_ROUTES, PUBLIC_API_ROUTES } from './config';
-
-/**
- * Define the auth context type
- */
-export interface AuthContext {
-    Variables: {
-        user: TUser | null;
-        session: TSession | null;
-    };
-}
 
 /**
  * Global auth middleware that protects all routes except those in PUBLIC_API_ROUTES
@@ -22,7 +12,12 @@ export interface AuthContext {
  * 3. Sets the user on the context
  * 4. Checks role-based permissions
  */
-export const authMiddleware = async (c: Context<AuthContext>, next: Next) => {
+export const authMiddleware = async (
+    c: Context<{
+        Variables: AuthContext;
+    }>,
+    next: Next
+) => {
     const path = c.req.path;
     const method = c.req.method;
 
@@ -37,7 +32,10 @@ export const authMiddleware = async (c: Context<AuthContext>, next: Next) => {
     }
 
     // set user and session in Hono context
-    await validateAndSetAuthContext(c);
+    const { user, session } = await validateAndSetAuthContext(c);
+
+    // Check role-based access
+    await validateRolePermission(user, path);
 
     // Continue to the next middleware or route handler
     await next();

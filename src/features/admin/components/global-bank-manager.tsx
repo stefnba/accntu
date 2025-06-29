@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useGlobalBankEndpoints } from '@/features/bank/api/global-bank';
+import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
 import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { GlobalBankForm } from './global-bank-form';
@@ -15,7 +15,7 @@ export const GlobalBankManager = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBank, setEditingBank] = useState<any>(null);
 
-    const { data: banks, isLoading } = useGlobalBankEndpoints.getAll({
+    const { data: banks, isLoading } = useAdminGlobalBankEndpoints.getAll({
         query: {
             query: searchQuery,
             country: selectedCountry,

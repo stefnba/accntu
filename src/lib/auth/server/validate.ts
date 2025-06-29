@@ -1,6 +1,7 @@
 import { TUser } from '@/lib/auth/client';
 import { auth } from '@/lib/auth/config';
 import { updateSessionActivity } from '@/lib/auth/server/db/queries';
+import { AuthContext } from '@/lib/auth/server/types';
 import { clearCookie } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
 import { getRequestMetadata } from '@/server/lib/request';
@@ -75,7 +76,14 @@ export const getUser = (c: Context) => {
     return user;
 };
 
-export const validateAndSetAuthContext = async (c: Context) => {
+/**
+ * Validate the session and set the user and session on the context.
+ * This is used in the authMiddleware to set the user and session on the context.
+ * @param c - The context
+ * @returns The session and user
+ * @throws AuthError if session is invalid
+ */
+export const validateAndSetAuthContext = async (c: Context): Promise<AuthContext> => {
     const path = c.req.path;
 
     try {
@@ -98,8 +106,10 @@ export const validateAndSetAuthContext = async (c: Context) => {
             console.error('Failed to update session activity:', err);
         });
 
-        // Check role-based access
-        await validateRolePermission(session.user, path);
+        return {
+            user: session.user,
+            session: session.session,
+        };
     } catch (error) {
         // Clear session cookie on auth error
         clearCookie(c, 'AUTH_SESSION');
@@ -109,12 +119,25 @@ export const validateAndSetAuthContext = async (c: Context) => {
     }
 };
 
-export const validateRolePermission = async (user: TUser, path: string) => {
+/**
+ * Validate the role-based access for the user.
+ * @param user - The user
+ * @param path - The path
+ * @throws AuthError if the user does not have the required role
+ */
+export const validateRolePermission = async (user: TUser | null, path: string) => {
+    if (!user) {
+        throw errorFactory.createAuthError({
+            message: 'User not found in context',
+            code: 'USER_NOT_IN_CONTEXT',
+        });
+    }
+
     // Check role-based access
     if (user.role) {
         for (const [role, patterns] of Object.entries(ROLE_PROTECTED_ROUTES)) {
             if (isPathMatch(path, patterns) && user.role !== role) {
-                // todo update error message
+                // throw error but don't log out the user
                 throw errorFactory.createAuthError({
                     message: 'Forbidden - insufficient permissions',
                     code: 'INVALID_CREDENTIALS',
@@ -125,6 +148,12 @@ export const validateRolePermission = async (user: TUser, path: string) => {
     }
 };
 
+/**
+ * Protected server route middleware.
+ * This is used to protect server routes.
+ * @param c - The context
+ * @param next - The next middleware
+ */
 export const protectedServerRoute = async (c: Context, next: Next) => {
     await validateAndSetAuthContext(c);
 
