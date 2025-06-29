@@ -1,7 +1,5 @@
-import { boolean, integer, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-
-const userRole = pgEnum('user_role', ['admin', 'user']);
 
 export const user = pgTable('user', {
     id: text('id').primaryKey(),
@@ -11,7 +9,7 @@ export const user = pgTable('user', {
     image: text('image'),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull(),
-    role: userRole('role').notNull().default('user'),
+    role: text('role').notNull().default('user'),
     banned: boolean('banned'),
     banReason: text('ban_reason'),
     banExpires: timestamp('ban_expires'),

@@ -95,7 +95,7 @@ const app = new Hono()
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            const { transformQuery, csvConfig } = await parseTransaction(id, user.id);
+            const { transformQuery, transformConfig } = await parseTransaction(id, user.id);
 
             return {
                 success: true,

@@ -17,8 +17,8 @@ export const globalBankAccountQuerySchemas = {
         name: true,
         description: true,
         transformQuery: true,
-        csvConfig: true,
-        sampleCsvData: true,
+        transformConfig: true,
+        sampleTransformData: true,
         isActive: true,
     }),
     update: updateGlobalBankAccountSchema.pick({
@@ -26,8 +26,8 @@ export const globalBankAccountQuerySchemas = {
         name: true,
         description: true,
         transformQuery: true,
-        csvConfig: true,
-        sampleCsvData: true,
+        transformConfig: true,
+        sampleTransformData: true,
         isActive: true,
     }),
 };

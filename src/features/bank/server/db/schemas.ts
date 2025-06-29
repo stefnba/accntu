@@ -5,7 +5,6 @@ import {
     boolean,
     char,
     decimal,
-    json,
     jsonb,
     pgEnum,
     pgTable,
@@ -66,7 +65,7 @@ export const globalBankAccount = pgTable('global_bank_account', {
     transformQuery: text().notNull(),
 
     // CSV metadata and configuration
-    csvConfig: jsonb().$type<{
+    transformConfig: jsonb().$type<{
         delimiter?: string;
         hasHeader?: boolean;
         encoding?: string; // 'utf-8', 'iso-8859-1', etc.
@@ -80,7 +79,7 @@ export const globalBankAccount = pgTable('global_bank_account', {
     }>(),
 
     // Sample data for testing/validation
-    sampleCsvData: text(), // Sample CSV rows for testing
+    sampleTransformData: text(), // Sample CSV rows for testing
 
     isActive: boolean().notNull().default(true),
     createdAt: timestamp().notNull().defaultNow(),
@@ -103,7 +102,7 @@ export const connectedBank = pgTable(
             .references(() => globalBank.id, { onDelete: 'restrict' }),
 
         // API credentials (encrypted)
-        apiCredentials: json().$type<{
+        apiCredentials: jsonb().$type<{
             accessToken?: string;
             refreshToken?: string;
             apiKey?: string;

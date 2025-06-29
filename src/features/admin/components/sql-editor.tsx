@@ -17,7 +17,7 @@ export const SqlEditor = ({ value, onChange, height = 200, readOnly = false }: S
     };
 
     return (
-        <div className="border rounded-md overflow-hidden w-96">
+        <div className="border rounded-md overflow-hidden w-full h-full">
             <Editor
                 height={height}
                 language="sql"

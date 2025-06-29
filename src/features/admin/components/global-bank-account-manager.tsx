@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Code, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
+import { Code, Edit, Plus, Settings, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { GlobalBankAccountForm } from './global-bank-account-form';
 
 export const GlobalBankAccountManager = () => {
@@ -21,7 +27,7 @@ export const GlobalBankAccountManager = () => {
         { enabled: !!selectedBankId }
     );
 
-    const selectedBank = banks?.find(bank => bank.id === selectedBankId);
+    const selectedBank = banks?.find((bank) => bank.id === selectedBankId);
 
     const handleEdit = (account: any) => {
         setEditingAccount(account);
@@ -53,8 +59,8 @@ export const GlobalBankAccountManager = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">Global Bank Accounts</h2>
-                <Button 
-                    onClick={handleAdd} 
+                <Button
+                    onClick={handleAdd}
                     disabled={!selectedBankId}
                     className="flex items-center gap-2"
                 >
@@ -96,7 +102,9 @@ export const GlobalBankAccountManager = () => {
                                 <Card key={account.id} className="h-fit">
                                     <CardHeader className="pb-3">
                                         <div className="flex items-center justify-between">
-                                            <CardTitle className="text-lg">{account.name}</CardTitle>
+                                            <CardTitle className="text-lg">
+                                                {account.name}
+                                            </CardTitle>
                                             <div className="flex gap-2">
                                                 <Button
                                                     variant="ghost"
@@ -120,16 +128,18 @@ export const GlobalBankAccountManager = () => {
                                     <CardContent className="pt-0">
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <Badge 
+                                                <Badge
                                                     className={getAccountTypeColor(account.type)}
                                                     variant="secondary"
                                                 >
                                                     {account.type.replace('_', ' ')}
                                                 </Badge>
-                                                <Badge 
-                                                    variant={account.isActive ? "default" : "secondary"}
+                                                <Badge
+                                                    variant={
+                                                        account.isActive ? 'default' : 'secondary'
+                                                    }
                                                 >
-                                                    {account.isActive ? "Active" : "Inactive"}
+                                                    {account.isActive ? 'Active' : 'Inactive'}
                                                 </Badge>
                                             </div>
 
@@ -142,24 +152,42 @@ export const GlobalBankAccountManager = () => {
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Code className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-muted-foreground">Transform Query:</span>
+                                                    <span className="text-muted-foreground">
+                                                        Transform Query:
+                                                    </span>
                                                 </div>
                                                 <div className="bg-muted rounded p-2 text-xs font-mono max-h-20 overflow-y-auto">
-                                                    {account.transformQuery || 'No transform query defined'}
+                                                    {account.transformQuery ||
+                                                        'No transform query defined'}
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Settings className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-muted-foreground">CSV Config:</span>
+                                                    <span className="text-muted-foreground">
+                                                        CSV Config:
+                                                    </span>
                                                 </div>
                                                 <div className="bg-muted rounded p-2 text-xs">
-                                                    {account.csvConfig ? (
+                                                    {account.transformConfig ? (
                                                         <div className="space-y-1">
-                                                            <div>Delimiter: {account.csvConfig.delimiter || ','}</div>
-                                                            <div>Header: {account.csvConfig.hasHeader ? 'Yes' : 'No'}</div>
-                                                            <div>Encoding: {account.csvConfig.encoding || 'utf-8'}</div>
+                                                            <div>
+                                                                Delimiter:{' '}
+                                                                {account.transformConfig
+                                                                    .delimiter || ','}
+                                                            </div>
+                                                            <div>
+                                                                Header:{' '}
+                                                                {account.transformConfig.hasHeader
+                                                                    ? 'Yes'
+                                                                    : 'No'}
+                                                            </div>
+                                                            <div>
+                                                                Encoding:{' '}
+                                                                {account.transformConfig.encoding ||
+                                                                    'utf-8'}
+                                                            </div>
                                                         </div>
                                                     ) : (
                                                         'No CSV config defined'
@@ -167,12 +195,18 @@ export const GlobalBankAccountManager = () => {
                                                 </div>
                                             </div>
 
-                                            {account.sampleCsvData && (
+                                            {account.sampleTransformData && (
                                                 <div className="space-y-2">
-                                                    <div className="text-sm text-muted-foreground">Sample Data:</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        Sample Data:
+                                                    </div>
                                                     <div className="bg-muted rounded p-2 text-xs font-mono max-h-20 overflow-y-auto">
-                                                        {account.sampleCsvData.split('\n').slice(0, 3).join('\n')}
-                                                        {account.sampleCsvData.split('\n').length > 3 && '\n...'}
+                                                        {account.sampleTransformData
+                                                            .split('\n')
+                                                            .slice(0, 3)
+                                                            .join('\n')}
+                                                        {account.sampleTransformData.split('\n')
+                                                            .length > 3 && '\n...'}
                                                     </div>
                                                 </div>
                                             )}
@@ -185,9 +219,7 @@ export const GlobalBankAccountManager = () => {
 
                     {accounts?.length === 0 && (
                         <div className="text-center py-12">
-                            <p className="text-muted-foreground">
-                                No accounts found for this bank
-                            </p>
+                            <p className="text-muted-foreground">No accounts found for this bank</p>
                         </div>
                     )}
                 </>

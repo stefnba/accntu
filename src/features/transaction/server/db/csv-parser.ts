@@ -126,14 +126,14 @@ export class DuckDbCsvParser {
             const tempTableName = `temp_csv_${Date.now()}`;
 
             // First, create table from CSV content
-            const csvConfig = this.getCsvConfig(accountConfig);
+            const transformConfig = this.getCsvConfig(accountConfig);
             const createTableQuery = `
         CREATE TABLE ${tempTableName} AS
         SELECT * FROM read_csv_auto('data:text/csv;base64,${Buffer.from(csvContent).toString('base64')}',
-          delimiter='${csvConfig.delimiter}',
-          header=${csvConfig.hasHeader},
-          quote='${csvConfig.quoteChar}',
-          escape='${csvConfig.escapeChar}'
+          delimiter='${transformConfig.delimiter}',
+          header=${transformConfig.hasHeader},
+          quote='${transformConfig.quoteChar}',
+          escape='${transformConfig.escapeChar}'
         )
       `;
 
@@ -193,8 +193,8 @@ export class DuckDbCsvParser {
         };
 
         // Merge custom config if available
-        const customConfig = accountConfig.customCsvConfig?.csvConfig || {};
-        const globalConfig = accountConfig.globalBankAccount?.csvConfig || {};
+        const customConfig = accountConfig.customCsvConfig?.transformConfig || {};
+        const globalConfig = accountConfig.globalBankAccount?.transformConfig || {};
 
         return {
             ...defaultConfig,

@@ -13,10 +13,10 @@ export const parseTransaction = async (fileId: string, userId: string) => {
         throw new Error('Global bank account not found');
     }
 
-    const { transformQuery, csvConfig } = globalBankAccount;
+    const { transformQuery, transformConfig } = globalBankAccount;
 
     return {
         transformQuery,
-        csvConfig,
+        transformConfig,
     };
 };
