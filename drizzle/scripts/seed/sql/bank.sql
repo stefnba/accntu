@@ -10,6 +10,16 @@ INSERT INTO "global_bank" (
     "integration_types"
 ) VALUES
     (
+        'xbl47h8oejgjhhtrjav4akjx',
+        'DKB Miles & More',
+        'DE',
+        'EUR',
+        'BARCDE33XXX',
+        '#00aeef',
+        'https://accntu-public.s3.eu-central-1.amazonaws.com/logos/barclays_de.png',
+        'csv'
+    ),
+    (
         'xbl47h8oejgjhhtrjav4gkjx',
         'Barclays',
         'DE',
@@ -48,8 +58,59 @@ INSERT INTO "global_bank_account" (
     "name",
     "description",
     "transform_query",
-    "csv_config"
+    "transform_config",
+    "sample_transform_data"
 ) VALUES
+    (
+        'w6ggjvz6fg9ref1ns5h350af',
+        'xbl47h8oejgjhhtrjav4akjx',
+        'credit_card',
+        'DKB Miles & More Current Account',
+        'DKB Miles & More current account statements',
+        'SELECT
+          id, -- Deterministic ID generated from raw data
+
+          -- Convert DD.MM.YYYY to YYYY-MM-DD
+          strftime(strptime("Authorised on", ''%d.%m.%Y''), ''%Y-%m-%d'') as date,
+
+          -- Clean up description
+          TRIM("Description") as description,
+
+          -- Convert European number format (1.234,56) to standard decimal
+          -- Handle both thousands separator (.) and decimal separator (,)
+          CAST(
+            REGEXP_REPLACE(
+              REGEXP_REPLACE("Amount", ''([0-9]+)\\.([0-9]{3})'', ''\\\\1\\\\2''),
+              ''(-?[0-9]+),([0-9]+)'',
+              ''\\\\1.\\\\2''
+            ) AS DOUBLE
+          ) as amount,
+
+          "Currency" as currency,
+
+          -- Determine transaction type based on amount sign
+          CASE
+            WHEN CAST(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE("Amount", ''([0-9]+)\\.([0-9]{3})'', ''\\\\1\\\\2''),
+                ''(-?[0-9]+),([0-9]+)'',
+                ''\\\\1.\\\\2''
+              ) AS DOUBLE
+            ) < 0
+            THEN ''debit''
+            ELSE ''credit''
+          END as type
+
+        FROM data
+        WHERE
+          "Authorised on" IS NOT NULL
+          AND "Amount" IS NOT NULL
+          AND "Description" IS NOT NULL
+          AND "Status" = ''Processed''  -- Only processed transactions
+        ORDER BY strptime("Authorised on", ''%d.%m.%Y'') DESC',
+        '{"delimiter": ",", "hasHeader": true, "dateFormat": "dd/MM/yyyy", "decimalSeparator": ".", "encoding": "utf-8"}',
+        'asd'
+    ),
     (
         'w6ggjvz6fg9ref0ns5h350af',
         'xbl47h8oejgjhhtrjav4gkjx',
@@ -67,7 +128,8 @@ INSERT INTO "global_bank_account" (
         )
         WHERE date_col IS NOT NULL AND amount_col IS NOT NULL
         ORDER BY date_col DESC',
-        '{"delimiter": ",", "hasHeader": true, "dateFormat": "dd/MM/yyyy", "decimalSeparator": ".", "encoding": "utf-8"}'
+        '{"delimiter": ",", "hasHeader": true, "dateFormat": "dd/MM/yyyy", "decimalSeparator": ".", "encoding": "utf-8"}',
+        'test'
     ),
     (
         'rjs8xjj4kd2ajcybfwulpr49',
@@ -85,7 +147,8 @@ INSERT INTO "global_bank_account" (
         )
         WHERE date_col IS NOT NULL AND amount_col IS NOT NULL
         ORDER BY date_col DESC',
-        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}'
+        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}',
+        'test'
     ),
     (
         'l1imsi6ytzu012oxfsro9feo',
@@ -109,7 +172,8 @@ INSERT INTO "global_bank_account" (
         )
         WHERE date_col IS NOT NULL AND (debit_col IS NOT NULL OR credit_col IS NOT NULL)
         ORDER BY date_col DESC',
-        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}'
+        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}',
+        'test'
     ),
     (
         'gr3sna76dkypxetpxxwdxtq3',
@@ -130,5 +194,6 @@ INSERT INTO "global_bank_account" (
         )
         WHERE date_col IS NOT NULL AND amount_col IS NOT NULL
         ORDER BY date_col DESC',
-        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}'
+        '{"delimiter": ";", "hasHeader": true, "dateFormat": "dd.MM.yyyy", "decimalSeparator": ",", "encoding": "utf-8"}',
+        'test'
     ) ON CONFLICT (id) DO NOTHING;
