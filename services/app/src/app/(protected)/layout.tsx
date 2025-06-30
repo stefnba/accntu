@@ -13,31 +13,27 @@ interface Props {
 }
 
 export default async function ProtectedLayout({ children }: Readonly<Props>) {
-    const user = await getUser();
-
     // cookie for sidebar default state
     const cookieStore = cookies();
     const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
     return (
-        <SessionUserProvider sessionUser={user}>
-            <SidebarProvider defaultOpen={defaultOpen}>
-                <ModalProvider />
-                <SheetProvider />
+        <SidebarProvider defaultOpen={defaultOpen}>
+            <ModalProvider />
+            <SheetProvider />
 
-                {/* Sidebar */}
-                <SidebarTriggerMobile />
-                <AppSidebar />
+            {/* Sidebar */}
+            <SidebarTriggerMobile />
+            <AppSidebar />
 
-                {/* Main */}
-                <div className="w-screen h-screen max-h-screen">
-                    <Navbar />
+            {/* Main */}
+            <div className="w-screen h-screen max-h-screen">
+                <Navbar />
 
-                    {/* Content */}
-                    <main className="overflow-y-auto max-h-screen py-2 md:px-6 px-5 w-full">
-                        {children}
-                    </main>
-                </div>
-            </SidebarProvider>
-        </SessionUserProvider>
+                {/* Content */}
+                <main className="overflow-y-auto max-h-screen py-2 md:px-6 px-5 w-full">
+                    {children}
+                </main>
+            </div>
+        </SidebarProvider>
     );
 }

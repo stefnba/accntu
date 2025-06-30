@@ -12,7 +12,7 @@ export const useCreateLabel = () => {
 
     const q = useMutation<
         InferResponseType<typeof query>,
-        Error,
+        InferResponseType<typeof query, 400>,
         InferRequestType<typeof query>['json']
     >({
         mutationFn: async (values) => {
@@ -29,8 +29,8 @@ export const useCreateLabel = () => {
             queryClient.invalidateQueries({ queryKey: ['labels'] });
             handleClose();
         },
-        onError: (error) => {
-            errorToast(error.message);
+        onError: ({ error }) => {
+            errorToast(error);
         }
     });
 

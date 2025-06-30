@@ -7,6 +7,7 @@ import { SESSION_COOKIE } from '@features/auth/server/config';
 import { isUrlMatch } from '@features/auth/server/utils';
 
 export const middleware = async (request: NextRequest) => {
+    return NextResponse.next();
     const { nextUrl } = request;
 
     const isPublicRoute = isUrlMatch(nextUrl.pathname, authRoutes.publicRoutes);
