@@ -1,10 +1,9 @@
 'use client';
 
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { SampleDataSection } from '@/features/admin/components/global-bank-account/global-bank-account-details/sample-data-section';
-import { SqlQueryEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/sql-query-editor';
-import { TransformationConfiguration } from '@/features/admin/components/global-bank-account/global-bank-account-details/transformation-configuration';
-import { useState } from 'react';
+import { SampleDataSection } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sample-data-section';
+import { SqlQueryEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sql-query-editor';
+import { TransformationConfiguration } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/transformation-configuration';
 
 interface GlobalBankAccountDetailsTransformationProps {
     accountId: string;
@@ -14,8 +13,6 @@ interface GlobalBankAccountDetailsTransformationProps {
 export const GlobalBankAccountDetailsTransformation: React.FC<
     GlobalBankAccountDetailsTransformationProps
 > = ({ accountId }) => {
-    const [isSampleDataOpen, setIsSampleDataOpen] = useState(false);
-
     const { data: account } = useAdminGlobalBankAccountEndpoints.getById({
         param: { id: accountId },
     });
@@ -39,11 +36,7 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
                 </div>
 
                 {/* Bottom row with Sample Transform Data - Collapsible */}
-                <SampleDataSection
-                    accountId={accountId}
-                    isOpen={isSampleDataOpen}
-                    onOpenChange={setIsSampleDataOpen}
-                />
+                <SampleDataSection accountId={accountId} />
             </div>
         </div>
     );

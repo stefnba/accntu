@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/sql-editor';
+import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sql-editor';
 import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
 import { ChevronDown, ChevronRight, Code2, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -144,7 +144,10 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                     <div className="flex justify-end my-4 gap-2">
                         <Button
                             variant="outline"
-                            onClick={handleTestQuery}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleTestQuery();
+                            }}
                             disabled={testTransformQuery.isPending}
                         >
                             {testTransformQuery.isPending && (

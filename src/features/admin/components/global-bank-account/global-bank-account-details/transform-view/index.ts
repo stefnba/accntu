@@ -1,0 +1,1 @@
+export { GlobalBankAccountDetailsTransformation } from './transformation';

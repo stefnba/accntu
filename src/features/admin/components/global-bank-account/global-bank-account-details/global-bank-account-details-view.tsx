@@ -6,7 +6,7 @@ import { GlobalBankAccountDetailsHeader } from '@/features/admin/components/glob
 import { GlobalBankAccountDetailsOverview } from '@/features/admin/components/global-bank-account/global-bank-account-details/overview';
 import { GlobalBankAccountDetailsSettings } from '@/features/admin/components/global-bank-account/global-bank-account-details/settings';
 import { AdminGlobalBankAccountDetailsTabNavigation } from '@/features/admin/components/global-bank-account/global-bank-account-details/tab-navigation';
-import { GlobalBankAccountDetailsTransformation } from '@/features/admin/components/global-bank-account/global-bank-account-details/transformation';
+import { GlobalBankAccountDetailsTransformation } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view';
 import { useGlobalBankAccountDetailsView } from '@/features/admin/hooks/global-bank-account';
 import { AlertTriangle } from 'lucide-react';
 

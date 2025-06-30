@@ -7,20 +7,16 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 interface SampleDataSectionProps {
     accountId: string;
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
 }
 
-export const SampleDataSection: React.FC<SampleDataSectionProps> = ({
-    accountId,
-    isOpen,
-    onOpenChange,
-}) => {
+export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
     const { data: account } = useAdminGlobalBankAccountEndpoints.getById({
@@ -61,7 +57,7 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({
     }, [account?.sampleTransformData, form.reset]);
 
     return (
-        <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <Card>
                 <CardHeader>
                     <CollapsibleTrigger asChild>
