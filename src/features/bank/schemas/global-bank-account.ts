@@ -14,7 +14,7 @@ export const transformConfigSchema = z
         delimiter: z.string().optional(),
         hasHeader: z.boolean().optional(),
         encoding: z.string().optional(),
-        skipRows: z.number().optional(),
+        skipRows: z.coerce.number().optional(),
         idColumns: z
             .union([z.string(), z.array(z.string())])
             .optional()

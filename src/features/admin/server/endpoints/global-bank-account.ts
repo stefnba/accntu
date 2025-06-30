@@ -42,6 +42,8 @@ export const adminGlobalBankAccountEndpoints = new Hono()
             const id = c.req.param('id');
             const data = c.req.valid('json');
 
+            console.log(data);
+
             return await globalBankAccountServices.update({ id, data });
         })
     )
