@@ -25,17 +25,26 @@ export const useAdminGlobalBankAccountEndpoints = {
     /**
      * Create global bank account (admin only)
      */
-    create: createMutation(apiClient.admin['global-bank-accounts'].$post),
+    create: createMutation(
+        apiClient.admin['global-bank-accounts'].$post,
+        ADMIN_GLOBAL_BANK_ACCOUNT_QUERY_KEYS.ADMIN_GLOBAL_BANK_ACCOUNT
+    ),
 
     /**
      * Update global bank account (admin only)
      */
-    update: createMutation(apiClient.admin['global-bank-accounts'][':id'].$put),
+    update: createMutation(
+        apiClient.admin['global-bank-accounts'][':id'].$put,
+        ADMIN_GLOBAL_BANK_ACCOUNT_QUERY_KEYS.ADMIN_GLOBAL_BANK_ACCOUNT
+    ),
 
     /**
      * Delete global bank account (admin only)
      */
-    remove: createMutation(apiClient.admin['global-bank-accounts'][':id'].$delete),
+    remove: createMutation(
+        apiClient.admin['global-bank-accounts'][':id'].$delete,
+        ADMIN_GLOBAL_BANK_ACCOUNT_QUERY_KEYS.ADMIN_GLOBAL_BANK_ACCOUNT
+    ),
 
     /**
      * Test global bank account transformation query (admin only)
