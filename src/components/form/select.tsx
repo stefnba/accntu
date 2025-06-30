@@ -1,3 +1,4 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import {
     FormControl,
     FormDescription,
@@ -13,7 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
 type SelectOption = {

@@ -1,3 +1,4 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import {
     FormControl,
     FormDescription,
@@ -7,7 +8,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
 type FormSwitchProps<

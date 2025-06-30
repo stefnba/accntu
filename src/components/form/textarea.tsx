@@ -1,3 +1,4 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import {
     FormControl,
     FormDescription,
@@ -7,7 +8,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { TextareaHTMLAttributes } from 'react';
 import { FieldPath, FieldValues } from 'react-hook-form';
 

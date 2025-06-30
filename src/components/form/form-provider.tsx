@@ -1,6 +1,6 @@
 'use client';
 
-import { UseZodFormReturn } from '@/hooks/use-form';
+import { UseZodFormReturn } from '@/components/form/use-form';
 import { cn } from '@/lib/utils';
 import { FormHTMLAttributes } from 'react';
 import { FormProvider } from 'react-hook-form';

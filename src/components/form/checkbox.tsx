@@ -1,3 +1,4 @@
+import { UseZodFormReturn } from '@/components/form/use-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     FormControl,
@@ -7,7 +8,6 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
 type FormCheckboxProps<

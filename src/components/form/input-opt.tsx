@@ -1,5 +1,6 @@
 'use client';
 
+import { UseZodFormReturn } from '@/components/form/use-form';
 import {
     FormControl,
     FormDescription,
@@ -9,7 +10,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { UseZodFormReturn } from '@/hooks/use-form';
 import { InputHTMLAttributes } from 'react';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
