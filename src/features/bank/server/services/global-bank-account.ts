@@ -3,6 +3,7 @@ import {
     TTestTransformQuery,
 } from '@/features/bank/schemas/global-bank-account';
 import { globalBankAccountQueries } from '@/features/bank/server/db/queries';
+import { transactionServiceSchemas } from '@/features/transaction/schemas';
 import { DuckDBSingleton } from '@/lib/duckdb';
 import {
     TQueryDeleteRecord,
@@ -11,7 +12,6 @@ import {
     TQueryUpdateRecord,
 } from '@/lib/schemas';
 import { localUploadService } from '@/lib/upload/local/service';
-import { z } from 'zod';
 
 /**
  * Get a global bank account by id
@@ -103,12 +103,10 @@ const testTransformQuery = async (data: TTestTransformQuery) => {
         },
         idConfig: {
             columns: idColumns,
+            fieldName: 'key',
         },
         transformSql: data.transformQuery,
-        schema: z.object({
-            name: z.string(),
-            amount: z.number(),
-        }),
+        schema: transactionServiceSchemas.create,
     });
 
     // delete sample data from disk

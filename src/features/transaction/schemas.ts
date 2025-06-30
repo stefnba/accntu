@@ -11,7 +11,14 @@ import { z } from 'zod';
 
 export const transactionQuerySchemas = {
     select: selectTransactionSchema,
-    insert: insertTransactionSchema,
+    insert: insertTransactionSchema.omit({
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        isDeleted: true,
+        isHidden: true,
+        isNew: true,
+    }),
     update: updateTransactionSchema,
 };
 
@@ -26,7 +33,20 @@ export type TTransactionQuery = {
 // ====================
 
 export const transactionServiceSchemas = {
-    create: transactionQuerySchemas.insert,
+    create: transactionQuerySchemas.insert
+        .omit({
+            userId: true,
+            userAmount: true,
+            userCurrency: true,
+            importFileId: true,
+            originalTitle: true,
+            connectedBankAccountId: true,
+        })
+        .extend({
+            accountAmount: z.number(),
+            spendingAmount: z.number(),
+            balance: z.number().optional(),
+        }),
     update: transactionQuerySchemas.update,
 };
 

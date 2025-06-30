@@ -6,9 +6,8 @@ import {
     boolean,
     char,
     date,
-    decimal,
     index,
-    jsonb,
+    numeric,
     pgEnum,
     pgTable,
     text,
@@ -24,7 +23,7 @@ export const transactionStatusEnum = pgEnum('transaction_status', [
     'failed',
     'cancelled',
 ]);
-export const importSourceEnum = pgEnum('import_source', ['csv', 'api', 'manual']);
+export const importSourceEnum = pgEnum('import_source', ['csv', 'api']);
 
 export const transaction = pgTable(
     'transaction',
@@ -37,37 +36,42 @@ export const transaction = pgTable(
         connectedBankAccountId: text()
             .notNull()
             .references(() => connectedBankAccount.id, { onDelete: 'cascade' }),
-        importFileId: text().references(() => transactionImportFile.id, {
-            onDelete: 'set null',
-        }),
+        importFileId: text()
+            .notNull()
+            .references(() => transactionImportFile.id, {
+                onDelete: 'set null',
+            }),
 
         // Core transaction data
         date: date().notNull(),
         title: text().notNull(), // Main description
+        originalTitle: text().notNull(), // Original title from the import file
         description: text(), // Additional details
-        counterparty: text(), // Other party in transaction
+        note: text(), // User's personal note
 
         // Banking details
         iban: text(), // Other party's IBAN
         bic: text(), // Other party's BIC
         reference: text(), // Transaction reference/memo
+        counterparty: text(), // Other party in transaction
 
+        // Transaction type
         type: transactionTypeEnum().notNull(),
 
         // Amount in spending currency (what was actually spent/received)
-        spendingAmount: decimal({ precision: 12, scale: 2 }).notNull(),
+        spendingAmount: numeric({ precision: 12, scale: 2 }).notNull(),
         spendingCurrency: char({ length: 3 }).notNull(),
 
         // Amount in account currency (account's native currency)
-        accountAmount: decimal({ precision: 12, scale: 2 }).notNull(),
+        accountAmount: numeric({ precision: 12, scale: 2 }).notNull(),
         accountCurrency: char({ length: 3 }).notNull(),
 
         // Amount in user's base currency (for multi-currency users)
-        userAmount: decimal({ precision: 12, scale: 2 }).notNull(),
+        userAmount: numeric({ precision: 12, scale: 2 }).notNull(),
         userCurrency: char({ length: 3 }).notNull(),
 
         // Account balance after transaction
-        balance: decimal({ precision: 12, scale: 2 }),
+        balance: numeric({ precision: 12, scale: 2 }),
 
         // Location data
         country: char({ length: 2 }),
@@ -77,36 +81,25 @@ export const transaction = pgTable(
         labelId: text(), // Direct label assignment (will be added after label table is created)
 
         // Import metadata
-        importSource: importSourceEnum().notNull().default('manual'),
-        importBatchId: text(), // Group transactions from same import
-        bankTransactionId: text(), // Bank's unique ID
+        providerTransactionId: text(), // Bank's unique ID
         key: text().notNull(), // Unique key for deduplication
-
-        // Raw data from import (for debugging/reprocessing)
-        rawData: jsonb().$type<Record<string, any>>(),
 
         // Status and flags
         status: transactionStatusEnum().notNull().default('completed'),
-        isRecurring: boolean().notNull().default(false),
-        isTransfer: boolean().notNull().default(false),
         linkedTransactionId: text(), // For transfers between accounts
         isNew: boolean().notNull().default(true),
         isDeleted: boolean().notNull().default(false),
-
-        // User customizations
-        note: text(), // User's personal note
         isHidden: boolean().notNull().default(false),
 
         createdAt: timestamp().notNull().defaultNow(),
-        updatedAt: timestamp().notNull().defaultNow(),
+        updatedAt: timestamp().notNull(),
     },
     (table) => ({
         accountIdIdx: index('transaction_account_id_idx').on(table.connectedBankAccountId),
         dateIdx: index('transaction_date_idx').on(table.date),
-        bankTransactionIdIdx: index('transaction_bank_transaction_id_idx').on(
-            table.bankTransactionId
+        providerTransactionIdIdx: index('transaction_provider_transaction_id_idx').on(
+            table.providerTransactionId
         ),
-        importBatchIdIdx: index('transaction_import_batch_id_idx').on(table.importBatchId),
         userKeyUniqueIdx: uniqueIndex('transaction_user_key_unique').on(
             table.userId,
             table.key,
