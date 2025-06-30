@@ -487,7 +487,7 @@ export class DuckDBManager {
             ? `[${s3Path.map((p) => `'${p}'`).join(', ')}]`
             : `'${s3Path}'`;
 
-        let optionsStr = this.buildCsvOptionsString(options);
+        const optionsStr = this.buildCsvOptionsString(options);
 
         // Try read_csv_auto first, then fall back to read_csv with options
         let query = `SELECT * FROM read_csv_auto(${pathStr})`;
