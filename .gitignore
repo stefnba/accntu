@@ -137,3 +137,6 @@ logs/
 
 
 
+node_modules
+
+.next
