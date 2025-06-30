@@ -3,15 +3,15 @@ import {
     TTestTransformQuery,
 } from '@/features/bank/schemas/global-bank-account';
 import { globalBankAccountQueries } from '@/features/bank/server/db/queries';
+import { DuckDBSingleton } from '@/lib/duckdb';
 import {
     TQueryDeleteRecord,
     TQueryInsertRecord,
     TQuerySelectRecords,
     TQueryUpdateRecord,
 } from '@/lib/schemas';
-
-import { transactionQuerySchemas } from '@/features/transaction/schemas';
-import { DuckDBSingleton } from '@/lib/duckdb';
+import { localUploadService } from '@/lib/upload/local/service';
+import { z } from 'zod';
 
 /**
  * Get a global bank account by id
@@ -67,24 +67,57 @@ const remove = async ({ id }: TQueryDeleteRecord) => {
 };
 
 /**
- * Test a global bank account transformation query
+ * Test a global bank account transformation query.
+ *
+ * This function will save the sample data to disk, transform the data, and return the result.
+ *
+ * The sample data is deleted from disk after the transformation is complete.
+ *
  * @param id - The id of the global bank account
  * @param data - The data to test the global bank account transformation query
  * @returns The result of the global bank account transformation query
  */
 const testTransformQuery = async (data: TTestTransformQuery) => {
+    // save sample data to disk
+    const csvFile = await localUploadService.writeFileToDisk({
+        file: data.sampleTransformData,
+        fileExtension: 'csv',
+    });
+
     const duckdb = await DuckDBSingleton.getInstance();
+
+    const idColumns = data.transformConfig.idColumns;
+
+    if (!idColumns) {
+        throw new Error('ID columns are required');
+    }
 
     const result = await duckdb.transformData({
         source: {
-            type: data?.transformConfig?.type,
-            path: data.sampleTransformData,
+            type: 'csv',
+            path: csvFile,
+            options: {
+                header: true,
+                delim: data.transformConfig.delimiter,
+            },
+        },
+        idConfig: {
+            columns: idColumns,
         },
         transformSql: data.transformQuery,
-        schema: transactionQuerySchemas.insert,
+        schema: z.object({
+            name: z.string(),
+            amount: z.number(),
+        }),
+    });
+
+    // delete sample data from disk
+    await localUploadService.deleteFileFromDisk({
+        filePath: csvFile,
     });
 
     return {
+        csvFile,
         result,
     };
 };

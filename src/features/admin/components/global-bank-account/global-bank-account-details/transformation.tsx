@@ -3,11 +3,11 @@
 import { Form, FormInput, FormSelect, FormTextarea, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/sql-editor';
 import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
-import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 interface GlobalBankAccountDetailsTransformationProps {
@@ -18,6 +18,8 @@ interface GlobalBankAccountDetailsTransformationProps {
 export const GlobalBankAccountDetailsTransformation: React.FC<
     GlobalBankAccountDetailsTransformationProps
 > = ({ accountId, bankId }) => {
+    const [sampleData, setSampleData] = useState<any[]>([]);
+
     const { data: account } = useAdminGlobalBankAccountEndpoints.getById({
         param: { id: accountId },
     });
@@ -62,6 +64,9 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
                     onSuccess: () => {
                         toast.success('Configuration updated successfully');
                     },
+                    onError: ({ error }) => {
+                        toast.error(error.message);
+                    },
                 }
             );
         },
@@ -81,13 +86,20 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
             return;
         }
 
-        testTransformQuery.mutate({
-            json: {
-                transformQuery,
-                sampleTransformData,
-                transformConfig,
+        testTransformQuery.mutate(
+            {
+                json: {
+                    transformQuery,
+                    sampleTransformData,
+                    transformConfig,
+                },
             },
-        });
+            {
+                onSuccess: (data) => {
+                    setSampleData(data.result.data);
+                },
+            }
+        );
     };
 
     const handleSave = () => {
@@ -99,9 +111,6 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
             <div className="flex justify-between items-center">
                 <div className="text-2xl font-semibold mb-4">Transformation Configuration</div>
                 <div className="flex justify-end gap-2 mb-2">
-                    <Button variant="outline" onClick={handleTestQuery}>
-                        Test
-                    </Button>
                     <Button onClick={handleSave}>Save</Button>
                 </div>
             </div>
@@ -189,7 +198,11 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
                                     </>
                                 )}
 
-                                <Label>ID Columns</Label>
+                                <FormInput
+                                    form={form}
+                                    name="transformConfig.idColumns"
+                                    label="ID Columns"
+                                />
                             </div>
                         </CardContent>
                     </Card>
@@ -200,9 +213,26 @@ export const GlobalBankAccountDetailsTransformation: React.FC<
                         </CardHeader>
                         <CardContent className="h-[900px]">
                             <SqlEditor
-                                value={account?.transformQuery ?? 'SELECT * FROM transactions'}
-                                onChange={() => {}}
+                                value={form.watch('transformQuery') ?? ''}
+                                onChange={(value) => form.setValue('transformQuery', value)}
                             />
+                            <div className="flex justify-end">
+                                <Button variant="outline" onClick={handleTestQuery}>
+                                    Test
+                                </Button>
+                            </div>
+                            <div>
+                                {testTransformQuery.isPending ? (
+                                    <div>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    </div>
+                                ) : sampleData.length > 0 ? (
+                                    <div>
+                                        <h3>Sample Data</h3>
+                                        <pre>{JSON.stringify(sampleData, null, 2)}</pre>
+                                    </div>
+                                ) : null}
+                            </div>
                         </CardContent>
                     </Card>
                     <Card className="h-[900px] flex-1 w-full md:w-1/2 lg:w-1/3 ">

@@ -15,6 +15,7 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['transfer', 'credit', 'debit']);
 export const transactionStatusEnum = pgEnum('transaction_status', [
@@ -128,5 +129,10 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     // Note: label relation will be added after label table is created to avoid circular imports
 }));
 
-export type Transaction = typeof transaction.$inferSelect;
-export type NewTransaction = typeof transaction.$inferInsert;
+// ===============================
+// Base Zod Schemas
+// ===============================
+
+export const selectTransactionSchema = createSelectSchema(transaction);
+export const insertTransactionSchema = createInsertSchema(transaction);
+export const updateTransactionSchema = createUpdateSchema(transaction);

@@ -15,6 +15,10 @@ export const transformConfigSchema = z
         hasHeader: z.boolean().optional(),
         encoding: z.string().optional(),
         skipRows: z.number().optional(),
+        idColumns: z
+            .union([z.string(), z.array(z.string())])
+            .optional()
+            .transform((val) => (Array.isArray(val) ? val : val?.split(',').map((v) => v.trim()))),
         dateFormat: z.string().optional(),
         sheetName: z.string().optional(),
         decimalSeparator: z.enum(['.', ',']).optional(),
