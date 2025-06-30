@@ -1,128 +1,68 @@
-import { withDbQuery } from '@/server/lib/handler';
+import { LOCAL_UPLOAD_BASE_DIR, type LocalUploadConfig } from '@/lib/upload/local/config';
+import { generateRandonFileName } from '@/lib/upload/utils';
 import fs from 'fs/promises';
 import path from 'path';
-import type { LocalUploadConfig } from './config';
-import { generateRandomFileName } from './utils';
 
-export const createLocalUploadService = (config: UploadConfig, localConfig: LocalUploadConfig) => {
-    const { CreateSignedUrlSchema, DeleteFileSchema } = createUploadSchemas(config);
-
-    const ensureDirectoryExists = async (dirPath: string) => {
-        if (localConfig.createDirectories) {
-            await fs.mkdir(dirPath, { recursive: true });
-        }
+/**
+ * Write a file to disk.
+ * @param filePath - The path to the file.
+ * @param fileName - The name of the file.
+ * @param file - The file to write to disk.
+ * @param config - The config for the local upload service.
+ * @returns The path to the file.
+ */
+const writeFileToDisk = async ({
+    filePath,
+    fileName,
+    file,
+    config,
+    fileExtension,
+}: {
+    filePath?: string | string[];
+    fileName?: string;
+    fileExtension?: string;
+    file: Buffer | string;
+    config?: Omit<LocalUploadConfig, 'preserveFileName'>;
+}): Promise<string> => {
+    const { baseDir, createDirectories } = config || {
+        baseDir: LOCAL_UPLOAD_BASE_DIR,
+        createDirectories: true,
     };
 
-    const uploadFile = async ({
-        file,
-        fileName,
-        userId,
-        subDirectory,
-    }: {
-        file: File;
-        fileName?: string;
-        userId: string;
-        subDirectory?: string;
-    }) => {
-        return withDbQuery({
-            operation: 'upload file locally',
-            queryFn: async () => {
-                const validatedData = CreateSignedUrlSchema.parse({
-                    fileType: file.type,
-                    fileSize: file.size,
-                    checksum: '', // Local uploads don't require checksum
-                    fileName,
-                    bucket: 'local', // Use 'local' as bucket identifier
-                });
+    // only dir path
+    let _filePath = path.join(
+        baseDir,
+        Array.isArray(filePath) ? path.join(...filePath) : filePath || ''
+    );
 
-                const finalFileName =
-                    localConfig.preserveFileName && fileName
-                        ? fileName
-                        : generateRandomFileName() + path.extname(fileName || '');
+    // create directories if they don't exist
+    if (createDirectories) {
+        await fs.mkdir(_filePath, { recursive: true });
+    }
 
-                const userDir = path.join(localConfig.baseDir, userId);
-                const uploadDir = subDirectory ? path.join(userDir, subDirectory) : userDir;
+    // add file name
+    _filePath = path.join(_filePath, fileName || generateRandonFileName());
 
-                await ensureDirectoryExists(uploadDir);
+    // add file extension if it doesn't exist
+    if (fileExtension && !path.extname(_filePath)) {
+        _filePath = `${_filePath}.${fileExtension}`;
+    }
 
-                const filePath = path.join(uploadDir, finalFileName);
-                const buffer = Buffer.from(await file.arrayBuffer());
+    await fs.writeFile(_filePath, file);
 
-                await fs.writeFile(filePath, buffer);
+    return _filePath;
+};
 
-                return {
-                    filePath: filePath,
-                    fileName: finalFileName,
-                    relativePath: path.relative(localConfig.baseDir, filePath),
-                    size: file.size,
-                    type: file.type,
-                };
-            },
-        });
-    };
+/**
+ * Delete a file from disk.
+ * @param filePath - The path to the file.
+ * @returns The path to the file.
+ */
+const deleteFileFromDisk = async ({ filePath }: { filePath: string }) => {
+    await fs.unlink(filePath);
+};
 
-    const deleteFile = async ({
-        filePath,
-        relativePath,
-    }: {
-        filePath?: string;
-        relativePath?: string;
-    }) => {
-        return withDbQuery({
-            operation: 'delete local file',
-            queryFn: async () => {
-                const fullPath = filePath || path.join(localConfig.baseDir, relativePath!);
-
-                try {
-                    await fs.unlink(fullPath);
-                    return { success: true };
-                } catch (error) {
-                    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                        return { success: true, message: 'File already deleted' };
-                    }
-                    throw error;
-                }
-            },
-        });
-    };
-
-    const getFileInfo = async ({
-        filePath,
-        relativePath,
-    }: {
-        filePath?: string;
-        relativePath?: string;
-    }) => {
-        return withDbQuery({
-            operation: 'get local file info',
-            queryFn: async () => {
-                const fullPath = filePath || path.join(localConfig.baseDir, relativePath!);
-
-                try {
-                    const stats = await fs.stat(fullPath);
-                    return {
-                        exists: true,
-                        size: stats.size,
-                        createdAt: stats.birthtime,
-                        modifiedAt: stats.mtime,
-                        path: fullPath,
-                        relativePath: path.relative(localConfig.baseDir, fullPath),
-                    };
-                } catch (error) {
-                    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                        return { exists: false };
-                    }
-                    throw error;
-                }
-            },
-        });
-    };
-
-    return {
-        uploadFile,
-        deleteFile,
-        getFileInfo,
-        config,
-        localConfig,
-    };
+export const localUploadService = {
+    writeFileToDisk,
+    deleteFileFromDisk,
 };
