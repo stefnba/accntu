@@ -5,6 +5,7 @@
         },
     ],
     "settings": {
+        "eslint.packageManager": "bun",
         // Editor settings
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
