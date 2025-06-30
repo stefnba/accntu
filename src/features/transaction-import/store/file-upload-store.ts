@@ -33,7 +33,7 @@ export const useFileUploadStore = create<FileUploadState & FileUploadActions>()(
              * @returns The files that were actually added (excludes duplicates)
              */
             addFiles: (newFiles) => {
-                let filesToAdd: FileUpload[] = [];
+                const filesToAdd: FileUpload[] = [];
 
                 set((state) => {
                     const existingFileIds = new Set(state.files.map((f) => f.id));
