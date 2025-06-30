@@ -1,0 +1,33 @@
+Card Number: **** **** **** 1234
+Account Holder: Test User
+
+Authorised on;Processed on;Amount;Currency;Description;Payment type;Status;Amount in foreign currency;Currency;Exchange rate
+28.05.2025;29.05.2025;-123,45;EUR;Test Purchase 1;Card payment;Processed;-123,45;EUR;1,00
+29.05.2025;30.05.2025;1500,00;EUR;Salary Payment;Transfer;Processed;1500,00;EUR;1,00
+30.05.2025;31.05.2025;-45,67;EUR;Test Purchase 2;Card payment;Processed;-45,67;EUR;1,00
+01.06.2025;02.06.2025;-89,99;EUR;Grocery Store Purchase;Card payment;Processed;-89,99;EUR;1,00
+02.06.2025;03.06.2025;-25,50;EUR;Gas Station;Card payment;Processed;-25,50;EUR;1,00
+03.06.2025;04.06.2025;2.000,00;EUR;Freelance Payment;Transfer;Processed;2000,00;EUR;1,00
+04.06.2025;05.06.2025;-67,80;EUR;Restaurant Dinner;Card payment;Processed;-67,80;EUR;1,00
+05.06.2025;06.06.2025;-12,30;EUR;Coffee Shop;Card payment;Processed;-12,30;EUR;1,00
+06.06.2025;07.06.2025;-156,75;EUR;Online Shopping;Card payment;Processed;-156,75;EUR;1,00
+07.06.2025;08.06.2025;-34,20;EUR;Pharmacy;Card payment;Processed;-34,20;EUR;1,00
+08.06.2025;09.06.2025;-78,90;EUR;Hardware Store;Card payment;Processed;-78,90;EUR;1,00
+09.06.2025;10.06.2025;1.200,00;EUR;Consulting Fee;Transfer;Processed;1200,00;EUR;1,00
+10.06.2025;11.06.2025;-45,0;EUR;Movie Theater;Card payment;Processed;-45,60;EUR;1,00
+11.06.2025;12.06.2025;-23,4;EUR;Public Transport;Card payment;Processed;-23,40;EUR;1,00
+12.06.2025;13.06.2025;-89,15;EUR;Clothing Store;Card payment;Processed;-89,15;EUR;1,00
+13.06.2025;14.06.2025;-56,70;EUR;Bookstore;Card payment;Processed;-56,70;EUR;1,00
+14.06.2025;15.06.2025;-18,90;EUR;Fast Food;Card payment;Processed;-18,90;EUR;1,00
+15.06.2025;16.06.2025;-134,25;EUR;Electronics Store;Card payment;Processed;-134,25;EUR;1,00
+16.06.2025;17.06.2025;-42,80;EUR;Hair Salon;Card payment;Processed;-42,80;EUR;1,00
+17.06.2025;18.06.2025;-67,30;EUR;Gym Membership;Card payment;Processed;-67,30;EUR;1,00
+18.06.2025;19.06.2025;-28,50;EUR;Car Wash;Card payment;Processed;-28,50;EUR;1,00
+19.06.2025;20.06.2025;-95,40;EUR;Home Improvement;Card payment;Processed;-95,40;EUR;1,00
+20.06.2025;21.06.2025;-38,75;EUR;Pet Store;Card payment;Processed;-38,75;EUR;1,00
+21.06.2025;22.06.2025;-52,60;EUR;Sporting Goods;Card payment;Processed;-52,60;EUR;1,00
+22.06.2025;23.06.2025;-73,20;EUR;Jewelry Store;Card payment;Processed;-73,20;EUR;1,00
+23.06.2025;24.06.2025;-19,80;EUR;Convenience Store;Card payment;Processed;-19,80;EUR;1,00
+24.06.2025;25.06.2025;-61,45;EUR;Music Store;Card payment;Processed;-61,45;EUR;1,00
+25.06.2025;26.06.2025;-47,90;EUR;Toy Store;Card payment;Processed;-47,90;EUR;1,00
+

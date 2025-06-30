@@ -1,0 +1,76 @@
+---
+description: Form Development Guidelines
+globs: 
+alwaysApply: false
+---
+
+
+# Form Development Guidelines
+
+This document provides a high-level overview of form development in the project. For detailed documentation, see `@file:src/components/form/README.md`.
+
+## Overview
+
+We use a custom form system built on top of React Hook Form and Zod, providing:
+
+- 🔒 Type-safe form handling
+- ✨ Built-in validation
+- 🎨 Consistent UI components
+- ♿️ Accessibility features
+- 🔄 Loading states
+- 🎯 Error handling
+
+## Quick Start
+
+1. Import form components:
+```typescript
+import { 
+  Form, 
+  FormInput, 
+  FormSubmitButton, 
+  useForm, 
+  createFormSchema 
+} from '@/components/form';
+```
+
+2. Define schema:
+```typescript
+const formSchema = createFormSchema(
+  z.object({
+    email: z.string().email(),
+  }),
+  { email: "" }
+);
+```
+
+3. Create form:
+```typescript
+const form = useForm({
+  ...formSchema,
+  onSubmit: async (data) => {
+    // Handle submission
+  },
+});
+```
+
+4. Render form:
+```typescript
+<Form form={form}>
+  <FormInput name="email" form={form} />
+  <FormSubmitButton form={form}>Submit</FormSubmitButton>
+</Form>
+```
+
+## Available Components
+
+- `Form` - Form provider
+- `FormInput` - Text input
+- `FormSelect` - Select dropdown
+- `FormCheckbox` - Checkbox input
+- `FormRadioGroup` - Radio button group
+- `FormSwitch` - Toggle switch
+- `FormTextarea` - Multiline text input
+- `FormOTPInput` - OTP input
+- `FormSubmitButton` - Submit button
+
+See the full README for detailed documentation, examples, and best practices.

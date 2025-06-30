@@ -1,0 +1,17 @@
+# Ignore artifacts
+.next
+out
+build
+coverage
+node_modules
+public
+.github
+.vscode
+
+# Ignore files
+*.lock
+*.log
+*.md
+*.svg
+*.ico
+.gitignore 

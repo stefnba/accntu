@@ -1,0 +1,30 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Database management scripts for Drizzle ORM",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "reset": "bun run reset.ts",
+    "migrate": "bun run migrate/migrate.ts",
+    "seed": "bun run seed/seed.ts",
+    "setup": "bun run reset && bun run migrate && bun run seed",
+    "dev:setup": "./run.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.44.2",
+    "pg": "^8.16.0",
+    "postgres": "^3.4.4",
+    "std-env": "^3.7.0"
+  },
+  "keywords": [
+    "drizzle",
+    "database",
+    "migration",
+    "seed"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,36 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+
+Here are the key organizational rules we established:
+
+## File vs Directory Structure
+- **Start with single files** (`queries.ts`, `api.ts`, `schemas.ts`) for most features
+- **Split into directories** only when files exceed 200-300 lines
+- **Use folders over dot notation** (`queries/global-bank.ts` vs `queries.global-bank.ts`)
+
+## Query Function Naming
+- **Concise function names** since namespace provides entity context
+- **Standard CRUD**: `getAll()`, `getById()`, `create()`, `update()`, `softDelete()`
+- **Context-specific**: `getByUserId()`, `getByCountry()`, `search()`
+
+## Export Patterns
+- **Namespaced exports** in index.ts: `export const GlobalBank = globalBankQueries;`
+- **Direct exports** for convenience: `export * from './global-bank';`
+- **Both usage styles**: `GlobalBank.getAll()` vs `getAllGlobalBanks()`
+
+## Structure Consistency
+- **Mirror organization** between server and client
+- **Entity-based splits**: Split by domain entities (global-bank, connected-bank) not by operation type
+- **Scalable architecture**: Easy to add new entities without restructuring
+
+## Why Folders > Dot Notation
+- **Better IDE support**: Collapsing, navigation, search
+- **Scalability**: Can group related non-query files together
+- **Team collaboration**: More intuitive for developers
+- **Future-proof**: Easy to add subfolders when needed
+
+The core principle: **Start simple, split when complex, maintain consistency across the stack.**

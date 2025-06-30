@@ -1,0 +1,259 @@
+---
+description: Guidelines for frontend development
+globs:
+alwaysApply: false
+---
+---
+description: Guidelines for frontend development
+globs: src/**
+alwaysApply: false
+---
+# Frontend Development Rules
+
+This project uses Next.js with React and follows a feature-based organization with clear separation of concerns for frontend development.
+
+You are a Senior Developer and an Expert in ReactJS, NextJS, JavaScript, TypeScript, HTML, CSS and modern UI/UX frameworks (e.g., TailwindCSS, Shadcn, Radix), following best practices and adhering to the principles of clean code and robust architecture.
+
+## Tech Stack Overview
+
+- **Framework**: Next.js App Router
+- **UI Components**: Shadcn/UI (based on Tailwind CSS and Radix UI)
+- **State Management**: React Query for server state, Zustand and nuqs for client state
+- **Forms**: React Hook Form with Zod validation
+- **API Communication**: TanStack Query with type-safe Hono client
+
+## Frontend Architecture
+
+The frontend codebase follows a feature-based organization with clear separation of concerns:
+
+```
+src/
+├── app/                  # Next.js App Router pages
+├── components/           # Shared UI components
+│   ├── ui/               # Base UI components (Shadcn)
+│   ├── form/             # Form components
+│   └── layout/           # Layout components
+├── features/             # Feature-based organization
+│   └── [feature]/        # Feature-specific code
+│       ├── components/   # Feature-specific components
+│       ├── api.ts        # API hooks for the feature
+│       └── schemas.ts    # Zod schemas for the feature
+├── hooks/                # Shared hooks
+├── lib/                  # Shared utilities
+│   ├── api/              # API client and utilities
+│   └── error/            # Error handling utilities
+└── providers/            # Context providers
+```
+
+## UI Components
+
+### Using Shadcn/UI Components
+
+- Use Shadcn/UI components as the foundation for all UI elements
+- Follow the component patterns established in the `components/ui` directory
+- Don't reinvent components that already exist in Shadcn/UI
+
+```typescript
+// Example of using a Shadcn button component
+import { Button } from "@/components/ui/button";
+
+function MyComponent() {
+  return (
+    <Button variant="default" size="default">
+      Click me
+    </Button>
+  );
+}
+```
+
+### Creating Custom Components
+
+When creating new components:
+
+1. Check if a Shadcn component already exists for your use case
+2. If not, follow the Shadcn pattern:
+   - Use the `cn` utility for class merging
+   - Use Tailwind CSS for styling
+   - Implement proper accessibility features
+   - Follow the established naming conventions
+
+## Forms and Validation
+
+### Form Components
+
+Use the enhanced form components from `@/components/form`:
+
+```typescript
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/form";
+import { Input } from "@/components/ui/input";
+```
+
+### Form Hook and Validation
+
+Use the `useZodForm` hook for all forms, combined with Zod schemas:
+
+```typescript
+import { useZodForm, createFormSchema } from "@/components/form/use-form";
+import { z } from "zod";
+
+// Define your schema
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+// Create a type-safe form schema with default values
+const loginForm = createFormSchema(loginSchema, {
+  email: "",
+  password: "",
+});
+
+// In your component
+function LoginForm() {
+  const form = useZodForm({
+    ...loginForm,
+    onSubmit: async (data) => {
+      // Handle form submission
+    },
+  });
+
+  return (
+    <Form form={form}>
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {/* Additional form fields */}
+    </Form>
+  );
+}
+```
+
+## API Communication
+
+### Making API Requests
+
+Use the type-safe query and mutation hooks provided by the API client:
+
+```typescript
+import { useAuthEndpoints } from "@/features/auth/api";
+
+function LoginForm() {
+  const { mutate, isLoading } = useAuthEndpoints.login();
+
+  const handleSubmit = (data) => {
+    mutate(data, {
+      onSuccess: (response) => {
+        // Handle success
+      },
+      onError: (error) => {
+        // Handle error
+      },
+    });
+  };
+}
+```
+
+### Defining API Hooks
+
+Create feature-specific API hooks following the established patterns:
+
+@file:.cursor/rules/features.mdc
+
+Key principles:
+- Define query keys for consistent caching
+- Use createQuery for GET operations, createMutation for POST/PUT/DELETE
+- Pass only 2 arguments to createMutation (apiMethod, queryKey)
+- Include JSDoc comments for all functions
+
+## Error Handling
+
+Use the error handling utilities for consistent error management:
+
+```typescript
+import { handleApiError, useErrorHandler } from "@/lib/error";
+
+// Using the error handler hook
+const handleError = useErrorHandler((err) => {
+  toast.error(err.error.message);
+});
+
+// In a component
+const mutation = useMutation({
+  mutationFn: api.createUser,
+  onError: (error) => handleError(error, {
+    'VALIDATION.INVALID_INPUT': (err) => {
+      setFormErrors(err.error.details);
+    },
+    'AUTH.EMAIL_EXISTS': () => {
+      setEmailError('This email is already registered');
+    }
+  })
+});
+```
+
+## Feature Development
+
+When developing new features:
+
+1. Create a feature directory in `src/features/[feature-name]`
+2. Define feature-specific components in `components/`
+3. Create API hooks in `api.ts`
+4. Define Zod schemas in `schemas.ts`
+5. Follow the established patterns for error handling and forms
+
+```
+src/features/[feature]/
+├── components/         # Feature-specific components
+├── api.ts              # Feature-specific API hooks
+├── schemas.ts          # Feature-specific Zod schemas
+└── store.ts            # (Optional) Zustand store for client state
+```
+
+## Custom Hooks
+
+When creating custom hooks:
+
+1. Place shared hooks in `src/hooks/`
+2. Place feature-specific hooks in `src/features/[feature]/hooks/`
+3. Follow the established naming convention with `use` prefix
+4. Provide proper TypeScript types
+5. Implement proper error handling
+
+```typescript
+// Example custom hook
+import { useState, useEffect } from "react";
+
+export function useLocalStorage<T>(key: string, initialValue: T) {
+  // Implementation
+  return [value, setValue];
+}
+```
+
+## State Management
+### **Zustand**
+- Use Zustand for feature-based state management.
+- Keep **stores modular**, defining them in `features/[feature]/stores/`.
+
+### **Nuqs**
+- Use Nuqs for **URL-based search params state** (modals, filters, sorting).
+
+## Best Practices
+
+1. **TypeScript**: Use proper TypeScript types for all components and functions
+2. **Error Handling**: Implement comprehensive error handling for all API requests
+3. **Loading States**: Show appropriate loading indicators for async operations
+4. **Accessibility**: Ensure all components are accessible with proper ARIA attributes
+5. **Mobile First**: Design components for mobile first, then adapt for larger screens
+6. **Performance**: Avoid unnecessary re-renders and optimize for performance
+7. **Testing**: Write tests for critical components and functionality
+8. **React & Next**: Minimize the use of `'use client'`, `useEffect`, and `setState`; favor React Server Components (RSC) and Next.js SSR features.

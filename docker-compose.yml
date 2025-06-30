@@ -1,23 +1,26 @@
-# Docker compose file used to run all services in production.
-version: "3.8"
-
 services:
-  parser:
+  app:
     build:
-      context: services/parser
-      dockerfile: docker/Dockerfile
-    env_file:
-      - services/parser/.env
-    restart: always
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/accntu
+      - NODE_ENV=production
+    depends_on:
+      - db
 
-  #   app:
-  #     build:
-  #       context: services/app
-  #       dockerfile: docker/Dockerfile.prod
-  #     env_file:
-  #       - services/app/.env
-  #     ports:
-  #       - "8000:8000"
-  #     environment:
-  #       - DATABASE_URL=postgresql://postgres:password@postgres:5432/db
-  #     restart: always
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=accntu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
