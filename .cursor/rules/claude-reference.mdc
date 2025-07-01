@@ -1,0 +1,47 @@
+---
+description: Reference to CLAUDE.md documentation system
+globs:
+alwaysApply: true
+---
+
+# Documentation Reference
+
+This project uses a modular CLAUDE.md documentation system for architectural guidance.
+
+## Quick Reference
+
+The project documentation is organized hierarchically:
+
+- **Project Overview**: `/CLAUDE.md` - Tech stack, commands, architecture map
+- **Feature Architecture**: `/src/features/CLAUDE.md` - Universal feature patterns
+- **Component Guidelines**: `/src/components/CLAUDE.md` - UI component development
+- **App Router Patterns**: `/src/app/CLAUDE.md` - Next.js pages and routing
+- **Server Development**: `/src/server/CLAUDE.md` - API endpoints and database
+- **Source Patterns**: `/src/CLAUDE.md` - General src/ conventions
+
+## Auto-Discovery
+
+AI tools automatically discover relevant documentation based on current working directory:
+
+1. Check current directory for CLAUDE.md
+2. Check parent directories up the hierarchy  
+3. Use project root CLAUDE.md as fallback
+4. Cross-reference related documentation
+
+## Key Principles
+
+- **Hono framework exclusively** for API (never Next.js server actions)
+- **Feature-based architecture** with consistent patterns
+- **Type-safe development** with proper TypeScript
+- **Always run `bun lint`** before commits (must pass)
+
+## Legacy Files
+
+The following .cursor/rules files are kept for tool-specific guidance:
+
+- `coding.mdc` - General coding principles
+- `error.mdc` - Error handling patterns  
+- `icons.mdc` - Icon usage guidelines
+- `git-commit-command.mdc` - Git conventions
+
+For detailed architectural patterns, refer to the CLAUDE.md hierarchy above.
