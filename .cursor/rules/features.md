@@ -28,6 +28,7 @@ src/features/[feature-name]/
 ### File vs Directory Structure Pattern
 
 For most features, use **single files** for:
+
 - `queries.ts` - All database queries in one file
 - `api.ts` - All client-side API hooks
 - `schemas.ts` - All validation schemas
@@ -35,6 +36,7 @@ For most features, use **single files** for:
 - `utils.ts` - All utility functions
 
 Only create **directories** when files become too complex (>200-300 lines):
+
 - `queries/` - Split by entity type (e.g., `global-bank.ts`, `connected-bank.ts`)
 - `api/` - Split by domain area or entity
 - `schemas/` - Split by validation groups
@@ -43,21 +45,25 @@ Only create **directories** when files become too complex (>200-300 lines):
 ## Naming Conventions
 
 ### Feature Names
+
 - Use **singular** feature names (e.g., `tag`, `bank`, `transaction`, not `tags`, `banks`, `transactions`)
 - Use lowercase with hyphens for multi-word features (e.g., `bank-account`)
 
 ### Database Tables
+
 - Use **singular** table names (e.g., `tag`, `bank`, `transaction`)
 - Follow the pattern: `[feature-name]` for main tables
 - Use descriptive names for junction/relation tables (e.g., `transactionTag`, `connectedBank`)
 
 ### File Names
+
 - Use singular feature names in directory structure
 - Use descriptive file names that indicate their purpose
 
 ## Database Schema Patterns
 
 ### Schema Organization
+
 ```typescript
 // src/features/[feature]/server/db/schema.ts
 import { createId } from '@paralleldrive/cuid2';
@@ -92,6 +98,7 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ```
 
 ### Key Schema Patterns
+
 1. **Always use CUID2** for primary keys with `createId()`
 2. **Include userId** for user-scoped data
 3. **Use timestamp fields** for `createdAt` and `updatedAt`
@@ -102,6 +109,7 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ## Database Queries Pattern
 
 ### Single File Pattern (Simple Features)
+
 ```typescript
 // src/features/[feature]/server/db/queries.ts
 import { db } from '@/server/db';
@@ -134,11 +142,12 @@ export const get[FeatureName]sByUserId = async ({ userId }: { userId: string }):
 ```
 
 ### Directory Pattern (Complex Features)
+
 ```typescript
 // src/features/[feature]/server/db/queries/index.ts
 // Namespaced exports for better organization
-import * as entityQueries from './entity';
-import * as relatedEntityQueries from './related-entity';
+import { entityQueries } from './entity';
+import { relatedEntityQueries } from './related-entity';
 
 // Clean namespaced exports
 export const Entity = entityQueries;
@@ -177,11 +186,7 @@ export const getById = async ({ id }: { id: string }): Promise<Entity | null> =>
     withDbQuery({
         operation: 'get entity by ID',
         queryFn: async () => {
-            const [result] = await db
-                .select()
-                .from(entity)
-                .where(eq(entity.id, id))
-                .limit(1);
+            const [result] = await db.select().from(entity).where(eq(entity.id, id)).limit(1);
             return result || null;
         },
     });
@@ -206,7 +211,13 @@ export const create = async ({ data }: { data: TInsertEntity }): Promise<Entity>
  * @param data - The data to update
  * @returns The updated entity
  */
-export const update = async ({ id, data }: { id: string; data: Partial<TInsertEntity> }): Promise<Entity | null> =>
+export const update = async ({
+    id,
+    data,
+}: {
+    id: string;
+    data: Partial<TInsertEntity>;
+}): Promise<Entity | null> =>
     withDbQuery({
         operation: 'update entity',
         queryFn: async () => {
@@ -238,6 +249,7 @@ export const softDelete = async ({ id }: { id: string }): Promise<void> =>
 ### Query Function Naming Conventions
 
 **Standard CRUD Functions:**
+
 - `getAll()` - Get all records with active filter
 - `getById({ id })` - Get single record by ID
 - `create({ data })` - Create new record
@@ -245,12 +257,14 @@ export const softDelete = async ({ id }: { id: string }): Promise<void> =>
 - `softDelete({ id })` - Soft delete record
 
 **Context-Specific Functions:**
+
 - `getByUserId({ userId })` - Get records by user
 - `getByParentId({ parentId })` - Get child records
 - `getByCountry({ country })` - Get records by specific field
 - `search({ query, filters })` - Search functionality
 
 **Usage Patterns:**
+
 ```typescript
 // Namespaced usage (recommended for complex features)
 import { GlobalBank, ConnectedBank } from '@/features/bank/server/db/queries';
@@ -271,6 +285,7 @@ const newTag = await createTag({ data });
 ```
 
 ### Query Patterns
+
 1. **Use withDbQuery wrapper** for all database operations for consistent error handling
 2. **Use destructured object parameters** instead of positional parameters
 3. **Always return typed results** using the exported types
@@ -285,6 +300,7 @@ const newTag = await createTag({ data });
 ## API Endpoints Pattern
 
 ### Endpoint Organization
+
 ```typescript
 // src/features/[feature]/server/endpoints.ts
 import { getUser } from '@/lib/auth';
@@ -365,6 +381,7 @@ export default app;
 ```
 
 ### Endpoint Patterns
+
 1. **Use Hono framework** for all API endpoints (never Next.js server actions)
 2. **Use withRoute wrapper** for consistent error handling
 3. **Use getUser(c) for authentication** - Never include userId in URL parameters
@@ -378,6 +395,7 @@ export default app;
 ## Client API Pattern
 
 ### API Client Organization
+
 ```typescript
 // src/features/[feature]/api.ts
 import { apiClient, createMutation, createQuery } from '@/lib/api';
@@ -437,6 +455,7 @@ export const use[FeatureName]Endpoints = {
 ```
 
 ### API Client Patterns
+
 1. **Define query keys** for consistent caching and invalidation
 2. **Use descriptive function names** that match the backend operations
 3. **Include JSDoc comments** for all exported functions
@@ -448,6 +467,7 @@ export const use[FeatureName]Endpoints = {
 ## Utility Functions Pattern
 
 ### Utility Organization
+
 ```typescript
 // src/features/[feature]/lib/utils.ts
 import { type [FeatureName] } from '../server/db/schema';
@@ -487,6 +507,7 @@ export const generate[FeatureName]Color = (): string => {
 ```
 
 ### Utility Patterns
+
 1. **Export type extensions** for complex operations
 2. **Include validation functions** for business rules
 3. **Provide data transformation utilities** for complex data structures
@@ -496,6 +517,7 @@ export const generate[FeatureName]Color = (): string => {
 ## Integration Patterns
 
 ### Feature Registration
+
 When creating a new feature, ensure it's properly integrated:
 
 1. **Add to API routes** in the main server configuration
@@ -504,6 +526,7 @@ When creating a new feature, ensure it's properly integrated:
 4. **Add to API client** type definitions
 
 ### Cross-Feature Dependencies
+
 - **Minimize cross-feature dependencies** where possible
 - **Use shared utilities** in `src/lib/` for common functionality
 - **Import types** from other features when necessary for relationships
@@ -528,6 +551,7 @@ When creating a new feature, ensure it's properly integrated:
 ## Examples
 
 Reference the `bank`, `tag`, and `label` features as complete examples of this architecture:
+
 - `src/features/bank/` - Complex feature with multiple related entities (uses query directories)
 - `src/features/tag/` - Feature with hierarchical data and transaction relationships (single query file)
 - `src/features/label/` - Feature with hierarchical structure and validation (single query file)

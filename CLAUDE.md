@@ -205,6 +205,9 @@ src/features/[feature-name]/
 - **URL State for Persistence**: Use nuqs for modal and filter states that should survive navigation
 - **Form Consolidation**: When forms share 80%+ similar logic, consolidate into single component with mode switching
 - **Dependency Management**: Be careful with useEffect dependencies - avoid including recreated objects like form instances
+- **Component Refactoring**: When components exceed 200-300 lines, split into directory-based structure with focused sub-components
+- **Shared Utilities**: Extract common formatting and helper functions to eliminate code duplication
+- **Custom Components**: Create specialized components rather than forcing generic ones to fit specific use cases
 
 ### Testing
 - Framework: Vitest with Node.js environment
@@ -220,9 +223,15 @@ src/features/[feature-name]/
   - `endpoints/` directory with one file per entity (entity-name.ts)
   - `api/` directory with one file per entity (entity-name.ts) and `index.ts` for exports
 - **Decision Criteria**: Use complex structure when you have 2+ related tables or 200+ lines per file
+- **Component Refactoring**: When components exceed 200-300 lines, split into directory-based structure:
+  - `components/feature-name/` directory with focused sub-components
+  - Main orchestrator component that composes sub-components
+  - `utils/` directory for shared formatting functions
+  - `index.ts` files for clean exports
 - **Reference Examples**:
   - Simple: `tag` (single entity), `label` (single entity with hierarchy support)
   - Complex: `bank` (4 related entities), `transaction-import` (2 related entities)
+  - Refactored: `transaction` (peek and detail components split into focused modules)
 
 ## Form Development
 
@@ -343,3 +352,7 @@ export const useFeatureModal = () => {
 - Never cast types with `as`
 - Use existing feature schemas instead of creating custom validation schemas
 - Prefer schema-driven development over type assertions
+- When refactoring large components, use directory-based structure with main orchestrator + focused sub-components
+- Create shared utility functions for common formatting logic (currency, dates, type icons)
+- Use nuqs for URL state that should persist across navigation (modals, previews, filters)
+- Custom table components may be preferable to forcing generic DataTable to fit specific needs
