@@ -1,40 +1,47 @@
-import { transaction } from '@/features/transaction/server/db/schema';
+import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import { AnyPgColumn, boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, PgColumn, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
-// Hierarchical labels for structured categorization (like expense categories)
 export const label = pgTable('label', {
     id: text()
         .primaryKey()
-        .notNull()
         .$defaultFn(() => createId()),
-    userId: text().notNull(),
-
+    userId: text()
+        .notNull()
+        .references(() => user.id, { onDelete: 'cascade' }),
     name: text().notNull(),
-    description: text(),
     color: text(),
-
-    // Hierarchy management
-    rank: integer().default(0).notNull(), // Sort order within same level
-    level: integer().default(0).notNull(), // Depth in hierarchy
-    parentId: text().references((): AnyPgColumn => label.id),
-    firstParentId: text().references((): AnyPgColumn => label.id), // Root parent
-
-    isDeleted: boolean().notNull().default(false),
+    parentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
+    firstParentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
+    isActive: boolean().notNull().default(true),
     createdAt: timestamp().notNull().defaultNow(),
-    updatedAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp()
+        .notNull()
+        .defaultNow()
+        .$onUpdate(() => new Date()),
 });
 
-// Relations
-export const labelRelations = relations(label, ({ one, many }) => ({
-    parentLabel: one(label, {
+export const labelsRelations = relations(label, ({ one, many }) => ({
+    user: one(user, {
+        fields: [label.userId],
+        references: [user.id],
+    }),
+    parent: one(label, {
         fields: [label.parentId],
         references: [label.id],
+        relationName: 'labelHierarchy',
     }),
-    childLabels: many(label),
-    transactions: many(transaction), // Direct label assignment to transactions
+    firstParent: one(label, {
+        fields: [label.firstParentId],
+        references: [label.id],
+    }),
+    children: many(label, {
+        relationName: 'labelHierarchy',
+    }),
 }));
 
-export type Label = typeof label.$inferSelect;
-export type NewLabel = typeof label.$inferInsert;
+export const selectLabelSchema = createSelectSchema(label);
+export const insertLabelSchema = createInsertSchema(label);
+export const updateLabelSchema = createUpdateSchema(label);

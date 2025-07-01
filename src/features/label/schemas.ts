@@ -1,93 +1,80 @@
-import { label } from '@/features/label/server/db/schema';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import z from 'zod';
-
-// ====================
-// Database schemas
-// ====================
-
-// Label
-export const selectLabelSchema = createSelectSchema(label);
-export type TLabel = z.infer<typeof selectLabelSchema>;
-
-export const insertLabelSchema = createInsertSchema(label);
-export type TInsertLabel = z.infer<typeof insertLabelSchema>;
-
-export const updateLabelSchema = createUpdateSchema(label).pick({
-    name: true,
-    description: true,
-    color: true,
-    rank: true,
-    level: true,
-    parentId: true,
-    firstParentId: true,
-});
-export type TUpdateLabel = z.infer<typeof updateLabelSchema>;
-
-// ====================
-// Custom schemas
-// ====================
+import {
+    insertLabelSchema,
+    selectLabelSchema,
+    updateLabelSchema,
+} from '@/features/label/server/db/schema';
+import { z } from 'zod';
 
 /**
- * Search labels schema
+ * Label query schemas for database operations
  */
-export const searchLabelsSchema = z
-    .object({
-        query: z.string().optional(),
-        parentId: z.string().optional(),
-        level: z.number().optional(),
-    })
-    .optional();
-
+export const labelQuerySchemas = {
+    select: selectLabelSchema,
+    insert: insertLabelSchema.omit({
+        id: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+    }),
+    update: updateLabelSchema.omit({
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        id: true,
+    }),
+};
+export type TLabelQuery = {
+    select: z.infer<typeof labelQuerySchemas.select>;
+    insert: z.infer<typeof labelQuerySchemas.insert>;
+    update: z.infer<typeof labelQuerySchemas.update>;
+};
 /**
- * Create label with validation
+ * Label service schemas for business logic operations
  */
-export const createLabelSchema = z.object({
-    name: z
-        .string()
-        .min(1, 'Label name is required')
-        .max(100, 'Label name must be 100 characters or less'),
-    description: z.string().optional(),
-    color: z.string().optional(),
-    rank: z.number().int().min(0).default(0),
-    level: z.number().int().min(0).default(0),
-    parentId: z.string().optional(),
-    firstParentId: z.string().optional(),
-});
-export type TCreateLabel = z.infer<typeof createLabelSchema>;
-
-/**
- * Update label schema (partial create schema)
- */
-export const updateLabelFormSchema = createLabelSchema.partial();
-export type TUpdateLabelForm = z.infer<typeof updateLabelFormSchema>;
-
-/**
- * Label hierarchy item (for building tree structures)
- */
-export const labelHierarchyItemSchema: z.ZodType<TLabelHierarchyItem> = selectLabelSchema.extend({
-    children: z.array(z.lazy(() => labelHierarchyItemSchema)).optional(),
-});
-export type TLabelHierarchyItem = z.infer<typeof selectLabelSchema> & {
-    children?: TLabelHierarchyItem[];
+export const labelServiceSchemas = {
+    select: selectLabelSchema,
+    insert: insertLabelSchema.omit({
+        firstParentId: true,
+    }),
+    update: updateLabelSchema,
+};
+export type TLabelService = {
+    select: z.infer<typeof labelServiceSchemas.select>;
+    insert: z.infer<typeof labelServiceSchemas.insert>;
+    update: z.infer<typeof labelServiceSchemas.update>;
 };
 
 /**
- * Label with path information
+ * Label form schemas for frontend form handling
  */
-export const labelWithPathSchema = selectLabelSchema.extend({
-    path: z.array(z.string()),
-    breadcrumb: z.string(),
-});
-export type TLabelWithPath = z.infer<typeof labelWithPathSchema>;
+export const labelFormSchemas = {
+    create: labelQuerySchemas.insert,
+    update: labelQuerySchemas.update,
+};
+
+export type TLabelForm = {
+    create: z.infer<typeof labelFormSchemas.create>;
+    update: z.infer<typeof labelFormSchemas.update>;
+};
 
 /**
- * Label statistics
+ * Available colors for labels
  */
-export const labelStatsSchema = z.object({
-    totalLabels: z.number(),
-    labelsByLevel: z.record(z.string(), z.number()),
-    maxDepth: z.number(),
-    rootLabelsCount: z.number(),
-});
-export type TLabelStats = z.infer<typeof labelStatsSchema>;
+export const labelColors = [
+    '#EF4444', // red
+    '#F97316', // orange
+    '#F59E0B', // amber
+    '#EAB308', // yellow
+    '#84CC16', // lime
+    '#22C55E', // green
+    '#10B981', // emerald
+    '#06B6D4', // cyan
+    '#3B82F6', // blue
+    '#6366F1', // indigo
+    '#8B5CF6', // violet
+    '#A855F7', // purple
+    '#EC4899', // pink
+    '#F43F5E', // rose
+    '#6B7280', // gray
+] as const;

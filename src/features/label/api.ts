@@ -3,9 +3,7 @@ import { apiClient, createMutation, createQuery } from '@/lib/api';
 const LABEL_QUERY_KEYS = {
     LABELS: 'labels',
     LABEL: 'label',
-    LABEL_HIERARCHY: 'label_hierarchy',
-    LABEL_ROOT: 'label_root',
-    LABEL_CHILDREN: 'label_children',
+    ROOT_LABELS: 'root_labels',
 } as const;
 
 /**
@@ -18,27 +16,14 @@ export const useLabelEndpoints = {
     getAll: createQuery(apiClient.labels.$get, LABEL_QUERY_KEYS.LABELS),
 
     /**
+     * Get root labels with nested children
+     */
+    getRoots: createQuery(apiClient.labels.roots.$get, LABEL_QUERY_KEYS.ROOT_LABELS),
+
+    /**
      * Get label by ID
      */
     getById: createQuery(apiClient.labels[':id'].$get, LABEL_QUERY_KEYS.LABEL),
-
-    /**
-     * Get label hierarchy for the authenticated user
-     */
-    getHierarchy: createQuery(apiClient.labels['hierarchy'].$get, LABEL_QUERY_KEYS.LABEL_HIERARCHY),
-
-    /**
-     * Get root labels for the authenticated user
-     */
-    getRootLabels: createQuery(apiClient.labels['root'].$get, LABEL_QUERY_KEYS.LABEL_ROOT),
-
-    /**
-     * Get child labels for a parent label
-     */
-    getChildLabels: createQuery(
-        apiClient.labels[':parentId']['children'].$get,
-        LABEL_QUERY_KEYS.LABEL_CHILDREN
-    ),
 
     /**
      * Create a new label

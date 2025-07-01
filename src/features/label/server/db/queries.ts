@@ -1,148 +1,163 @@
-import { type TInsertLabel, type TLabel } from '@/features/label/schemas';
+import { TLabelQuery } from '@/features/label/schemas';
+import { label } from '@/features/label/server/db/schema';
+import type {
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
+} from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, isNull } from 'drizzle-orm';
-import { label } from './schema';
 
 /**
- * Create a new label
- * @param data - The data for the new label
- * @returns The created label
+ * Get all labels for a user with parent/child relationships
+ * @param userId - The user ID to fetch labels for
+ * @returns Promise resolving to array of labels with relationships
  */
-export const createLabel = async ({ data }: { data: TInsertLabel }): Promise<TLabel> =>
+const getAll = async ({ userId }: TQuerySelectUserRecords) =>
     withDbQuery({
-        operation: 'create label',
+        operation: 'Get all labels for user',
         queryFn: async () => {
-            const [newLabel] = await db.insert(label).values(data).returning();
-            return newLabel;
+            return await db.query.label.findMany({
+                where: and(eq(label.userId, userId), eq(label.isActive, true)),
+                with: {
+                    parent: true,
+                    children: {
+                        where: eq(label.isActive, true),
+                    },
+                },
+                orderBy: [label.name],
+            });
         },
     });
 
 /**
- * Get all labels for a user
- * @param userId - The ID of the user
- * @returns The labels for the user
+ * Get root labels (no parent) with nested children for a user
+ * @param userId - The user ID to fetch labels for
+ * @returns Promise resolving to array of root labels with nested children
  */
-export const getLabelsByUserId = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
+const getRootLabels = async (userId: string) =>
     withDbQuery({
-        operation: 'get labels by user ID',
+        operation: 'Get root labels for user',
         queryFn: async () => {
-            return await db
-                .select()
-                .from(label)
-                .where(and(eq(label.userId, userId), eq(label.isDeleted, false)))
-                .orderBy(label.level, label.rank, label.name);
+            return await db.query.label.findMany({
+                where: and(
+                    eq(label.userId, userId),
+                    eq(label.isActive, true),
+                    isNull(label.parentId)
+                ),
+                with: {
+                    children: {
+                        where: eq(label.isActive, true),
+                        with: {
+                            children: {
+                                where: eq(label.isActive, true),
+                            },
+                        },
+                    },
+                },
+                orderBy: [label.name],
+            });
         },
     });
 
 /**
- * Get a label by ID
- * @param id - The ID of the label
- * @returns The label
+ * Get a specific label by ID for a user
+ * @param id - The label ID to fetch
+ * @param userId - The user ID that owns the label
+ * @returns Promise resolving to the label or null if not found
  */
-export const getLabelById = async ({ id }: { id: string }): Promise<TLabel | null> =>
+const getById = async (id: string, userId: string) =>
     withDbQuery({
-        operation: 'get label by ID',
+        operation: 'Get label by ID',
         queryFn: async () => {
-            const [result] = await db.select().from(label).where(eq(label.id, id)).limit(1);
-            return result || null;
+            return await db.query.label.findFirst({
+                where: and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)),
+                with: {
+                    parent: true,
+                    children: {
+                        where: eq(label.isActive, true),
+                    },
+                },
+            });
         },
     });
 
 /**
- * Update a label
- * @param id - The ID of the label
- * @param data - The data to update the label with
- * @returns The updated label
+ * Create a new label in the database
+ * @param data - The label data including name, color, parentId, etc.
+ * @param userId - The user ID that will own the label
+ * @returns Promise resolving to the created label record
  */
-export const updateLabel = async ({
-    id,
-    data,
-}: {
-    id: string;
-    data: Partial<TInsertLabel>;
-}): Promise<TLabel | null> =>
+const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['insert']>) =>
     withDbQuery({
-        operation: 'update label',
+        operation: 'Create new label',
         queryFn: async () => {
-            const [updated] = await db
-                .update(label)
-                .set({ ...data, updatedAt: new Date() })
-                .where(eq(label.id, id))
+            const [labelRecord] = await db
+                .insert(label)
+                .values({
+                    ...data,
+                    userId,
+                })
                 .returning();
-            return updated || null;
+
+            return labelRecord;
         },
     });
 
 /**
- * Delete a label (soft delete)
- * @param id - The ID of the label
- * @returns void
+ * Update an existing label in the database
+ * @param id - The label ID to update
+ * @param data - The updated label data
+ * @param userId - The user ID that owns the label
+ * @returns Promise resolving to the updated label record
  */
-export const deleteLabel = async ({ id }: { id: string }): Promise<void> =>
+const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TLabelQuery['update']>) =>
     withDbQuery({
-        operation: 'delete label',
+        operation: 'Update label',
         queryFn: async () => {
-            await db
+            const [labelRecord] = await db
                 .update(label)
-                .set({ isDeleted: true, updatedAt: new Date() })
-                .where(eq(label.id, id));
+                .set({
+                    ...data,
+                    updatedAt: new Date(),
+                })
+                .where(and(eq(label.id, id), eq(label.userId, userId)))
+                .returning();
+
+            return labelRecord;
         },
     });
 
 /**
- * Get the hierarchy of labels for a user
- * @param userId - The ID of the user
- * @returns The hierarchy of labels
+ * Soft delete a label by setting isActive to false
+ * @param id - The label ID to delete
+ * @param userId - The user ID that owns the label
+ * @returns Promise resolving to the deleted label record
  */
-export const getLabelHierarchy = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
+const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
     withDbQuery({
-        operation: 'get label hierarchy',
+        operation: 'Remove label (soft delete)',
         queryFn: async () => {
-            return await db
-                .select()
-                .from(label)
-                .where(and(eq(label.userId, userId), eq(label.isDeleted, false)))
-                .orderBy(label.level, label.rank, label.name);
+            const [labelRecord] = await db
+                .update(label)
+                .set({
+                    isActive: false,
+                    updatedAt: new Date(),
+                })
+                .where(and(eq(label.id, id), eq(label.userId, userId)))
+                .returning();
+
+            return labelRecord;
         },
     });
 
-/**
- * Get the root labels for a user
- * @param userId - The ID of the user
- * @returns The root labels
- */
-export const getRootLabels = async ({ userId }: { userId: string }): Promise<TLabel[]> =>
-    withDbQuery({
-        operation: 'get root labels',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(label)
-                .where(
-                    and(
-                        eq(label.userId, userId),
-                        eq(label.isDeleted, false),
-                        isNull(label.parentId)
-                    )
-                )
-                .orderBy(label.rank, label.name);
-        },
-    });
-
-/**
- * Get the child labels for a parent label
- * @param parentId - The ID of the parent label
- * @returns The child labels
- */
-export const getChildLabels = async ({ parentId }: { parentId: string }): Promise<TLabel[]> =>
-    withDbQuery({
-        operation: 'get child labels',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(label)
-                .where(and(eq(label.parentId, parentId), eq(label.isDeleted, false)))
-                .orderBy(label.rank, label.name);
-        },
-    });
+export const labelQueries = {
+    getAll,
+    getRootLabels,
+    getById,
+    create,
+    update,
+    remove,
+};

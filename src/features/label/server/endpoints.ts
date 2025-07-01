@@ -1,129 +1,99 @@
-import { createLabelSchema, updateLabelFormSchema } from '@/features/label/schemas';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { validateLabelHierarchy } from '../utils';
-import * as queries from './db/queries';
+import { insertLabelSchema, updateLabelSchema } from './db/schema';
+import { labelServices } from './services';
 
-// Create Hono app with proper chaining for RPC type generation
 const app = new Hono()
-    // Get all labels for authenticated user
-    .get('/', async (c) =>
-        withRoute(c, async () => {
+    /**
+     * GET /labels - Get all labels for the authenticated user
+     */
+    .get('/', async (c) => {
+        return withRoute(c, async () => {
             const user = getUser(c);
-            return await queries.getLabelsByUserId({ userId: user.id });
-        })
-    )
-
-    // Get label by ID
-    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
+            return await labelServices.getAll({ userId: user.id });
+        });
+    })
+    /**
+     * GET /labels/roots - Get root labels with nested children for the authenticated user
+     */
+    .get('/roots', async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
+            return await labelServices.getRootLabels({ userId: user.id });
+        });
+    })
+    /**
+     * GET /labels/:id - Get a specific label by ID for the authenticated user
+     */
+    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
             const { id } = c.req.valid('param');
-            const label = await queries.getLabelById({ id });
+            const label = await labelServices.getById({ id, userId: user.id });
 
             if (!label) {
                 throw new Error('Label not found');
             }
 
             return label;
-        })
-    )
-
-    // Get label hierarchy for authenticated user
-    .get('/hierarchy', async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            return await queries.getLabelHierarchy({ userId: user.id });
-        })
-    )
-
-    // Get root labels for authenticated user
-    .get('/root', async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            return await queries.getRootLabels({ userId: user.id });
-        })
-    )
-
-    // Get child labels for a parent label
-    .get(
-        '/:parentId/children',
-        zValidator('param', z.object({ parentId: z.string() })),
-        async (c) =>
-            withRoute(c, async () => {
-                const { parentId } = c.req.valid('param');
-                return await queries.getChildLabels({ parentId });
-            })
-    )
-
-    // Create a new label
-    .post('/', zValidator('json', createLabelSchema), async (c) =>
-        withRoute(
+        });
+    })
+    /**
+     * POST /labels - Create a new label for the authenticated user
+     */
+    .post('/', zValidator('json', insertLabelSchema), async (c) => {
+        return withRoute(
             c,
             async () => {
                 const user = getUser(c);
                 const data = c.req.valid('json');
-
-                // Validate hierarchy if parent is specified
-                if (data.parentId) {
-                    const allLabels = await queries.getLabelsByUserId({ userId: user.id });
-                    const error = validateLabelHierarchy(data.parentId, '', allLabels);
-                    if (error) {
-                        throw new Error(error);
-                    }
-                }
-
-                return await queries.createLabel({
-                    data: {
-                        ...data,
-                        userId: user.id,
-                        isDeleted: false,
-                    },
-                });
+                return await labelServices.create({ data, userId: user.id });
             },
             201
-        )
-    )
-
-    // Update a label
+        );
+    })
+    /**
+     * PUT /labels/:id - Update an existing label for the authenticated user
+     */
     .put(
         '/:id',
         zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', updateLabelFormSchema),
-        async (c) =>
-            withRoute(c, async () => {
+        zValidator('json', updateLabelSchema),
+        async (c) => {
+            return withRoute(c, async () => {
+                const user = getUser(c);
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
 
-                // Validate hierarchy if parent is being changed
-                if (data.parentId) {
-                    const user = getUser(c);
-                    const allLabels = await queries.getLabelsByUserId({ userId: user.id });
-                    const error = validateLabelHierarchy(data.parentId, id, allLabels);
-                    if (error) {
-                        throw new Error(error);
-                    }
-                }
+                const label = await labelServices.update({ id, data, userId: user.id });
 
-                const updatedLabel = await queries.updateLabel({ id, data });
-
-                if (!updatedLabel) {
+                if (!label) {
                     throw new Error('Label not found');
                 }
 
-                return updatedLabel;
-            })
+                return label;
+            });
+        }
     )
-
-    // Delete a label (soft delete)
-    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
+    /**
+     * DELETE /labels/:id - Soft delete a label for the authenticated user
+     */
+    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
             const { id } = c.req.valid('param');
-            await queries.deleteLabel({ id });
+
+            const label = await labelServices.remove({ id, userId: user.id });
+
+            if (!label) {
+                throw new Error('Label not found');
+            }
+
             return { success: true };
-        })
-    );
+        });
+    });
 
 export default app;
