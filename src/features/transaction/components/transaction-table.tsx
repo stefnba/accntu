@@ -4,37 +4,47 @@ import { DataTable } from '@/components/data-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { useTransactionEndpoints } from '../api';
+import { useTransactionTableStore } from '../store';
 import { transactionColumns } from './transaction-columns';
 import { TransactionTableFilters } from './transaction-filters';
-import { useTransactionTableStore } from '../store';
 
 export const TransactionTable = () => {
     const { filters, pagination, sorting } = useTransactionTableStore();
-    
-    // Build query parameters
-    const queryParams = useMemo(() => ({
-        page: pagination.pageIndex + 1,
-        pageSize: pagination.pageSize,
-        search: filters.search || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-        accountIds: filters.accountIds?.length ? filters.accountIds : undefined,
-        labelIds: filters.labelIds?.length ? filters.labelIds : undefined,
-        tagIds: filters.tagIds?.length ? filters.tagIds : undefined,
-        type: filters.type?.length ? filters.type : undefined,
-        currencies: filters.currencies?.length ? filters.currencies : undefined,
-    }), [filters, pagination]);
 
-    const { data, isLoading, error } = useTransactionEndpoints.getAll(queryParams);
+    // Build query parameters
+    const queryParams = useMemo(
+        () => ({
+            page: pagination.pageIndex + 1,
+            pageSize: pagination.pageSize,
+            search: filters.search || undefined,
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined,
+            accountIds: filters.accountIds?.length ? filters.accountIds : undefined,
+            labelIds: filters.labelIds?.length ? filters.labelIds : undefined,
+            tagIds: filters.tagIds?.length ? filters.tagIds : undefined,
+            type: filters.type?.length ? filters.type : undefined,
+            currencies: filters.currencies?.length ? filters.currencies : undefined,
+        }),
+        [filters, pagination]
+    );
+
+    // TODO: Uncomment when API client is working
+    const transactions = useTransactionEndpoints.getAll({
+        query: {},
+    });
+
+    // Ensure we have valid data structure
+    const transactions = (data?.transactions || []) as any[];
+    const totalPages = data?.pagination?.totalPages || 0;
 
     const table = useReactTable({
-        data: data?.transactions || [],
+        data: transactions,
         columns: transactionColumns,
         getCoreRowModel: getCoreRowModel(),
         manualPagination: true,
         manualSorting: true,
         manualFiltering: true,
-        pageCount: data?.totalPages || 0,
+        pageCount: totalPages,
         state: {
             pagination,
             sorting,
@@ -48,9 +58,7 @@ export const TransactionTable = () => {
             <div className="flex items-center justify-center p-8">
                 <div className="text-center">
                     <p className="text-destructive">Failed to load transactions</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        {error.message}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{error.error.message}</p>
                 </div>
             </div>
         );
@@ -59,11 +67,7 @@ export const TransactionTable = () => {
     return (
         <div className="space-y-4">
             <TransactionTableFilters />
-            <DataTable
-                table={table}
-                isLoading={isLoading}
-                emptyMessage="No transactions found"
-            />
+            <DataTable data={transactions as any} />
         </div>
     );
 };

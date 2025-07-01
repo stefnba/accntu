@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/lib/utils';
+
 import {
     IconArrowsUpDown,
     IconCalendar,
@@ -11,6 +11,13 @@ import {
 } from '@tabler/icons-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
+
+const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+    }).format(amount);
+};
 
 // Type for transaction with relations (we'll need to define this properly based on our query result)
 type TransactionWithRelations = {
@@ -147,7 +154,7 @@ export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
                     ? IconTrendingUp
                     : type === 'debit'
                       ? IconTrendingDown
-                      : IconArrowUpDown;
+                      : IconArrowsUpDown;
             const Icon = icon;
 
             return (
@@ -168,7 +175,7 @@ export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
                     className="h-8 p-0 hover:bg-transparent"
                 >
                     Amount
-                    <IconArrowUpDown className="ml-2 h-4 w-4" />
+                    <IconArrowsUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
