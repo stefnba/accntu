@@ -2,38 +2,67 @@
 
 import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLabelEndpoints } from '../api';
 import { labelColors, labelFormSchemas } from '../schemas';
 
 interface LabelFormProps {
+    labelId?: string | null;
+    parentId?: string | null;
     onSuccess?: () => void;
 }
 
-export const LabelForm = ({ onSuccess }: LabelFormProps) => {
-    const { data: rootLabels } = useLabelEndpoints.getRoots({
-        params: {
-            userId: '1',
-        },
-    });
+export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
+    const isEditMode = Boolean(labelId);
+    
+    const { data: rootLabels } = useLabelEndpoints.getRoots({});
+    const { data: labelData } = useLabelEndpoints.getById({ 
+        param: { id: labelId || '' } 
+    }, { enabled: isEditMode });
+    
     const createMutation = useLabelEndpoints.create();
+    const updateMutation = useLabelEndpoints.update();
+    
     const [selectedColor, setSelectedColor] = useState('#6B7280');
 
     const form = useForm({
-        schema: labelFormSchemas.create,
+        schema: isEditMode ? labelFormSchemas.update : labelFormSchemas.create,
         defaultValues: {
             name: '',
             color: '#6B7280',
-            parentId: undefined,
+            parentId: parentId || undefined,
         },
-        onSubmit: (data) => {
-            createMutation.mutate({ json: { ...data, userId: '1' } });
+        onSubmit: async (data) => {
+            if (isEditMode && labelId) {
+                await updateMutation.mutateAsync({ param: { id: labelId }, json: data });
+            } else {
+                await createMutation.mutateAsync({ json: { ...data } });
+            }
             onSuccess?.();
         },
     });
 
-    const parentOptions =
-        rootLabels?.map((label) => ({
+    useEffect(() => {
+        if (labelData) {
+            form.reset({
+                name: labelData.name,
+                color: labelData.color || '#6B7280',
+                parentId: labelData.parentId || undefined,
+            });
+            setSelectedColor(labelData.color || '#6B7280');
+        } else if (!isEditMode) {
+            form.reset({
+                name: '',
+                color: '#6B7280',
+                parentId: parentId || undefined,
+            });
+            setSelectedColor('#6B7280');
+        }
+    }, [labelData, parentId, isEditMode]);
+
+    const parentOptions = rootLabels
+        ?.filter((label) => !isEditMode || label.id !== labelId)
+        ?.map((label) => ({
             value: label.id,
             label: label.name,
         })) || [];
@@ -76,7 +105,9 @@ export const LabelForm = ({ onSuccess }: LabelFormProps) => {
                 options={parentOptions}
             />
 
-            <FormSubmitButton form={form}>Create Label</FormSubmitButton>
+            <FormSubmitButton form={form}>
+                {isEditMode ? 'Update Label' : 'Create Label'}
+            </FormSubmitButton>
         </Form>
     );
 };

@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -11,7 +11,7 @@ import type { TLabelQuery } from '../schemas';
 
 interface LabelTreeProps {
     labels: TLabelQuery['select'][];
-    onEdit?: (label: TLabelQuery['select']) => void;
+    onEdit?: (labelId: string) => void;
     onAddChild?: (parentId: string) => void;
     className?: string;
 }
@@ -19,7 +19,7 @@ interface LabelTreeProps {
 interface LabelTreeItemProps {
     label: TLabelQuery['select'] & { children?: TLabelQuery['select'][] };
     level?: number;
-    onEdit?: (label: TLabelQuery['select']) => void;
+    onEdit?: (labelId: string) => void;
     onAddChild?: (parentId: string) => void;
 }
 
@@ -42,7 +42,9 @@ const LabelTreeItem = ({ label, level = 0, onEdit, onAddChild }: LabelTreeItemPr
                     level > 0 && 'ml-6'
                 )}
             >
-                <button
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
                 >
@@ -55,7 +57,7 @@ const LabelTreeItem = ({ label, level = 0, onEdit, onAddChild }: LabelTreeItemPr
                     ) : (
                         <div className="w-3 h-3" />
                     )}
-                </button>
+                </Button>
 
                 <Badge
                     style={{ backgroundColor: label.color || undefined, color: 'white' }}
@@ -76,7 +78,7 @@ const LabelTreeItem = ({ label, level = 0, onEdit, onAddChild }: LabelTreeItemPr
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onEdit?.(label)}
+                        onClick={() => onEdit?.(label.id)}
                         className="h-6 w-6 p-0"
                     >
                         <Edit2 className="w-3 h-3" />
@@ -119,15 +121,17 @@ export const LabelTree = ({ labels, onEdit, onAddChild, className }: LabelTreePr
     }
 
     return (
-        <div className={cn('space-y-1', className)}>
-            {labels.map((label) => (
-                <LabelTreeItem
-                    key={label.id}
-                    label={label}
-                    onEdit={onEdit}
-                    onAddChild={onAddChild}
-                />
-            ))}
-        </div>
+        <Card className={cn('space-y-1', className)}>
+            <CardContent>
+                {labels.map((label) => (
+                    <LabelTreeItem
+                        key={label.id}
+                        label={label}
+                        onEdit={onEdit}
+                        onAddChild={onAddChild}
+                    />
+                ))}
+            </CardContent>
+        </Card>
     );
 };

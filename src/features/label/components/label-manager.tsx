@@ -6,41 +6,23 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
 import { useLabelEndpoints } from '../api';
-import type { TLabelQuery } from '../schemas';
-import { LabelEditForm } from './label-edit-form';
+import { useLabelModal } from '../hooks';
 import { LabelForm } from './label-form';
 import { LabelTree } from './label-tree';
 
 export const LabelManager = () => {
     const { data: labels, isLoading } = useLabelEndpoints.getAll({});
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [selectedLabel, setSelectedLabel] = useState<TLabelQuery['select'] | null>(null);
-    const [parentId, setParentId] = useState<string | undefined>();
+    const { modalOpen, modalType, labelId, parentId, openCreateModal, openEditModal, closeModal } = useLabelModal();
 
-    const handleEdit = (label: TLabelQuery['select']) => {
-        setSelectedLabel(label);
-        setEditDialogOpen(true);
+    const handleEdit = (editLabelId: string) => {
+        openEditModal(editLabelId);
     };
 
     const handleAddChild = (parentLabelId: string) => {
-        setParentId(parentLabelId);
-        setCreateDialogOpen(true);
-    };
-
-    const handleCreateSuccess = () => {
-        setCreateDialogOpen(false);
-        setParentId(undefined);
-    };
-
-    const handleEditSuccess = () => {
-        setEditDialogOpen(false);
-        setSelectedLabel(null);
+        openCreateModal(parentLabelId);
     };
 
     if (isLoading) {
@@ -51,20 +33,10 @@ export const LabelManager = () => {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Labels</h3>
-                <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button size="sm">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Label
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create New Label</DialogTitle>
-                        </DialogHeader>
-                        <LabelForm onSuccess={handleCreateSuccess} />
-                    </DialogContent>
-                </Dialog>
+                <Button size="sm" onClick={() => openCreateModal()}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Label
+                </Button>
             </div>
 
             <LabelTree
@@ -74,14 +46,18 @@ export const LabelManager = () => {
                 className="border rounded-lg p-4"
             />
 
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <Dialog open={modalOpen} onOpenChange={closeModal}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Label</DialogTitle>
+                        <DialogTitle>
+                            {modalType === 'create' ? 'Create New Label' : 'Edit Label'}
+                        </DialogTitle>
                     </DialogHeader>
-                    {selectedLabel && (
-                        <LabelEditForm label={selectedLabel} onSuccess={handleEditSuccess} />
-                    )}
+                    <LabelForm 
+                        labelId={modalType === 'edit' ? labelId : null}
+                        parentId={parentId}
+                        onSuccess={closeModal} 
+                    />
                 </DialogContent>
             </Dialog>
         </div>

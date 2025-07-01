@@ -1,9 +1,9 @@
 import { getUser } from '@/lib/auth';
+import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { z } from 'zod';
-import { insertLabelSchema, updateLabelSchema } from './db/schema';
+import { labelServiceSchemas } from '../schemas';
 import { labelServices } from './services';
 
 const app = new Hono()
@@ -28,7 +28,7 @@ const app = new Hono()
     /**
      * GET /labels/:id - Get a specific label by ID for the authenticated user
      */
-    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) => {
+    .get('/:id', zValidator('param', endpointSelectSchema), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
@@ -44,7 +44,7 @@ const app = new Hono()
     /**
      * POST /labels - Create a new label for the authenticated user
      */
-    .post('/', zValidator('json', insertLabelSchema), async (c) => {
+    .post('/', zValidator('json', labelServiceSchemas.insert), async (c) => {
         return withRoute(
             c,
             async () => {
@@ -60,8 +60,8 @@ const app = new Hono()
      */
     .put(
         '/:id',
-        zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', updateLabelSchema),
+        zValidator('param', endpointSelectSchema),
+        zValidator('json', labelServiceSchemas.update),
         async (c) => {
             return withRoute(c, async () => {
                 const user = getUser(c);
@@ -81,7 +81,7 @@ const app = new Hono()
     /**
      * DELETE /labels/:id - Soft delete a label for the authenticated user
      */
-    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) => {
+    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');

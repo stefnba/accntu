@@ -33,11 +33,11 @@ export type TLabelQuery = {
  * Label service schemas for business logic operations
  */
 export const labelServiceSchemas = {
-    select: selectLabelSchema,
-    insert: insertLabelSchema.omit({
+    select: labelQuerySchemas.select,
+    insert: labelQuerySchemas.insert.omit({
         firstParentId: true,
     }),
-    update: updateLabelSchema,
+    update: labelQuerySchemas.update,
 };
 export type TLabelService = {
     select: z.infer<typeof labelServiceSchemas.select>;
