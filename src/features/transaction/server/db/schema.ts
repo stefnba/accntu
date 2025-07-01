@@ -88,24 +88,18 @@ export const transaction = pgTable(
         status: transactionStatusEnum().notNull().default('completed'),
         linkedTransactionId: text(), // For transfers between accounts
         isNew: boolean().notNull().default(true),
-        isDeleted: boolean().notNull().default(false),
+        isActive: boolean().notNull().default(true),
         isHidden: boolean().notNull().default(false),
 
         createdAt: timestamp().notNull().defaultNow(),
-        updatedAt: timestamp().notNull(),
+        updatedAt: timestamp(),
     },
-    (table) => ({
-        accountIdIdx: index('transaction_account_id_idx').on(table.connectedBankAccountId),
-        dateIdx: index('transaction_date_idx').on(table.date),
-        providerTransactionIdIdx: index('transaction_provider_transaction_id_idx').on(
-            table.providerTransactionId
-        ),
-        userKeyUniqueIdx: uniqueIndex('transaction_user_key_unique').on(
-            table.userId,
-            table.key,
-            table.isDeleted
-        ),
-    })
+    (table) => [
+        index('transaction_account_id_idx').on(table.connectedBankAccountId),
+        index('transaction_date_idx').on(table.date),
+        index('transaction_provider_transaction_id_idx').on(table.providerTransactionId),
+        uniqueIndex('transaction_user_key_unique').on(table.userId, table.key, table.isActive),
+    ]
 );
 
 // Relations

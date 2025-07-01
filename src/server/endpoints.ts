@@ -8,6 +8,7 @@ import adminEndpoints from '@/features/admin/server/endpoints';
 import bankEndpoints from '@/features/bank/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
+import transactionEndpoints from '@/features/transaction/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import authEndpoints from '@/lib/auth/server/endpoints';
@@ -32,6 +33,7 @@ export const appEndpoints = {
     banks: bankEndpoints,
     labels: labelEndpoints,
     tags: tagEndpoints,
+    transactions: transactionEndpoints,
     transactionImport: transactionImportEndpoints,
     user: userEndpoints,
     auth: authEndpoints,

@@ -15,7 +15,7 @@ export const transactionQuerySchemas = {
         id: true,
         createdAt: true,
         updatedAt: true,
-        isDeleted: true,
+        isActive: true,
         isHidden: true,
         isNew: true,
     }),
@@ -38,8 +38,8 @@ export const transactionServiceSchemas = {
             userId: true,
             userAmount: true,
             userCurrency: true,
-            importFileId: true,
             originalTitle: true,
+            importFileId: true,
             connectedBankAccountId: true,
         })
         .extend({
@@ -58,3 +58,27 @@ export type TTransactionService = {
 // ====================
 // Custom Schemas
 // ====================
+
+/**
+ * Schema for parsing transactions
+ */
+export const transactionParseSchema = transactionServiceSchemas.create;
+export type TTransactionParseSchema = z.infer<typeof transactionParseSchema>;
+
+export const transactionFilterOptionsSchema = z.object({
+    accountIds: z.array(z.string()).optional(),
+    labelIds: z.array(z.string()).optional(),
+    tagIds: z.array(z.string()).optional(),
+    type: z.array(z.string()).optional(),
+    currencies: z.array(z.string()).optional(),
+    search: z.string().optional(),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
+});
+export type TTransactionFilterOptions = z.infer<typeof transactionFilterOptionsSchema>;
+
+export const transactionPaginationSchema = z.object({
+    page: z.number().min(1).default(1),
+    pageSize: z.number().min(1).max(100).default(50),
+});
+export type TTransactionPagination = z.infer<typeof transactionPaginationSchema>;
