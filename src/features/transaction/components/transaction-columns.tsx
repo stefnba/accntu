@@ -20,20 +20,33 @@ const formatCurrency = (amount: number, currency: string) => {
 };
 
 // Type for transaction with relations (we'll need to define this properly based on our query result)
-type TransactionWithRelations = {
+export type TransactionWithRelations = {
     id: string;
     date: string;
     title: string;
+    originalTitle: string;
     description: string | null;
+    note: string | null;
     type: 'transfer' | 'credit' | 'debit';
+    status?: 'pending' | 'completed' | 'failed' | 'cancelled';
     spendingAmount: string;
     spendingCurrency: string;
     accountAmount: string;
     accountCurrency: string;
+    userAmount?: string;
+    userCurrency?: string;
+    balance?: string;
     counterparty: string | null;
     reference: string | null;
+    iban: string | null;
+    bic: string | null;
+    providerTransactionId?: string | null;
+    key?: string;
+    linkedTransactionId?: string | null;
     country: string | null;
     city: string | null;
+    connectedBankAccountId?: string;
+    importFileId?: string;
     account?: {
         id: string;
         name: string;
@@ -57,10 +70,19 @@ type TransactionWithRelations = {
         color: string;
         type: string;
     }>;
+    importFile?: {
+        id: string;
+    } | null;
     isNew: boolean;
+    isActive?: boolean;
+    isHidden?: boolean;
+    createdAt: string;
+    updatedAt: string;
 };
 
-export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
+export const createTransactionColumns = (
+    onRowClick?: (transaction: TransactionWithRelations) => void
+): ColumnDef<TransactionWithRelations>[] => [
     {
         accessorKey: 'date',
         header: ({ column }) => {
@@ -79,7 +101,10 @@ export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
         cell: ({ row }) => {
             const date = new Date(row.getValue('date'));
             return (
-                <div className="flex flex-col">
+                <div 
+                    className="flex flex-col cursor-pointer" 
+                    onClick={() => onRowClick?.(row.original)}
+                >
                     <span className="font-medium">{format(date, 'MMM dd, yyyy')}</span>
                     <span className="text-xs text-muted-foreground">{format(date, 'EEEE')}</span>
                 </div>
@@ -96,7 +121,10 @@ export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
             const reference = row.original.reference;
 
             return (
-                <div className="max-w-[300px]">
+                <div 
+                    className="max-w-[300px] cursor-pointer" 
+                    onClick={() => onRowClick?.(row.original)}
+                >
                     <div className="font-medium truncate">{title}</div>
                     {(description || counterparty || reference) && (
                         <div className="text-xs text-muted-foreground space-y-1 mt-1">
@@ -270,3 +298,5 @@ export const transactionColumns: ColumnDef<TransactionWithRelations>[] = [
         },
     },
 ];
+
+export const transactionColumns = createTransactionColumns();

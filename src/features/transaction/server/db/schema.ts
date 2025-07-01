@@ -1,4 +1,5 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
+import { bucket } from '@/features/bucket/server/db/schemas';
 import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
@@ -79,6 +80,7 @@ export const transaction = pgTable(
 
         // Categorization
         labelId: text(), // Direct label assignment (will be added after label table is created)
+        bucketId: text('bucket_id').references(() => bucket.id, { onDelete: 'set null' }),
 
         // Import metadata
         providerTransactionId: text(), // Bank's unique ID
@@ -112,6 +114,10 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
     importFile: one(transactionImportFile, {
         fields: [transaction.importFileId],
         references: [transactionImportFile.id],
+    }),
+    bucket: one(bucket, {
+        fields: [transaction.bucketId],
+        references: [bucket.id],
     }),
     // Note: label relation will be added after label table is created to avoid circular imports
 }));

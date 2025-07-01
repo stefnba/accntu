@@ -373,7 +373,7 @@ export const getByKeys = async ({ userId, keys }: { userId: string; keys: string
         operation: 'Get transactions by keys',
         queryFn: async () => {
             if (keys.length === 0) return [];
-            
+
             const result = await db.query.transaction.findMany({
                 where: and(
                     eq(transaction.userId, userId),

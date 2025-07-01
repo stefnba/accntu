@@ -1,15 +1,18 @@
 'use client';
 
-import { DataTable } from '@/components/data-table';
+import { TransactionDataTable } from './transaction-data-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { useTransactionEndpoints } from '../api';
 import { useTransactionTableStore } from '../store';
-import { transactionColumns } from './transaction-columns';
+import { createTransactionColumns, TransactionWithRelations } from './transaction-columns';
 import { TransactionTableFilters } from './transaction-filters';
+import { TransactionPeekSheet } from './transaction-peek-sheet';
+import { useTransactionPeek } from '../hooks';
 
 export const TransactionTable = () => {
     const { filters, pagination, sorting } = useTransactionTableStore();
+    const { isOpen, transactionId, openPeek, closePeek } = useTransactionPeek();
 
     // Build query parameters
     const queryParams = useMemo(
@@ -17,8 +20,8 @@ export const TransactionTable = () => {
             page: pagination.pageIndex + 1,
             pageSize: pagination.pageSize,
             search: filters.search || undefined,
-            startDate: filters.startDate || undefined,
-            endDate: filters.endDate || undefined,
+            startDate: filters.startDate?.toISOString() || undefined,
+            endDate: filters.endDate?.toISOString() || undefined,
             accountIds: filters.accountIds?.length ? filters.accountIds : undefined,
             labelIds: filters.labelIds?.length ? filters.labelIds : undefined,
             tagIds: filters.tagIds?.length ? filters.tagIds : undefined,
@@ -28,18 +31,23 @@ export const TransactionTable = () => {
         [filters, pagination]
     );
 
-    // TODO: Uncomment when API client is working
-    const transactions = useTransactionEndpoints.getAll({
-        query: {},
+    const { data, error, isLoading } = useTransactionEndpoints.getAll({
+        query: queryParams,
     });
 
     // Ensure we have valid data structure
-    const transactions = (data?.transactions || []) as any[];
+    const transactions = (data?.transactions || []) as TransactionWithRelations[];
     const totalPages = data?.pagination?.totalPages || 0;
+
+    // Create columns with click handler
+    const columns = useMemo(
+        () => createTransactionColumns((transaction) => openPeek(transaction.id)),
+        [openPeek]
+    );
 
     const table = useReactTable({
         data: transactions,
-        columns: transactionColumns,
+        columns,
         getCoreRowModel: getCoreRowModel(),
         manualPagination: true,
         manualSorting: true,
@@ -67,7 +75,12 @@ export const TransactionTable = () => {
     return (
         <div className="space-y-4">
             <TransactionTableFilters />
-            <DataTable data={transactions as any} />
+            <TransactionDataTable table={table} />
+            <TransactionPeekSheet
+                transactionId={transactionId}
+                isOpen={isOpen}
+                onClose={closePeek}
+            />
         </div>
     );
 };
