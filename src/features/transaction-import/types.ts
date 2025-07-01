@@ -8,4 +8,5 @@ export interface FileUpload {
     error?: string;
     uploadUrl?: string;
     s3Key?: string;
+    fileId?: string; // Database file ID
 }

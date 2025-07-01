@@ -1,4 +1,4 @@
-import { apiClient, createQuery } from '@/lib/api';
+import { apiClient, createMutation, createQuery } from '@/lib/api';
 
 const TRANSACTION_QUERY_KEYS = {
     TRANSACTIONS: 'transactions',
@@ -27,4 +27,12 @@ export const useTransactionEndpoints = {
      * Get transaction by ID
      */
     getById: createQuery(apiClient.transactions[':id'].$get, TRANSACTION_QUERY_KEYS.TRANSACTION),
+
+    /**
+     * Import transactions
+     */
+    import: createMutation(
+        apiClient.transactions.import.$post,
+        TRANSACTION_QUERY_KEYS.TRANSACTIONS
+    ),
 };

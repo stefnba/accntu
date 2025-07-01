@@ -1,6 +1,6 @@
 import { transactionImportFileServiceSchemas } from '@/features/transaction-import/schemas/import-file';
 import { importFileServices } from '@/features/transaction-import/server/services/import-file';
-import { parseTransaction } from '@/features/transaction-import/server/services/transaction-parser';
+import { parseTransactionFile } from '@/features/transaction-import/server/services/transaction-parser';
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { createUploadToS3Endpoints } from '@/lib/upload/cloud/s3/create-endpoints';
@@ -28,7 +28,7 @@ const app = new Hono()
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            return await importFileServices.getById({ fileId: id, userId: user.id });
+            return await importFileServices.getById({ id, userId: user.id });
         })
     )
 
@@ -95,12 +95,9 @@ const app = new Hono()
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            const { transformQuery, transformConfig } = await parseTransaction(id, user.id);
+            const result = await parseTransactionFile({ id, userId: user.id });
 
-            return {
-                success: true,
-                message: 'File parsing will be implemented in future',
-            };
+            return result;
         })
     )
 

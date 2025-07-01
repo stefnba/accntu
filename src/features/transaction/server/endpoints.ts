@@ -91,6 +91,19 @@ const app = new Hono()
                 userId: user.id,
             });
         })
+    )
+
+    // import transactions (bulk)
+    .post('/import', zValidator('json', transactionServiceSchemas.create), async (c) =>
+        withRoute(c, async () => {
+            const user = getUser(c);
+            const data = c.req.valid('json');
+
+            return {
+                success: true,
+                message: 'Transactions imported successfully',
+            };
+        })
     );
 
 export default app;

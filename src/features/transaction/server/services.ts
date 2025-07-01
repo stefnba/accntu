@@ -128,6 +128,63 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
     return transaction;
 };
 
+/**
+ * Get transactions by their keys (for duplicate detection)
+ * @param userId - The user ID
+ * @param keys - Array of transaction keys
+ * @returns The transactions
+ */
+const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
+    const transactions = await transactionQueries.getByKeys({ userId, keys });
+    return transactions;
+};
+
+/**
+ * Create many transactions
+ * @param userId - The user ID
+ * @param transactions - Array of transaction data
+ * @returns The created transactions
+ */
+const createMany = async ({
+    userId,
+    transactions,
+}: {
+    userId: string;
+    transactions: Array<{
+        amount: number;
+        description: string;
+        date: Date;
+        category?: string | null;
+        reference?: string | null;
+        key: string;
+        bankAccountId: string;
+        importFileId: string;
+    }>;
+}) => {
+    const transactionsToCreate = transactions.map((transaction) => ({
+        title: transaction.description,
+        description: transaction.description,
+        originalTitle: transaction.description,
+        date: transaction.date.toISOString().split('T')[0],
+        type: transaction.amount > 0 ? ('credit' as const) : ('debit' as const),
+        spendingAmount: Math.abs(transaction.amount).toString(),
+        spendingCurrency: 'USD',
+        accountAmount: Math.abs(transaction.amount).toString(),
+        accountCurrency: 'USD',
+        userAmount: Math.abs(transaction.amount).toString(),
+        userCurrency: 'USD',
+        balance: '0',
+        key: transaction.key,
+        reference: transaction.reference,
+        connectedBankAccountId: transaction.bankAccountId,
+        importFileId: transaction.importFileId,
+        userId,
+    }));
+
+    const createdTransactions = await transactionQueries.createMany(transactionsToCreate);
+    return createdTransactions;
+};
+
 export const transactionServices = {
     create,
     update,
@@ -135,4 +192,6 @@ export const transactionServices = {
     getAll,
     remove,
     getFilterOptions,
+    getByKeys,
+    createMany,
 };

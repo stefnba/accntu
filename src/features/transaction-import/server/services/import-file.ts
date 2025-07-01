@@ -2,6 +2,7 @@ import { TTransactionImportFileServiceSchemas } from '@/features/transaction-imp
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
@@ -61,8 +62,8 @@ const getByImport = async ({ filters, userId }: TQuerySelectUserRecords<{ import
  * @param userId - The user ID for ownership verification
  * @returns File record or null if not found
  */
-const getById = async ({ fileId, userId }: { fileId: string; userId: string }) => {
-    return await importFileQueries.getById({ id: fileId, userId });
+const getById = async ({ id, userId }: TQuerySelectUserRecordById) => {
+    return await importFileQueries.getById({ id, userId });
 };
 
 /**

@@ -74,6 +74,11 @@ export const useImportModal = () => {
         resetFormState();
     };
 
+    // Get the first completed file ID for processing
+    const { getCompletedFiles } = useFileUploadStore();
+    const completedFiles = getCompletedFiles();
+    const activeFileId = completedFiles[0]?.fileId || null;
+
     return {
         // Modal state
         modalOpen,
@@ -91,6 +96,7 @@ export const useImportModal = () => {
         connectedBankAccountId: connectedBankAccountId || null,
         setConnectedBankAccountId: (id: string | null) =>
             setConnectedBankAccountId(id || '', { clearOnDefault: !id }),
+        activeFileId,
 
         // Actions
         reset,
@@ -195,8 +201,9 @@ export const useFileUpload = () => {
                 if (progressInterval) clearInterval(progressInterval);
 
                 // Create file record in database
+                let fileRecord;
                 try {
-                    await createFileFromS3({
+                    fileRecord = await createFileFromS3({
                         json: {
                             importId: currentImportId,
                             fileName: fileUpload.file.name,
@@ -219,6 +226,7 @@ export const useFileUpload = () => {
                     progress: 100,
                     s3Key: file.filename,
                     uploadUrl: file.url,
+                    fileId: fileRecord.id, // Store the database file ID
                 });
             } catch (error) {
                 if (progressInterval) clearInterval(progressInterval);

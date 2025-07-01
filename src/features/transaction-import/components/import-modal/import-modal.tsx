@@ -5,6 +5,8 @@ import { useImportModal } from '@/features/transaction-import/hooks';
 import { Banknote, CheckCircle2, Eye, Upload, Zap } from 'lucide-react';
 
 import { AccountSelectionStep } from './account-selection-step';
+import { PreviewStep } from './preview-step';
+import { ProcessingStep } from './processing-step';
 import { SuccessStep } from './success-step';
 import { UploadStep } from './upload-step';
 
@@ -76,6 +78,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
                 return <AccountSelectionStep />;
             case 'upload':
                 return <UploadStep />;
+            case 'processing':
+                return <ProcessingStep />;
+            case 'preview':
+                return <PreviewStep />;
             case 'success':
                 return <SuccessStep onContinue={handleClose} />;
             default:
@@ -87,7 +93,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
     const showCloseButton = currentStep !== 'processing';
 
     return (
-        <ResponsiveModal open={modalOpen} onOpenChange={handleOpenChange}>
+        <ResponsiveModal size="auto" open={modalOpen} onOpenChange={handleOpenChange}>
             {/* Content with better spacing and transitions */}
             <div className="px-4 sm:px-6 pb-4 sm:pb-6 ">
                 <div className="transition-all duration-300 ease-in-out">{renderCurrentStep()}</div>

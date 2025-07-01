@@ -1,4 +1,8 @@
-import type { UploadConfig } from '@/features/upload/schemas';
+interface UploadConfig {
+    allowedFileTypes: string[];
+    maxFileSize: number;
+    allowedBuckets: string[];
+}
 
 export const transactionImportUploadConfig: UploadConfig = {
     allowedFileTypes: [

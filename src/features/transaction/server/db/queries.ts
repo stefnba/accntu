@@ -362,9 +362,38 @@ export const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
         },
     });
 
+/**
+ * Get transactions by their keys (for duplicate detection)
+ * @param userId - The user ID
+ * @param keys - Array of transaction keys
+ * @returns The transactions
+ */
+export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) =>
+    withDbQuery({
+        operation: 'Get transactions by keys',
+        queryFn: async () => {
+            if (keys.length === 0) return [];
+            
+            const result = await db.query.transaction.findMany({
+                where: and(
+                    eq(transaction.userId, userId),
+                    eq(transaction.isActive, true),
+                    inArray(transaction.key, keys)
+                ),
+                columns: {
+                    id: true,
+                    key: true,
+                },
+            });
+
+            return result;
+        },
+    });
+
 export const transactionQueries = {
     getAll,
     getById,
+    getByKeys,
     getFilterOptions,
     create,
     createMany,
