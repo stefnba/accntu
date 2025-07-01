@@ -282,17 +282,17 @@ const form = useForm({
 export const useFeatureModal = () => {
     const [modalOpen, setModalOpen] = useQueryState('featureModal', parseAsBoolean.withDefault(false));
     const [itemId, setItemId] = useQueryState('itemId', parseAsString.withDefault(''));
-    
+
     const openModal = (id?: string) => {
         setItemId(id || '');
         setModalOpen(true);
     };
-    
+
     const closeModal = () => {
         setModalOpen(false);
         setItemId(null);
     };
-    
+
     return { modalOpen, itemId: itemId || null, openModal, closeModal };
 };
 ```
@@ -326,3 +326,20 @@ export const useFeatureModal = () => {
 ## Miscellaneous Notes
 - Rule '.cursor/rules' is not present
 - **Development Tip**: Don't run bun build at the end
+
+
+
+## Multi-Step Modal Workflow
+- **URL State Persistence:** Use nuqs for modal steps that survive navigation
+- **Processing Feedback:** Show real-time progress during file parsing
+- **Preview Before Import:** Always show parsed data in table format before final import
+- **Responsive Modal:** Use `size="auto"` for content-driven modal sizing
+
+
+
+
+
+## Code Style Memories
+- Never cast types with `as`
+- Use existing feature schemas instead of creating custom validation schemas
+- Prefer schema-driven development over type assertions
