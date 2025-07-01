@@ -35,6 +35,7 @@ const routes = app
     .route('/tags', appEndpoints.tags)
     .route('/user', appEndpoints.user)
     .route('/auth', appEndpoints.auth)
+    .route('/buckets', appEndpoints.buckets)
     .route('/transactions', appEndpoints.transactions)
     .route('/transaction-import', appEndpoints.transactionImport);
 

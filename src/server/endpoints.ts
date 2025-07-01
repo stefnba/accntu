@@ -6,10 +6,11 @@ import { Hono } from 'hono';
 // App endpoints
 import adminEndpoints from '@/features/admin/server/endpoints';
 import bankEndpoints from '@/features/bank/server/endpoints';
+import { bucketFeature } from '@/features/bucket/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
-import transactionEndpoints from '@/features/transaction/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
+import transactionEndpoints from '@/features/transaction/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import authEndpoints from '@/lib/auth/server/endpoints';
 
@@ -37,4 +38,5 @@ export const appEndpoints = {
     transactionImport: transactionImportEndpoints,
     user: userEndpoints,
     auth: authEndpoints,
+    buckets: bucketFeature,
 };
