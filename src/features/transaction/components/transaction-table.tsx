@@ -1,14 +1,14 @@
 'use client';
 
-import { TransactionDataTable } from './transaction-data-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { useTransactionEndpoints } from '../api';
+import { useTransactionPeek } from '../hooks';
 import { useTransactionTableStore } from '../store';
 import { createTransactionColumns, TransactionWithRelations } from './transaction-columns';
+import { TransactionDataTable } from './transaction-data-table';
 import { TransactionTableFilters } from './transaction-filters';
 import { TransactionPeekSheet } from './transaction-peek-sheet';
-import { useTransactionPeek } from '../hooks';
 
 export const TransactionTable = () => {
     const { filters, pagination, sorting } = useTransactionTableStore();
@@ -61,16 +61,16 @@ export const TransactionTable = () => {
         onSortingChange: useTransactionTableStore.getState().setSorting,
     });
 
-    if (error) {
-        return (
-            <div className="flex items-center justify-center p-8">
-                <div className="text-center">
-                    <p className="text-destructive">Failed to load transactions</p>
-                    <p className="text-sm text-muted-foreground mt-1">{error.error.message}</p>
-                </div>
-            </div>
-        );
-    }
+    // if (error) {
+    //     return (
+    //         <div className="flex items-center justify-center p-8">
+    //             <div className="text-center">
+    //                 <p className="text-destructive">Failed to load transactions</p>
+    //                 <p className="text-sm text-muted-foreground mt-1">{error.error.message}</p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="space-y-4">
