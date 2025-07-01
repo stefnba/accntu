@@ -11,7 +11,6 @@ public
 # Ignore files
 *.lock
 *.log
-*.md
 *.svg
 *.ico
-.gitignore 
+.gitignore
