@@ -24,16 +24,19 @@ const rule: Rule.RuleModule = {
         function isEndpointFile(filePath: string): boolean {
             const normalized = path.normalize(filePath);
             return (
+                normalized.includes('/server/endpoints.ts') ||
+                normalized.includes('\\server\\endpoints.ts') ||
                 normalized.includes('/server/endpoints/') ||
                 normalized.includes('\\server\\endpoints\\') ||
+                normalized.match(/server[/\\]endpoints\.ts$/) !== null ||
                 normalized.match(/server[/\\]endpoints[/\\]/) !== null
             );
         }
 
         function isQueryImport(importPath: string): boolean {
             return (
-                importPath.includes('/server/db/queries/') ||
-                importPath.includes('\\server\\db\\queries\\') ||
+                importPath.includes('/server/db/queries') ||
+                importPath.includes('\\server\\db\\queries') ||
                 importPath.match(/server[/\\]db[/\\]queries/) !== null
             );
         }

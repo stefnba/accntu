@@ -28,8 +28,8 @@ const rule: Rule.RuleModule = {
 
         function isQueryImport(importPath: string): boolean {
             return (
-                importPath.includes('/server/db/queries/') ||
-                importPath.includes('\\server\\db\\queries\\') ||
+                importPath.includes('/server/db/queries') ||
+                importPath.includes('\\server\\db\\queries') ||
                 importPath.match(/server[/\\]db[/\\]queries/) !== null
             );
         }
