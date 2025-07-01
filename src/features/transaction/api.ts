@@ -26,8 +26,5 @@ export const useTransactionEndpoints = {
     /**
      * Get transaction by ID
      */
-    getById: createQuery(
-        apiClient.transactions[':transactionId'].$get,
-        TRANSACTION_QUERY_KEYS.TRANSACTION
-    ),
+    getById: createQuery(apiClient.transactions[':id'].$get, TRANSACTION_QUERY_KEYS.TRANSACTION),
 };
