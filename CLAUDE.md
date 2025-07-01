@@ -109,6 +109,8 @@ src/features/[feature-name]/
 - Implement soft deletes with `isActive` boolean
 - Embed relations directly in schema files
 - **Modern Drizzle**: Column names no longer required - use `text()` instead of `text('column_name')`
+- **Table Naming**: Always use singular table names (`label` not `labels`, `user` not `users`)
+- **Self-References**: Use `relationName` for hierarchical relationships (e.g., parent/child labels)
 - **Critical**: All schemas must be exported from `src/server/db/schemas/index.ts` for relations to work
 - **Schema Integration**: Export base Zod schemas (`selectSchema`, `insertSchema`, `updateSchema`) directly from the database schema file using `createSelectSchema()`, `createInsertSchema()`, `createUpdateSchema()`
 
@@ -162,16 +164,18 @@ src/features/[feature-name]/
 - Descriptive function names: `createTransactionImport`, `getAllImports`
 
 *Endpoints Layer (HTTP Concerns):*
-- Use `withRoute` wrapper for error handling
+- Use `withRoute` wrapper for error handling: `withRoute(c, async () => { ... })`
 - Handle request/response formatting
 - Extract user authentication with `getUser(c)`
 - Input validation with Zod schemas and `zValidator`
 - Delegate business logic to services layer
+- **Export Pattern**: Use object exports for queries/services: `export const featureQueries = { getAll, getById, create, update, remove }`
 
 **Client API:**
-- Use `createQuery` for GET operations
-- Use `createMutation` for POST/PUT/DELETE operations
-- Define query keys for cache management
+- **API Client Pattern**: Use `apiClient` from `@/lib/api` with `createQuery` for all API calls
+- **Query Structure**: Follow pattern `apiClient.feature.$get` instead of manual fetch calls
+- **Query Keys**: Use simple constants like `FEATURE_QUERY_KEYS = { ITEMS: 'items', ITEM: 'item' }`
+- **Endpoint Objects**: Export as `useFeatureEndpoints = { getAll: createQuery(...), getById: createQuery(...) }`
 - Include JSDoc comments for all functions
 - **Complex Features**: Split API hooks into separate files per entity in `api/` directory with `index.ts` for exports
 - **Simple Features**: Use single `api.ts` file
@@ -195,6 +199,13 @@ src/features/[feature-name]/
 - Use consts instead of functions (e.g., `const toggle = () =>`)
 - Define types when possible for all functions and variables
 
+#### Component Architecture Principles
+- **Eliminate Prop Drilling**: Components should fetch their own data using identifiers (IDs) instead of receiving full objects
+- **Single Responsibility**: Each component handles its own data needs and state
+- **URL State for Persistence**: Use nuqs for modal and filter states that should survive navigation
+- **Form Consolidation**: When forms share 80%+ similar logic, consolidate into single component with mode switching
+- **Dependency Management**: Be careful with useEffect dependencies - avoid including recreated objects like form instances
+
 ### Testing
 - Framework: Vitest with Node.js environment
 - Always run `bun lint` before commits (must pass)
@@ -210,7 +221,7 @@ src/features/[feature-name]/
   - `api/` directory with one file per entity (entity-name.ts) and `index.ts` for exports
 - **Decision Criteria**: Use complex structure when you have 2+ related tables or 200+ lines per file
 - **Reference Examples**:
-  - Simple: `tag` (single entity), `label` (single entity)
+  - Simple: `tag` (single entity), `label` (single entity with hierarchy support)
   - Complex: `bank` (4 related entities), `transaction-import` (2 related entities)
 
 ## Form Development
@@ -260,6 +271,32 @@ const form = useForm({
 - **Zustand**: Global client state (feature-based stores in `features/[feature]/stores/`)
 - **nuqs**: URL-based search params state (modals, filters, sorting)
 
+#### nuqs Modal State Pattern
+- Use `parseAsBoolean`, `parseAsString`, `parseAsStringLiteral` with `.withDefault()` for robust URL state
+- Create modal hooks that return `openModal`, `closeModal`, and state getters
+- Enable deep linking and state persistence across page refreshes
+- Follow the transaction-import pattern for consistency
+
+**Example Modal Hook:**
+```typescript
+export const useFeatureModal = () => {
+    const [modalOpen, setModalOpen] = useQueryState('featureModal', parseAsBoolean.withDefault(false));
+    const [itemId, setItemId] = useQueryState('itemId', parseAsString.withDefault(''));
+    
+    const openModal = (id?: string) => {
+        setItemId(id || '');
+        setModalOpen(true);
+    };
+    
+    const closeModal = () => {
+        setModalOpen(false);
+        setItemId(null);
+    };
+    
+    return { modalOpen, itemId: itemId || null, openModal, closeModal };
+};
+```
+
 ## Error Handling
 
 ### Backend Error Handling
@@ -288,3 +325,4 @@ const form = useForm({
 
 ## Miscellaneous Notes
 - Rule '.cursor/rules' is not present
+- **Development Tip**: Don't run bun build at the end
