@@ -32,6 +32,8 @@ export const serverBaseEnvSchema = z
 export const authEnvSchema = z.object({
     GITHUB_CLIENT_ID: z.string().min(1, 'GITHUB_CLIENT_ID is required'),
     GITHUB_CLIENT_SECRET: z.string().min(1, 'GITHUB_CLIENT_SECRET is required'),
+    BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
+    BETTER_AUTH_URL: z.string().url('BETTER_AUTH_URL must be a valid URL'),
 });
 
 // =========================
