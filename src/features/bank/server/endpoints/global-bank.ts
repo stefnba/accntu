@@ -1,7 +1,7 @@
 import { searchGlobalBanksSchema } from '@/features/bank/schemas/global-bank';
 import { globalBankServices } from '@/features/bank/server/services/global-bank';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 

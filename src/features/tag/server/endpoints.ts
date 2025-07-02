@@ -5,7 +5,7 @@ import {
 } from '@/features/tag/schemas';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import * as queries from './db/queries';

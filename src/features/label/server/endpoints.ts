@@ -1,7 +1,7 @@
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { labelServiceSchemas } from '../schemas';
 import { labelServices } from './services';

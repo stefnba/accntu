@@ -2,7 +2,7 @@ import { createConnectedBankWithAccountsSchema } from '@/features/bank/schemas/c
 import { connectedBankServices } from '@/features/bank/server/services/connected-bank';
 import { getUser } from '@/lib/auth';
 import { withMutationRoute, withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 

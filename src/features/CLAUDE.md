@@ -97,7 +97,7 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 ```typescript
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
 // CRITICAL: Always use method chaining for Hono instantiation

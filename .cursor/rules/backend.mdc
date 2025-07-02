@@ -67,7 +67,7 @@ The project has a comprehensive error handling system. Follow these guidelines:
 - Handle validation errors properly
 
 ```typescript
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { z } from 'zod';
 
 const UserSchema = z.object({

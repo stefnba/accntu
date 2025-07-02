@@ -1,5 +1,5 @@
 import { getUser } from '@/lib/auth';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
 import { DeleteS3FileSchema, SignedS3UrlInputSchema, TS3UploadConfig } from './schema';

@@ -192,7 +192,7 @@ export const getUserEntities = async ({ userId }: { userId: string }) => {
 // src/features/[feature]/server/endpoints/entity-name.ts
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import * as entityServices from '../db/services/entity-name';
@@ -214,7 +214,7 @@ app.post('/', zValidator('json', CreateEntitySchema), async (c) =>
     withRoute(c, async () => {
         const user = getUser(c);
         const data = c.req.valid('json');
-        
+
         return await entityServices.createEntity({
             userId: user.id,
             name: data.name,
@@ -324,7 +324,7 @@ export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void>
 // src/features/[feature]/server/endpoints.ts
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import * as queries from './db/queries';
