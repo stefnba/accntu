@@ -1,164 +1,75 @@
-import * as nodemailer from 'nodemailer';
-import { EmailProvider, EmailProviderConfig, EmailSendResponse, SendEmailOptions } from './types';
+import { EmailProvider, EmailSendResponse, SendEmailOptions } from '@/server/lib/email/core/types';
+import { createTransport, type Transporter } from 'nodemailer';
+import { z } from 'zod';
+
+export const smtpConfigSchema = z.object({
+    host: z.string(),
+    port: z.number(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    secure: z.boolean().optional(),
+});
+export type TSMTPProviderConfig = z.infer<typeof smtpConfigSchema>;
 
 /**
- * Generic SMTP email provider implementation
- * 
- * Supports any SMTP server including:
- * - Gmail SMTP
- * - Outlook/Hotmail SMTP
- * - Custom SMTP servers
- * - Corporate email servers
- * 
- * This provider serves as a fallback option when dedicated email services
- * like Resend are not available or preferred.
+ * ## SMTP Provider
+ *
+ * A generic provider for sending emails through a standard SMTP server. Useful
+ * for a wide range of email services.
  */
 export class SMTPProvider implements EmailProvider {
-  public readonly name = 'smtp';
-  private transporter: nodemailer.Transporter;
-  private config: EmailProviderConfig;
+    readonly name = 'smtp';
+    private client: Transporter;
+    private config: TSMTPProviderConfig;
 
-  /**
-   * Initialize SMTP provider with server configuration
-   * 
-   * @param config - Email provider configuration containing SMTP settings
-   * @throws {Error} When required SMTP host or port is missing
-   * 
-   * @example
-   * ```typescript
-   * // Gmail SMTP configuration
-   * const provider = new SMTPProvider({
-   *   host: 'smtp.gmail.com',
-   *   port: 587,
-   *   secure: false,
-   *   username: 'your-email@gmail.com',
-   *   password: 'your-app-password',
-   *   from: { email: 'noreply@yourdomain.com', name: 'Your App' }
-   * });
-   * 
-   * // Custom SMTP server
-   * const customProvider = new SMTPProvider({
-   *   host: 'mail.yourdomain.com',
-   *   port: 465,
-   *   secure: true,
-   *   username: 'noreply@yourdomain.com',
-   *   password: 'your-password',
-   *   from: { email: 'noreply@yourdomain.com', name: 'Your App' }
-   * });
-   * ```
-   */
-  constructor(config: EmailProviderConfig) {
-    this.config = config;
-    
-    if (!this.config.host || !this.config.port) {
-      throw new Error('SMTP host and port are required');
+    constructor(config: TSMTPProviderConfig) {
+        this.config = config;
+        this.client = createTransport({
+            host: this.config.host,
+            port: this.config.port,
+            secure: this.config.secure,
+            auth: {
+                user: this.config.username,
+                pass: this.config.password,
+            },
+        });
     }
 
-    this.transporter = nodemailer.createTransport({
-      host: this.config.host,
-      port: this.config.port,
-      secure: this.config.secure ?? (this.config.port === 465),
-      auth: this.config.username && this.config.password ? {
-        user: this.config.username,
-        pass: this.config.password,
-      } : undefined,
-    });
-  }
+    /**
+     * Sends an email using Nodemailer with the configured SMTP settings.
+     */
+    async sendEmail(options: SendEmailOptions): Promise<EmailSendResponse> {
+        const from = options.from.name
+            ? `${options.from.name} <${options.from.email}>`
+            : options.from.email;
 
-  /**
-   * Validates the SMTP provider configuration
-   * 
-   * Checks that required fields are present:
-   * - Host and port are specified
-   * - From email address is configured
-   * - If username is provided, password must also be provided
-   * 
-   * @returns {boolean} True if configuration is valid, false otherwise
-   */
-  validateConfig(): boolean {
-    return !!(
-      this.config.host && 
-      this.config.port && 
-      this.config.from?.email &&
-      (!this.config.username || this.config.password)
-    );
-  }
+        const to = Array.isArray(options.to)
+            ? options.to.map((addr) => (addr.name ? `${addr.name} <${addr.email}>` : addr.email))
+            : options.to.name
+              ? `${options.to.name} <${options.to.email}>`
+              : options.to.email;
 
-  /**
-   * Sends an email through the configured SMTP server
-   * 
-   * @param options - Email sending options including recipients, content, attachments, etc.
-   * @returns {Promise<EmailSendResponse>} Response indicating success/failure with message ID
-   * 
-   * @example
-   * ```typescript
-   * const response = await smtpProvider.sendEmail({
-   *   to: { email: 'user@example.com', name: 'John Doe' },
-   *   from: { email: 'noreply@yourdomain.com', name: 'Your App' },
-   *   subject: 'Welcome to our service!',
-   *   html: '<h1>Welcome!</h1><p>Thanks for signing up.</p>',
-   *   text: 'Welcome! Thanks for signing up.',
-   *   attachments: [{
-   *     filename: 'welcome.pdf',
-   *     content: pdfBuffer,
-   *     contentType: 'application/pdf'
-   *   }]
-   * });
-   * 
-   * if (response.success) {
-   *   console.log('Email sent via SMTP:', response.id);
-   * } else {
-   *   console.error('SMTP send failed:', response.error);
-   * }
-   * ```
-   */
-  async sendEmail(options: SendEmailOptions): Promise<EmailSendResponse> {
-    try {
-      if (!this.validateConfig()) {
-        throw new Error('Invalid SMTP configuration');
-      }
+        const replyTo = options.replyTo
+            ? options.replyTo.name
+                ? `${options.replyTo.name} <${options.replyTo.email}>`
+                : options.replyTo.email
+            : undefined;
 
-      const normalizedTo = Array.isArray(options.to) 
-        ? options.to.map(addr => addr.name ? `${addr.name} <${addr.email}>` : addr.email)
-        : [options.to.name ? `${options.to.name} <${options.to.email}>` : options.to.email];
+        const mailOptions = {
+            from,
+            to,
+            subject: options.subject,
+            html: options.html,
+            text: options.text,
+            replyTo,
+        };
 
-      const fromAddress = options.from.name 
-        ? `${options.from.name} <${options.from.email}>`
-        : options.from.email;
-
-      const replyToAddress = options.replyTo
-        ? options.replyTo.name ? `${options.replyTo.name} <${options.replyTo.email}>` : options.replyTo.email
-        : undefined;
-
-      const result = await this.transporter.sendMail({
-        from: fromAddress,
-        to: normalizedTo,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-        replyTo: replyToAddress,
-        headers: options.headers,
-        attachments: options.attachments?.map(att => ({
-          filename: att.filename,
-          content: att.content,
-          contentType: att.contentType,
-          encoding: att.encoding,
-        })),
-      });
-
-      return {
-        id: result.messageId || '',
-        success: true,
-        message: 'Email sent successfully via SMTP',
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      return {
-        id: '',
-        success: false,
-        error: `Failed to send email via SMTP: ${errorMessage}`,
-      };
+        try {
+            const result = await this.client.sendMail(mailOptions);
+            return { success: true, id: result.messageId };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage, id: '' };
+        }
     }
-  }
 }
