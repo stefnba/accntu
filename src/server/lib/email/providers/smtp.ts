@@ -1,4 +1,8 @@
-import { EmailProvider, EmailSendResponse, SendEmailOptions } from '@/server/lib/email/core/types';
+import {
+    EmailProvider,
+    EmailSendProviderResponse,
+    SendEmailOptions,
+} from '@/server/lib/email/core/types';
 import { createTransport, type Transporter } from 'nodemailer';
 import { z } from 'zod';
 
@@ -38,7 +42,7 @@ export class SMTPProvider implements EmailProvider {
     /**
      * Sends an email using Nodemailer with the configured SMTP settings.
      */
-    async sendEmail(options: SendEmailOptions): Promise<EmailSendResponse> {
+    async sendEmail(options: SendEmailOptions): Promise<EmailSendProviderResponse> {
         const from = options.from.name
             ? `${options.from.name} <${options.from.email}>`
             : options.from.email;
@@ -66,10 +70,19 @@ export class SMTPProvider implements EmailProvider {
 
         try {
             const result = await this.client.sendMail(mailOptions);
-            return { success: true, id: result.messageId };
+            return {
+                success: true,
+                providerMessageId: result.messageId,
+                provider: this.name,
+            };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            return { success: false, error: errorMessage, id: '' };
+            return {
+                success: false,
+                error: errorMessage,
+                providerMessageId: '',
+                provider: this.name,
+            };
         }
     }
 }

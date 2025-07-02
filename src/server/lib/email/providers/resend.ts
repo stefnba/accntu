@@ -1,4 +1,8 @@
-import { EmailProvider, EmailSendResponse, SendEmailOptions } from '@/server/lib/email/core/types';
+import {
+    EmailProvider,
+    EmailSendProviderResponse,
+    SendEmailOptions,
+} from '@/server/lib/email/core/types';
 import { Resend } from 'resend';
 import { z } from 'zod';
 
@@ -28,7 +32,7 @@ export class ResendProvider implements EmailProvider {
     /**
      * Sends an email using the Resend API.
      */
-    async sendEmail(options: SendEmailOptions): Promise<EmailSendResponse> {
+    async sendEmail(options: SendEmailOptions): Promise<EmailSendProviderResponse> {
         const from = options.from.name
             ? `${options.from.name} <${options.from.email}>`
             : options.from.email;
@@ -57,13 +61,27 @@ export class ResendProvider implements EmailProvider {
             });
 
             if (response.error) {
-                return { success: false, error: response.error.message, id: '' };
+                return {
+                    success: false,
+                    error: response.error.message,
+                    providerMessageId: '',
+                    provider: this.name,
+                };
             }
 
-            return { success: true, id: response.data?.id ?? '' };
+            return {
+                success: true,
+                providerMessageId: response.data?.id ?? '',
+                provider: this.name,
+            };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            return { success: false, error: errorMessage, id: '' };
+            return {
+                success: false,
+                error: errorMessage,
+                providerMessageId: '',
+                provider: this.name,
+            };
         }
     }
 }

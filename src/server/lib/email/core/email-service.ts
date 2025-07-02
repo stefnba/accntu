@@ -140,7 +140,12 @@ export class EmailService {
             };
 
             // 5. Send the email via the configured provider
-            return await this.provider.sendEmail(emailOptions);
+            const providerResponse = await this.provider.sendEmail(emailOptions);
+            return {
+                ...providerResponse,
+                emailConfigId: config.id,
+                category: config.category,
+            };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
@@ -150,11 +155,12 @@ export class EmailService {
                 error,
             });
             return {
-                id: '',
+                providerMessageId: '',
                 success: false,
                 error: `Failed to send templated email '${config.id}': ${errorMessage}`,
                 provider: this.config.provider,
-                messageId: config.id,
+                emailConfigId: config.id,
+                category: config.category,
             };
         }
     }
@@ -194,6 +200,11 @@ export class EmailService {
             emailOptions.replyTo = this.config.replyTo;
         }
 
-        return this.provider.sendEmail(emailOptions);
+        const providerResponse = await this.provider.sendEmail(emailOptions);
+        return {
+            ...providerResponse,
+            emailConfigId: '',
+            category: 'other',
+        };
     }
 }

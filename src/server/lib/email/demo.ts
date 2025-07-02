@@ -49,8 +49,9 @@ async function runTest() {
 
         if (response.success) {
             console.log('✅ Email sent successfully!');
+            console.table(response);
             console.log('Please check your Mailtrap inbox.');
-            console.log(`   Message ID: ${response.id}`);
+            console.log(`   Message ID: ${response.providerMessageId}`);
         } else {
             console.error('❌ Failed to send email.');
             console.error('   Error:', response.error);

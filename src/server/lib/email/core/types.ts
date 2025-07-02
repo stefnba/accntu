@@ -19,12 +19,16 @@ export interface EmailAttachment {
 }
 
 /** The response from an email provider after sending an email. */
-export interface EmailSendResponse {
+export interface EmailSendProviderResponse {
     success: boolean;
-    id: string;
+    providerMessageId: string;
     error?: string;
     provider: EmailSupportedProvider;
-    messageId: string;
+}
+
+export interface EmailSendResponse extends EmailSendProviderResponse {
+    emailConfigId: string;
+    category: TMailCategory;
 }
 
 /** Generic options for sending an email, adaptable to any provider. */
@@ -87,5 +91,5 @@ export interface EmailProvider {
     /** The unique name of the provider (e.g., 'resend', 'smtp') */
     name: EmailSupportedProvider;
     /** Method to send an email */
-    sendEmail(options: SendEmailOptions): Promise<EmailSendResponse>;
+    sendEmail(options: SendEmailOptions): Promise<EmailSendProviderResponse>;
 }
