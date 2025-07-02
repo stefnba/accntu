@@ -7,9 +7,12 @@ import { passkey } from 'better-auth/plugins/passkey';
 
 import { SESSION_COOKIE, SESSION_DATA } from '@/lib/auth/constants';
 import { sendOtpEmail } from '@/lib/auth/email';
+import { getEnv } from '@/lib/env';
 
 // relative import required because of better-auth bug
 import { db } from '../../server/db';
+
+const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME } = getEnv();
 
 const options = {
     emailAndPassword: {
@@ -80,8 +83,8 @@ const options = {
     },
     socialProviders: {
         github: {
-            clientId: process.env.GITHUB_CLIENT_ID!,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+            clientId: GITHUB_CLIENT_ID,
+            clientSecret: GITHUB_CLIENT_SECRET,
         },
     },
     account: {
@@ -91,8 +94,8 @@ const options = {
         admin(),
         openAPI(),
         passkey({
-            rpID: process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3000',
-            rpName: process.env.NEXT_PUBLIC_APP_NAME || 'Accntu',
+            rpID: NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//, ''),
+            rpName: NEXT_PUBLIC_APP_NAME,
             schema: {
                 passkey: {
                     modelName: 'authPasskey',
