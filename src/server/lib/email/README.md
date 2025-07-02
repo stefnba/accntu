@@ -254,28 +254,180 @@ const content = await templateService.renderTemplate({
 console.log('Rendered subject:', content.subject);
 ```
 
-## Performance
+## Performance & Optimization
 
-### Production Optimizations
+### Recommended Performance Optimizations
 
-1. **Template precompilation**:
+The current email service is designed to be simple and functional. For production deployments, consider implementing these optimizations:
 
-    ```typescript
-    if (process.env.NODE_ENV === 'production') {
-        templateService.precompileTemplates();
+#### 1. **Template Caching**
+
+Add template compilation caching in production:
+
+```typescript
+// In EmailService class
+private templateCache = new Map<string, { html: string; text?: string }>();
+private shouldCache = process.env.NODE_ENV === 'production';
+
+private async getCachedTemplate(config: EmailConfig, data: any) {
+    const cacheKey = `${config.id}:${JSON.stringify(data)}`;
+    
+    if (this.shouldCache && this.templateCache.has(cacheKey)) {
+        return this.templateCache.get(cacheKey)!;
     }
-    ```
+    
+    const rendered = await this.templateEngine.render(config, data);
+    
+    if (this.shouldCache) {
+        this.templateCache.set(cacheKey, rendered);
+    }
+    
+    return rendered;
+}
+```
 
-2. **CSS caching**: CSS is loaded once and cached in memory
+#### 2. **CSS Pre-inlining**
 
-3. **Connection pooling**: Providers use connection pooling when available
+Pre-load and inline CSS at startup:
+
+```typescript
+// In EmailTemplateEngine class
+export class EmailTemplateEngine {
+    private cssContent?: string;
+    
+    constructor(config: TemplateEngineConfig) {
+        if (process.env.NODE_ENV === 'production') {
+            this.preloadCSS();
+        }
+    }
+    
+    private async preloadCSS() {
+        const cssPath = path.join(process.cwd(), 'src/server/lib/email/styles/email.css');
+        this.cssContent = await fs.readFile(cssPath, 'utf-8');
+    }
+}
+```
+
+#### 3. **Connection Pooling**
+
+Enable SMTP connection pooling:
+
+```typescript
+// In SMTPProvider class
+export class SMTPProvider implements EmailProvider {
+    private transporter: nodemailer.Transporter;
+    
+    constructor(config: SMTPConfig) {
+        this.transporter = nodemailer.createTransporter({
+            ...config,
+            pool: true,              // Enable connection pooling
+            maxConnections: 5,       // Max concurrent connections
+            maxMessages: 10,         // Max messages per connection
+            rateDelta: 1000,         // Rate limiting
+            rateLimit: 5,            // Max 5 emails per rateDelta
+        });
+    }
+}
+```
+
+#### 4. **Template Validation**
+
+Add development-time template validation:
+
+```typescript
+// In createEmailConfig function
+export function createEmailConfig<T extends z.ZodType>(
+    config: CreateEmailConfigParams<T>
+): EmailConfig<T> {
+    // Validate template exists in development
+    if (process.env.NODE_ENV === 'development') {
+        const templatePath = path.join(process.cwd(), 'src', config.templatePath);
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found: ${config.templatePath}`);
+        }
+    }
+    
+    return {
+        ...config,
+        defaultLocale: config.defaultLocale || 'en',
+    };
+}
+```
+
+#### 5. **Enhanced Error Context**
+
+Add better error messages and context:
+
+```typescript
+// In EmailService class
+private async validateAndRender(config: EmailConfig, data: any) {
+    try {
+        // Validate data against schema
+        const validatedData = config.schema.parse(data);
+        
+        // Render template
+        return await this.templateEngine.render(config, validatedData);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            throw new Error(`Invalid data for email "${config.id}": ${error.message}`);
+        }
+        throw new Error(`Failed to render email "${config.id}": ${error.message}`);
+    }
+}
+```
+
+#### 6. **Monitoring & Analytics**
+
+Add email send metrics:
+
+```typescript
+export interface EmailSendResponse extends EmailSendProviderResponse {
+    emailConfigId: string;
+    category: TMailCategory;
+    timestamp: Date;
+    renderTime?: number;    // Template render duration (ms)
+    sendTime?: number;      // Provider send duration (ms)
+    templateSize?: number;  // Rendered template size (bytes)
+}
+
+// Usage in EmailService
+const renderStart = Date.now();
+const rendered = await this.getCachedTemplate(config, validatedData);
+const renderTime = Date.now() - renderStart;
+
+const sendStart = Date.now();
+const result = await this.provider.sendEmail(emailOptions);
+const sendTime = Date.now() - sendStart;
+
+return {
+    ...result,
+    emailConfigId: config.id,
+    category: config.category,
+    timestamp: new Date(),
+    renderTime,
+    sendTime,
+    templateSize: rendered.html.length,
+};
+```
 
 ### Memory Usage
 
-- Templates are cached after first render
-- CSS content is loaded once at startup
-- i18n translations are cached in memory
-- Provider connections are reused
+Current architecture memory footprint:
+
+- **Templates**: Rendered on-demand (no caching by default)
+- **CSS**: Loaded and processed per email (consider pre-loading)
+- **i18n**: Translations loaded per render (consider caching)
+- **Connections**: Created per email (SMTP pooling recommended)
+
+### Scalability Considerations
+
+For high-volume email sending:
+
+1. **Queue System**: Implement email queue with Redis/Bull
+2. **Rate Limiting**: Add provider-specific rate limits
+3. **Retry Logic**: Implement exponential backoff for failures
+4. **Health Checks**: Monitor provider connectivity
+5. **Circuit Breaker**: Prevent cascade failures
 
 ## Security
 
