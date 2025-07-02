@@ -140,6 +140,35 @@ const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) =
 };
 
 /**
+ * Checks a list of parsed transactions for duplicates against existing records.
+ * @param userId - The user ID.
+ * @param transactions - An array of parsed transaction objects to check.
+ * @returns The same array of transactions, each annotated with `isDuplicate` and `existingTransactionId`.
+ */
+const checkForDuplicates = async ({
+    userId,
+    transactions,
+}: {
+    userId: string;
+    transactions: TTransactionParseSchema[];
+}) => {
+    if (transactions.length === 0) {
+        return [];
+    }
+
+    const keys = transactions.map((t) => t.key);
+    const existing = await transactionQueries.getDuplicates({ userId, keys });
+
+    const existingKeysMap = new Map(existing.map((t) => [t.key, t.id]));
+
+    return transactions.map((transaction) => ({
+        ...transaction,
+        isDuplicate: existingKeysMap.has(transaction.key),
+        existingTransactionId: existingKeysMap.get(transaction.key) || null,
+    }));
+};
+
+/**
  * Create many transactions
  * @param userId - The user ID
  * @param transactions - Array of transaction data
@@ -194,4 +223,5 @@ export const transactionServices = {
     getFilterOptions,
     getByKeys,
     createMany,
+    checkForDuplicates,
 };

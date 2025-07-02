@@ -1,4 +1,5 @@
-import { transactionServiceSchemas } from '@/features/transaction/schemas';
+import { transactionServiceSchemas, TTransactionParseSchema } from '@/features/transaction/schemas';
+import { transactionServices } from '@/features/transaction/server/services';
 import { DuckDBSingleton } from '@/lib/duckdb';
 import { TQuerySelectUserRecordById } from '@/lib/schemas';
 import { importFileServices } from './import-file';
@@ -49,47 +50,42 @@ export const parseTransactionFile = async ({ id, userId }: TQuerySelectUserRecor
         },
     });
 
-    // TODO: Add duplicate check
+    if (transformResult.errors.length > 0) {
+        console.warn(`Found ${transformResult.errors.length} validation errors during parsing`);
+    }
+
+    if (transformResult.validatedData.length === 0) {
+        return {
+            transactions: [],
+            totalCount: 0,
+            newCount: 0,
+            duplicateCount: 0,
+        };
+    }
+
+    const parsedTransactions = transformResult.validatedData;
+
+    const transactionsWithDuplicateStatus = await transactionServices.checkForDuplicates({
+        userId,
+        transactions: parsedTransactions,
+    });
+
+    const newCount = transactionsWithDuplicateStatus.filter(
+        (
+            t: TTransactionParseSchema & {
+                isDuplicate: boolean;
+                existingTransactionId: string | null;
+            }
+        ) => !t.isDuplicate
+    ).length;
+    const duplicateCount = transactionsWithDuplicateStatus.length - newCount;
 
     return {
-        transactions: transformResult.data,
-        totalCount: transformResult.data.length,
-        newCount: transformResult.data.length,
-        duplicateCount: 0,
+        transactions: transactionsWithDuplicateStatus,
+        totalCount: parsedTransactions.length,
+        newCount,
+        duplicateCount,
     };
-
-    // return transformResult.data;
-
-    // // console.log(transformResult);
-
-    // if (transformResult.errors.length > 0) {
-    //     console.warn(`Found ${transformResult.errors.length} validation errors during parsing`);
-    // }
-
-    // const parsedTransactions = transformResult.validatedData;
-
-    // const existingTransactions = await transactionServices.getByKeys({
-    //     userId,
-    //     keys: parsedTransactions.map((t) => t.key),
-    // });
-
-    // const existingKeys = new Set(existingTransactions.map((t) => t.key));
-
-    // const transactionsWithDuplicateStatus = parsedTransactions.map((transaction) => ({
-    //     ...transaction,
-    //     isDuplicate: existingKeys.has(transaction.key),
-    //     existingTransactionId: existingTransactions.find((t) => t.key === transaction.key)?.id,
-    // }));
-
-    // const newCount = transactionsWithDuplicateStatus.filter((t) => !t.isDuplicate).length;
-    // const duplicateCount = transactionsWithDuplicateStatus.filter((t) => t.isDuplicate).length;
-
-    // return {
-    //     transactions: transactionsWithDuplicateStatus,
-    //     totalCount: parsedTransactions.length,
-    //     newCount,
-    //     duplicateCount,
-    // };
 };
 
 export const importTransactions = async (

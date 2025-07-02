@@ -256,11 +256,12 @@ export const getFilterOptions = async (userId: string) =>
                 .from(transaction)
                 .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
-            // Get user's labels
-            const labels = await db.query.label.findMany({
-                where: and(eq(label.userId, userId), eq(label.isActive, true)),
-                orderBy: [label.name],
-            });
+            // Get unique labels
+            const labels = await db
+                .selectDistinct({ id: label.id, name: label.name, color: label.color })
+                .from(transaction)
+                .innerJoin(label, eq(transaction.labelId, label.id))
+                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
             // Get user's tags
             const tags = await db.query.tag.findMany({
@@ -402,6 +403,32 @@ export const getByKeys = async ({ userId, keys }: { userId: string; keys: string
         },
     });
 
+/**
+ * Get existing transactions based on a list of keys for duplicate checking.
+ * @param userId - The user ID.
+ * @param keys - An array of unique keys to check.
+ * @returns A list of transactions that already exist.
+ */
+export const getDuplicates = async ({ userId, keys }: { userId: string; keys: string[] }) =>
+    withDbQuery({
+        operation: 'Get duplicate transactions by keys',
+        queryFn: async () => {
+            if (keys.length === 0) {
+                return [];
+            }
+
+            const result = await db
+                .select({
+                    id: transaction.id,
+                    key: transaction.key,
+                })
+                .from(transaction)
+                .where(and(eq(transaction.userId, userId), inArray(transaction.key, keys)));
+
+            return result;
+        },
+    });
+
 export const transactionQueries = {
     getAll,
     getById,
@@ -411,4 +438,5 @@ export const transactionQueries = {
     createMany,
     update,
     remove,
+    getDuplicates,
 };
