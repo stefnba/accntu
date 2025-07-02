@@ -5,6 +5,7 @@ This document defines the architectural patterns that ALL features must follow i
 ## Feature Structure Patterns
 
 ### Simple Features (Single Entity)
+
 ```
 src/features/[feature-name]/
 ├── server/
@@ -20,6 +21,7 @@ src/features/[feature-name]/
 ```
 
 ### Complex Features (Multiple Related Entities)
+
 ```
 src/features/[feature-name]/
 ├── server/
@@ -53,6 +55,7 @@ src/features/[feature-name]/
 ## Database Schema Requirements
 
 ### Standard Schema Pattern
+
 ```typescript
 export const [featureName] = pgTable('[feature_name]', {
   id: text()
@@ -62,11 +65,11 @@ export const [featureName] = pgTable('[feature_name]', {
 
   // Feature-specific fields
   name: text().notNull(),
-  
+
   // Standard audit fields
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  
+
   // Soft delete pattern
   isActive: boolean().notNull().default(true),
 });
@@ -78,6 +81,7 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 ```
 
 ### Critical Schema Rules
+
 - **CUID2 primary keys** with `createId()`
 - **Always include `userId`** for user-scoped data
 - **Soft deletes** with `isActive` boolean
@@ -89,6 +93,7 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 ## API Endpoint Patterns
 
 ### Hono Framework Rules
+
 ```typescript
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
@@ -97,18 +102,27 @@ import { Hono } from 'hono';
 
 // CRITICAL: Always use method chaining for Hono instantiation
 const app = new Hono()
-  .get('/', async (c) => withRoute(c, async () => {
-    const user = getUser(c);
-    return await queries.getAll({ userId: user.id });
-  }))
-  .post('/', zValidator('json', CreateSchema), async (c) => withRoute(c, async () => {
-    const user = getUser(c);
-    const data = c.req.valid('json');
-    return await queries.create({ data: { ...data, userId: user.id } });
-  }, 201));
+    .get('/', async (c) =>
+        withRoute(c, async () => {
+            const user = getUser(c);
+            return await queries.getAll({ userId: user.id });
+        })
+    )
+    .post('/', zValidator('json', CreateSchema), async (c) =>
+        withRoute(
+            c,
+            async () => {
+                const user = getUser(c);
+                const data = c.req.valid('json');
+                return await queries.create({ data: { ...data, userId: user.id } });
+            },
+            201
+        )
+    );
 ```
 
 ### Endpoint Requirements
+
 - **Hono framework exclusively** (never Next.js server actions)
 - **Method chaining** for app instantiation
 - **`withRoute` wrapper** for error handling
@@ -119,21 +133,23 @@ const app = new Hono()
 ## Database Query Patterns
 
 ### Query Layer (Pure Data Access)
+
 ```typescript
 export const getAll = async ({ userId }: { userId: string }) =>
-  withDbQuery({
-    operation: 'get entities by user ID',
-    queryFn: async () => {
-      return await db.query.entityTable.findMany({
-        where: and(eq(entityTable.userId, userId), eq(entityTable.isActive, true)),
-        with: { relatedEntity: true },
-        orderBy: (entities, { desc }) => [desc(entities.createdAt)],
-      });
-    },
-  });
+    withDbQuery({
+        operation: 'get entities by user ID',
+        queryFn: async () => {
+            return await db.query.entityTable.findMany({
+                where: and(eq(entityTable.userId, userId), eq(entityTable.isActive, true)),
+                with: { relatedEntity: true },
+                orderBy: (entities, { desc }) => [desc(entities.createdAt)],
+            });
+        },
+    });
 ```
 
 ### Query Requirements
+
 - **`withDbQuery` wrapper** for all database operations
 - **Include operation descriptions** for debugging
 - **Always filter by `userId`** for security
@@ -143,26 +159,22 @@ export const getAll = async ({ userId }: { userId: string }) =>
 ## Client API Patterns
 
 ### API Client Structure
+
 ```typescript
 export const FEATURE_QUERY_KEYS = {
-  ITEMS: 'items',
-  ITEM: 'item',
+    ITEMS: 'items',
+    ITEM: 'item',
 } as const;
 
 export const useFeatureEndpoints = {
-  getAll: () => createQuery(
-    apiClient.feature.items.$get,
-    FEATURE_QUERY_KEYS.ITEMS
-  ),
-  
-  create: () => createMutation(
-    apiClient.feature.items.$post,
-    FEATURE_QUERY_KEYS.ITEMS
-  ),
+    getAll: () => createQuery(apiClient.feature.items.$get, FEATURE_QUERY_KEYS.ITEMS),
+
+    create: () => createMutation(apiClient.feature.items.$post, FEATURE_QUERY_KEYS.ITEMS),
 };
 ```
 
 ### Client API Requirements
+
 - **`apiClient` from `@/lib/api`** with `createQuery`/`createMutation`
 - **Query keys** for consistent caching
 - **JSDoc comments** for all functions
@@ -185,11 +197,13 @@ export const useFeatureEndpoints = {
 ## Decision Criteria
 
 **Use Simple Structure when:**
+
 - Single main entity
 - Under 200 lines per file
 - Basic CRUD operations
 
 **Use Complex Structure when:**
+
 - 2+ related entities
 - 200+ lines per file
 - Complex business logic

@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, decimal, index, pgEnum, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -21,8 +21,12 @@ export const bucket = pgTable('bucket', {
     title: text('title').notNull(),
     type: bucketTypeEnum('type').notNull().default('other'),
     status: bucketStatusEnum('status').notNull().default('open'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    // Tracking fields for bucket statistics
+    paidAmount: decimal('paid_amount', { precision: 12, scale: 2 }).notNull().default('0.00'),
+    currency: text('currency').notNull().default('USD'),
+    // Computed fields (totalTransactions, totalAmount, openAmount) will be calculated in queries
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     isActive: boolean('is_active').notNull().default(true),
 });
 
@@ -44,13 +48,45 @@ export const bucketParticipant = pgTable('bucket_participant', {
     isActive: boolean('is_active').notNull().default(true),
 });
 
+export const transactionBucket = pgTable(
+    'transaction_bucket',
+    {
+        id: text()
+            .primaryKey()
+            .$defaultFn(() => createId()),
+        transactionId: text()
+            .notNull()
+            .references(() => transaction.id, { onDelete: 'cascade' }),
+        bucketId: text()
+            .notNull()
+            .references(() => bucket.id, { onDelete: 'cascade' }),
+        // Split share - for future use when we might support splitting
+        splitShare: decimal({ precision: 12, scale: 2 }).default('100.00'),
+        // SplitWise integration status
+        isRecorded: boolean().notNull().default(false),
+        // Optional notes for this transaction-bucket relationship
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+        isActive: boolean().notNull().default(true),
+    },
+    (table) => ({
+        // Unique constraint: one transaction can only be in one bucket
+        transactionUniqueIdx: uniqueIndex('transaction_bucket_transaction_unique').on(table.transactionId, table.isActive),
+        // Index for bucket queries
+        bucketIdx: index('transaction_bucket_bucket_idx').on(table.bucketId),
+        // Index for transaction queries  
+        transactionIdx: index('transaction_bucket_transaction_idx').on(table.transactionId),
+    })
+);
+
 export const bucketsRelations = relations(bucket, ({ many, one }) => ({
     user: one(user, {
         fields: [bucket.userId],
         references: [user.id],
     }),
     participants: many(bucketParticipant),
-    transactions: many(transaction),
+    transactionBuckets: many(transactionBucket),
 }));
 
 export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }) => ({
@@ -64,10 +100,23 @@ export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }
     }),
 }));
 
+export const transactionBucketRelations = relations(transactionBucket, ({ one }) => ({
+    transaction: one(transaction, {
+        fields: [transactionBucket.transactionId],
+        references: [transaction.id],
+    }),
+    bucket: one(bucket, {
+        fields: [transactionBucket.bucketId],
+        references: [bucket.id],
+    }),
+}));
+
 // Zod schemas
 export const selectBucketSchema = createSelectSchema(bucket);
 export const insertBucketSchema = createInsertSchema(bucket, {
     title: z.string().min(1, 'Title is required'),
+    paidAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format'),
+    currency: z.string().length(3, 'Currency must be 3 characters'),
 }).omit({
     id: true,
     userId: true,
@@ -87,3 +136,17 @@ export const insertBucketParticipantSchema = createInsertSchema(bucketParticipan
     isActive: true,
 });
 export const updateBucketParticipantSchema = insertBucketParticipantSchema.partial();
+
+export const selectTransactionBucketSchema = createSelectSchema(transactionBucket);
+export const insertTransactionBucketSchema = createInsertSchema(transactionBucket, {
+    transactionId: z.string().min(1, 'Transaction ID is required'),
+    bucketId: z.string().min(1, 'Bucket ID is required'),
+    splitShare: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid split share format').optional(),
+    notes: z.string().optional(),
+}).omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    isActive: true,
+});
+export const updateTransactionBucketSchema = insertTransactionBucketSchema.partial();

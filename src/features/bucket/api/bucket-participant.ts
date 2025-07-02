@@ -9,7 +9,7 @@ export const useBucketParticipantEndpoints = {
      * Get all participants for a bucket
      */
     getAllForBucket: createQuery(
-        apiClient.buckets[':bucketId'].participants.$get,
+        apiClient.buckets.participants[':bucketId'].$get,
         BUCKET_PARTICIPANT_QUERY_KEYS.ALL
     ),
 
@@ -17,7 +17,7 @@ export const useBucketParticipantEndpoints = {
      * Create a new participant
      */
     create: createMutation(
-        apiClient.buckets[':bucketId'].participants.$post,
+        apiClient.buckets.participants[':bucketId'].$post,
         BUCKET_PARTICIPANT_QUERY_KEYS.ALL
     ),
 

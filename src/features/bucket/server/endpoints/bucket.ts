@@ -1,5 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
+import { z } from 'zod';
 
 import { insertBucketSchema, updateBucketSchema } from '@/features/bucket/server/db/schemas';
 import { bucketServices } from '@/features/bucket/server/services/bucket';
@@ -60,6 +61,70 @@ const app = new Hono()
                 success: true,
             };
         })
+    )
+    // Transaction assignment endpoints
+    .post(
+        '/:id/transactions/:transactionId',
+        zValidator('param', z.object({
+            id: z.string(),
+            transactionId: z.string(),
+        })),
+        zValidator('json', z.object({
+            notes: z.string().optional(),
+        }).optional()),
+        (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { id: bucketId, transactionId } = c.req.valid('param');
+                const body = c.req.valid('json');
+                
+                const assignment = await bucketServices.assignTransactionToBucket({
+                    transactionId,
+                    bucketId,
+                    userId: user.id,
+                    notes: body?.notes,
+                });
+                
+                return assignment;
+            }, 201)
+    )
+    .delete(
+        '/:id/transactions/:transactionId',
+        zValidator('param', z.object({
+            id: z.string(),
+            transactionId: z.string(),
+        })),
+        (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { transactionId } = c.req.valid('param');
+                
+                await bucketServices.removeTransactionFromBucket(transactionId);
+                
+                return { success: true };
+            })
+    )
+    // Update paid amount for SplitWise integration
+    .patch(
+        '/:id/paid-amount',
+        zValidator('param', endpointSelectSchema),
+        zValidator('json', z.object({
+            paidAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format'),
+        })),
+        (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { id } = c.req.valid('param');
+                const { paidAmount } = c.req.valid('json');
+                
+                const updatedBucket = await bucketServices.updateBucketPaidAmount({
+                    bucketId: id,
+                    userId: user.id,
+                    paidAmount,
+                });
+                
+                return updatedBucket;
+            })
     );
 
 export const bucketController = app;

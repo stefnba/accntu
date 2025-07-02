@@ -104,6 +104,11 @@ const getAll = async ({
                         },
                     },
                     importFile: true,
+                    transactionBucket: {
+                        with: {
+                            bucket: true,
+                        },
+                    },
                 },
                 orderBy: [desc(transaction.date), desc(transaction.createdAt)],
                 limit: pagination?.pageSize,
@@ -141,6 +146,7 @@ const getAll = async ({
                 label: transaction.labelId
                     ? labelsData.find((l) => l.id === transaction.labelId)
                     : null,
+                bucket: transaction.transactionBucket?.bucket || null,
             }));
 
             return {
@@ -183,6 +189,11 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
                         },
                     },
                     importFile: true,
+                    transactionBucket: {
+                        with: {
+                            bucket: true,
+                        },
+                    },
                 },
             });
 
@@ -209,6 +220,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
                 ...result,
                 tags: transactionTagsData.map((tt) => tt.tag),
                 label: labelData,
+                bucket: result.transactionBucket?.bucket || null,
             };
         },
     });
@@ -246,7 +258,7 @@ export const getFilterOptions = async (userId: string) =>
 
             // Get user's labels
             const labels = await db.query.label.findMany({
-                where: and(eq(label.userId, userId), eq(label.isDeleted, false)),
+                where: and(eq(label.userId, userId), eq(label.isActive, true)),
                 orderBy: [label.name],
             });
 

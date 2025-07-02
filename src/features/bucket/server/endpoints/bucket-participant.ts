@@ -11,14 +11,14 @@ import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 
 const app = new Hono()
-    .get('/:bucketId/participants', (c) =>
+    .get('/:bucketId', (c) =>
         withRoute(c, async () => {
             const { bucketId } = c.req.param();
             const participants = await bucketParticipantServices.getAllForBucket(bucketId);
             return c.json(participants);
         })
     )
-    .post('/:bucketId/participants', zValidator('json', insertBucketParticipantSchema), (c) =>
+    .post('/:bucketId', zValidator('json', insertBucketParticipantSchema), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const data = c.req.valid('json');
@@ -27,7 +27,7 @@ const app = new Hono()
         })
     )
     .put(
-        '/participants/:id',
+        '/:id',
         zValidator('param', endpointSelectSchema),
         zValidator('json', updateBucketParticipantSchema),
         (c) =>
@@ -43,7 +43,7 @@ const app = new Hono()
                 return c.json(updatedParticipant);
             })
     )
-    .delete('/participants/:id', zValidator('param', endpointSelectSchema), (c) =>
+    .delete('/:id', zValidator('param', endpointSelectSchema), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');

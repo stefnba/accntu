@@ -1,6 +1,7 @@
 import { bucketQuerySchemas } from '@/features/bucket/schemas';
 import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
 import { bucketParticipantQueries } from '@/features/bucket/server/db/queries/bucket-participant';
+import { transactionBucketServices } from '@/features/bucket/server/services/transaction-bucket';
 import { TQueryUpdateUserRecord } from '@/lib/schemas';
 
 const createBucket = async (
@@ -53,10 +54,60 @@ const deleteBucket = async (bucketId: string, userId: string) => {
     return deletedBucket;
 };
 
+const updateBucketPaidAmount = async ({
+    bucketId,
+    userId,
+    paidAmount,
+}: {
+    bucketId: string;
+    userId: string;
+    paidAmount: string;
+}) => {
+    const updatedBucket = await bucketQueries.updatePaidAmount({
+        id: bucketId,
+        userId,
+        paidAmount,
+    });
+
+    if (!updatedBucket) {
+        throw new Error('Failed to update bucket paid amount');
+    }
+
+    return updatedBucket;
+};
+
+const assignTransactionToBucket = async ({
+    transactionId,
+    bucketId,
+    userId,
+    notes,
+}: {
+    transactionId: string;
+    bucketId: string;
+    userId: string;
+    notes?: string;
+}) => {
+    return await transactionBucketServices.assignTransactionToBucket({
+        transactionId,
+        bucketId,
+        userId,
+        notes,
+    });
+};
+
+const removeTransactionFromBucket = async (transactionId: string) => {
+    return await transactionBucketServices.removeTransactionFromBucket(transactionId);
+};
+
 export const bucketServices = {
     createBucket,
     updateBucket,
     deleteBucket,
+    updateBucketPaidAmount,
+    assignTransactionToBucket,
+    removeTransactionFromBucket,
     getBucketById: bucketQueries.getById,
     getAllBuckets: bucketQueries.getAll,
+    // Transaction-bucket operations
+    transactionBucket: transactionBucketServices,
 };
