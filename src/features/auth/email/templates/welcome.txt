@@ -1,0 +1,26 @@
+{{ __('auth.welcome.subject') }} - {{ appName }}
+
+{{ __('auth.welcome.title', { name: user.name }) }}
+
+{{ __('auth.welcome.message') }}
+
+{{ __('auth.welcome.getting_started') }}
+{% if gettingStartedSteps %}
+{% for step in gettingStartedSteps %}
+• {{ step }}
+{% endfor %}
+{% else %}
+• {{ __('auth.welcome.step1') }}
+• {{ __('auth.welcome.step2') }}
+• {{ __('auth.welcome.step3') }}
+{% endif %}
+
+{{ __('auth.welcome.cta') }}: [Link to get started]
+
+{% if supportEmail %}
+{{ __('auth.welcome.support', { email: supportEmail }) }}
+{% endif %}
+
+---
+{{ __('common.footer.company') }}
+{% if supportEmail %}{{ __('common.actions.contact_support') }}: {{ supportEmail }}{% endif %}

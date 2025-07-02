@@ -1,0 +1,254 @@
+/* Email CSS Styles for Accntu */
+
+/* Reset styles */
+body, table, td, th, p, div, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  font-size: 100%;
+  vertical-align: baseline;
+  background: transparent;
+}
+
+/* Base email styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: #333333;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Email container */
+.email-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styles */
+.email-header {
+  background-color: #1f2937;
+  padding: 20px;
+  text-align: center;
+}
+
+.logo {
+  max-height: 40px;
+  width: auto;
+}
+
+/* Content area */
+.email-content {
+  padding: 30px;
+}
+
+/* Typography */
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 16px;
+}
+
+/* OTP specific styles */
+.otp-container {
+  text-align: center;
+}
+
+.otp-code {
+  display: inline-block;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px 30px;
+  margin: 30px 0;
+  color: #1f2937;
+  font-family: 'Courier New', monospace;
+}
+
+.expires {
+  font-size: 14px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Button styles */
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  line-height: 1;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Transaction styles */
+.transaction-card {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.transaction-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.transaction-amount.negative {
+  color: #dc2626;
+}
+
+.transaction-details {
+  margin-top: 12px;
+}
+
+.transaction-details .label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.transaction-details .value {
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+/* Footer styles */
+.email-footer {
+  background-color: #f9fafb;
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+}
+
+.email-footer p {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.email-footer a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.email-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Support section */
+.support {
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 16px;
+  margin: 20px 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.support p {
+  margin-bottom: 0;
+  color: #92400e;
+}
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-sm { font-size: 14px; }
+.text-xs { font-size: 12px; }
+
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+.my-4 { margin-top: 16px; margin-bottom: 16px; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-normal { font-weight: 400; }
+
+/* Mobile responsive */
+@media only screen and (max-width: 600px) {
+  .email-container {
+    margin: 10px;
+    border-radius: 4px;
+  }
+  
+  .email-content {
+    padding: 20px;
+  }
+  
+  h1 {
+    font-size: 20px;
+  }
+  
+  .otp-code {
+    font-size: 28px;
+    letter-spacing: 4px;
+    padding: 16px 24px;
+  }
+  
+  .btn {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

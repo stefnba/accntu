@@ -1,0 +1,20 @@
+{{ __('transaction.notification.subject', { amount: transaction.amount }) }} - {{ appName }}
+
+{{ __('transaction.notification.title') }}
+
+{{ __('transaction.notification.message', { name: user.name }) }}
+
+{% if transaction.amount >= 0 %}+{% endif %}${{ "%.2f"|format(transaction.amount|abs) }}
+
+{{ __('transaction.notification.description_label') }} {{ transaction.description }}
+{{ __('transaction.notification.date_label') }} {{ transaction.date }}
+{% if transaction.category %}{{ __('transaction.notification.category_label') }} {{ transaction.category }}{% endif %}
+{% if transaction.account %}{{ __('transaction.notification.account_label') }} {{ transaction.account }}{% endif %}
+
+{{ __('transaction.notification.view_details') }}: [Link to view details]
+
+{{ __('transaction.notification.manage_notifications') }}: [Link to manage notifications]
+
+---
+{{ __('common.footer.company') }}
+{% if supportEmail %}{{ __('common.actions.contact_support') }}: {{ supportEmail }}{% endif %}

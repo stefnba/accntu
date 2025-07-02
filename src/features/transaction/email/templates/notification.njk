@@ -1,0 +1,50 @@
+{% extends "src/server/lib/email/templates/layouts/base.njk" %}
+
+{% block title %}{{ __('transaction.notification.subject', { amount: transaction.amount }) }} - {{ appName }}{% endblock %}
+
+{% block content %}
+<div>
+  <h1>{{ __('transaction.notification.title') }}</h1>
+  
+  <p>{{ __('transaction.notification.message', { name: user.name }) }}</p>
+  
+  <div class="transaction-card">
+    <div class="transaction-amount {% if transaction.amount < 0 %}negative{% endif %}">
+      {% if transaction.amount >= 0 %}+{% endif %}${{ "%.2f"|format(transaction.amount|abs) }}
+    </div>
+    
+    <div class="transaction-details">
+      <p>
+        <span class="label">{{ __('transaction.notification.description_label') }}</span>
+        <span class="value">{{ transaction.description }}</span>
+      </p>
+      <p>
+        <span class="label">{{ __('transaction.notification.date_label') }}</span>
+        <span class="value">{{ transaction.date }}</span>
+      </p>
+      {% if transaction.category %}
+      <p>
+        <span class="label">{{ __('transaction.notification.category_label') }}</span>
+        <span class="value">{{ transaction.category }}</span>
+      </p>
+      {% endif %}
+      {% if transaction.account %}
+      <p>
+        <span class="label">{{ __('transaction.notification.account_label') }}</span>
+        <span class="value">{{ transaction.account }}</span>
+      </p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="text-center mt-4">
+    <a href="#" class="btn btn-primary">{{ __('transaction.notification.view_details') }}</a>
+  </div>
+  
+  <div class="text-center mt-4">
+    <p class="text-sm">
+      <a href="#" style="color: #6b7280; text-decoration: none;">{{ __('transaction.notification.manage_notifications') }}</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

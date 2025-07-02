@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="{{ locale or 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>{% block title %}{{ appName }}{% endblock %}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  </style>
+  <![endif]-->
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <header class="email-header">
+      {% if logoUrl %}
+        <img src="{{ logoUrl }}" alt="{{ appName }}" class="logo">
+      {% else %}
+        <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">{{ appName }}</h2>
+      {% endif %}
+    </header>
+    
+    <!-- Main Content -->
+    <main class="email-content">
+      {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="email-footer">
+      <p>{{ __('common.footer.company') }}</p>
+      <p>
+        <a href="#" style="color: #3b82f6; text-decoration: none;">{{ __('common.actions.manage') }}</a> {{ __('common.footer.unsubscribe') }}
+      </p>
+      {% if supportEmail %}
+        <p>
+          {{ __('common.actions.contact_support') }}: 
+          <a href="mailto:{{ supportEmail }}" style="color: #3b82f6; text-decoration: none;">{{ supportEmail }}</a>
+        </p>
+      {% endif %}
+    </footer>
+  </div>
+</body>
+</html>

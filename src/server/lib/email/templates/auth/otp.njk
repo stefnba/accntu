@@ -1,0 +1,25 @@
+{% extends "layouts/base.njk" %}
+
+{% block title %}{{ __('auth.otp.subject') }} - {{ appName }}{% endblock %}
+
+{% block content %}
+<div class="otp-container">
+  <h1>{{ __('auth.otp.title') }}</h1>
+  
+  <p>{{ __('auth.otp.message', { name: user.name }) }}</p>
+  
+  <div class="otp-code">
+    {{ otpCode }}
+  </div>
+  
+  <p class="expires">
+    {{ __('auth.otp.expires', { minutes: expirationMinutes or 10 }) }}
+  </p>
+  
+  {% if supportEmail %}
+    <div class="support">
+      <p>{{ __('auth.otp.support', { email: supportEmail }) }}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

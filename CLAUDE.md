@@ -40,3 +40,15 @@ This project uses a modular documentation system. Relevant guidance is automatic
 ## Documentation Discovery
 
 When working on any file, check parent directories for relevant CLAUDE.md files that provide context-specific guidance.
+
+## Recent Implementation Notes
+
+### Bucket Feature Enhancement (2025-07-02)
+- ✅ **Enhanced bucket-transaction relationship**: Implemented junction table `transactionBucket` with one-transaction-per-bucket constraint
+- ✅ **Real-time bucket statistics**: Added computed fields (totalTransactions, totalAmount, openAmount) via SQL subqueries
+- ✅ **SplitWise integration**: Added `isRecorded` flag and `paidAmount` tracking for external sync
+- ✅ **Complete API coverage**: Full REST endpoints for transaction-bucket operations at `/buckets/transaction/`
+- ✅ **Fixed API client patterns**: Corrected `createQuery` and `createMutation` usage (no function wrappers needed)
+
+### Migration Required
+⚠️ **Breaking Change**: Direct `bucketId` foreign key removed from transaction table. Migration scripts needed for existing data.
