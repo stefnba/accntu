@@ -24,6 +24,7 @@ import {
     emailEnvSchema,
     serverBaseEnvSchema,
 } from '@/lib/env/schemas';
+import { constructZodErrorMessages } from '@/lib/utils/zod';
 import { z } from 'zod';
 
 // Full server-side schema
@@ -177,6 +178,33 @@ export function getEnv(context: 'client' | 'server' = 'server'): ServerEnv | Cli
     }
 
     return validatedServerEnv;
+}
+
+/**
+ * Validates environment variables at server startup and throws a descriptive error
+ * if validation fails. This is intended to be called from the instrumentation hook.
+ */
+export function validateEnvOnServerStartup() {
+    console.log('🔍 Validating environment variables at server startup...');
+
+    const envValidationResult = serverEnvSchema.safeParse(process.env);
+
+    if (!envValidationResult.success) {
+        const errorMessages = constructZodErrorMessages(envValidationResult.error.issues);
+
+        console.error('\n❌ Environment validation failed at server startup:');
+        console.error(`${errorMessages.join('\n')}\n`);
+        console.error('💡 Please check your .env file and ensure all required variables are set.');
+        console.error('📋 See .env.example for a complete template.\n');
+
+        throw new Error(
+            `Environment validation failed:\n${errorMessages.join(
+                '\n'
+            )}\n\nServer cannot start with invalid configuration.`
+        );
+    }
+
+    console.log('✅ Environment variables validated successfully at startup');
 }
 
 // =================================================================

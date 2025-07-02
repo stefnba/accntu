@@ -1,7 +1,8 @@
+import { getEnv } from '@/lib/env';
+import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schemas';
-import { getEnv } from '@/lib/env';
 
 // Get database connection string from validated environment variables
 const { DATABASE_URL } = getEnv();
@@ -18,3 +19,21 @@ export const db = drizzle(client, { schema, casing: 'snake_case' });
 
 // Export schema
 export { schema };
+
+/**
+ * Checks the database connection by executing a simple query.
+ * Throws an error if the connection fails. This is intended to be called at server startup.
+ */
+export async function checkDbConnection() {
+    try {
+        console.log('🔍 Checking database connection...');
+        await db.execute(sql`SELECT 1`);
+        console.log('✅ Database connection successful.');
+    } catch (error) {
+        console.error('❌ Database connection failed:');
+        // console.error(error);
+        throw new Error(
+            '\n❌❌❌ Could not connect to the database.Please check your connection string and ensure the database server is running.'
+        );
+    }
+}
