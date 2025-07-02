@@ -21,9 +21,8 @@ const options = {
     onAPIError: {
         throw: true,
         errorURL: '/error',
-        onError: (error, ctx) => {
-            // Custom error handling
-            console.error('Auth error:', ctx.baseURL, error);
+        onError: (_error, _ctx) => {
+            // Custom error handling - log to monitoring service in production
         },
     },
     advanced: {
@@ -92,8 +91,8 @@ const options = {
         admin(),
         openAPI(),
         passkey({
-            rpID: 'localhost:3000',
-            rpName: 'Test Passkey',
+            rpID: process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3000',
+            rpName: process.env.NEXT_PUBLIC_APP_NAME || 'Accntu',
             schema: {
                 passkey: {
                     modelName: 'authPasskey',
@@ -128,18 +127,9 @@ const options = {
                     });
 
                     if (!result.success) {
-                        console.error('Failed to send OTP email:', result.error);
                         throw new Error('Failed to send OTP email');
                     }
-
-                    console.log(`${result.messageId} sent successfully via ${result.provider}:`, {
-                        email,
-                        type,
-                        templateId: 'auth.otp',
-                        messageId: result.id,
-                    });
                 } catch (error) {
-                    console.error('Error sending OTP email:', error);
 
                     if (error instanceof APIError) {
                         throw error;
@@ -161,7 +151,6 @@ export const auth = betterAuth({
     plugins: [
         ...(options.plugins ?? []),
         customSession(async ({ user, session }) => {
-            console.log('custom session called');
 
             // remove ban-related fields
             const { banReason, banExpires, banned, ...restUser } = user;

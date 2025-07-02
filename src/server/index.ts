@@ -2,8 +2,9 @@ import { authMiddleware } from '@/lib/auth';
 import { AuthContext } from '@/lib/auth/server/types';
 import { appEndpoints } from '@/server/endpoints';
 import { handleGlobalError } from '@/server/lib/error/handler';
+import { corsMiddleware } from '@/server/lib/middleware/cors';
+import { securityHeaders } from '@/server/lib/middleware/security';
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { timing } from 'hono/timing';
 
@@ -19,8 +20,8 @@ const app = new Hono<{ Variables: AuthContext }>().basePath('/api');
 
 app.use('*', timing());
 app.use('*', logger());
-app.use('*', timing());
-app.use('*', cors());
+app.use('*', securityHeaders);
+app.use('*', corsMiddleware);
 app.use('*', authMiddleware);
 
 // Use Hono's onError hook with our error handler
