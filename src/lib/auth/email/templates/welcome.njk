@@ -1,13 +1,13 @@
-{% extends "src/server/lib/email/templates/layouts/base.njk" %}
+{% extends "server/lib/email/templates/layouts/base.njk" %}
 
 {% block title %}{{ __('auth.welcome.subject') }} - {{ appName }}{% endblock %}
 
 {% block content %}
 <div class="text-center">
   <h1>{{ __('auth.welcome.title', { name: user.name }) }}</h1>
-  
+
   <p>{{ __('auth.welcome.message') }}</p>
-  
+
   <div style="margin: 30px 0;">
     <h3>{{ __('auth.welcome.getting_started') }}</h3>
     <div style="text-align: left; max-width: 400px; margin: 0 auto;">
@@ -22,9 +22,9 @@
       {% endif %}
     </div>
   </div>
-  
+
   <a href="#" class="btn btn-primary">{{ __('auth.welcome.cta') }}</a>
-  
+
   {% if supportEmail %}
     <div class="support mt-4">
       <p>{{ __('auth.welcome.support', { email: supportEmail }) }}</p>

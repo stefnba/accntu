@@ -11,7 +11,7 @@ import { z } from 'zod';
  */
 export const welcomeEmailConfig = createEmailConfig({
     id: 'auth-welcome',
-    templatePath: 'features/auth/email/templates/welcome.njk',
+    templatePath: './templates/welcome.njk',
     subjectKey: 'auth.welcome.subject',
     category: 'authentication',
     description: 'Email sent to new users upon registration.',
@@ -33,7 +33,7 @@ export const welcomeEmailConfig = createEmailConfig({
  */
 export const otpEmailConfig = createEmailConfig({
     id: 'auth-otp',
-    templatePath: 'features/auth/email/templates/otp.njk',
+    templatePath: 'lib/auth/email/templates/otp.njk',
     subjectKey: 'auth.otp.subject',
     category: 'authentication',
     description: 'Email for sending one-time password for login verification.',

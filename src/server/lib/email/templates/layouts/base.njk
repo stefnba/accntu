@@ -22,21 +22,23 @@
         <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">{{ appName }}</h2>
       {% endif %}
     </header>
-    
+
     <!-- Main Content -->
     <main class="email-content">
       {% block content %}{% endblock %}
     </main>
-    
+
     <!-- Footer -->
     <footer class="email-footer">
       <p>{{ __('common.footer.company') }}</p>
+      {% if category !== 'authentication' %}
       <p>
         <a href="#" style="color: #3b82f6; text-decoration: none;">{{ __('common.actions.manage') }}</a> {{ __('common.footer.unsubscribe') }}
       </p>
+      {% endif %}
       {% if supportEmail %}
         <p>
-          {{ __('common.actions.contact_support') }}: 
+          {{ __('common.actions.contact_support') }}:
           <a href="mailto:{{ supportEmail }}" style="color: #3b82f6; text-decoration: none;">{{ supportEmail }}</a>
         </p>
       {% endif %}

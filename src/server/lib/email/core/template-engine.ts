@@ -64,17 +64,21 @@ export class EmailTemplateEngine {
             locales: this.config.locales,
             defaultLocale: 'en',
             objectNotation: true,
+            staticCatalog: translations,
         });
-
-        for (const [locale, catalog] of Object.entries(translations)) {
-            this.i18n.setLocale(locale, catalog);
-        }
     }
 
     private loadTranslations(): Record<string, any> {
-        const pattern = path.join(this.config.rootDir, 'features', '**', 'locales', '*.json');
+        const featuresPattern = path.join(
+            this.config.rootDir,
+            'features',
+            '**',
+            'locales',
+            '*.json'
+        );
+        const libPattern = path.join(this.config.rootDir, 'lib', '**', 'locales', '*.json');
         const centralPattern = path.join(this.config.localesDir, '*.json');
-        const paths = glob.sync([pattern, centralPattern]);
+        const paths = glob.sync([featuresPattern, libPattern, centralPattern]);
         const allTranslations: Record<string, any> = {};
 
         for (const p of paths) {
@@ -120,6 +124,7 @@ export class EmailTemplateEngine {
 
         const templateData = {
             ...data,
+            category: template.category,
             // Provide the __ i18n function to the template context
             __: this.i18n.__.bind(this.i18n),
         };
