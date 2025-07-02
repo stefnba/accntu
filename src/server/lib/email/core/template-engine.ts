@@ -1,3 +1,4 @@
+import { glob } from 'glob';
 import { I18n } from 'i18n';
 import juice from 'juice';
 import fs from 'node:fs';
@@ -55,12 +56,45 @@ export class EmailTemplateEngine {
             noCache: !this.config.enableCache,
         });
 
+        const translations = this.loadTranslations();
+
         // Configure i18n for localization
-        this.i18n = new I18n({
+        this.i18n = new I18n();
+        this.i18n.configure({
             locales: this.config.locales,
-            directory: this.config.localesDir,
             defaultLocale: 'en',
+            objectNotation: true,
         });
+
+        for (const [locale, catalog] of Object.entries(translations)) {
+            this.i18n.setLocale(locale, catalog);
+        }
+    }
+
+    private loadTranslations(): Record<string, any> {
+        const pattern = path.join(this.config.rootDir, 'features', '**', 'locales', '*.json');
+        const centralPattern = path.join(this.config.localesDir, '*.json');
+        const paths = glob.sync([pattern, centralPattern]);
+        const allTranslations: Record<string, any> = {};
+
+        for (const p of paths) {
+            try {
+                const fileContent = fs.readFileSync(p, 'utf-8');
+                const translations = JSON.parse(fileContent);
+                const locale = path.basename(p, '.json');
+
+                if (!allTranslations[locale]) {
+                    allTranslations[locale] = {};
+                }
+
+                // Deep merge
+                // A simple merge should be sufficient as keys are namespaced by feature
+                Object.assign(allTranslations[locale], translations);
+            } catch (error) {
+                console.error(`Failed to load or parse translation file at ${p}`, error);
+            }
+        }
+        return allTranslations;
     }
 
     /**

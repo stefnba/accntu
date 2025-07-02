@@ -22,7 +22,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 import { emailService } from './index';
 
-// 1. Create a sender for the test email
+// 1. Create a sender on the fly using the new API
 const sendTestEmail = emailService.createSenderFromConfig({
     id: 'test-email',
     templatePath: 'server/lib/email/example-template.njk',

@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { createProvider } from '../providers/factory';
 import { createEmailConfig, CreateEmailConfigParams, EmailConfig } from './email-config';
+import type { EmailServiceConfig } from './email-service-config';
 import { EmailTemplateEngine } from './template-engine';
 import {
     EmailAddress,
     EmailProvider,
     EmailSendResponse,
-    EmailSupportedProvider,
     SendEmailOptions,
     TemplateData,
     TemplateEmailPayload,
@@ -14,41 +14,11 @@ import {
 } from './types';
 
 /**
- * Configuration for the EmailService.
- */
-export interface EmailServiceConfig {
-    provider: EmailSupportedProvider;
-    resend?: { apiKey: string };
-    smtp?: {
-        host: string;
-        port: number;
-        username?: string;
-        password?: string;
-        secure?: boolean;
-    };
-    mailtrap?: {
-        host: string;
-        port: number;
-        username: string;
-        password: string;
-    };
-    from: EmailAddress;
-    replyTo?: EmailAddress;
-    templateEngine?: {
-        rootDir?: string;
-        locales?: string[];
-        localesDir?: string;
-        cssPath?: string;
-        enableCache?: boolean;
-    };
-}
-
-/**
- * A type-safe email service for sending templated emails.
+ * A powerful, type-safe email service for sending templated emails.
  *
- * This service uses a class-based, decentralized approach to templates.
+ * This service uses a factory-based, decentralized approach to templates.
  * Instead of registering templates, you create a sender function for each
- * template class, ensuring full type-safety from end to end.
+ * template config, ensuring full type-safety from end to end.
  *
  * @example
  * ```typescript
@@ -83,21 +53,20 @@ export class EmailService {
         this.config = config;
         this.templateEngine = new EmailTemplateEngine(config.templateEngine);
 
+        // This type-safe switch ensures the correct config is passed to the provider
         switch (config.provider) {
             case 'resend':
-                if (!config.resend) throw new Error('Resend config not provided');
-                this.provider = createProvider('resend', config.resend);
+                this.provider = createProvider('resend', config.config);
                 break;
             case 'smtp':
-                if (!config.smtp) throw new Error('SMTP config not provided');
-                this.provider = createProvider('smtp', config.smtp);
+                this.provider = createProvider('smtp', config.config);
                 break;
             case 'mailtrap':
-                if (!config.mailtrap) throw new Error('Mailtrap config not provided');
-                this.provider = createProvider('mailtrap', config.mailtrap);
+                this.provider = createProvider('mailtrap', config.config);
                 break;
             default:
-                throw new Error(`Unsupported email provider: ${config.provider}`);
+                // This case should be unreachable due to TypeScript's type checking
+                throw new Error('Unsupported email provider specified in constructor');
         }
     }
 
@@ -117,9 +86,9 @@ export class EmailService {
     }
 
     /**
-     * Creates a strongly-typed sender function for a given EmailConfig object.
+     * Creates an email config and a strongly-typed sender function in one step.
      *
-     * @param config The `EmailConfig` object for the email to be sent.
+     * @param config The email configuration parameters.
      * @returns An async function that accepts a `to` address and the template `data`.
      */
     createSenderFromConfig<T extends z.ZodType>(

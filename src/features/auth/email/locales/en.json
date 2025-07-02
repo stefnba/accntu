@@ -1,0 +1,31 @@
+{
+    "auth": {
+        "otp": {
+            "subject": "Your Accntu verification code",
+            "title": "Verify your email address",
+            "message": "Hi {{name}}, please use the verification code below to complete your login:",
+            "expires": "This code will expire in {{minutes}} minutes.",
+            "support": "If you didn't request this code, please contact us at {{email}}."
+        },
+        "welcome": {
+            "subject": "Welcome to Accntu!",
+            "title": "Welcome to Accntu, {{name}}!",
+            "message": "We're excited to have you on board. Accntu helps you manage your personal finances with ease.",
+            "getting_started": "Here are some things you can do to get started:",
+            "step1": "Complete your profile setup",
+            "step2": "Connect your bank accounts",
+            "step3": "Start tracking your expenses",
+            "cta": "Get Started",
+            "support": "If you have any questions, we're here to help at {{email}}."
+        },
+        "password_reset": {
+            "subject": "Reset your Accntu password",
+            "title": "Reset your password",
+            "message": "Hi {{name}}, you requested to reset your password. Click the button below to create a new password:",
+            "cta": "Reset Password",
+            "expires": "This link will expire in {{hours}} hour(s).",
+            "ignore": "If you didn't request this, you can safely ignore this email.",
+            "support": "If you're having trouble, contact us at {{email}}."
+        }
+    }
+}

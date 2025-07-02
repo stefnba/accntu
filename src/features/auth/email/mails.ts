@@ -1,4 +1,4 @@
-import { createEmailConfig } from '@/server/lib/email';
+import { createEmailConfig } from '@/server/lib/email/core';
 import { z } from 'zod';
 
 /**
@@ -12,7 +12,7 @@ import { z } from 'zod';
 export const welcomeEmailConfig = createEmailConfig({
     id: 'auth-welcome',
     templatePath: 'features/auth/email/templates/welcome.njk',
-    subjectKey: 'auth.welcome_subject',
+    subjectKey: 'auth.welcome.subject',
     category: 'authentication',
     description: 'Email sent to new users upon registration.',
     schema: z.object({
@@ -34,7 +34,7 @@ export const welcomeEmailConfig = createEmailConfig({
 export const otpEmailConfig = createEmailConfig({
     id: 'auth-otp',
     templatePath: 'features/auth/email/templates/otp.njk',
-    subjectKey: 'auth.otp_subject',
+    subjectKey: 'auth.otp.subject',
     category: 'authentication',
     description: 'Email for sending one-time password for login verification.',
     schema: z.object({

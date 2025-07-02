@@ -55,19 +55,6 @@ export function createEmailConfig<T extends z.ZodType>(
 }
 
 /**
- * Infers the data type from an EmailConfig class.
- *
- * @example
- * ```typescript
- * type WelcomeEmailData = TemplateData<typeof WelcomeEmail>;
- * // Result: { user: { name: string } }
- * ```
- */
-export type TemplateData<T extends new (...args: any[]) => EmailConfig> = z.infer<
-    InstanceType<T>['schema']
->;
-
-/**
  * Represents the data required to send a templated email.
  * @template T - The template-specific data type.
  */
