@@ -23,6 +23,8 @@ export interface EmailSendResponse {
     success: boolean;
     id: string;
     error?: string;
+    provider: EmailSupportedProvider;
+    messageId: string;
 }
 
 /** Generic options for sending an email, adaptable to any provider. */

@@ -6,7 +6,7 @@ import { admin, customSession, emailOTP, openAPI } from 'better-auth/plugins';
 import { passkey } from 'better-auth/plugins/passkey';
 
 import { SESSION_COOKIE, SESSION_DATA } from '@/lib/auth/constants';
-import { emailService } from '@/server/lib/email';
+import { sendOtpEmail } from '@/lib/auth/email';
 
 // relative import required because of better-auth bug
 import { db } from '../../server/db';
@@ -107,20 +107,19 @@ const options = {
             otpLength: 8,
             sendVerificationOnSignUp: true,
             disableSignUp: false,
-            async sendVerificationOTP({ email, type, otp }, ctx) {
+            async sendVerificationOTP({ email, type, otp }) {
                 try {
-                    const user = { 
-                        email, 
-                        name: email.split('@')[0] // fallback to email prefix if name not available
+                    const user = {
+                        email,
+                        name: email.split('@')[0], // fallback to email prefix if name not available
                     };
 
                     // Use the new decentralized template system
-                    const result = await emailService.sendEmail('auth.otp', {
+                    const result = await sendOtpEmail({
                         to: { email: user.email, name: user.name },
                         data: {
                             user,
                             otpCode: otp,
-                            expirationMinutes: 10,
                         },
                         tags: {
                             type: 'authentication',
@@ -130,14 +129,10 @@ const options = {
 
                     if (!result.success) {
                         console.error('Failed to send OTP email:', result.error);
-                        throw new APIError({
-                            code: 'EMAIL_SEND_FAILED',
-                            message: 'Failed to send verification email',
-                            status: 500,
-                        });
+                        throw new Error('Failed to send OTP email');
                     }
 
-                    console.log(`OTP email sent successfully via ${emailService.getProviderName()}:`, {
+                    console.log(`${result.messageId} sent successfully via ${result.provider}:`, {
                         email,
                         type,
                         templateId: 'auth.otp',
@@ -145,16 +140,12 @@ const options = {
                     });
                 } catch (error) {
                     console.error('Error sending OTP email:', error);
-                    
+
                     if (error instanceof APIError) {
                         throw error;
                     }
-                    
-                    throw new APIError({
-                        code: 'EMAIL_SEND_FAILED',
-                        message: 'Failed to send verification email',
-                        status: 500,
-                    });
+
+                    throw new Error('Failed to send OTP email');
                 }
             },
         }),

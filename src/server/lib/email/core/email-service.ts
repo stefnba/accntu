@@ -104,23 +104,23 @@ export class EmailService {
      * This is the core method for sending templated emails. It's recommended
      * to use the `createSender` factory for a better developer experience.
      *
-     * @param template An instance of an EmailConfig.
+     * @param config An instance of an EmailConfig.
      * @param payload The email data, including recipient and template data.
      * @returns A promise that resolves with the response from the email provider.
      */
     async send<TData extends TemplateRenderData>(
-        template: EmailConfig<any>,
+        config: EmailConfig<any>,
         payload: TemplateEmailPayload<TData>
     ): Promise<EmailSendResponse> {
         try {
             // 1. Validate data against the template's schema
-            const validatedData = template.schema.parse(payload.data);
+            const validatedData = config.schema.parse(payload.data);
 
             // 2. Determine the locale
-            const locale = payload.locale || template.defaultLocale;
+            const locale = payload.locale || config.defaultLocale;
 
             // 3. Render the HTML and text content
-            const content = await this.templateEngine.render(template, validatedData, locale);
+            const content = await this.templateEngine.render(config, validatedData, locale);
 
             // 4. Construct the final email options
             const emailOptions: SendEmailOptions = {
@@ -131,8 +131,8 @@ export class EmailService {
                 html: content.html,
                 text: content.text,
                 tags: {
-                    template: template.id,
-                    category: template.category,
+                    config: config.id,
+                    category: config.category,
                     locale,
                     ...payload.tags,
                 },
@@ -145,14 +145,16 @@ export class EmailService {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
             // TODO: Add error logging
-            console.error(`Failed to send email template '${template.id}': ${errorMessage}`, {
-                templateId: template.id,
+            console.error(`Failed to send email '${config.id}': ${errorMessage}`, {
+                templateId: config.id,
                 error,
             });
             return {
                 id: '',
                 success: false,
-                error: `Failed to send templated email '${template.id}': ${errorMessage}`,
+                error: `Failed to send templated email '${config.id}': ${errorMessage}`,
+                provider: this.config.provider,
+                messageId: config.id,
             };
         }
     }
