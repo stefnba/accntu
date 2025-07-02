@@ -1,5 +1,6 @@
+import { z } from 'zod';
 import { createProvider } from '../providers/factory';
-import { EmailConfig } from './email-config';
+import { createEmailConfig, CreateEmailConfigParams, EmailConfig } from './email-config';
 import { EmailTemplateEngine } from './template-engine';
 import {
     EmailAddress,
@@ -43,7 +44,7 @@ export interface EmailServiceConfig {
 }
 
 /**
- * A powerful, type-safe email service for sending templated emails.
+ * A type-safe email service for sending templated emails.
  *
  * This service uses a class-based, decentralized approach to templates.
  * Instead of registering templates, you create a sender function for each
@@ -106,13 +107,26 @@ export class EmailService {
      * This is the recommended way to send emails. It provides full type-safety
      * for the `data` payload based on the template's schema.
      *
-     * @param template The `EmailConfig` object for the email to be sent.
+     * @param config The `EmailConfig` object for the email to be sent.
      * @returns An async function that accepts a `to` address and the template `data`.
      */
     createSender<T extends EmailConfig>(
-        template: T
+        config: T
     ): (payload: TemplateEmailPayload<TemplateData<T>>) => Promise<EmailSendResponse> {
-        return (payload: TemplateEmailPayload<TemplateData<T>>) => this.send(template, payload);
+        return (payload: TemplateEmailPayload<TemplateData<T>>) => this.send(config, payload);
+    }
+
+    /**
+     * Creates a strongly-typed sender function for a given EmailConfig object.
+     *
+     * @param config The `EmailConfig` object for the email to be sent.
+     * @returns An async function that accepts a `to` address and the template `data`.
+     */
+    createSenderFromConfig<T extends z.ZodType>(
+        config: CreateEmailConfigParams<T>
+    ): (payload: TemplateEmailPayload<TemplateData<EmailConfig<T>>>) => Promise<EmailSendResponse> {
+        const emailConfig = createEmailConfig(config);
+        return this.createSender(emailConfig);
     }
 
     /**
@@ -160,6 +174,8 @@ export class EmailService {
             return await this.provider.sendEmail(emailOptions);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            // TODO: Add error logging
             console.error(`Failed to send email template '${template.id}': ${errorMessage}`, {
                 templateId: template.id,
                 error,

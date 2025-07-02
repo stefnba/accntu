@@ -32,7 +32,7 @@ export type EmailConfig<T extends z.ZodType = z.ZodType> = {
     readonly description: string;
 };
 
-type CreateEmailConfigParams<T extends z.ZodType> = Omit<EmailConfig<T>, 'defaultLocale'> & {
+export type CreateEmailConfigParams<T extends z.ZodType> = Omit<EmailConfig<T>, 'defaultLocale'> & {
     defaultLocale?: string;
 };
 

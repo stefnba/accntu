@@ -20,27 +20,21 @@
  */
 import 'dotenv/config';
 import { z } from 'zod';
-import { EmailConfig } from './core/config';
 import { emailService } from './index';
 
-// 1. Define a simple test email configuration
-class TestEmail extends EmailConfig {
-    id = 'test-email';
-    templatePath = 'server/lib/email/example-template.njk';
-    subjectKey = '👋 Hello from Accntu!';
-    category = 'other';
-    description = 'A simple email for testing the service setup.';
-
-    // A simple schema for the test data
-    schema = z.object({
+// 1. Create a sender for the test email
+const sendTestEmail = emailService.createSenderFromConfig({
+    id: 'test-email',
+    templatePath: 'server/lib/email/example-template.njk',
+    subjectKey: '👋 Hello from Accntu!',
+    category: 'other',
+    description: 'A simple email for testing the service setup.',
+    schema: z.object({
         message: z.string(),
-    });
-}
+    }),
+});
 
-// 2. Create a sender for the test email
-const sendTestEmail = emailService.createSender(TestEmail);
-
-// 3. The main function to send the email
+// 2. The main function to send the email
 async function runTest() {
     console.log('🚀 Sending test email via Mailtrap...');
 
@@ -66,7 +60,7 @@ async function runTest() {
     }
 }
 
-// 4. Create a dummy template file for the test
+// 3. Create a dummy template file for the test
 // In a real app, this would be in a feature directory.
 import fs from 'fs';
 import path from 'path';
