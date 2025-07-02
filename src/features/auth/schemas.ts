@@ -1,0 +1,18 @@
+import { z } from 'zod';
+
+export const loginEmailFormSchema = z.object({
+    email: z.string().email('Invalid email address.'),
+});
+
+export type TLoginEmailFormSchema = z.infer<typeof loginEmailFormSchema>;
+
+export const signupEmailFormSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters.'),
+    email: z.string().email('Invalid email address.'),
+});
+export type TSignupEmailFormSchema = z.infer<typeof signupEmailFormSchema>;
+
+export const emailOTPVerifySchema = z.object({
+    code: z.string().min(6, 'Code must be 6 digits.'),
+});
+export type TEmailOTPVerifySchema = z.infer<typeof emailOTPVerifySchema>;

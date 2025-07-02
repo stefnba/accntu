@@ -63,8 +63,10 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     // Login form
     const LoginFormComponent = () => {
         const form = useForm({
-            schema: loginEmailFormSchema.schema,
-            defaultValues: loginEmailFormSchema.defaultValues,
+            schema: loginEmailFormSchema,
+            defaultValues: {
+                email: '',
+            },
             onSubmit: (data) => {
                 try {
                     signIn.emailOTP.initiate(data.email);
@@ -95,8 +97,11 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     // Sign up form
     const SignUpFormComponent = () => {
         const form = useForm({
-            schema: signupEmailFormSchema.schema,
-            defaultValues: signupEmailFormSchema.defaultValues,
+            schema: signupEmailFormSchema,
+            defaultValues: {
+                name: '',
+                email: '',
+            },
             onSubmit: async (data) => {
                 try {
                     // Implement sign up logic here
