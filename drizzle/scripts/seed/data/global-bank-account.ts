@@ -33,32 +33,44 @@ export const globalBankAccountSeedData: Pick<
         type: 'credit_card',
         name: 'DKB Miles & More Current Account',
         description: 'DKB Miles & More current account statements',
-        transformQuery: `SELECT
-    key, -- Deterministic ID generated from raw data
-    -- Convert DD.MM.YYYY to YYYY-MM-DD
-    strftime("Authorised on", '%Y-%m-%d') AS date,
-    CAST(
-        regexp_replace(
-            regexp_replace("Amount", '\\.|−', ''), -- remove thousands-seps and minus sign
-            ',',
-            '.' -- turn decimal-comma into dot
-        ) AS DOUBLE
-    ) AS account_amount,
-    CASE
-        WHEN CAST(
-            regexp_replace(
-                regexp_replace("Amount", '\\.', ''), -- remove thousands-seps
-                ',',
-                '.' -- turn decimal-comma into dot
-            ) AS DOUBLE
-        ) < 0 THEN 'debit'
-        ELSE 'credit'
-    END AS type,
-    Currency AS account_currency,
-    -- Clean up description
-    TRIM("Description") AS description
+        transformQuery: `WITH
+    base AS (
+        SELECT
+            key, -- Deterministic ID generated from raw data
+            -- Convert DD.MM.YYYY to YYYY-MM-DD
+            strftime("Authorised on", '%Y-%m-%d') AS date,
+            CAST(
+                regexp_replace(
+                    regexp_replace("Amount", '[.−]', ''), -- remove thousands-seps and minus sign
+                    ',',
+                    '.' -- turn decimal-comma into dot
+                ) AS DOUBLE
+            ) AS accountAmount,
+            Currency AS accountCurrency,
+            -- Clean up description
+            TRIM("Description") AS title,
+            'EUR' AS spendingCurrency,
+            CAST(
+                regexp_replace(
+                    regexp_replace("Amount in foreign currency", '[.−]', ''), -- remove thousands-seps and minus sign
+                    ',',
+                    '.' -- turn decimal-comma into dot
+                ) AS DOUBLE
+            ) AS spendingAmount,
+        FROM
+            {{data}}
+    )
+SELECT
+    key,
+    date,
+    accountAmount,
+    accountCurrency,
+    CASE WHEN accountAmount < 0 THEN 'debit' ELSE 'credit' END AS type,
+    title,
+    spendingCurrency,
+    CASE WHEN spendingAmount IS NULL THEN accountAmount ELSE spendingAmount END AS spendingAmount
 FROM
-    data`,
+    base`,
         transformConfig: {
             type: 'csv',
             encoding: 'utf-8',
