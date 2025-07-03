@@ -47,7 +47,7 @@ export const appRoutes: TAppRoute[] = [
         icon: Icons.Dashboard,
     },
     {
-        path: '/transaction',
+        path: '/transactions',
         label: 'Transactions',
         icon: Icons.Database,
     },
