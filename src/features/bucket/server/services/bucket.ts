@@ -1,7 +1,7 @@
 import { bucketQuerySchemas } from '@/features/bucket/schemas';
 import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
 import { bucketParticipantQueries } from '@/features/bucket/server/db/queries/bucket-participant';
-import { transactionBucketServices } from '@/features/bucket/server/services/transaction-bucket';
+import { bucketTransactionServices } from '@/features/bucket/server/services/transaction-bucket';
 import { TQueryUpdateUserRecord } from '@/lib/schemas';
 
 const createBucket = async (
@@ -87,7 +87,7 @@ const assignTransactionToBucket = async ({
     userId: string;
     notes?: string;
 }) => {
-    return await transactionBucketServices.assignTransactionToBucket({
+    return await bucketTransactionServices.assignTransactionToBucket({
         transactionId,
         bucketId,
         userId,
@@ -96,7 +96,7 @@ const assignTransactionToBucket = async ({
 };
 
 const removeTransactionFromBucket = async (transactionId: string) => {
-    return await transactionBucketServices.removeTransactionFromBucket(transactionId);
+    return await bucketTransactionServices.removeTransactionFromBucket(transactionId);
 };
 
 export const bucketServices = {
@@ -109,5 +109,5 @@ export const bucketServices = {
     getBucketById: bucketQueries.getById,
     getAllBuckets: bucketQueries.getAll,
     // Transaction-bucket operations
-    transactionBucket: transactionBucketServices,
+    bucketTransaction: bucketTransactionServices,
 };

@@ -2,7 +2,7 @@ import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { transactionBucketServices } from '@/features/bucket/server/services/transaction-bucket';
+import { bucketTransactionServices } from '@/features/bucket/server/services/transaction-bucket';
 import { getUser } from '@/lib/auth/server';
 import { withRoute } from '@/server/lib/handler';
 
@@ -34,7 +34,7 @@ const app = new Hono()
             withRoute(c, async () => {
                 const { transactionId } = c.req.valid('param');
                 const assignment =
-                    await transactionBucketServices.getTransactionBucket(transactionId);
+                    await bucketTransactionServices.getbucketTransaction(transactionId);
 
                 if (!assignment) {
                     return c.json({ error: 'Transaction is not assigned to any bucket' }, 404);
@@ -61,7 +61,7 @@ const app = new Hono()
                     const { transactionId } = c.req.valid('param');
                     const { bucketId, notes } = c.req.valid('json');
 
-                    const assignment = await transactionBucketServices.assignTransactionToBucket({
+                    const assignment = await bucketTransactionServices.assignTransactionToBucket({
                         transactionId,
                         bucketId,
                         userId: user.id,
@@ -89,7 +89,7 @@ const app = new Hono()
                 const { transactionId } = c.req.valid('param');
                 const { newBucketId, notes } = c.req.valid('json');
 
-                const assignment = await transactionBucketServices.reassignTransactionToBucket({
+                const assignment = await bucketTransactionServices.reassignTransactionToBucket({
                     transactionId,
                     newBucketId,
                     userId: user.id,
@@ -112,7 +112,7 @@ const app = new Hono()
             withRoute(c, async () => {
                 const { transactionId } = c.req.valid('param');
 
-                await transactionBucketServices.removeTransactionFromBucket(transactionId);
+                await bucketTransactionServices.removeTransactionFromBucket(transactionId);
 
                 return { success: true };
             })
@@ -133,7 +133,7 @@ const app = new Hono()
                 const { transactionId } = c.req.valid('param');
                 const { isRecorded } = c.req.valid('json');
 
-                const updatedAssignment = await transactionBucketServices.updateSplitWiseStatus({
+                const updatedAssignment = await bucketTransactionServices.updateSplitWiseStatus({
                     transactionId,
                     isRecorded,
                     userId: user.id,
@@ -155,10 +155,10 @@ const app = new Hono()
             withRoute(c, async () => {
                 const { bucketId } = c.req.valid('param');
                 const transactions =
-                    await transactionBucketServices.getBucketTransactions(bucketId);
+                    await bucketTransactionServices.getBucketTransactions(bucketId);
 
                 return transactions;
             })
     );
 
-export const transactionBucketController = app;
+export const bucketTransactionController = app;

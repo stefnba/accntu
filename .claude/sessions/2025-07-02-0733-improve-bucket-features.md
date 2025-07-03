@@ -21,7 +21,7 @@ This session focuses on enhancing the bucket functionality by implementing a pro
 
 ### Phase 1: Database Schema Design
 
-1. **Create junction table `transaction_bucket`**:
+1. **Create junction table `bucket_transaction`**:
 
     - `id` (CUID2 primary key)
     - `transactionId` (foreign key to transaction table, UNIQUE constraint for one-bucket-per-transaction)
@@ -84,7 +84,7 @@ This session focuses on enhancing the bucket functionality by implementing a pro
     - Handle transaction assignment/removal via junction service
     - Add methods to update paidAmount for SplitWise integration
 
-3. **New junction service (TransactionBucket)**:
+3. **New junction service (bucketTransaction)**:
     - **Assign transaction to bucket**: Validate transaction isn't already assigned
     - **Reassign transaction**: Remove old assignment, create new one
     - **Remove assignment**: Soft delete junction record
@@ -168,21 +168,21 @@ This session focuses on enhancing the bucket functionality by implementing a pro
 
 - [x] **Phase 1: Database Schema Design** ✅
 
-    - Created `transactionBucket` junction table with unique constraint on `transactionId`
+    - Created `bucketTransaction` junction table with unique constraint on `transactionId`
     - Added bucket tracking fields (`paidAmount`, `currency`)
     - Updated relations to use junction table
     - Added Zod schemas for validation
 
 - [x] **Phase 2: Database Queries Refactoring** ✅
 
-    - Created `transactionBucketQueries` with CRUD operations
+    - Created `bucketTransactionQueries` with CRUD operations
     - Updated bucket queries to include computed fields (totalTransactions, totalAmount, openAmount)
     - Updated transaction queries to include bucket relationship via junction table
     - Added `updatePaidAmount` method for SplitWise integration
 
 - [x] **Phase 3: Service Layer Updates** ✅
 
-    - Created `transactionBucketServices` with validation logic
+    - Created `bucketTransactionServices` with validation logic
     - Implemented one-transaction-per-bucket constraint validation
     - Added methods for assigning/reassigning/removing transactions
     - Updated bucket services to handle new functionality
@@ -196,7 +196,7 @@ This session focuses on enhancing the bucket functionality by implementing a pro
     - Integrated all endpoints into the main bucket feature router
 
 - [x] **Phase 5: Client-Side Updates** ✅
-    - Created `transactionBucketEndpoints` API hooks for junction operations
+    - Created `bucketTransactionEndpoints` API hooks for junction operations
     - Updated bucket API hooks with new transaction assignment methods
     - Added proper TypeScript schemas and validation
     - Exported all new functionality through feature index files
@@ -205,7 +205,7 @@ This session focuses on enhancing the bucket functionality by implementing a pro
 
 ### Core Features Implemented:
 
-1. **Junction Table**: `transactionBucket` with proper constraints and indexes
+1. **Junction Table**: `bucketTransaction` with proper constraints and indexes
 2. **Bucket Tracking**: Real-time computed fields for transaction count and amounts
 3. **Validation Logic**: Ensures one transaction per bucket with proper error handling
 4. **Query Updates**: All queries updated to use junction table relationships
@@ -262,47 +262,54 @@ This session focuses on enhancing the bucket functionality by implementing a pro
 **Session Duration**: 2025-07-02 07:33 - 2025-07-02 ~08:30 (approximately 1 hour)
 
 ### Git Summary
+
 - **Total Files Changed**: 22 files (17 modified, 5 new files added)
 - **Modified Files**:
-  - `.claude/commands/session-start.md`, `CLAUDE.md`, `src/features/CLAUDE.md`
-  - `src/features/bucket/api/bucket-participant.ts`, `src/features/bucket/api/bucket.ts`, `src/features/bucket/api/index.ts`
-  - `src/features/bucket/schemas/index.ts`, `src/features/bucket/server/db/queries/bucket.ts`, `src/features/bucket/server/db/schemas.ts`
-  - `src/features/bucket/server/endpoints/bucket-participant.ts`, `src/features/bucket/server/endpoints/bucket.ts`, `src/features/bucket/server/endpoints/index.ts`
-  - `src/features/bucket/server/services/bucket.ts`, `src/features/transaction/server/db/queries.ts`, `src/features/transaction/server/db/schema.ts`
-  - `src/server/db/schemas/index.ts`, `src/server/endpoints.ts`
+
+    - `.claude/commands/session-start.md`, `CLAUDE.md`, `src/features/CLAUDE.md`
+    - `src/features/bucket/api/bucket-participant.ts`, `src/features/bucket/api/bucket.ts`, `src/features/bucket/api/index.ts`
+    - `src/features/bucket/schemas/index.ts`, `src/features/bucket/server/db/queries/bucket.ts`, `src/features/bucket/server/db/schemas.ts`
+    - `src/features/bucket/server/endpoints/bucket-participant.ts`, `src/features/bucket/server/endpoints/bucket.ts`, `src/features/bucket/server/endpoints/index.ts`
+    - `src/features/bucket/server/services/bucket.ts`, `src/features/transaction/server/db/queries.ts`, `src/features/transaction/server/db/schema.ts`
+    - `src/server/db/schemas/index.ts`, `src/server/endpoints.ts`
 
 - **New Files Added**:
-  - `.claude/sessions/2025-07-02-0733-improve-bucket-features.md`
-  - `src/features/bucket/api/transaction-bucket.ts`
-  - `src/features/bucket/schemas/transaction-bucket.ts`
-  - `src/features/bucket/server/db/queries/transaction-bucket.ts`
-  - `src/features/bucket/server/endpoints/transaction-bucket.ts`
-  - `src/features/bucket/server/services/transaction-bucket.ts`
+
+    - `.claude/sessions/2025-07-02-0733-improve-bucket-features.md`
+    - `src/features/bucket/api/transaction-bucket.ts`
+    - `src/features/bucket/schemas/transaction-bucket.ts`
+    - `src/features/bucket/server/db/queries/transaction-bucket.ts`
+    - `src/features/bucket/server/endpoints/transaction-bucket.ts`
+    - `src/features/bucket/server/services/transaction-bucket.ts`
 
 - **Commits Made**: 0 (development session only, no commits created)
 - **Final Git Status**: 17 modified files, 5 new untracked files
 
 ### Todo Summary
+
 - **Total Tasks**: 5 tasks completed (100%)
 - **All Completed**: Fix deprecation warnings, update endpoints, create junction APIs, update client hooks, test implementation
 
 ### Key Accomplishments
 
-1. **Complete Database Schema Redesign**: Created `transactionBucket` junction table with unique constraints, bucket tracking fields, and one-transaction-per-bucket enforcement
+1. **Complete Database Schema Redesign**: Created `bucketTransaction` junction table with unique constraints, bucket tracking fields, and one-transaction-per-bucket enforcement
 2. **Enhanced Bucket Statistics**: Real-time computed fields with SQL subqueries for totalTransactions, totalAmount, openAmount
 3. **Comprehensive API Implementation**: Updated all queries, created new service layer with validation, added complete REST API endpoints
 4. **Business Logic Enforcement**: One transaction per bucket validation, user ownership verification, SplitWise integration
 
 ### Problems Encountered and Solutions
+
 - **pgTable Deprecation**: Fixed modern Drizzle syntax
-- **API Client Pattern**: Corrected `createQuery` usage and endpoint paths  
+- **API Client Pattern**: Corrected `createQuery` usage and endpoint paths
 - **Schema Exports**: Added bucket schemas to index exports
 - **Field Naming**: Fixed `isDeleted` vs `isActive` field usage
 
 ### Breaking Changes
+
 ⚠️ **Database Schema Changes** (Migration Required): Removed direct `bucketId` from transactions, added junction table
 
 ### Next Steps for Production
+
 1. Create migration scripts for existing data
 2. Update UI components to use new endpoints
 3. Add comprehensive test coverage

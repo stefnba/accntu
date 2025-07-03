@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 
-import { 
-    insertTransactionBucketSchema, 
-    transactionBucket, 
-    updateTransactionBucketSchema 
+import {
+    bucketTransaction,
+    insertbucketTransactionSchema,
+    updatebucketTransactionSchema,
 } from '@/features/bucket/server/db/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
@@ -13,16 +13,16 @@ const getByTransactionId = (transactionId: string) =>
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(transactionBucket)
+                .from(bucketTransaction)
                 .where(
                     and(
-                        eq(transactionBucket.transactionId, transactionId), 
-                        eq(transactionBucket.isActive, true)
+                        eq(bucketTransaction.transactionId, transactionId),
+                        eq(bucketTransaction.isActive, true)
                     )
                 );
             return result || null;
         },
-        operation: 'get_transaction_bucket_by_transaction_id',
+        operation: 'get_bucket_transaction_by_transaction_id',
         allowNull: true,
     });
 
@@ -31,97 +31,88 @@ const getByBucketId = (bucketId: string) =>
         queryFn: () =>
             db
                 .select()
-                .from(transactionBucket)
+                .from(bucketTransaction)
                 .where(
                     and(
-                        eq(transactionBucket.bucketId, bucketId), 
-                        eq(transactionBucket.isActive, true)
+                        eq(bucketTransaction.bucketId, bucketId),
+                        eq(bucketTransaction.isActive, true)
                     )
                 ),
-        operation: 'get_transaction_buckets_by_bucket_id',
+        operation: 'get_bucket_transactions_by_bucket_id',
     });
 
-const create = (data: typeof insertTransactionBucketSchema._type) =>
+const create = (data: typeof insertbucketTransactionSchema._type) =>
     withDbQuery({
         queryFn: async () => {
-            const [result] = await db
-                .insert(transactionBucket)
-                .values(data)
-                .returning();
+            const [result] = await db.insert(bucketTransaction).values(data).returning();
             return result;
         },
-        operation: 'create_transaction_bucket',
+        operation: 'create_bucket_transaction',
     });
 
-const update = ({
-    id,
-    data,
-}: {
-    id: string;
-    data: typeof updateTransactionBucketSchema._type;
-}) =>
+const update = ({ id, data }: { id: string; data: typeof updatebucketTransactionSchema._type }) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBucket)
+                .update(bucketTransaction)
                 .set({ ...data, updatedAt: new Date() })
-                .where(eq(transactionBucket.id, id))
+                .where(eq(bucketTransaction.id, id))
                 .returning();
             return result;
         },
-        operation: 'update_transaction_bucket',
+        operation: 'update_bucket_transaction',
     });
 
 const remove = (id: string) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBucket)
+                .update(bucketTransaction)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(eq(transactionBucket.id, id))
+                .where(eq(bucketTransaction.id, id))
                 .returning();
 
             return result;
         },
-        operation: 'remove_transaction_bucket',
+        operation: 'remove_bucket_transaction',
     });
 
 const removeByTransactionId = (transactionId: string) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBucket)
+                .update(bucketTransaction)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(
                     and(
-                        eq(transactionBucket.transactionId, transactionId),
-                        eq(transactionBucket.isActive, true)
+                        eq(bucketTransaction.transactionId, transactionId),
+                        eq(bucketTransaction.isActive, true)
                     )
                 )
                 .returning();
 
             return result;
         },
-        operation: 'remove_transaction_bucket_by_transaction_id',
+        operation: 'remove_bucket_transaction_by_transaction_id',
     });
 
 const updateSplitWiseStatus = (id: string, isRecorded: boolean) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBucket)
-                .set({ 
-                    isRecorded, 
-                    updatedAt: new Date() 
+                .update(bucketTransaction)
+                .set({
+                    isRecorded,
+                    updatedAt: new Date(),
                 })
-                .where(eq(transactionBucket.id, id))
+                .where(eq(bucketTransaction.id, id))
                 .returning();
             return result;
         },
-        operation: 'update_transaction_bucket_splitwise_status',
+        operation: 'update_bucket_transaction_splitwise_status',
     });
 
-export const transactionBucketQueries = {
+export const bucketTransactionQueries = {
     getByTransactionId,
     getByBucketId,
     create,

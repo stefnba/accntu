@@ -1,15 +1,15 @@
-import { z } from 'zod';
-import { 
-    insertTransactionBucketSchema, 
-    selectTransactionBucketSchema, 
-    updateTransactionBucketSchema 
+import {
+    insertbucketTransactionSchema,
+    selectbucketTransactionSchema,
+    updatebucketTransactionSchema,
 } from '@/features/bucket/server/db/schemas';
+import { z } from 'zod';
 
 // Query schemas for internal use
-export const transactionBucketQuerySchemas = {
-    select: selectTransactionBucketSchema,
-    insert: insertTransactionBucketSchema,
-    update: updateTransactionBucketSchema,
+export const bucketTransactionQuerySchemas = {
+    select: selectbucketTransactionSchema,
+    insert: insertbucketTransactionSchema,
+    update: updatebucketTransactionSchema,
 } as const;
 
 // API schemas for client-server communication
@@ -32,10 +32,10 @@ export const updatePaidAmountSchema = z.object({
 });
 
 // Type exports
-export type TTransactionBucketQuery = {
-    select: z.infer<typeof selectTransactionBucketSchema>;
-    insert: z.infer<typeof insertTransactionBucketSchema>;
-    update: z.infer<typeof updateTransactionBucketSchema>;
+export type TbucketTransactionQuery = {
+    select: z.infer<typeof selectbucketTransactionSchema>;
+    insert: z.infer<typeof insertbucketTransactionSchema>;
+    update: z.infer<typeof updatebucketTransactionSchema>;
 };
 
 export type TAssignTransactionToBucket = z.infer<typeof assignTransactionToBucketSchema>;

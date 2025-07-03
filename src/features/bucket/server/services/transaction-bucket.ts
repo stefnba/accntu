@@ -1,6 +1,5 @@
-import { insertTransactionBucketSchema } from '@/features/bucket/server/db/schemas';
-import { transactionBucketQueries } from '@/features/bucket/server/db/queries/transaction-bucket';
 import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
+import { bucketTransactionQueries } from '@/features/bucket/server/db/queries/transaction-bucket';
 
 const assignTransactionToBucket = async ({
     transactionId,
@@ -14,10 +13,12 @@ const assignTransactionToBucket = async ({
     notes?: string;
 }) => {
     // Check if transaction is already assigned to a bucket
-    const existingAssignment = await transactionBucketQueries.getByTransactionId(transactionId);
-    
+    const existingAssignment = await bucketTransactionQueries.getByTransactionId(transactionId);
+
     if (existingAssignment) {
-        throw new Error(`Transaction is already assigned to bucket: ${existingAssignment.bucketId}`);
+        throw new Error(
+            `Transaction is already assigned to bucket: ${existingAssignment.bucketId}`
+        );
     }
 
     // Verify bucket exists and belongs to user
@@ -27,7 +28,7 @@ const assignTransactionToBucket = async ({
     }
 
     // Create the assignment
-    const assignment = await transactionBucketQueries.create({
+    const assignment = await bucketTransactionQueries.create({
         transactionId,
         bucketId,
         notes,
@@ -50,7 +51,7 @@ const reassignTransactionToBucket = async ({
     notes?: string;
 }) => {
     // Remove existing assignment if any
-    await transactionBucketQueries.removeByTransactionId(transactionId);
+    await bucketTransactionQueries.removeByTransactionId(transactionId);
 
     // Create new assignment
     return await assignTransactionToBucket({
@@ -62,13 +63,13 @@ const reassignTransactionToBucket = async ({
 };
 
 const removeTransactionFromBucket = async (transactionId: string) => {
-    const existingAssignment = await transactionBucketQueries.getByTransactionId(transactionId);
-    
+    const existingAssignment = await bucketTransactionQueries.getByTransactionId(transactionId);
+
     if (!existingAssignment) {
         throw new Error('Transaction is not assigned to any bucket');
     }
 
-    return await transactionBucketQueries.removeByTransactionId(transactionId);
+    return await bucketTransactionQueries.removeByTransactionId(transactionId);
 };
 
 const updateSplitWiseStatus = async ({
@@ -80,8 +81,8 @@ const updateSplitWiseStatus = async ({
     isRecorded: boolean;
     userId: string;
 }) => {
-    const assignment = await transactionBucketQueries.getByTransactionId(transactionId);
-    
+    const assignment = await bucketTransactionQueries.getByTransactionId(transactionId);
+
     if (!assignment) {
         throw new Error('Transaction is not assigned to any bucket');
     }
@@ -92,22 +93,22 @@ const updateSplitWiseStatus = async ({
         throw new Error('Bucket not found or access denied');
     }
 
-    return await transactionBucketQueries.updateSplitWiseStatus(assignment.id, isRecorded);
+    return await bucketTransactionQueries.updateSplitWiseStatus(assignment.id, isRecorded);
 };
 
-const getTransactionBucket = async (transactionId: string) => {
-    return await transactionBucketQueries.getByTransactionId(transactionId);
+const getbucketTransaction = async (transactionId: string) => {
+    return await bucketTransactionQueries.getByTransactionId(transactionId);
 };
 
 const getBucketTransactions = async (bucketId: string) => {
-    return await transactionBucketQueries.getByBucketId(bucketId);
+    return await bucketTransactionQueries.getByBucketId(bucketId);
 };
 
-export const transactionBucketServices = {
+export const bucketTransactionServices = {
     assignTransactionToBucket,
     reassignTransactionToBucket,
     removeTransactionFromBucket,
     updateSplitWiseStatus,
-    getTransactionBucket,
+    getbucketTransaction,
     getBucketTransactions,
 };

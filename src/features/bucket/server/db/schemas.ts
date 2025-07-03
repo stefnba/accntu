@@ -1,5 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { boolean, decimal, index, pgEnum, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+    boolean,
+    decimal,
+    index,
+    pgEnum,
+    pgTable,
+    text,
+    timestamp,
+    uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -48,8 +57,8 @@ export const bucketParticipant = pgTable('bucket_participant', {
     isActive: boolean('is_active').notNull().default(true),
 });
 
-export const transactionBucket = pgTable(
-    'transaction_bucket',
+export const bucketTransaction = pgTable(
+    'bucket_transaction',
     {
         id: text()
             .primaryKey()
@@ -72,11 +81,14 @@ export const transactionBucket = pgTable(
     },
     (table) => ({
         // Unique constraint: one transaction can only be in one bucket
-        transactionUniqueIdx: uniqueIndex('transaction_bucket_transaction_unique').on(table.transactionId, table.isActive),
+        transactionUniqueIdx: uniqueIndex('bucket_transaction_transaction_unique').on(
+            table.transactionId,
+            table.isActive
+        ),
         // Index for bucket queries
-        bucketIdx: index('transaction_bucket_bucket_idx').on(table.bucketId),
-        // Index for transaction queries  
-        transactionIdx: index('transaction_bucket_transaction_idx').on(table.transactionId),
+        bucketIdx: index('bucket_transaction_bucket_idx').on(table.bucketId),
+        // Index for transaction queries
+        transactionIdx: index('bucket_transaction_transaction_idx').on(table.transactionId),
     })
 );
 
@@ -86,7 +98,7 @@ export const bucketsRelations = relations(bucket, ({ many, one }) => ({
         references: [user.id],
     }),
     participants: many(bucketParticipant),
-    transactionBuckets: many(transactionBucket),
+    bucketTransactions: many(bucketTransaction),
 }));
 
 export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }) => ({
@@ -100,13 +112,13 @@ export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }
     }),
 }));
 
-export const transactionBucketRelations = relations(transactionBucket, ({ one }) => ({
+export const bucketTransactionRelations = relations(bucketTransaction, ({ one }) => ({
     transaction: one(transaction, {
-        fields: [transactionBucket.transactionId],
+        fields: [bucketTransaction.transactionId],
         references: [transaction.id],
     }),
     bucket: one(bucket, {
-        fields: [transactionBucket.bucketId],
+        fields: [bucketTransaction.bucketId],
         references: [bucket.id],
     }),
 }));
@@ -137,11 +149,14 @@ export const insertBucketParticipantSchema = createInsertSchema(bucketParticipan
 });
 export const updateBucketParticipantSchema = insertBucketParticipantSchema.partial();
 
-export const selectTransactionBucketSchema = createSelectSchema(transactionBucket);
-export const insertTransactionBucketSchema = createInsertSchema(transactionBucket, {
+export const selectbucketTransactionSchema = createSelectSchema(bucketTransaction);
+export const insertbucketTransactionSchema = createInsertSchema(bucketTransaction, {
     transactionId: z.string().min(1, 'Transaction ID is required'),
     bucketId: z.string().min(1, 'Bucket ID is required'),
-    splitShare: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid split share format').optional(),
+    splitShare: z
+        .string()
+        .regex(/^\d+(\.\d{1,2})?$/, 'Invalid split share format')
+        .optional(),
     notes: z.string().optional(),
 }).omit({
     id: true,
@@ -149,4 +164,4 @@ export const insertTransactionBucketSchema = createInsertSchema(transactionBucke
     updatedAt: true,
     isActive: true,
 });
-export const updateTransactionBucketSchema = insertTransactionBucketSchema.partial();
+export const updatebucketTransactionSchema = insertbucketTransactionSchema.partial();

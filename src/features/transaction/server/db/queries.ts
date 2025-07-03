@@ -104,7 +104,7 @@ const getAll = async ({
                         },
                     },
                     importFile: true,
-                    transactionBucket: {
+                    bucketTransaction: {
                         with: {
                             bucket: true,
                         },
@@ -146,7 +146,7 @@ const getAll = async ({
                 label: transaction.labelId
                     ? labelsData.find((l) => l.id === transaction.labelId)
                     : null,
-                bucket: transaction.transactionBucket?.bucket || null,
+                bucket: transaction.bucketTransaction?.bucket || null,
             }));
 
             return {
@@ -189,7 +189,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
                         },
                     },
                     importFile: true,
-                    transactionBucket: {
+                    bucketTransaction: {
                         with: {
                             bucket: true,
                         },
@@ -220,7 +220,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
                 ...result,
                 tags: transactionTagsData.map((tt) => tt.tag),
                 label: labelData,
-                bucket: result.transactionBucket?.bucket || null,
+                bucket: result.bucketTransaction?.bucket || null,
             };
         },
     });

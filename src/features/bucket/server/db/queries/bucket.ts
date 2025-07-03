@@ -1,7 +1,7 @@
-import { and, count, eq, sql, sum } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import { bucketQuerySchemas } from '@/features/bucket/schemas';
-import { bucket, transactionBucket } from '@/features/bucket/server/db/schemas';
+import { bucket, bucketTransaction } from '@/features/bucket/server/db/schemas';
 import { transaction } from '@/features/transaction/server/db/schema';
 import { TQueryDeleteUserRecord, TQueryUpdateUserRecord } from '@/lib/schemas';
 import { db } from '@/server/db';
@@ -24,26 +24,26 @@ const getById = (id: string, userId: string) =>
                     isActive: bucket.isActive,
                     // Computed fields via subqueries
                     totalTransactions: sql<number>`(
-                        SELECT COUNT(*)::int 
-                        FROM ${transactionBucket} tb 
-                        WHERE tb.bucket_id = ${bucket.id} 
+                        SELECT COUNT(*)::int
+                        FROM ${bucketTransaction} tb
+                        WHERE tb.bucket_id = ${bucket.id}
                         AND tb.is_active = true
                     )`,
                     totalAmount: sql<string>`COALESCE((
                         SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                        FROM ${transactionBucket} tb 
+                        FROM ${bucketTransaction} tb
                         JOIN ${transaction} t ON tb.transaction_id = t.id
-                        WHERE tb.bucket_id = ${bucket.id} 
-                        AND tb.is_active = true 
+                        WHERE tb.bucket_id = ${bucket.id}
+                        AND tb.is_active = true
                         AND t.is_active = true
                     ), '0.00')`,
                     openAmount: sql<string>`(
                         COALESCE((
                             SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                            FROM ${transactionBucket} tb 
+                            FROM ${bucketTransaction} tb
                             JOIN ${transaction} t ON tb.transaction_id = t.id
-                            WHERE tb.bucket_id = ${bucket.id} 
-                            AND tb.is_active = true 
+                            WHERE tb.bucket_id = ${bucket.id}
+                            AND tb.is_active = true
                             AND t.is_active = true
                         ), '0.00')::decimal - ${bucket.paidAmount}
                     )::text`,
@@ -75,26 +75,26 @@ const getAll = (userId: string) =>
                     isActive: bucket.isActive,
                     // Computed fields via subqueries
                     totalTransactions: sql<number>`(
-                        SELECT COUNT(*)::int 
-                        FROM ${transactionBucket} tb 
-                        WHERE tb.bucket_id = ${bucket.id} 
+                        SELECT COUNT(*)::int
+                        FROM ${bucketTransaction} tb
+                        WHERE tb.bucket_id = ${bucket.id}
                         AND tb.is_active = true
                     )`,
                     totalAmount: sql<string>`COALESCE((
                         SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                        FROM ${transactionBucket} tb 
+                        FROM ${bucketTransaction} tb
                         JOIN ${transaction} t ON tb.transaction_id = t.id
-                        WHERE tb.bucket_id = ${bucket.id} 
-                        AND tb.is_active = true 
+                        WHERE tb.bucket_id = ${bucket.id}
+                        AND tb.is_active = true
                         AND t.is_active = true
                     ), '0.00')`,
                     openAmount: sql<string>`(
                         COALESCE((
                             SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                            FROM ${transactionBucket} tb 
+                            FROM ${bucketTransaction} tb
                             JOIN ${transaction} t ON tb.transaction_id = t.id
-                            WHERE tb.bucket_id = ${bucket.id} 
-                            AND tb.is_active = true 
+                            WHERE tb.bucket_id = ${bucket.id}
+                            AND tb.is_active = true
                             AND t.is_active = true
                         ), '0.00')::decimal - ${bucket.paidAmount}
                     )::text`,
