@@ -1,3 +1,4 @@
+import { parseZodError } from '@/lib/utils/zod';
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
 import { z } from 'zod';
 import {
@@ -8,6 +9,7 @@ import {
     DuckDBTransactionError,
 } from './errors';
 import type {
+    AggregatedValidationErrors,
     CSVReadOptions,
     DatabaseInfo,
     DataSource,
@@ -16,6 +18,7 @@ import type {
     JSONReadOptions,
     ParquetReadOptions,
     QueryResult,
+    RowValidationError,
     StreamQueryResult,
     TransactionQueryOptions,
     TransformationConfig,
@@ -192,27 +195,33 @@ export class DuckDBManager {
     /**
      * Transform data from S3 with CTE approach and Zod validation
      *
+     * The `transformSql` query can be a full SQL query, including CTEs.
+     * It must use the `{{source}}` placeholder to specify the data source.
+     *
+     * If an `idConfig` is provided, a unique key field will be automatically
+     * generated and included in the `{{source}}` data. You can then select
+     * it like any other column. The field name is determined by `idConfig.fieldName`
+     * or defaults to 'id'.
+     *
      * @example
      * ```typescript
      * const result = await db.transformData({
-     *   source: {
-     *     type: 'csv',
-     *     path: 's3://bucket/transactions.csv',
-     *     options: { delim: ';', normalize_names: true }
-     *   },
+     *   source: { type: 'csv', path: 's3://bucket/data.csv' },
+     *   idConfig: { columns: ['col1', 'col2'], fieldName: 'unique_id' },
      *   transformSql: `
+     *     WITH cleaned_data AS (
+     *       SELECT
+     *         *, -- Includes the auto-generated 'unique_id' field
+     *         (col3 * 100) AS amount_in_cents
+     *       FROM {{source}}
+     *     )
      *     SELECT
-     *       amount::DECIMAL as amount,
-     *       UPPER(description) as description,
-     *       DATE_TRUNC('month', authorised_on::DATE) as month
-     *     FROM data
-     *     WHERE amount::DECIMAL > 0
+     *       amount_in_cents,
+     *       unique_id
+     *     FROM cleaned_data
+     *     WHERE col1 > 0
      *   `,
-     *   schema: z.object({
-     *     amount: z.number(),
-     *     description: z.string(),
-     *     month: z.string()
-     *   })
+     *   schema: z.object({ amount_in_cents: z.number(), unique_id: z.string() })
      * });
      * ```
      */
@@ -228,42 +237,54 @@ export class DuckDBManager {
         const {
             continueOnValidationError = true,
             maxValidationErrors = 100,
+            maxErrorDetailRows = 25,
+            maxExamplesPerField = 5, // Default to 5 examples per field
             includeInvalidRows = false,
         } = options;
 
+        // Define placeholder identifiers for easy management
+        const SOURCE_IDENTIFIER = 'data';
+
+        /**
+         * Build a regular expression for a placeholder identifier
+         * @param identifier - The identifier to build a regex for
+         * @param flags - The flags to use for the regex
+         * @returns The regex for the placeholder identifier
+         */
+        const buildPlaceholderRegex = (identifier: string, flags = '') =>
+            new RegExp(`{{\\s*${identifier}\\s*}}`, flags);
+
         try {
-            // Step 1: Build the data source CTE with optional ID generation
+            // Step 1: Build the SQL fragments for data source and key generation
             const readStartTime = Date.now();
-            const dataSourceSql = this.buildDataSourceSql(config.source);
+            let dataSourceSql = this.buildDataSourceSql(config.source);
 
-            let fullQuery: string;
-
-            // If idConfig is provided, generate a deterministic ID from the raw data
+            // If idConfig is provided, enrich the data source with a generated key
             if (config.idConfig) {
-                const idLength = 25; // 25 characters is the max length of a UUID
-                const defaultIdName = 'id';
-
-                // Generate SQL that includes ID generation in the CTE
-                const idFieldName = config.idConfig.fieldName || defaultIdName;
+                const idLength = 25;
+                const idFieldName = config.idConfig.fieldName || 'key';
                 const hashColumns = config.idConfig.columns
                     .map((col) => `COALESCE(CAST("${col}" AS VARCHAR), '')`)
                     .join(` || '|' || `);
+                const keyExpression = `SUBSTR(MD5(${hashColumns}), 1, ${idLength})`;
 
-                fullQuery = `
-                    WITH raw_data AS (${dataSourceSql}),
-                    data AS (
-                        SELECT *,
-                            SUBSTR(MD5(${hashColumns}), 1, ${idLength}) as ${idFieldName}
-                        FROM raw_data
-                    )
-                    ${config.transformSql}
-                `;
-            } else {
-                fullQuery = `
-                    WITH data AS (${dataSourceSql})
-                    ${config.transformSql}
-                `;
+                // Wrap the original source in a subquery that adds the key
+                dataSourceSql = `(SELECT *, ${keyExpression} AS "${idFieldName}" FROM (${dataSourceSql}))`;
             }
+
+            let fullQuery = config.transformSql;
+
+            // It's mandatory for the user's query to specify the source.
+            if (!fullQuery.match(buildPlaceholderRegex(SOURCE_IDENTIFIER))) {
+                throw new DuckDBQueryError(
+                    `Transformation query must include the '{{${SOURCE_IDENTIFIER}}}' placeholder.`,
+                    fullQuery
+                );
+            }
+            fullQuery = fullQuery.replace(
+                buildPlaceholderRegex(SOURCE_IDENTIFIER, 'g'),
+                dataSourceSql
+            );
 
             readTime = Date.now() - readStartTime;
 
@@ -275,11 +296,7 @@ export class DuckDBManager {
             // Step 3: Validate each row with Zod schema
             const validationStartTime = Date.now();
             const validatedData: T[] = [];
-            const validationErrors: Array<{
-                rowIndex: number;
-                row: Record<string, any>;
-                error: z.ZodError;
-            }> = [];
+            const validationErrors: RowValidationError[] = [];
 
             for (let i = 0; i < result.rows.length; i++) {
                 const row = result.rows[i];
@@ -289,16 +306,20 @@ export class DuckDBManager {
                     validatedData.push(validatedRow);
                 } catch (error) {
                     if (error instanceof z.ZodError) {
-                        validationErrors.push({
-                            rowIndex: i,
-                            row: includeInvalidRows ? row : {},
-                            error,
-                        });
+                        // Create detailed error report if within the limit
+                        if (validationErrors.length < maxErrorDetailRows) {
+                            validationErrors.push({
+                                rowIndex: i,
+                                row: includeInvalidRows ? row : {},
+                                errors: parseZodError(error, row),
+                            });
+                        }
 
                         // Stop if we've reached max validation errors and not continuing on error
                         if (
                             !continueOnValidationError ||
-                            validationErrors.length >= maxValidationErrors
+                            (maxValidationErrors > 0 &&
+                                validationErrors.length >= maxValidationErrors)
                         ) {
                             break;
                         }
@@ -309,14 +330,41 @@ export class DuckDBManager {
             }
 
             validationTime = Date.now() - validationStartTime;
+
+            // Step 4: Aggregate validation errors by field for a summary view
+            const aggregatedErrors: AggregatedValidationErrors = {};
+            for (const rowError of validationErrors) {
+                for (const fieldError of rowError.errors) {
+                    const path = fieldError.path.join('.');
+                    if (!aggregatedErrors[path]) {
+                        aggregatedErrors[path] = { messages: [], examples: [] };
+                    }
+
+                    // Add unique error messages
+                    if (!aggregatedErrors[path].messages.includes(fieldError.message)) {
+                        aggregatedErrors[path].messages.push(fieldError.message);
+                    }
+
+                    // Add unique, non-null examples up to the limit
+                    if (
+                        aggregatedErrors[path].examples.length < maxExamplesPerField &&
+                        fieldError.value !== undefined &&
+                        fieldError.value !== null &&
+                        !aggregatedErrors[path].examples.includes(fieldError.value)
+                    ) {
+                        aggregatedErrors[path].examples.push(fieldError.value);
+                    }
+                }
+            }
             const totalTime = Date.now() - startTime;
 
             return {
                 data: result.rows,
-                validatedData: validatedData,
+                validatedData,
                 totalRows: result.rowCount,
                 validRows: validatedData.length,
-                errors: validationErrors,
+                validationErrors,
+                aggregatedErrors,
                 metrics: {
                     readTimeMs: readTime,
                     transformTimeMs: transformTime,
@@ -346,11 +394,11 @@ export class DuckDBManager {
     ): Promise<T[]> {
         const result = await this.transformData(config, options);
 
-        if (result.errors.length > 0 && !options.continueOnValidationError) {
-            throw new DuckDBQueryError(
-                `Validation failed for ${result.errors.length} rows. First error: ${result.errors[0].error.message}`,
-                config.transformSql
-            );
+        if (result.validationErrors.length > 0 && !options.continueOnValidationError) {
+            const firstError = result.validationErrors[0];
+            const firstField = firstError.errors[0];
+            const errorMessage = `Validation failed for ${result.validationErrors.length} rows. First error on row ${firstError.rowIndex}, field '${firstField.path.join('.')}': ${firstField.message}`;
+            throw new DuckDBQueryError(errorMessage, config.transformSql);
         }
 
         return result.validatedData;

@@ -3,12 +3,12 @@
 import { Form, FormSubmitButton, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
+import { QueryResultView } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/query-result-view';
 import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sql-editor';
 import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
-import { ChevronDown, ChevronRight, Code2, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Code2, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'sql-formatter';
 
@@ -20,9 +20,6 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
     const { data: account } = useAdminGlobalBankAccountEndpoints.getById({
         param: { id: accountId },
     });
-
-    const [showResults, setShowResults] = useState(false);
-    const [sampleData, setSampleData] = useState<any[]>([]);
 
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
     const testTransformQuery = useAdminGlobalBankAccountEndpoints.testTransformQuery();
@@ -52,6 +49,8 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
         },
     });
 
+    const transformQuery = form.watch('transformQuery');
+
     useEffect(() => {
         if (account?.transformQuery) {
             form.reset({
@@ -60,18 +59,8 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
         }
     }, [account?.transformQuery, form.reset]);
 
-    // Auto-expand results when new data comes in
-    useEffect(() => {
-        if (sampleData.length > 0) {
-            setShowResults(true);
-        }
-    }, [sampleData]);
-
-    const transformQuery = form.watch('transformQuery');
-
-    console.log(form.formState);
-
-    const handleFormatSql = () => {
+    const handleFormatSql = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
         try {
             const formatted = format(transformQuery ?? '', {
                 language: 'duckdb',
@@ -106,12 +95,8 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                 },
             },
             {
-                onSuccess: (data) => {
-                    setSampleData(data.result.data);
-                },
                 onError: ({ error }) => {
                     toast.error(error.message);
-                    setSampleData([]);
                 },
             }
         );
@@ -139,8 +124,6 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                             onChange={(value) => form.setValue('transformQuery', value)}
                         />
                     </div>
-
-                    {/* Test Button */}
                     <div className="flex justify-end my-4 gap-2">
                         <Button
                             variant="outline"
@@ -155,39 +138,13 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                             )}
                             Test Query
                         </Button>
-
                         <FormSubmitButton form={form}>Save Query</FormSubmitButton>
                     </div>
 
-                    {/* Expandable Results Section */}
-                    {sampleData.length > 0 && (
-                        <Collapsible open={showResults} onOpenChange={setShowResults}>
-                            <CollapsibleTrigger asChild>
-                                <Button variant="outline" className="w-full">
-                                    {showResults ? (
-                                        <ChevronDown className="mr-2 h-4 w-4" />
-                                    ) : (
-                                        <ChevronRight className="mr-2 h-4 w-4" />
-                                    )}
-                                    View Results ({sampleData.length} rows)
-                                </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <div className="mt-4 border rounded-lg">
-                                    <div className="p-4 border-b bg-gray-50">
-                                        <h4 className="font-semibold">Query Results</h4>
-                                    </div>
-                                    <div className="max-h-96 overflow-auto">
-                                        <div className="p-4">
-                                            <pre className="text-sm whitespace-pre-wrap">
-                                                {JSON.stringify(sampleData, null, 2)}
-                                            </pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    )}
+                    <QueryResultView
+                        transformResult={testTransformQuery.data?.result}
+                        isLoading={testTransformQuery.isPending}
+                    />
                 </Form>
             </CardContent>
         </Card>

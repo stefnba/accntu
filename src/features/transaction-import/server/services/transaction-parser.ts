@@ -1,4 +1,4 @@
-import { transactionServiceSchemas, TTransactionParseSchema } from '@/features/transaction/schemas';
+import { transactionParseSchema, TTransactionParseSchema } from '@/features/transaction/schemas';
 import { transactionServices } from '@/features/transaction/server/services';
 import { DuckDBSingleton } from '@/lib/duckdb';
 import { TQuerySelectUserRecordById } from '@/lib/schemas';
@@ -13,45 +13,47 @@ import { importFileServices } from './import-file';
 export const parseTransactionFile = async ({ id, userId }: TQuerySelectUserRecordById) => {
     const duckdb = await DuckDBSingleton.getInstance();
 
-    // Get the file record
+    // get the file record
     const file = await importFileServices.getById({ id, userId });
     if (!file) {
         throw new Error('Import file not found');
     }
-
+    // get the transform config and query for the global bank account
     const globalBankAccount = file.import.connectedBankAccount.globalBankAccount;
     if (!globalBankAccount) {
         throw new Error('Global bank account not found');
     }
-
     const { transformQuery, transformConfig } = globalBankAccount;
-
     if (!transformQuery) {
+        // todo: correct error factory
         throw new Error('Transform query not configured for this bank account');
     }
-
-    const s3Path = file.fileUrl;
-    const fileType = transformConfig?.type;
-
-    if (!fileType) {
+    if (!transformConfig) {
+        // todo: correct error factory
+        throw new Error('Transform config not configured for this bank account');
+    }
+    if (!transformConfig.type) {
+        // todo: correct error factory
         throw new Error('File type not configured for this bank account');
     }
 
+    // transform the data
     const transformResult = await duckdb.transformData({
         source: {
-            type: fileType,
-            path: s3Path,
+            type: transformConfig.type,
+            path: file.fileUrl,
         },
         transformSql: transformQuery,
-        schema: transactionServiceSchemas.create,
+        schema: transactionParseSchema,
         idConfig: {
-            fieldName: 'key',
             columns: transformConfig.idColumns || [],
         },
     });
 
-    if (transformResult.errors.length > 0) {
-        console.warn(`Found ${transformResult.errors.length} validation errors during parsing`);
+    if (transformResult.validationErrors.length > 0) {
+        console.warn(
+            `Found ${transformResult.validationErrors.length} validation errors during parsing`
+        );
     }
 
     if (transformResult.validatedData.length === 0) {

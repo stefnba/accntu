@@ -112,8 +112,29 @@ export interface TransformationConfig<T = any> {
     };
 }
 
+export interface FieldError {
+    path: (string | number)[];
+    message: string;
+    value: any;
+}
+
+export interface RowValidationError {
+    rowIndex: number;
+    row: Record<string, any>;
+    errors: FieldError[];
+}
+
+export interface FieldErrorSummary {
+    /** A list of unique error messages for this field. */
+    messages: string[];
+    /** A few examples of invalid values that caused errors. */
+    examples: any[];
+}
+
+export type AggregatedValidationErrors = Record<string, FieldErrorSummary>;
+
 export interface TransformationResult<T = any> {
-    /** Raw rows */
+    /** Raw rows from the transformation query */
     data: Record<string, any>[];
     /** Successfully validated rows */
     validatedData: T[];
@@ -121,12 +142,10 @@ export interface TransformationResult<T = any> {
     totalRows: number;
     /** Number of successfully validated rows */
     validRows: number;
-    /** Validation errors for failed rows */
-    errors: Array<{
-        rowIndex: number;
-        row: Record<string, any>;
-        error: z.ZodError;
-    }>;
+    /** Structured validation errors for each failed row (up to `maxErrorDetailRows`). */
+    validationErrors: RowValidationError[];
+    /** An aggregated summary of errors by field path. */
+    aggregatedErrors: AggregatedValidationErrors;
     /** Performance metrics */
     metrics: {
         readTimeMs: number;
@@ -141,6 +160,16 @@ export interface TransformationOptions {
     continueOnValidationError?: boolean;
     /** Maximum number of validation errors to collect before stopping */
     maxValidationErrors?: number;
+    /**
+     * Maximum number of invalid rows to report with detailed, field-level errors.
+     * @default 25
+     */
+    maxErrorDetailRows?: number;
+    /**
+     * Maximum number of invalid value examples to collect for each field in the aggregated error report.
+     * @default 5
+     */
+    maxExamplesPerField?: number;
     /** Whether to return raw rows that failed validation */
     includeInvalidRows?: boolean;
 }
