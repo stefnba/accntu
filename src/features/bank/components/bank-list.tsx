@@ -8,9 +8,11 @@ import { AlertCircle, Building2 } from 'lucide-react';
 import { AddBankCard } from './add-bank-card';
 import { BankCard } from './bank-card';
 
-interface BankListProps {}
+interface BankListProps {
+    className?: string;
+}
 
-export const BankList: React.FC<BankListProps> = () => {
+export const BankList: React.FC<BankListProps> = ({ className }) => {
     const { openModal } = useAddBankModal();
 
     const { data: banksData = [], isLoading, error } = useConnectedBankEndpoints.getAll({});
