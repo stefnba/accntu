@@ -38,7 +38,8 @@ const routes = app
     .route('/auth', appEndpoints.auth)
     .route('/buckets', appEndpoints.buckets)
     .route('/transactions', appEndpoints.transactions)
-    .route('/transaction-import', appEndpoints.transactionImport);
+    .route('/transaction-import', appEndpoints.transactionImport)
+    .route('/transaction-fx', appEndpoints.transactionFx);
 
 export type AppType = typeof routes;
 export { app, routes };
