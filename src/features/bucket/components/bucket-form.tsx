@@ -1,13 +1,24 @@
 'use client';
 
-import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useBucketEndpoints } from '@/features/bucket/api';
 import {
+    Form,
+    FormInput,
+    FormMultiSelect,
+    FormSelect,
+    FormSubmitButton,
+    useForm,
+} from '@/components/form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useBucketEndpoints } from '@/features/bucket/api/bucket';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import {
+    apiInsertBucketSchema,
     bucketStatusEnum,
     bucketTypeEnum,
-    insertBucketSchema,
 } from '@/features/bucket/server/db/schemas';
+import { z } from 'zod';
+
+type FormValues = z.infer<typeof apiInsertBucketSchema>;
 
 export function BucketForm({
     isOpen,
@@ -16,35 +27,36 @@ export function BucketForm({
 }: {
     isOpen: boolean;
     onClose: () => void;
-    bucket?: any;
+    bucket?: FormValues & { id: string };
 }) {
-    const createMutation = useBucketEndpoints.create({
-        onSuccess: () => {
-            onClose();
-        },
-    });
+    const { mutate: createBucket, isPending: isCreating } = useBucketEndpoints.create();
+    const { mutate: updateBucket, isPending: isUpdating } = useBucketEndpoints.update();
 
-    const updateMutation = useBucketEndpoints.update({
-        onSuccess: () => {
-            onClose();
-        },
-    });
+    const { data: participants } = useParticipantEndpoints.getAll({});
+    const participantOptions =
+        participants?.data.map((p) => ({
+            value: p.id,
+            label: p.name,
+        })) || [];
 
     const form = useForm({
-        schema: insertBucketSchema,
+        schema: apiInsertBucketSchema,
         defaultValues: bucket || {
             title: '',
             type: 'other',
             status: 'open',
-        },
-        onSubmit: (data) => {
-            if (bucket) {
-                updateMutation.mutate({ param: { id: bucket.id }, json: data });
-            } else {
-                createMutation.mutate({ json: data });
-            }
+            participantIds: [],
         },
     });
+
+    const onSubmit = (data: FormValues) => {
+        if (bucket) {
+            updateBucket({ param: { id: bucket.id }, json: data });
+        } else {
+            createBucket({ json: data });
+        }
+        onClose();
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -52,7 +64,7 @@ export function BucketForm({
                 <DialogHeader>
                     <DialogTitle>{bucket ? 'Edit Bucket' : 'Create Bucket'}</DialogTitle>
                 </DialogHeader>
-                <Form form={form}>
+                <Form form={form} onSubmit={onSubmit}>
                     <FormInput name="title" label="Title" form={form} />
                     <FormSelect
                         form={form}
@@ -72,7 +84,15 @@ export function BucketForm({
                             label: value,
                         }))}
                     />
-                    <FormSubmitButton form={form}>{bucket ? 'Update' : 'Create'}</FormSubmitButton>
+                    <FormMultiSelect
+                        form={form}
+                        name="participantIds"
+                        label="Participants"
+                        options={participantOptions}
+                    />
+                    <FormSubmitButton form={form} isPending={isCreating || isUpdating}>
+                        {bucket ? 'Update' : 'Create'}
+                    </FormSubmitButton>
                 </Form>
             </DialogContent>
         </Dialog>

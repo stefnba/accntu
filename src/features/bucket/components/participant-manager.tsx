@@ -1,48 +1,82 @@
 'use client';
 
-import { DataTable } from '@/components/data-table';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { useToggle } from 'react-use';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBucketParticipantEndpoints } from '@/features/bucket/api';
-import { useQueryClient } from '@tanstack/react-query';
-import { PlusCircle } from 'lucide-react';
-import { useToggle } from 'react-use';
-import { columns } from './participant-columns';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { ParticipantForm } from './participant-form';
 
 interface ParticipantManagerProps {
-    bucketId: string;
+    bucketId?: string;
 }
 
 export function ParticipantManager({ bucketId }: ParticipantManagerProps) {
-    const queryClient = useQueryClient();
     const [isFormOpen, toggleForm] = useToggle(false);
-
-    const { data: participants } = useBucketParticipantEndpoints.getAllForBucket({
-        param: { bucketId },
-    });
-
-    const deleteMutation = useBucketParticipantEndpoints.delete();
+    const getAllParticipants = useParticipantEndpoints.getAll;
+    const { data: participants } = getAllParticipants({});
+    const { mutate: deleteParticipant } = useParticipantEndpoints.delete();
 
     const handleDelete = (id: string) => {
-        deleteMutation.mutate(id);
+        const confirmed = window.confirm('Are you sure you want to delete this participant?');
+        if (confirmed) {
+            deleteParticipant({ param: { id } });
+        }
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Participants</CardTitle>
-                <div className="flex items-center gap-2">
-                    <Button onClick={toggleForm} size="sm">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Participant
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <DataTable columns={columns({ onDelete: handleDelete })} filterKey="name" />
-            </CardContent>
-            <ParticipantForm isOpen={isFormOpen} onClose={toggleForm} bucketId={bucketId} />
-        </Card>
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        {bucketId ? 'Bucket Participants' : 'Global Participants'}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={toggleForm} size="sm">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Participant
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {participants?.data?.map((p) => (
+                                <TableRow key={p.id}>
+                                    <TableCell>{p.name}</TableCell>
+                                    <TableCell>{p.email}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleDelete(p.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            <ParticipantForm isOpen={isFormOpen} onClose={toggleForm} />
+        </>
     );
 }

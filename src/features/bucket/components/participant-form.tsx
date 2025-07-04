@@ -2,46 +2,39 @@
 
 import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useBucketParticipantEndpoints } from '@/features/bucket/api';
-import { insertBucketParticipantSchema } from '@/features/bucket/server/db/schemas';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import { insertParticipantSchema } from '@/features/bucket/server/db/schemas';
+import { z } from 'zod';
+
+type FormValues = z.infer<typeof insertParticipantSchema>;
 
 export function ParticipantForm({
     isOpen,
     onClose,
-    bucketId,
     participant,
 }: {
     isOpen: boolean;
     onClose: () => void;
-    bucketId: string;
-    participant?: any;
+    participant?: { id: string } & FormValues;
 }) {
-    const createMutation = useBucketParticipantEndpoints.create({
-        onSuccess: () => {
-            onClose();
-        },
-    });
-
-    const updateMutation = useBucketParticipantEndpoints.update({
-        onSuccess: () => {
-            onClose();
-        },
-    });
+    const { mutate: createParticipant, isPending: isCreating } = useParticipantEndpoints.create();
+    const { mutate: updateParticipant, isPending: isUpdating } = useParticipantEndpoints.update();
 
     const form = useForm({
-        schema: insertBucketParticipantSchema,
+        schema: insertParticipantSchema,
         defaultValues: participant || {
             name: '',
-            bucketId: bucketId,
+            email: '',
         },
     });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = (data: FormValues) => {
         if (participant) {
-            updateMutation.mutate({ param: { id: participant.id }, json: data });
+            updateParticipant({ param: { id: participant.id }, json: data });
         } else {
-            createMutation.mutate({ param: { bucketId }, json: data });
+            createParticipant({ json: data });
         }
+        onClose();
     };
 
     return (
@@ -54,7 +47,8 @@ export function ParticipantForm({
                 </DialogHeader>
                 <Form form={form} onSubmit={onSubmit}>
                     <FormInput name="name" label="Name" form={form} />
-                    <FormSubmitButton form={form}>
+                    <FormInput name="email" label="Email" type="email" form={form} />
+                    <FormSubmitButton form={form} isPending={isCreating || isUpdating}>
                         {participant ? 'Update' : 'Add'}
                     </FormSubmitButton>
                 </Form>
