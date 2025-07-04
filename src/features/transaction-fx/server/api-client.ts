@@ -121,7 +121,7 @@ class UniRateApiClient {
 
 class FawazahmedApiClient {
     private config: ApiConfig = {
-        baseUrl: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1',
+        baseUrl: 'https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1',
         rateLimitPerMinute: 1000, // Generous limit for CDN
         timeout: 10000,
     };
@@ -132,10 +132,7 @@ class FawazahmedApiClient {
         date: string
     ): Promise<ExchangeRateApiResponse> {
         // This API uses different date format and endpoints
-        const url: string = `${this.config.baseUrl}/currencies/${baseCurrency.toLowerCase()}/${targetCurrency.toLowerCase()}.json`;
-
-        // Try historical data first
-        const formattedDate = date; // YYYY-MM-DD format
+        const url = `${this.config.baseUrl}/${date}/currencies/${baseCurrency.toLowerCase()}.json`;
 
         try {
             const response = await fetch(url, {
@@ -173,7 +170,7 @@ class FawazahmedApiClient {
         date: string
     ): Promise<ExchangeRateApiResponse[]> {
         // Fawazahmed API supports getting all rates for a base currency
-        const url = `${this.config.baseUrl}/currencies/${baseCurrency.toLowerCase()}.json`;
+        const url = `${this.config.baseUrl}/${date}/currencies/${baseCurrency.toLowerCase()}.json`;
 
         try {
             const response = await fetch(url, {
@@ -297,7 +294,7 @@ export class CurrencyApiClient {
                 );
                 this.recordSuccess('fawazahmed');
                 return result;
-            } catch (error) {
+            } catch (error: any) {
                 console.warn(`Fallback API (Fawazahmed) failed: ${error.message}`);
                 this.recordFailure('fawazahmed');
                 throw new Error(`All currency APIs failed. Last error: ${error.message}`);

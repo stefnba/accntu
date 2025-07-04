@@ -5,17 +5,17 @@ import * as queries from './db/queries';
  * Get exchange rate for a given currency pair and date
  * @param baseCurrency - The base currency
  * @param targetCurrency - The target currency
- * @param rateDate - The date for the exchange rate
+ * @param date - The date for the exchange rate
  * @returns The exchange rate
  */
 export const getExchangeRate = async ({
     baseCurrency,
     targetCurrency,
-    rateDate,
+    date,
 }: {
     baseCurrency: string;
     targetCurrency: string;
-    rateDate: string;
+    date: string;
 }) => {
     if (baseCurrency === targetCurrency) {
         return 1;
@@ -24,31 +24,31 @@ export const getExchangeRate = async ({
     const existingRate = await queries.getRate({
         baseCurrency,
         targetCurrency,
-        rateDate,
+        date,
     });
 
     if (existingRate) {
         return parseFloat(existingRate.exchangeRate);
     }
 
-    throw new Error(`Exchange rate not found for ${baseCurrency}/${targetCurrency} on ${rateDate}`);
+    throw new Error(`Exchange rate not found for ${baseCurrency}/${targetCurrency} on ${date}`);
 };
 
 /**
  * Get or fetch exchange rate for a given currency pair and date
  * @param baseCurrency - The base currency
  * @param targetCurrency - The target currency
- * @param rateDate - The date for the exchange rate
+ * @param date - The date for the exchange rate
  * @returns The exchange rate
  */
 export const getOrFetchExchangeRate = async ({
     baseCurrency,
     targetCurrency,
-    rateDate,
+    date,
 }: {
     baseCurrency: string;
     targetCurrency: string;
-    rateDate: string;
+    date: string;
 }) => {
     if (baseCurrency === targetCurrency) {
         return 1;
@@ -58,7 +58,7 @@ export const getOrFetchExchangeRate = async ({
     const existingRate = await queries.getRate({
         baseCurrency,
         targetCurrency,
-        rateDate,
+        date,
     });
 
     if (existingRate) {
@@ -70,21 +70,34 @@ export const getOrFetchExchangeRate = async ({
         const apiResponse = await currencyApiClient.getExchangeRate(
             baseCurrency,
             targetCurrency,
-            rateDate
+            date
         );
 
         // Store in database for future use
-        await queries.upsertRate({
-            baseCurrency,
-            targetCurrency,
-            exchangeRate: apiResponse.rate,
-            rateDate,
-        });
+        const ratesToStore = [
+            {
+                baseCurrency,
+                targetCurrency,
+                exchangeRate: apiResponse.rate,
+                date,
+            },
+        ];
+
+        if (apiResponse.rate !== 0) {
+            ratesToStore.push({
+                baseCurrency: targetCurrency,
+                targetCurrency: baseCurrency,
+                exchangeRate: 1 / apiResponse.rate,
+                date,
+            });
+        }
+
+        await queries.batchUpsertRates({ rates: ratesToStore });
 
         return apiResponse.rate;
     } catch (error: any) {
         throw new Error(
-            `Failed to fetch exchange rate for ${baseCurrency}/${targetCurrency} on ${rateDate}: ${error.message}`
+            `Failed to fetch exchange rate for ${baseCurrency}/${targetCurrency} on ${date}: ${error.message}`
         );
     }
 };
@@ -93,17 +106,17 @@ export const getOrFetchExchangeRate = async ({
  * Get or fetch multiple exchange rates for a given currency pair and date
  * @param baseCurrency - The base currency
  * @param targetCurrencies - The target currencies
- * @param rateDate - The date for the exchange rates
+ * @param date - The date for the exchange rates
  * @returns The exchange rates
  */
 export const getOrFetchMultipleExchangeRates = async ({
     baseCurrency,
     targetCurrencies,
-    rateDate,
+    date,
 }: {
     baseCurrency: string;
     targetCurrencies: string[];
-    rateDate: string;
+    date: string;
 }) => {
     const results: Array<{
         baseCurrency: string;
@@ -130,7 +143,7 @@ export const getOrFetchMultipleExchangeRates = async ({
         const existingRate = await queries.getRate({
             baseCurrency,
             targetCurrency,
-            rateDate,
+            date,
         });
 
         if (existingRate) {
@@ -153,16 +166,29 @@ export const getOrFetchMultipleExchangeRates = async ({
             const apiResults = await currencyApiClient.getBatchExchangeRates(
                 baseCurrency,
                 missingCurrencies,
-                rateDate
+                date
             );
 
-            // Store the fetched rates in database
-            const ratesToStore = apiResults.map((result) => ({
-                baseCurrency: result.base,
-                targetCurrency: result.target,
-                exchangeRate: result.rate,
-                rateDate: result.date,
-            }));
+            // Store the fetched rates in database, including inverses
+            const ratesToStore = apiResults.flatMap((result) => {
+                const rates = [
+                    {
+                        baseCurrency: result.base,
+                        targetCurrency: result.target,
+                        exchangeRate: result.rate,
+                        date: result.date,
+                    },
+                ];
+                if (result.rate !== 0) {
+                    rates.push({
+                        baseCurrency: result.target,
+                        targetCurrency: result.base,
+                        exchangeRate: 1 / result.rate,
+                        date: result.date,
+                    });
+                }
+                return rates;
+            });
 
             await queries.batchUpsertRates({ rates: ratesToStore });
 
@@ -188,28 +214,49 @@ export const getOrFetchMultipleExchangeRates = async ({
  * @param baseCurrency - The base currency
  * @param targetCurrency - The target currency
  * @param exchangeRate - The exchange rate
- * @param rateDate - The date for the exchange rate
+ * @param date - The date for the exchange rate
  * @returns The exchange rate
  */
 export const storeExchangeRate = async ({
     baseCurrency,
     targetCurrency,
     exchangeRate,
-    rateDate,
+    date,
 }: {
     baseCurrency: string;
     targetCurrency: string;
     exchangeRate: number;
-    rateDate: string;
+    date: string;
 }) => {
-    return await queries.upsertRate({
-        baseCurrency,
-        targetCurrency,
-        exchangeRate,
-        rateDate,
-    });
+    const ratesToStore = [
+        {
+            baseCurrency,
+            targetCurrency,
+            exchangeRate,
+            date,
+        },
+    ];
+
+    if (exchangeRate !== 0) {
+        ratesToStore.push({
+            baseCurrency: targetCurrency,
+            targetCurrency: baseCurrency,
+            exchangeRate: 1 / exchangeRate,
+            date,
+        });
+    }
+    const storedRates = await queries.batchUpsertRates({ rates: ratesToStore });
+
+    return storedRates.find(
+        (r) => r.baseCurrency === baseCurrency && r.targetCurrency === targetCurrency
+    )!;
 };
 
+/**
+ * Store multiple exchange rates in the database
+ * @param rates - The rates to store
+ * @returns The stored rates
+ */
 export const storeExchangeRates = async ({
     rates,
 }: {
@@ -217,10 +264,30 @@ export const storeExchangeRates = async ({
         baseCurrency: string;
         targetCurrency: string;
         exchangeRate: number;
-        rateDate: string;
+        date: string;
     }>;
 }) => {
-    return await queries.batchUpsertRates({ rates });
+    const allRates = rates.flatMap((rate) => {
+        const ratePair = [
+            {
+                baseCurrency: rate.baseCurrency,
+                targetCurrency: rate.targetCurrency,
+                exchangeRate: rate.exchangeRate,
+                date: rate.date,
+            },
+        ];
+
+        if (rate.exchangeRate !== 0) {
+            ratePair.push({
+                baseCurrency: rate.targetCurrency,
+                targetCurrency: rate.baseCurrency,
+                exchangeRate: 1 / rate.exchangeRate,
+                date: rate.date,
+            });
+        }
+        return ratePair;
+    });
+    return await queries.batchUpsertRates({ rates: allRates });
 };
 
 /**
@@ -228,24 +295,24 @@ export const storeExchangeRates = async ({
  * @param amount - The amount to convert
  * @param baseCurrency - The base currency
  * @param targetCurrency - The target currency
- * @param rateDate - The date for the exchange rate
+ * @param date - The date for the exchange rate
  * @returns The converted amount
  */
 export const convertAmount = async ({
     amount,
     baseCurrency,
     targetCurrency,
-    rateDate,
+    date,
 }: {
     amount: number;
     baseCurrency: string;
     targetCurrency: string;
-    rateDate: string;
+    date: string;
 }) => {
     const rate = await getOrFetchExchangeRate({
         baseCurrency,
         targetCurrency,
-        rateDate,
+        date,
     });
 
     return amount * rate;
@@ -253,14 +320,14 @@ export const convertAmount = async ({
 
 export const convertMultipleAmounts = async ({
     conversions,
-    rateDate,
+    date,
 }: {
     conversions: Array<{
         amount: number;
         baseCurrency: string;
         targetCurrency: string;
     }>;
-    rateDate: string;
+    date: string;
 }) => {
     // Group conversions by base currency for efficient batch fetching
     const conversionsByBase = new Map<
@@ -300,7 +367,7 @@ export const convertMultipleAmounts = async ({
         const rates = await getOrFetchMultipleExchangeRates({
             baseCurrency,
             targetCurrencies,
-            rateDate,
+            date,
         });
 
         const rateMap = new Map(rates.map((r) => [r.targetCurrency, r]));

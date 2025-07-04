@@ -21,13 +21,17 @@ export const transactionFxRate = pgTable(
         baseCurrency: char({ length: 3 }).notNull(),
         targetCurrency: char({ length: 3 }).notNull(),
         exchangeRate: numeric({ precision: 18, scale: 8 }).notNull(),
-        rateDate: date().notNull(),
+        date: date().notNull(),
         createdAt: timestamp().notNull().defaultNow(),
         updatedAt: timestamp().notNull().defaultNow(),
     },
     (table) => [
-        uniqueIndex('fx_rate_currency_date_unique').on(table.baseCurrency, table.targetCurrency, table.rateDate),
-        index('fx_rate_date_idx').on(table.rateDate),
+        uniqueIndex('fx_rate_currency_date_unique').on(
+            table.baseCurrency,
+            table.targetCurrency,
+            table.date
+        ),
+        index('fx_rate_date_idx').on(table.date),
         index('fx_rate_currencies_idx').on(table.baseCurrency, table.targetCurrency),
     ]
 );

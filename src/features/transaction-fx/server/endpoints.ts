@@ -7,21 +7,21 @@ import * as services from './services';
 const GetRateSchema = z.object({
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 const StoreRateSchema = z.object({
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
     exchangeRate: z.number().positive(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 const ConvertAmountSchema = z.object({
     amount: z.number(),
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 const BatchStoreRatesSchema = z.object({
@@ -33,18 +33,18 @@ const app = new Hono()
     // get rate
     .get('/rate', zValidator('query', GetRateSchema), async (c) =>
         withRoute(c, async () => {
-            const { baseCurrency, targetCurrency, rateDate } = c.req.valid('query');
+            const { baseCurrency, targetCurrency, date } = c.req.valid('query');
 
             const rate = await services.getExchangeRate({
                 baseCurrency,
                 targetCurrency,
-                rateDate,
+                date,
             });
 
             return {
                 baseCurrency,
                 targetCurrency,
-                rateDate,
+                date,
                 exchangeRate: rate,
             };
         })
@@ -83,13 +83,13 @@ const app = new Hono()
     // convert amount
     .post('/convert', zValidator('json', ConvertAmountSchema), async (c) =>
         withRoute(c, async () => {
-            const { amount, baseCurrency, targetCurrency, rateDate } = c.req.valid('json');
+            const { amount, baseCurrency, targetCurrency, date } = c.req.valid('json');
 
             const convertedAmount = await services.convertAmount({
                 amount,
                 baseCurrency,
                 targetCurrency,
-                rateDate,
+                date,
             });
 
             return {
@@ -97,7 +97,7 @@ const app = new Hono()
                 convertedAmount,
                 baseCurrency,
                 targetCurrency,
-                rateDate,
+                date,
             };
         })
     );

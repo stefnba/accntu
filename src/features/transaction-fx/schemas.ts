@@ -4,20 +4,20 @@ export const ExchangeRateSchema = z.object({
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
     exchangeRate: z.number().positive(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 export const GetRateQuerySchema = z.object({
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 export const ConvertAmountSchema = z.object({
     amount: z.number(),
     baseCurrency: z.string().length(3).toUpperCase(),
     targetCurrency: z.string().length(3).toUpperCase(),
-    rateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 });
 
 export const BatchExchangeRatesSchema = z.object({
