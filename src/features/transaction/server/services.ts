@@ -1,53 +1,17 @@
+import { importFileServices } from '@/features/transaction-import/server/services/import-file';
 import {
     TTransactionFilterOptions,
     TTransactionPagination,
-    TTransactionParseSchema,
-    TTransactionQuery,
+    TTransactionParseDuplicateCheck,
     TTransactionService,
 } from '@/features/transaction/schemas';
 import { transactionQueries } from '@/features/transaction/server/db/queries';
 import {
     TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
     TQuerySelectUserRecordById,
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-
-/**
- * Create a new transaction
- * @param data - The transaction data
- * @param userId - The user ID
- * @returns The created transaction
- */
-const create = async ({
-    data,
-    userId,
-    connectedBankAccountId,
-    importFileId,
-}: TQueryInsertUserRecord<Array<TTransactionParseSchema>> &
-    Pick<TTransactionQuery['insert'], 'connectedBankAccountId' | 'importFileId'>) => {
-    // Add the connectedBankAccountId and importFileId to the data
-    // todo: add the userAmount, userCurrency, spendingAmount, spendingCurrency, accountAmount, accountCurrency, balance
-    const transactions = data.map((transaction) => ({
-        ...transaction,
-        connectedBankAccountId,
-        importFileId,
-        userId,
-        originalTitle: transaction.title,
-        userAmount: '0',
-        userCurrency: 'USD',
-        spendingAmount: '0',
-        spendingCurrency: 'USD',
-        accountAmount: '0',
-        accountCurrency: 'USD',
-        balance: '0',
-    }));
-
-    const transaction = await transactionQueries.createMany(transactions);
-
-    return transaction;
-};
 
 /**
  * Update a transaction
@@ -140,35 +104,6 @@ const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) =
 };
 
 /**
- * Checks a list of parsed transactions for duplicates against existing records.
- * @param userId - The user ID.
- * @param transactions - An array of parsed transaction objects to check.
- * @returns The same array of transactions, each annotated with `isDuplicate` and `existingTransactionId`.
- */
-const checkForDuplicates = async ({
-    userId,
-    transactions,
-}: {
-    userId: string;
-    transactions: TTransactionParseSchema[];
-}) => {
-    if (transactions.length === 0) {
-        return [];
-    }
-
-    const keys = transactions.map((t) => t.key);
-    const existing = await transactionQueries.getDuplicates({ userId, keys });
-
-    const existingKeysMap = new Map(existing.map((t) => [t.key, t.id]));
-
-    return transactions.map((transaction) => ({
-        ...transaction,
-        isDuplicate: existingKeysMap.has(transaction.key),
-        existingTransactionId: existingKeysMap.get(transaction.key) || null,
-    }));
-};
-
-/**
  * Create many transactions
  * @param userId - The user ID
  * @param transactions - Array of transaction data
@@ -177,45 +112,40 @@ const checkForDuplicates = async ({
 const createMany = async ({
     userId,
     transactions,
+    importFileId,
 }: {
     userId: string;
-    transactions: Array<{
-        amount: number;
-        description: string;
-        date: Date;
-        category?: string | null;
-        reference?: string | null;
-        key: string;
-        bankAccountId: string;
-        importFileId: string;
-    }>;
+    transactions: Array<TTransactionParseDuplicateCheck>;
+    importFileId: string;
 }) => {
-    const transactionsToCreate = transactions.map((transaction) => ({
-        title: transaction.description,
-        description: transaction.description,
-        originalTitle: transaction.description,
-        date: transaction.date.toISOString().split('T')[0],
-        type: transaction.amount > 0 ? ('credit' as const) : ('debit' as const),
-        spendingAmount: Math.abs(transaction.amount).toString(),
-        spendingCurrency: 'USD',
-        accountAmount: Math.abs(transaction.amount).toString(),
-        accountCurrency: 'USD',
-        userAmount: Math.abs(transaction.amount).toString(),
-        userCurrency: 'USD',
-        balance: '0',
-        key: transaction.key,
-        reference: transaction.reference,
-        connectedBankAccountId: transaction.bankAccountId,
-        importFileId: transaction.importFileId,
+    const importFile = await importFileServices.getById({
+        id: importFileId,
         userId,
+    });
+
+    if (!importFile) {
+        throw new Error('Import file not found');
+    }
+
+    // 1. Add userId and originalTitle to the transactions
+    const transactionsToCreate = transactions.map((transaction) => ({
+        originalTitle: transaction.title,
+        userId,
+        userAmount: transaction.spendingAmount,
+        userCurrency: transaction.spendingCurrency,
+        importFileId,
+        connectedBankAccountId: importFile.import.connectedBankAccountId,
+        ...transaction,
     }));
 
+    // 2. Add currency conversion
+
+    // 3. Import
     const createdTransactions = await transactionQueries.createMany(transactionsToCreate);
     return createdTransactions;
 };
 
 export const transactionServices = {
-    create,
     update,
     getById,
     getAll,
@@ -223,5 +153,4 @@ export const transactionServices = {
     getFilterOptions,
     getByKeys,
     createMany,
-    checkForDuplicates,
 };

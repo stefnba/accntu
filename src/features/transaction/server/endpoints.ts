@@ -1,6 +1,7 @@
 import {
     transactionFilterOptionsSchema,
     transactionPaginationSchema,
+    transactionParseDuplicateCheckSchema,
     transactionServiceSchemas,
 } from '@/features/transaction/schemas';
 import { transactionServices } from '@/features/transaction/server/services';
@@ -9,6 +10,7 @@ import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
+import { z } from 'zod';
 
 const app = new Hono()
     // Get transactions with filters and pagination
@@ -94,16 +96,26 @@ const app = new Hono()
     )
 
     // import transactions (bulk)
-    .post('/import', zValidator('json', transactionServiceSchemas.create), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const data = c.req.valid('json');
+    .post(
+        '/import',
+        zValidator(
+            'json',
+            z.object({
+                transactions: z.array(transactionParseDuplicateCheckSchema),
+                importFileId: z.string(),
+            })
+        ),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { transactions, importFileId } = c.req.valid('json');
 
-            return {
-                success: true,
-                message: 'Transactions imported successfully',
-            };
-        })
+                return await transactionServices.createMany({
+                    userId: user.id,
+                    transactions,
+                    importFileId,
+                });
+            })
     );
 
 export default app;

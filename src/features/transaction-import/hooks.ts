@@ -10,7 +10,7 @@ import { uploadFileToS3WithSignedUrl } from '@/lib/upload/cloud/s3/services';
 import { computeSHA256 } from '@/lib/upload/utils';
 import type { FileUpload } from './types';
 
-const IMPORT_STEPS = ['accountSelection', 'upload', 'processing', 'preview', 'success'] as const;
+const IMPORT_STEPS = ['accountSelection', 'upload', 'processing', 'success'] as const;
 export type TImportStep = (typeof IMPORT_STEPS)[number];
 
 /**

@@ -11,14 +11,21 @@ import { z } from 'zod';
 
 export const transactionQuerySchemas = {
     select: selectTransactionSchema,
-    insert: insertTransactionSchema.omit({
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        isActive: true,
-        isHidden: true,
-        isNew: true,
-    }),
+    insert: insertTransactionSchema
+        .omit({
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            isActive: true,
+            isHidden: true,
+            isNew: true,
+        })
+        .extend({
+            userAmount: z.number(),
+            accountAmount: z.number(),
+            spendingAmount: z.number(),
+            balance: z.number().optional(),
+        }),
     update: updateTransactionSchema,
 };
 
@@ -33,20 +40,14 @@ export type TTransactionQuery = {
 // ====================
 
 export const transactionServiceSchemas = {
-    create: transactionQuerySchemas.insert
-        .omit({
-            userId: true,
-            userAmount: true,
-            userCurrency: true,
-            originalTitle: true,
-            importFileId: true,
-            connectedBankAccountId: true,
-        })
-        .extend({
-            accountAmount: z.number(),
-            spendingAmount: z.number(),
-            balance: z.number().optional(),
-        }),
+    create: transactionQuerySchemas.insert.omit({
+        userId: true,
+        userAmount: true,
+        userCurrency: true,
+        originalTitle: true,
+        importFileId: true,
+        connectedBankAccountId: true,
+    }),
     update: transactionQuerySchemas.update,
 };
 
@@ -65,6 +66,18 @@ export type TTransactionService = {
 export const transactionParseSchema = transactionServiceSchemas.create;
 export type TTransactionParseSchema = z.infer<typeof transactionParseSchema>;
 
+/**
+ * Schema for checking for duplicates in the transaction parse
+ */
+export const transactionParseDuplicateCheckSchema = transactionParseSchema.extend({
+    isDuplicate: z.boolean(),
+    existingTransactionId: z.string().optional().nullable(),
+});
+export type TTransactionParseDuplicateCheck = z.infer<typeof transactionParseDuplicateCheckSchema>;
+
+/**
+ * Schema for filtering transactions
+ */
 export const transactionFilterOptionsSchema = z.object({
     accountIds: z.array(z.string()).optional(),
     labelIds: z.array(z.string()).optional(),

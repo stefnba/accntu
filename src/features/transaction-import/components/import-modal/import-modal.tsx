@@ -2,11 +2,10 @@
 
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { useImportModal } from '@/features/transaction-import/hooks';
-import { Banknote, CheckCircle2, Eye, Upload, Zap } from 'lucide-react';
+import { Banknote, CheckCircle2, Upload, Zap } from 'lucide-react';
 
 import { AccountSelectionStep } from './account-selection-step';
-import { PreviewStep } from './preview-step';
-import { ProcessingStep } from './processing-step';
+import { ProcessingAndPreviewStep } from './processing-preview-step';
 import { SuccessStep } from './success-step';
 import { UploadStep } from './upload-step';
 
@@ -32,12 +31,6 @@ const STEP_CONFIG = {
         description: 'Analyzing and validating your data',
         icon: Zap,
         progress: 50,
-    },
-    preview: {
-        title: 'Review Transactions',
-        description: 'Preview before importing',
-        icon: Eye,
-        progress: 75,
     },
     success: {
         title: 'Import Complete',
@@ -65,13 +58,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
         setModalOpen(open);
     };
 
-    const handleBack = () => {
-        if (currentStep === 'preview') {
-            setModalOpen(false);
-            reset();
-        }
-    };
-
     const renderCurrentStep = () => {
         switch (currentStep) {
             case 'accountSelection':
@@ -79,18 +65,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
             case 'upload':
                 return <UploadStep />;
             case 'processing':
-                return <ProcessingStep />;
-            case 'preview':
-                return <PreviewStep />;
+                return <ProcessingAndPreviewStep />;
             case 'success':
                 return <SuccessStep onContinue={handleClose} />;
             default:
                 return;
         }
     };
-
-    const showBackButton = currentStep === 'preview';
-    const showCloseButton = currentStep !== 'processing';
 
     return (
         <ResponsiveModal size="auto" open={modalOpen} onOpenChange={handleOpenChange}>

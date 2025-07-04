@@ -1,6 +1,5 @@
 import * as transactionFxServices from '@/features/transaction-fx/server/services';
 import { transactionParseSchema, TTransactionParseSchema } from '@/features/transaction/schemas';
-import { transactionServices } from '@/features/transaction/server/services';
 import { DuckDBTransactionTransformSingleton } from '@/lib/duckdb';
 import { TQuerySelectUserRecordById } from '@/lib/schemas';
 import { importFileServices } from './import-file';
@@ -9,12 +8,7 @@ import { importFileServices } from './import-file';
  * Add currency conversion to transactions (accountAmount -> userAmount)
  * Assumes userCurrency is 'USD' for now (should be configurable per user)
  */
-const addCurrencyConversion = async <
-    T extends TTransactionParseSchema & {
-        isDuplicate: boolean;
-        existingTransactionId: string | null;
-    },
->(
+const addCurrencyConversion = async <T extends TTransactionParseSchema>(
     transactions: T[]
 ): Promise<T[]> => {
     if (transactions.length === 0) {
@@ -123,82 +117,74 @@ export const parseTransactionFile = async ({ id, userId }: TQuerySelectUserRecor
         throw new Error('File type not configured for this bank account');
     }
 
-    // transform the data
-    const transformResult = await duckdb.transformData({
-        source: {
-            type: transformConfig.type,
-            path: file.fileUrl,
+    // transform the data and save to temp table for bulk operations
+    const result = await duckdb.transformData(
+        {
+            source: {
+                type: transformConfig.type,
+                path: file.fileUrl,
+            },
+            transformSql: transformQuery,
+            schema: transactionParseSchema,
+            idConfig: {
+                columns: transformConfig.idColumns || [],
+            },
         },
-        transformSql: transformQuery,
-        schema: transactionParseSchema,
-        idConfig: {
-            columns: transformConfig.idColumns || [],
-        },
-    });
-
-    if (transformResult.validationErrors.length > 0) {
-        console.warn(
-            `Found ${transformResult.validationErrors.length} validation errors during parsing`
-        );
-    }
-
-    if (transformResult.validatedData.length === 0) {
-        return {
-            transactions: [],
-            totalCount: 0,
-            newCount: 0,
-            duplicateCount: 0,
-        };
-    }
-
-    const parsedTransactions = transformResult.validatedData;
-
-    // Enhanced duplicate detection with DuckDB PostgreSQL extension (with fallback)
-    let transactionsWithDuplicateStatus: Array<
-        TTransactionParseSchema & {
-            isDuplicate: boolean;
-            existingTransactionId: string | null;
+        {
+            // we need to store the validated data in a temp table for bulk operations
+            storeInTempTable: true,
         }
-    >;
-
-    try {
-        // Try DuckDB PostgreSQL extension approach for better performance
-        transactionsWithDuplicateStatus = await duckdb.checkDuplicatesWithFallback({
-            transactions: parsedTransactions,
-            userId,
-            keyExtractor: (transaction) => transaction.key,
-        });
-    } catch (error) {
-        console.warn(
-            'Enhanced duplicate detection failed, falling back to traditional method:',
-            error
-        );
-        // Fallback to existing JavaScript-based method
-        transactionsWithDuplicateStatus = await transactionServices.checkForDuplicates({
-            userId,
-            transactions: parsedTransactions,
-        });
-    }
-
-    // Add currency conversion for userAmount field
-    const transactionsWithCurrencyConversion = await addCurrencyConversion(
-        transactionsWithDuplicateStatus
     );
 
-    const newCount = transactionsWithCurrencyConversion.filter((t) => !t.isDuplicate).length;
-    const duplicateCount = transactionsWithCurrencyConversion.length - newCount;
+    const { validatedData, validationErrors, tempTableName } = result;
 
-    return {
-        transactions: transactionsWithCurrencyConversion,
-        totalCount: parsedTransactions.length,
-        newCount,
-        duplicateCount,
-    };
+    try {
+        if (validationErrors.length > 0) {
+            console.warn(`Found ${validationErrors.length} validation errors during parsing`);
+        }
+
+        // if no transactions were validated, return an empty array
+        if (validatedData.length === 0) {
+            return {
+                transactions: [],
+                totalCount: 0,
+                newCount: 0,
+                duplicateCount: 0,
+            };
+        }
+
+        if (!tempTableName) {
+            throw new Error('Temp table name not found');
+        }
+
+        const duplicateCheckResult = await duckdb.bulkCheckDuplicates({
+            userId,
+            connectedBankAccountId: file.import.connectedBankAccountId,
+            tempTableName,
+            transactionTableName: 'transaction',
+        });
+
+        return {
+            transactions: duplicateCheckResult,
+            totalCount: duplicateCheckResult.length,
+            newCount: duplicateCheckResult.filter((t) => !t.isDuplicate).length,
+            duplicateCount: duplicateCheckResult.filter((t) => t.isDuplicate).length,
+        };
+    } finally {
+        // Clean up temp table
+        if (tempTableName) {
+            try {
+                await duckdb.query(`DROP TABLE IF EXISTS ${tempTableName}`);
+            } catch (cleanupError) {
+                console.warn('Failed to cleanup temp table:', cleanupError);
+            }
+        }
+    }
 };
 
 export const importTransactions = async (
-    fileId: string,
-    userId: string
+    _fileId: string,
+    _userId: string
 ): Promise<{
     importedCount: number;
     skippedCount: number;

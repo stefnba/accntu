@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -10,17 +11,27 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { useImportFileEndpoints } from '@/features/transaction-import/api';
 import { useImportModal } from '@/features/transaction-import/hooks';
 import { useTransactionEndpoints } from '@/features/transaction/api';
+import { TTransactionParseDuplicateCheck } from '@/features/transaction/schemas';
 import { AlertCircle, CheckCircle2, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-export const PreviewStep: React.FC = () => {
+interface PreviewProps {
+    parseResult: {
+        transactions: TTransactionParseDuplicateCheck[];
+        totalCount: number;
+        newCount: number;
+        duplicateCount: number;
+    };
+}
+
+export const Preview: React.FC<PreviewProps> = ({
+    parseResult: { transactions, totalCount, newCount, duplicateCount },
+}) => {
     const { activeFileId, setCurrentStep } = useImportModal();
     const [isImporting, setIsImporting] = useState(false);
 
-    const parseTransactions = useImportFileEndpoints.parse();
     const { mutateAsync: importTransactions } = useTransactionEndpoints.import();
 
     const handleImport = async () => {
@@ -28,17 +39,13 @@ export const PreviewStep: React.FC = () => {
 
         setIsImporting(true);
         try {
-            // await importTransactions({
-            //     json: {
-            //         type: 'credit',
-            //         date: new Date().toISOString(),
-            //         title: 'Imported from CSV',
-            //         spendingAmount: 100,
-            //         spendingCurrency: 'USD',
-            //     },
-            // });
-            // // Invalidate relevant queries
-            // queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            await importTransactions({
+                json: {
+                    transactions: transactions.filter((t) => !t.isDuplicate),
+                    importFileId: activeFileId,
+                },
+            });
+
             setCurrentStep('success');
         } catch (error) {
             console.error('Import error:', error);
@@ -46,31 +53,6 @@ export const PreviewStep: React.FC = () => {
             setIsImporting(false);
         }
     };
-
-    if (parseTransactions.isPending) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-        );
-    }
-
-    const parseResult = parseTransactions.data;
-
-    if (!parseResult) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No transactions found</p>
-                <Button
-                    variant="outline"
-                    onClick={() => parseTransactions.mutate({ param: { id: activeFileId! } })}
-                >
-                    Reparse File
-                </Button>
-            </div>
-        );
-    }
-    const { transactions, totalCount, newCount, duplicateCount } = parseResult;
 
     return (
         <div className="space-y-6 w-3xl">
@@ -122,16 +104,13 @@ export const PreviewStep: React.FC = () => {
                                         {new Date(transaction.date).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="max-w-xs truncate">
-                                            {transaction.description}
-                                        </div>
+                                        <div className="max-w-xs truncate">{transaction.title}</div>
                                     </TableCell>
                                     <TableCell className="text-right font-mono">
                                         {transaction.spendingAmount} {transaction.spendingCurrency}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        test
-                                        {/* {transaction.isDuplicate ? (
+                                        {transaction.isDuplicate ? (
                                             <Badge
                                                 variant="outline"
                                                 className="text-orange-600 border-orange-200"
@@ -147,7 +126,7 @@ export const PreviewStep: React.FC = () => {
                                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                                 New
                                             </Badge>
-                                        )} */}
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -193,7 +172,7 @@ export const PreviewStep: React.FC = () => {
 
                 <Button
                     variant="outline"
-                    onClick={() => parseTransactions.mutate({ param: { id: activeFileId! } })}
+                    // onClick={() => parseTransactions.mutate({ param: { id: activeFileId! } })}
                 >
                     Reparse File
                 </Button>
