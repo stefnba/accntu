@@ -1,3 +1,4 @@
+import { getEnv } from '@/lib/env';
 import { DuckDBManager } from './manager';
 import type { DuckDBConfig } from './types';
 
@@ -35,13 +36,39 @@ class DuckDBSingleton {
     }
 
     private static async initializeInstance(config?: DuckDBConfig): Promise<DuckDBManager> {
+        let env: ReturnType<typeof getEnv>;
+        try {
+            env = getEnv();
+        } catch (error) {
+            // If env validation fails, create minimal config without PostgreSQL extension
+            console.warn('Environment validation failed, creating DuckDB without PostgreSQL extension:', error);
+            const fallbackConfig: DuckDBConfig = {
+                database: ':memory:',
+                s3: {
+                    useCredentialChain: true,
+                    region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
+                },
+            };
+            const finalConfig = { ...fallbackConfig, ...config };
+            const manager = new DuckDBManager(finalConfig);
+            await manager.initialize();
+            manager.setupCleanupHandlers();
+            return manager;
+        }
+
+        const enablePostgres = Boolean(process.env.ENABLE_DUCKDB_POSTGRES_EXTENSION);
+
         const defaultConfig: DuckDBConfig = {
             database: ':memory:', // In-memory for fast processing
-            enableHttpfs: true, // Enable S3 support
             s3: {
                 useCredentialChain: true, // Use AWS credential chain
                 region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
             },
+            postgres: enablePostgres ? {
+                connectionString: env.DATABASE_URL,
+                connectionLimit: 10,
+                timeout: 30000,
+            } : undefined,
         };
 
         const finalConfig = { ...defaultConfig, ...config };

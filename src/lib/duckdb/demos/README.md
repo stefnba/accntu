@@ -19,9 +19,11 @@ This folder contains demonstration scripts showcasing different aspects of the D
 **Use Case**: When you need to quickly explore and analyze raw data from S3 without any processing.
 
 ### 🔄 Demo 2: S3 Data Transformation (`2-transformation-s3.ts`)
+
 **Purpose**: Complete data transformation pipeline with S3 source
 
 **Features**:
+
 - Read CSV data from S3
 - Generate deterministic IDs from raw column data
 - Transform European date/number formats to standard formats
@@ -36,6 +38,7 @@ This folder contains demonstration scripts showcasing different aspects of the D
 **Purpose**: Local file processing with comprehensive ID generation demonstration
 
 **Features**:
+
 - Process local CSV files (no S3 required)
 - Generate deterministic IDs from raw column data
 - Transform European number formats
@@ -57,6 +60,8 @@ The folder also contains older demo files that showcase different patterns:
 ## Quick Start
 
 ### Run Individual Demos
+
+Due to compatibility issues between Bun and DuckDB, use `npx tsx` instead of `bun run`:
 
 ```bash
 # Demo 1: Simple S3 Query
@@ -87,16 +92,18 @@ node --import tsx src/lib/duckdb/demos/index.ts --help
 ## Prerequisites
 
 ### For S3 Demos (1 & 2)
+
 - AWS credentials configured (via environment variables, ~/.aws/credentials, or IAM roles)
 - Access to the S3 bucket: `s3://accntu/`
 - Environment variables (optional, uses credential chain by default):
-  ```bash
-  AWS_ACCESS_KEY_ID=your_access_key
-  AWS_SECRET_ACCESS_KEY=your_secret_key
-  AWS_BUCKET_REGION=us-east-1
-  ```
+    ```bash
+    AWS_ACCESS_KEY_ID=your_access_key
+    AWS_SECRET_ACCESS_KEY=your_secret_key
+    AWS_BUCKET_REGION=us-east-1
+    ```
 
 ### For Local Demo (3)
+
 - Local test file: `src/lib/duckdb/demos/test_transactions.csv` (provided)
 - No S3 credentials required
 
@@ -114,6 +121,7 @@ Authorised on;Processed on;Amount;Currency;Description;Payment type;Status;Amoun
 ```
 
 **Key Features**:
+
 - European date format: `DD.MM.YYYY`
 - European decimal format: `1500,00` (comma as decimal separator)
 - Semicolon delimiters
@@ -131,6 +139,7 @@ idConfig: {
 ```
 
 **How it works**:
+
 1. Extracts specified raw column values before transformation
 2. Creates hash input: `"28.05.2025|Test Purchase 1|-123,45|EUR"`
 3. Generates MD5 hash and takes first 25 characters
@@ -139,12 +148,14 @@ idConfig: {
 ## Transformation Examples
 
 ### Date Conversion
+
 ```sql
 -- Convert DD.MM.YYYY to YYYY-MM-DD
 strftime(strptime("Authorised on", '%d.%m.%Y'), '%Y-%m-%d') as date
 ```
 
 ### European Number Conversion
+
 ```sql
 -- Convert 1.234,56 to 1234.56
 CAST(
@@ -157,6 +168,7 @@ CAST(
 ```
 
 ### Transaction Type Detection
+
 ```sql
 -- Determine debit/credit based on amount sign
 CASE
@@ -186,6 +198,7 @@ Each demo provides detailed performance metrics:
 ## Output Examples
 
 ### Demo 1 Output
+
 ```
 🚀 Demo 1: Simple S3 Query (No Transformation)
 
@@ -202,6 +215,7 @@ Each demo provides detailed performance metrics:
 ```
 
 ### Demo 2 Output
+
 ```
 🚀 Demo 2: S3 Data Transformation with Validation
 
@@ -222,6 +236,7 @@ Each demo provides detailed performance metrics:
 ```
 
 ### Demo 3 Output
+
 ```
 🚀 Demo 3: Local File Transformation
 
@@ -242,6 +257,7 @@ Each demo provides detailed performance metrics:
 ## Troubleshooting
 
 ### S3 Connection Issues
+
 ```bash
 # Check AWS credentials
 aws sts get-caller-identity
@@ -251,6 +267,7 @@ aws s3 ls s3://accntu/
 ```
 
 ### DuckDB Installation Issues
+
 ```bash
 # Reinstall DuckDB
 bun remove @duckdb/node-api
@@ -258,6 +275,7 @@ bun add @duckdb/node-api
 ```
 
 ### Local File Issues
+
 ```bash
 # Ensure test file exists
 ls -la test_transactions.csv
@@ -266,13 +284,57 @@ ls -la test_transactions.csv
 chmod 644 test_transactions.csv
 ```
 
+## PostgreSQL Extension Demo
+
+### 🔗 PostgreSQL Query Demo (`postgres-query-demo.ts`)
+
+**Purpose**: Demonstrate DuckDB PostgreSQL extension for querying live database tables
+
+**Features:**
+
+- ✅ Direct PostgreSQL table queries from DuckDB
+- ✅ Complex aggregations and analytics on live data
+- ✅ JOINs between DuckDB temp tables and PostgreSQL tables
+- ✅ Bulk duplicate detection (production use case)
+- ✅ Performance benchmarking
+
+**Prerequisites:**
+
+```bash
+DATABASE_URL=postgresql://username:password@localhost:5432/accntu
+ENABLE_DUCKDB_POSTGRES_EXTENSION=true
+```
+
+**Run the demo:**
+
+```bash
+node --import tsx src/lib/duckdb/demos/postgres-query-demo.ts
+```
+
+**Example Output:**
+
+```
+🚀 Starting PostgreSQL Query Demo...
+✅ DuckDB initialized with PostgreSQL extension
+
+📊 Demo 1: Basic PostgreSQL Queries
+🔍 Top 5 users by transaction count:
+📈 Demo 2: Analytics on PostgreSQL Data
+🔗 Demo 3: DuckDB ↔️ PostgreSQL JOIN
+🔍 Demo 4: Bulk Duplicate Detection
+⚡ Demo 5: Performance Comparison
+🧹 Cleanup completed
+```
+
 ## Integration with Main Application
 
 These demos can be imported and used in your main application:
 
 ```typescript
 import { queryS3Demo, transformationS3Demo, localTransformationDemo } from './src/lib/duckdb/demos';
+import { createPostgresQueryDemo } from './src/lib/duckdb/demos/postgres-query-demo';
 
 // Use in your application
 await transformationS3Demo();
+await createPostgresQueryDemo();
 ```

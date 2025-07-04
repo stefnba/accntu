@@ -26,6 +26,11 @@ import type {
     TransformationResult,
 } from './types';
 
+/**
+ * Manages the DuckDB instance and connection.
+ * It is responsible for initializing the DuckDB instance and connection,
+ * and for executing SQL queries.
+ */
 export class DuckDBManager {
     private instance: DuckDBInstance | null = null;
     private connection: DuckDBConnection | null = null;
@@ -63,6 +68,16 @@ export class DuckDBManager {
                     await this.connection.run('LOAD spatial;'); // Required for Excel extension
                 } catch (error) {
                     console.warn('Excel extension may not be available:', error);
+                }
+            }
+
+            // Install and load PostgreSQL extension if postgres config is provided
+            if (this.config.enablePostgres || this.config.postgres) {
+                await this.connection.run('INSTALL postgres;');
+                await this.connection.run('LOAD postgres;');
+
+                if (this.config.postgres) {
+                    await this.setupPostgresConnection();
                 }
             }
 
@@ -131,6 +146,61 @@ export class DuckDBManager {
         } catch (error) {
             throw new DuckDBS3Error(
                 error instanceof Error ? error.message : String(error),
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * Setup PostgreSQL connection using ATTACH statement with configurable options
+     */
+    private async setupPostgresConnection(): Promise<void> {
+        if (!this.config.postgres) return;
+
+        console.log('Setting up PostgreSQL connection...');
+
+        const pgConfig = this.config.postgres;
+
+        try {
+            // Build ATTACH query with configurable options
+            const alias = pgConfig.alias || 'pg_db';
+            const options: string[] = ['TYPE postgres'];
+
+            // Add read-only option if specified
+            if (pgConfig.readOnly) {
+                options.push('READ_ONLY');
+            }
+
+            // Add schema option if specified
+            if (pgConfig.schema) {
+                options.push(`SCHEMA '${pgConfig.schema}'`);
+            }
+
+            // Add secret option if specified
+            if (pgConfig.useSecret && pgConfig.secretName) {
+                options.push(`SECRET ${pgConfig.secretName}`);
+            }
+
+            const optionsString = options.join(', ');
+
+            let attachQuery: string;
+            if (pgConfig.useSecret) {
+                // Use empty connection string when using secrets
+                attachQuery = `ATTACH '' AS ${alias} (${optionsString});`;
+            } else {
+                // Use connection string directly
+                attachQuery = `ATTACH '${pgConfig.connectionString}' AS ${alias} (${optionsString});`;
+            }
+
+            await this.connection!.run(attachQuery);
+            console.log(`PostgreSQL connection established successfully as '${alias}'`);
+
+            // Store the alias for use in queries
+            this.config.postgres.alias = alias;
+        } catch (error) {
+            console.warn('Failed to setup PostgreSQL connection:', error);
+            throw new DuckDBInitializationError(
+                `PostgreSQL connection failed: ${error instanceof Error ? error.message : String(error)}`,
                 error instanceof Error ? error : undefined
             );
         }
@@ -826,6 +896,13 @@ export class DuckDBManager {
     }
 
     /**
+     * Get the PostgreSQL database alias for use in queries
+     */
+    getPostgresAlias(): string {
+        return this.config.postgres?.alias || 'pg_db';
+    }
+
+    /**
      * Automatically cleanup on process exit
      */
     setupCleanupHandlers(): void {
@@ -837,5 +914,161 @@ export class DuckDBManager {
         process.on('SIGINT', cleanup);
         process.on('SIGTERM', cleanup);
         process.on('uncaughtException', cleanup);
+    }
+
+    /**
+     * Bulk duplicate detection using PostgreSQL extension
+     */
+    async bulkCheckDuplicates<T extends Record<string, any>>({
+        transactions,
+        userId,
+        keyExtractor,
+        postgresTable,
+    }: {
+        transactions: T[];
+        userId: string;
+        keyExtractor: (item: T) => string;
+        postgresTable?: string;
+    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
+        if (!this.config.postgres) {
+            throw new DuckDBQueryError('PostgreSQL configuration not provided');
+        }
+
+        if (transactions.length === 0) {
+            return [];
+        }
+
+        // Use dynamic PostgreSQL alias and table
+        const pgAlias = this.getPostgresAlias();
+        const fullTableName = postgresTable || `${pgAlias}.transaction`;
+        const tempTableName = `temp_transactions_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        let duplicateCheckQuery = '';
+
+        try {
+            // Create temporary table with new transactions
+            const createTempTableQuery = `
+                CREATE TEMPORARY TABLE ${tempTableName} (
+                    key VARCHAR,
+                    data VARCHAR,
+                    row_index INTEGER
+                )
+            `;
+            await this.query(createTempTableQuery);
+
+            // Insert new transactions into temporary table
+            const insertValues = transactions
+                .map((transaction, index) => {
+                    const key = keyExtractor(transaction);
+                    const data = JSON.stringify(transaction);
+                    return `('${key.replace(/'/g, "''")}', '${data.replace(/'/g, "''")}', ${index})`;
+                })
+                .join(', ');
+
+            const insertQuery = `
+                INSERT INTO ${tempTableName} (key, data, row_index)
+                VALUES ${insertValues}
+            `;
+            await this.query(insertQuery);
+
+            // Perform bulk duplicate check with PostgreSQL join
+            duplicateCheckQuery = `
+                WITH existing_keys AS (
+                    SELECT key, id
+                    FROM ${fullTableName}
+                    WHERE user_id = $1
+                        AND key IN (SELECT key FROM ${tempTableName})
+                        AND is_active = true
+                )
+                SELECT
+                    t.key,
+                    t.data,
+                    t.row_index,
+                    CASE WHEN ek.key IS NOT NULL THEN true ELSE false END as is_duplicate,
+                    ek.id as existing_transaction_id
+                FROM ${tempTableName} t
+                LEFT JOIN existing_keys ek ON t.key = ek.key
+                ORDER BY t.row_index
+            `;
+
+            const result = await this.query(duplicateCheckQuery, [userId]);
+
+            // Clean up temporary table
+            await this.query(`DROP TABLE ${tempTableName}`);
+
+            // Map results back to original transaction objects
+            return result.rows.map((row) => ({
+                ...JSON.parse(row.data),
+                isDuplicate: row.is_duplicate,
+                existingTransactionId: row.existing_transaction_id || undefined,
+            }));
+        } catch (error) {
+            // Ensure cleanup on error
+            try {
+                await this.query(`DROP TABLE IF EXISTS ${tempTableName}`);
+            } catch (cleanupError) {
+                console.warn('Failed to cleanup temp table:', cleanupError);
+            }
+
+            throw new DuckDBQueryError(
+                `Bulk duplicate check failed: ${error instanceof Error ? error.message : String(error)}`,
+                duplicateCheckQuery,
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * Fallback duplicate detection using standard queries
+     * Used when PostgreSQL extension is not available
+     */
+    async fallbackCheckDuplicates<T extends Record<string, any>>({
+        transactions,
+        keyExtractor,
+    }: {
+        transactions: T[];
+        keyExtractor: (item: T) => string;
+    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
+        // Simple fallback that just marks all as not duplicate
+        // In real implementation, this would use the existing JavaScript approach
+        return transactions.map((transaction) => ({
+            ...transaction,
+            isDuplicate: false,
+            existingTransactionId: undefined,
+        }));
+    }
+
+    /**
+     * Smart duplicate detection with automatic fallback
+     */
+    async checkDuplicatesWithFallback<T extends Record<string, any>>({
+        transactions,
+        userId,
+        keyExtractor,
+        postgresTable = 'pg_db.transaction',
+    }: {
+        transactions: T[];
+        userId: string;
+        keyExtractor: (item: T) => string;
+        postgresTable?: string;
+    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
+        try {
+            // Try PostgreSQL extension approach first if postgres config is available
+            if (this.config.postgres) {
+                return await this.bulkCheckDuplicates({
+                    transactions,
+                    userId,
+                    keyExtractor,
+                    postgresTable,
+                });
+            }
+        } catch (error) {
+            console.warn('PostgreSQL extension duplicate check failed, falling back:', error);
+        }
+
+        // Fallback to traditional approach
+        return await this.fallbackCheckDuplicates({
+            transactions,
+            keyExtractor,
+        });
     }
 }

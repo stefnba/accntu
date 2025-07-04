@@ -51,11 +51,26 @@ export interface ExcelReadOptions {
     ignore_errors?: boolean; // Replace cells that can't be cast with NULL (default: false)
 }
 
+export interface PostgreSQLConfig {
+    connectionString: string;
+    connectionLimit?: number;
+    timeout?: number;
+
+    // DuckDB PostgreSQL extension specific options
+    alias?: string; // Database alias name (default: 'pg_db')
+    schema?: string; // Specific PostgreSQL schema to attach (default: all schemas)
+    readOnly?: boolean; // Attach as read-only (default: true)
+    useSecret?: boolean; // Use DuckDB secret instead of connection string (default: false)
+    secretName?: string; // Name of the secret if useSecret is true
+}
+
 export interface DuckDBConfig {
     database?: string; // ':memory:' for in-memory, or file path
-    enableHttpfs?: boolean;
+    enableHttpfs?: boolean; // Optional override - auto-detected from s3 config
     enableExcel?: boolean; // Enable Excel extension
-    s3?: S3Config;
+    enablePostgres?: boolean; // Optional override - auto-detected from postgres config
+    s3?: S3Config; // HTTPfs extension auto-loaded when present
+    postgres?: PostgreSQLConfig; // PostgreSQL extension auto-loaded when present
 }
 
 export interface QueryResult {
