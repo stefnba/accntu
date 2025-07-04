@@ -3,54 +3,61 @@ import { generateRandonFileName } from '@/lib/upload/utils';
 import fs from 'fs/promises';
 import path from 'path';
 
-/**
- * Write a file to disk.
- * @param filePath - The path to the file.
- * @param fileName - The name of the file.
- * @param file - The file to write to disk.
- * @param config - The config for the local upload service.
- * @returns The path to the file.
- */
-const writeFileToDisk = async ({
-    filePath,
-    fileName,
-    file,
-    config,
-    fileExtension,
-}: {
+type TWriteFileToDiskParams = {
     filePath?: string | string[];
     fileName?: string;
     fileExtension?: string;
     file: Buffer | string;
     config?: Omit<LocalUploadConfig, 'preserveFileName'>;
-}): Promise<string> => {
-    const { baseDir, createDirectories } = config || {
+};
+
+/**
+ * Build a file path for a file to be written to disk.
+ * @param params - The params to build the file path.
+ * @returns The path to the file.
+ */
+const buildFilePath = (params: TWriteFileToDiskParams) => {
+    const { baseDir } = params.config || {
         baseDir: LOCAL_UPLOAD_BASE_DIR,
+    };
+
+    let _filePath = path.join(
+        baseDir,
+        Array.isArray(params.filePath) ? path.join(...params.filePath) : params.filePath || ''
+    );
+
+    // add file name
+    _filePath = path.join(_filePath, params.fileName || generateRandonFileName());
+
+    // add file extension if it doesn't exist
+    if (params.fileExtension && !path.extname(_filePath)) {
+        _filePath = `${_filePath}.${params.fileExtension}`;
+    }
+
+    return _filePath;
+};
+
+/**
+ * Write a file to disk.
+ * @param params - The parameters for writing the file to disk.
+ * @returns The path to the file.
+ */
+const writeFileToDisk = async (params: TWriteFileToDiskParams): Promise<string> => {
+    const { createDirectories } = params.config || {
         createDirectories: true,
     };
 
-    // only dir path
-    let _filePath = path.join(
-        baseDir,
-        Array.isArray(filePath) ? path.join(...filePath) : filePath || ''
-    );
+    const filePath = buildFilePath(params);
+    const dirPath = path.dirname(filePath);
 
     // create directories if they don't exist
     if (createDirectories) {
-        await fs.mkdir(_filePath, { recursive: true });
+        await fs.mkdir(dirPath, { recursive: true });
     }
 
-    // add file name
-    _filePath = path.join(_filePath, fileName || generateRandonFileName());
+    await fs.writeFile(filePath, params.file);
 
-    // add file extension if it doesn't exist
-    if (fileExtension && !path.extname(_filePath)) {
-        _filePath = `${_filePath}.${fileExtension}`;
-    }
-
-    await fs.writeFile(_filePath, file);
-
-    return _filePath;
+    return filePath;
 };
 
 /**
@@ -59,10 +66,37 @@ const writeFileToDisk = async ({
  * @returns The path to the file.
  */
 const deleteFileFromDisk = async ({ filePath }: { filePath: string }) => {
-    await fs.unlink(filePath);
+    try {
+        await fs.unlink(filePath);
+    } catch (error: any) {
+        // If the file does not exist, we don't need to throw an error.
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
+    }
+};
+
+/**
+ * Creates a temporary file, executes a function with the file path, and then deletes the file.
+ * @param fileParams - The parameters for creating the file.
+ * @param fn - The function to execute with the temporary file's path.
+ * @returns The result of the executed function.
+ */
+const createTempFileForFn = async <T>(
+    fileParams: TWriteFileToDiskParams,
+    fn: (filePath: string) => Promise<T>
+): Promise<T> => {
+    const filePath = await writeFileToDisk(fileParams);
+
+    try {
+        return await fn(filePath);
+    } finally {
+        await deleteFileFromDisk({ filePath });
+    }
 };
 
 export const localUploadService = {
     writeFileToDisk,
     deleteFileFromDisk,
+    createTempFileForFn,
 };
