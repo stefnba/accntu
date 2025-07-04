@@ -1,3 +1,7 @@
+import {
+    transactionParseDuplicateCheckSchema,
+    TTransactionParseDuplicateCheck,
+} from '@/features/transaction/schemas';
 import { parseZodError } from '@/lib/utils/zod';
 import { z } from 'zod';
 import { DuckDBCore } from './core';
@@ -69,6 +73,7 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
             maxErrorDetailRows = 25,
             maxExamplesPerField = 5, // Default to 5 examples per field
             includeInvalidRows = false,
+            storeInTempTable = false,
         } = options;
 
         // Define placeholder identifiers for easy management
@@ -122,39 +127,51 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
             const result = await this.query(fullQuery, config.params);
             transformTime = Date.now() - transformStartTime;
 
-            // Step 3: Validate each row with Zod schema
+            // Step 3: Validate with hybrid approach - try array validation first, fall back to individual validation
             const validationStartTime = Date.now();
             const validatedData: T[] = [];
             const validationErrors: RowValidationError[] = [];
 
-            for (let i = 0; i < result.rows.length; i++) {
-                const row = result.rows[i];
+            try {
+                // Fast path: Try array validation first
+                const arraySchema = z.array(config.schema);
+                const arrayResult = arraySchema.parse(result.rows);
+                validatedData.push(...arrayResult);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    // Array validation failed - fall back to individual validation for detailed error reporting
+                    for (let i = 0; i < result.rows.length; i++) {
+                        const row = result.rows[i];
 
-                try {
-                    const validatedRow = config.schema.parse(row);
-                    validatedData.push(validatedRow);
-                } catch (error) {
-                    if (error instanceof z.ZodError) {
-                        // Create detailed error report if within the limit
-                        if (validationErrors.length < maxErrorDetailRows) {
-                            validationErrors.push({
-                                rowIndex: i,
-                                row: includeInvalidRows ? row : {},
-                                errors: parseZodError(error, row),
-                            });
-                        }
+                        try {
+                            const validatedRow = config.schema.parse(row);
+                            validatedData.push(validatedRow);
+                        } catch (rowError) {
+                            if (rowError instanceof z.ZodError) {
+                                // Create detailed error report if within the limit
+                                if (validationErrors.length < maxErrorDetailRows) {
+                                    validationErrors.push({
+                                        rowIndex: i,
+                                        row: includeInvalidRows ? row : {},
+                                        errors: parseZodError(rowError, row),
+                                    });
+                                }
 
-                        // Stop if we've reached max validation errors and not continuing on error
-                        if (
-                            !continueOnValidationError ||
-                            (maxValidationErrors > 0 &&
-                                validationErrors.length >= maxValidationErrors)
-                        ) {
-                            break;
+                                // Stop if we've reached max validation errors and not continuing on error
+                                if (
+                                    !continueOnValidationError ||
+                                    (maxValidationErrors > 0 &&
+                                        validationErrors.length >= maxValidationErrors)
+                                ) {
+                                    break;
+                                }
+                            } else {
+                                throw rowError; // Re-throw non-Zod errors
+                            }
                         }
-                    } else {
-                        throw error; // Re-throw non-Zod errors
                     }
+                } else {
+                    throw error; // Re-throw non-Zod errors
                 }
             }
 
@@ -187,7 +204,7 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
             }
             const totalTime = Date.now() - startTime;
 
-            return {
+            const returnData: TransformationResult<T> = {
                 data: result.rows,
                 validatedData,
                 totalRows: result.rowCount,
@@ -201,6 +218,20 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
                     totalTimeMs: totalTime,
                 },
             };
+
+            // Step 5: Store validated data in a temporary table if requested
+            if (storeInTempTable) {
+                const tempTableName = `temp_validated_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+                await this.query(`CREATE TEMP TABLE ${tempTableName} AS (${fullQuery})`);
+
+                console.log('Temp table created', tempTableName);
+
+                // update the return data with the temp table name
+                returnData.tempTableName = tempTableName;
+            }
+
+            return returnData;
         } catch (error) {
             if (error instanceof DuckDBQueryError) {
                 throw error;
@@ -234,74 +265,85 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
     }
 
     /**
-     * Bulk duplicate detection using PostgreSQL extension
+     * Bulk duplicate detection using PostgreSQL extension and a temp table
+     *
+     * This method is used to check for duplicates in a bulk operation.
+     * It uses a temp table to store the transactions and then performs a join
+     * with the existing transactions in the database.
+     *
+     * @param transactions - The transactions to check for duplicates
+     * @param userId - The user ID
+     * @param connectedBankAccountId - The connected bank account ID
+     * @param keyExtractor - The function to extract the key from the transaction
+     * @param tempTableName - The name of the temp table
+     * @param transactionTableName - The name of the transaction table
      */
-    async bulkCheckDuplicates<T extends Record<string, any>>({
-        transactions,
+    async bulkCheckDuplicates({
         userId,
-        keyExtractor,
+        connectedBankAccountId,
+        duplicateKeyName,
+        tempTableName,
         transactionTableName,
     }: {
-        transactions: T[];
         userId: string;
-        keyExtractor: (item: T) => string;
+        connectedBankAccountId: string;
+        duplicateKeyName?: string;
+        tempTableName: string;
         transactionTableName: string;
-    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
+    }): Promise<Array<TTransactionParseDuplicateCheck>> {
         if (!this.config.postgres) {
             throw new DuckDBQueryError('PostgreSQL configuration not provided');
         }
 
-        if (transactions.length === 0) {
-            return [];
-        }
-
         // Use dynamic PostgreSQL alias and table
-        const pgAlias = this.getPostgresAlias();
-        const fullTableName = `${pgAlias}.${transactionTableName}`;
-        const tempTableName = `temp_transactions_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const transactionTable = `${this.getPostgresAlias()}.${transactionTableName}`;
+
         let duplicateCheckQuery = '';
 
+        if (!duplicateKeyName) {
+            duplicateKeyName = 'key';
+        }
+
         try {
-            // Create temporary table with new transactions using the core method
-            const transactionData = transactions.map((transaction, index) => ({
-                key: keyExtractor(transaction),
-                data: JSON.stringify(transaction),
-                row_index: index,
-            }));
-
-            await this.createTempTableFromArray(tempTableName, transactionData);
-
             // Perform bulk duplicate check with PostgreSQL join
             duplicateCheckQuery = `
                 WITH existing_keys AS (
-                    SELECT key, id
-                    FROM ${fullTableName}
+                    SELECT ${duplicateKeyName}, id
+                    FROM ${transactionTable}
                     WHERE user_id = $1
-                        AND key IN (SELECT key FROM ${tempTableName})
                         AND is_active = true
+                        AND connected_bank_account_id = $2
                 )
                 SELECT
-                    t.key,
-                    t.data,
-                    t.row_index,
-                    CASE WHEN ek.key IS NOT NULL THEN true ELSE false END as is_duplicate,
-                    ek.id as existing_transaction_id
+                    t.*,
+                    CASE WHEN ek.${duplicateKeyName} IS NOT NULL THEN true ELSE false END as isDuplicate,
+                    ek.id as existingTransactionId
                 FROM ${tempTableName} t
-                LEFT JOIN existing_keys ek ON t.key = ek.key
-                ORDER BY t.row_index
+                LEFT JOIN existing_keys ek ON t.${duplicateKeyName} = ek.${duplicateKeyName}
             `;
 
-            const result = await this.query(duplicateCheckQuery, [userId]);
+            const result = await this.query(duplicateCheckQuery, [userId, connectedBankAccountId]);
+
+            if (result.rowCount === 0) {
+                return [];
+            }
 
             // Clean up temporary table
             await this.query(`DROP TABLE ${tempTableName}`);
 
-            // Map results back to original transaction objects
-            return result.rows.map((row) => ({
-                ...JSON.parse(row.data),
-                isDuplicate: row.is_duplicate,
-                existingTransactionId: row.existing_transaction_id || undefined,
-            }));
+            const validatedResult = z
+                .array(transactionParseDuplicateCheckSchema)
+                .safeParse(result.rows);
+
+            if (!validatedResult.success) {
+                throw new DuckDBQueryError(
+                    `Bulk duplicate check failed: ${validatedResult.error.message}`,
+                    duplicateCheckQuery,
+                    validatedResult.error
+                );
+            }
+
+            return validatedResult.data;
         } catch (error) {
             // Ensure cleanup on error
             try {
@@ -316,130 +358,5 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
                 error instanceof Error ? error : undefined
             );
         }
-    }
-
-    /**
-     * Fallback duplicate detection using standard queries
-     * Used when PostgreSQL extension is not available
-     */
-    async fallbackCheckDuplicates<T extends Record<string, any>>({
-        transactions,
-        keyExtractor,
-    }: {
-        transactions: T[];
-        keyExtractor: (item: T) => string;
-    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
-        // Simple fallback that just marks all as not duplicate
-        // In real implementation, this would use the existing JavaScript approach
-        return transactions.map((transaction) => ({
-            ...transaction,
-            isDuplicate: false,
-            existingTransactionId: undefined,
-        }));
-    }
-
-    /**
-     * Smart duplicate detection with automatic fallback
-     */
-    async checkDuplicatesWithFallback<T extends Record<string, any>>({
-        transactions,
-        userId,
-        keyExtractor,
-        transactionTableName = 'transaction',
-    }: {
-        transactions: T[];
-        userId: string;
-        keyExtractor: (item: T) => string;
-        transactionTableName?: string;
-    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
-        try {
-            // Try PostgreSQL extension approach first if postgres config is available
-            if (this.config.postgres) {
-                return await this.bulkCheckDuplicates({
-                    transactions,
-                    userId,
-                    keyExtractor,
-                    transactionTableName,
-                });
-            }
-        } catch (error) {
-            console.warn('PostgreSQL extension duplicate check failed, falling back:', error);
-        }
-
-        // Fallback to traditional approach
-        return await this.fallbackCheckDuplicates({
-            transactions,
-            keyExtractor,
-        });
-    }
-
-    /**
-     * Transform transactions with currency conversion and duplicate checking
-     */
-    async transformTransactions<T extends Record<string, any>>({
-        transactions,
-        userId,
-        keyExtractor,
-        transformer,
-        transactionTableName,
-    }: {
-        transactions: T[];
-        userId: string;
-        keyExtractor: (item: T) => string;
-        transformer?: (transaction: T) => T | Promise<T>;
-        transactionTableName: string;
-    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
-        // Transform transactions if transformer provided
-        let transformedTransactions = transactions;
-        if (transformer) {
-            transformedTransactions = await Promise.all(transactions.map(transformer));
-        }
-
-        // Check for duplicates
-        return await this.checkDuplicatesWithFallback({
-            transactions: transformedTransactions,
-            userId,
-            keyExtractor,
-            transactionTableName,
-        });
-    }
-
-    /**
-     * Batch process transactions with streaming support
-     */
-    async batchProcessTransactions<T extends Record<string, any>>({
-        transactions,
-        userId,
-        keyExtractor,
-        batchSize = 1000,
-        onBatchProcessed,
-        transactionTableName = 'transaction',
-    }: {
-        transactions: T[];
-        userId: string;
-        keyExtractor: (item: T) => string;
-        batchSize?: number;
-        onBatchProcessed?: (processed: number, total: number) => void;
-        transactionTableName?: string;
-    }): Promise<Array<T & { isDuplicate: boolean; existingTransactionId?: string }>> {
-        const results: Array<T & { isDuplicate: boolean; existingTransactionId?: string }> = [];
-
-        for (let i = 0; i < transactions.length; i += batchSize) {
-            const batch = transactions.slice(i, i + batchSize);
-            const batchResults = await this.checkDuplicatesWithFallback({
-                transactions: batch,
-                userId,
-                keyExtractor,
-                transactionTableName,
-            });
-
-            results.push(...batchResults);
-
-            if (onBatchProcessed) {
-                onBatchProcessed(Math.min(i + batchSize, transactions.length), transactions.length);
-            }
-        }
-
-        return results;
     }
 }

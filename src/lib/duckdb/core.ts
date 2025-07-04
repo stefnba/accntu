@@ -1,7 +1,6 @@
+import { localUploadService } from '@/lib/upload/local/service';
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
 import { createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
-import { localUploadService } from '@/lib/upload/local/service';
 import {
     DuckDBConnectionError,
     DuckDBInitializationError,
@@ -423,13 +422,13 @@ export class DuckDBCore {
 
         // Use DuckDB's native JSON processing without JavaScript loops
         // Convert entire array to single JSON string and let DuckDB parse it
-        
+
         const jsonArrayString = JSON.stringify(data).replace(/'/g, "''");
         const columns = Object.keys(data[0]);
-        
+
         // Get type information from first row for proper type casting
         const firstRow = data[0];
-        const columnTypes = columns.map(col => {
+        const columnTypes = columns.map((col) => {
             const value = firstRow[col];
             if (typeof value === 'number') {
                 return Number.isInteger(value) ? 'INTEGER' : 'DOUBLE';
@@ -440,13 +439,13 @@ export class DuckDBCore {
             }
             return 'VARCHAR';
         });
-        
+
         try {
             // DuckDB approach: Use read_json_auto function with virtual file
             // This is more efficient than unnest approaches
             await this.query(`CREATE TEMPORARY TABLE ${tableName}_raw (json_data JSON)`);
             await this.query(`INSERT INTO ${tableName}_raw VALUES ('[${jsonArrayString}]'::JSON)`);
-            
+
             // Extract columns with proper type casting using DuckDB's JSON path syntax
             const columnExtractions = columns
                 .map((col, idx) => {
@@ -462,33 +461,32 @@ export class DuckDBCore {
                     }
                 })
                 .join(', ');
-                
+
             // Create the table by unnesting the arrays
             await this.query(`
                 CREATE TEMPORARY TABLE ${tableName}_arrays AS
                 SELECT ${columnExtractions}
                 FROM ${tableName}_raw
             `);
-            
+
             // Unnest all arrays to create final row-based table
             const unnestExpressions = columns
-                .map(col => `unnest("${col}") AS "${col}"`)
+                .map((col) => `unnest("${col}") AS "${col}"`)
                 .join(', ');
-                
+
             await this.query(`
                 CREATE TEMPORARY TABLE ${tableName} AS
                 SELECT ${unnestExpressions}
                 FROM ${tableName}_arrays
             `);
-            
+
             // Clean up intermediate tables
             await this.query(`DROP TABLE ${tableName}_raw`);
             await this.query(`DROP TABLE ${tableName}_arrays`);
-            
         } catch (error) {
             // Fallback to the JSON VALUES approach if advanced JSON fails
             const valuesClause = data
-                .map(row => {
+                .map((row) => {
                     const jsonString = JSON.stringify(row).replace(/'/g, "''");
                     return `('${jsonString}'::JSON)`;
                 })
@@ -563,7 +561,6 @@ export class DuckDBCore {
         }
     }
 
-
     /**
      * Query JavaScript array objects using DuckDB's JSON VALUES clause
      * Good for small datasets - uses JavaScript loops but minimal overhead
@@ -596,7 +593,7 @@ export class DuckDBCore {
 
         // Get type information for proper casting
         const firstRow = data[0];
-        const columnTypes = columns.map(col => {
+        const columnTypes = columns.map((col) => {
             const value = firstRow[col];
             if (typeof value === 'number') {
                 return Number.isInteger(value) ? 'INTEGER' : 'DOUBLE';
@@ -920,7 +917,7 @@ export class DuckDBCore {
             async (tempFilePath) => {
                 // Stream JSON data to temporary file
                 const fileStream = createWriteStream(tempFilePath);
-                
+
                 // Convert ReadableStream to Node.js readable stream
                 const reader = jsonStream.getReader();
                 try {
@@ -976,7 +973,7 @@ export class DuckDBCore {
         try {
             // Fetch the API response as a stream
             const response = await fetch(url, fetchOptions);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -1036,21 +1033,21 @@ export class DuckDBCore {
                     if (format === 'array') {
                         // Write as JSON array
                         fileStream.write('[');
-                        
+
                         for (let i = 0; i < data.length; i += batchSize) {
                             const batch = data.slice(i, i + batchSize);
-                            const jsonBatch = batch.map(row => JSON.stringify(row)).join(',');
-                            
+                            const jsonBatch = batch.map((row) => JSON.stringify(row)).join(',');
+
                             if (i > 0) fileStream.write(',');
                             fileStream.write(jsonBatch);
                         }
-                        
+
                         fileStream.write(']');
                     } else {
                         // Write as newline-delimited JSON
                         for (let i = 0; i < data.length; i += batchSize) {
                             const batch = data.slice(i, i + batchSize);
-                            const jsonLines = batch.map(row => JSON.stringify(row)).join('\n');
+                            const jsonLines = batch.map((row) => JSON.stringify(row)).join('\n');
                             fileStream.write(jsonLines);
                             if (i + batchSize < data.length) fileStream.write('\n');
                         }
@@ -1193,11 +1190,7 @@ export class DuckDBCore {
             nativeThreshold?: number;
         } = {}
     ): Promise<QueryResult> {
-        const { 
-            forceMethod = 'auto', 
-            fileThreshold = 100000,
-            nativeThreshold = 500 
-        } = options;
+        const { forceMethod = 'auto', fileThreshold = 100000, nativeThreshold = 500 } = options;
 
         if (data.length === 0) {
             return { rows: [], columns: [], rowCount: 0 };

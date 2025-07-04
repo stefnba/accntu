@@ -168,6 +168,8 @@ export interface TransformationResult<T = any> {
         validationTimeMs: number;
         totalTimeMs: number;
     };
+    /** Temporary table name if `storeInTempTable` is true */
+    tempTableName?: string;
 }
 
 export interface TransformationOptions {
@@ -185,6 +187,14 @@ export interface TransformationOptions {
      * @default 5
      */
     maxExamplesPerField?: number;
-    /** Whether to return raw rows that failed validation */
+    /**
+     * Whether to return raw rows that failed validation
+     * @default false
+     */
     includeInvalidRows?: boolean;
+    /**
+     * Whether to store the validated data in a temporary table
+     * @default false
+     */
+    storeInTempTable?: boolean;
 }

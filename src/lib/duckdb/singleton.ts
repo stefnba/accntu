@@ -169,6 +169,11 @@ class DuckDBTransactionTransformSingleton {
                     useCredentialChain: true,
                     region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
                 },
+                postgres: {
+                    connectionString: process.env.DATABASE_URL!,
+                    connectionLimit: 10,
+                    timeout: 30000,
+                },
             };
             const finalConfig = { ...fallbackConfig, ...config };
             const manager = new DuckDBTransactionTransformManager(finalConfig);
@@ -177,21 +182,17 @@ class DuckDBTransactionTransformSingleton {
             return manager;
         }
 
-        const enablePostgres = Boolean(process.env.ENABLE_DUCKDB_POSTGRES_EXTENSION);
-
         const defaultConfig: DuckDBConfig = {
             database: ':memory:', // In-memory for fast processing
             s3: {
                 useCredentialChain: true, // Use AWS credential chain
                 region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
             },
-            postgres: enablePostgres
-                ? {
-                      connectionString: env.DATABASE_URL,
-                      connectionLimit: 10,
-                      timeout: 30000,
-                  }
-                : undefined,
+            postgres: {
+                connectionString: env.DATABASE_URL,
+                connectionLimit: 10,
+                timeout: 30000,
+            },
         };
 
         const finalConfig = { ...defaultConfig, ...config };
