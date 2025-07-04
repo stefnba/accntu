@@ -409,7 +409,6 @@ export class DuckDBCore {
 
     /**
      * Create temporary table from JavaScript array objects
-     * This is a core method that can be used by specialized managers
      */
     async createTempTableFromArray<T extends Record<string, any>>(
         tableName: string,
@@ -473,10 +472,14 @@ export class DuckDBCore {
     }
 
     /**
-     * Query JavaScript array objects directly without creating temporary tables
-     * Uses DuckDB's JSON support for efficient processing
+     * Query JavaScript array objects using DuckDB's native JSON support
+     * Uses VALUES clause with JSON casting - good for small datasets
+     *
+     * @param data - The array of objects to query
+     * @param sql - The SQL query to execute
+     * @param arrayAlias - The alias for the array in the SQL query
      */
-    async queryArrayObjects<T extends Record<string, any>>(
+    async queryArrayObjectsJSON<T extends Record<string, any>>(
         data: T[],
         sql: string,
         arrayAlias: string = 'data'
@@ -485,16 +488,106 @@ export class DuckDBCore {
             return { rows: [], columns: [], rowCount: 0 };
         }
 
-        // Convert array to JSON string for DuckDB processing
-        const jsonData = JSON.stringify(data);
+        // Get all unique keys from the data to build column list
+        const allKeys = new Set<string>();
+        data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
+        const columns = Array.from(allKeys);
 
-        // Create a query that reads from the JSON data
-        const wrappedSql = sql.replace(
-            new RegExp(`\\b${arrayAlias}\\b`, 'g'),
-            `(SELECT * FROM read_json_auto('${jsonData}'))`
-        );
+        // Build VALUES clause with JSON extraction
+        const valuesClause = data
+            .map((row) => {
+                const jsonString = JSON.stringify(row).replace(/'/g, "''");
+                return `('${jsonString}'::JSON)`;
+            })
+            .join(', ');
+
+        // Build column extraction for SELECT using arrow operators for automatic type handling
+        const columnExtractions = columns
+            .map((col) => `json_data ->> '$.${col}' AS "${col}"`)
+            .join(', ');
+
+        // Create the data source SQL
+        const dataSourceSql = `(
+            SELECT ${columnExtractions}
+            FROM (VALUES ${valuesClause}) AS t(json_data)
+        )`;
+
+        // Replace the alias with the data source
+        const wrappedSql = sql.replace(new RegExp(`\\b${arrayAlias}\\b`, 'g'), dataSourceSql);
 
         return await this.query(wrappedSql);
+    }
+
+    /**
+     * Query JavaScript array objects using temporary tables
+     * Better performance for large datasets (1000+ rows)
+     *
+     * @param data - The array of objects to query
+     * @param sql - The SQL query to execute
+     * @param arrayAlias - The alias for the array in the SQL query
+     */
+    async queryArrayObjectsTable<T extends Record<string, any>>(
+        data: T[],
+        sql: string,
+        arrayAlias: string = 'data'
+    ): Promise<QueryResult> {
+        if (data.length === 0) {
+            return { rows: [], columns: [], rowCount: 0 };
+        }
+
+        // Create a temporary table from the array data and then query it
+        const tempTableName = `temp_array_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+        try {
+            await this.createTempTableFromArray(tempTableName, data);
+
+            // Replace the alias with the temp table name
+            const wrappedSql = sql.replace(new RegExp(`\\b${arrayAlias}\\b`, 'g'), tempTableName);
+
+            const result = await this.query(wrappedSql);
+
+            // Clean up temp table
+            await this.query(`DROP TABLE ${tempTableName}`);
+
+            return result;
+        } catch (error) {
+            // Ensure cleanup on error
+            try {
+                await this.query(`DROP TABLE IF EXISTS ${tempTableName}`);
+            } catch {
+                // Ignore cleanup errors
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Smart array querying that chooses the best method based on data size
+     *
+     * @param data - The array of objects to query
+     * @param sql - The SQL query to execute
+     * @param arrayAlias - The alias for the array in the SQL query
+     * @param forceMethod - Force a specific method for testing
+     */
+    async queryArrayObjects<T extends Record<string, any>>(
+        data: T[],
+        sql: string,
+        arrayAlias: string = 'data',
+        forceMethod?: 'json' | 'table'
+    ): Promise<QueryResult> {
+        if (data.length === 0) {
+            return { rows: [], columns: [], rowCount: 0 };
+        }
+
+        // Choose method based on size, unless forced
+        const useJsonMethod =
+            forceMethod === 'json' || (forceMethod !== 'table' && data.length < 1000);
+
+        if (useJsonMethod) {
+            return this.queryArrayObjectsJSON(data, sql, arrayAlias);
+        } else {
+            return this.queryArrayObjectsTable(data, sql, arrayAlias);
+        }
     }
 
     /**
@@ -531,21 +624,79 @@ export class DuckDBCore {
     }
 
     /**
-     * Create a virtual table view from JavaScript arrays that can be queried multiple times
-     * More efficient than temporary tables for read-only operations
+     * Create a virtual table view from JavaScript arrays - smart method selection
+     * Chooses optimal approach based on data size
      */
     async createArrayView<T extends Record<string, any>>(
         viewName: string,
-        data: T[]
+        data: T[],
+        forceMethod?: 'json' | 'table'
     ): Promise<void> {
         if (data.length === 0) {
             throw new DuckDBQueryError('Cannot create view from empty array');
         }
 
-        const jsonData = JSON.stringify(data);
+        // Choose method based on size, unless forced
+        const useJsonMethod =
+            forceMethod === 'json' || (forceMethod !== 'table' && data.length < 1000);
+
+        if (useJsonMethod) {
+            return this.createArrayViewJSON(viewName, data);
+        } else {
+            return this.createArrayViewTable(viewName, data);
+        }
+    }
+
+    /**
+     * Create view using JSON VALUES approach - good for small datasets
+     */
+    async createArrayViewJSON<T extends Record<string, any>>(
+        viewName: string,
+        data: T[]
+    ): Promise<void> {
+        // Get all unique keys from the data to build column list
+        const allKeys = new Set<string>();
+        data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
+        const columns = Array.from(allKeys);
+
+        // Build VALUES clause with JSON extraction
+        const valuesClause = data
+            .map((row) => {
+                const jsonString = JSON.stringify(row).replace(/'/g, "''");
+                return `('${jsonString}'::JSON)`;
+            })
+            .join(', ');
+
+        // Build column extraction for SELECT using arrow operators for automatic type handling
+        const columnExtractions = columns
+            .map((col) => `json_data ->> '$.${col}' AS "${col}"`)
+            .join(', ');
+
+        // Create the view with JSON-based data source
         const createViewQuery = `
             CREATE OR REPLACE VIEW ${viewName} AS
-            SELECT * FROM read_json_auto('${jsonData}')
+            SELECT ${columnExtractions}
+            FROM (VALUES ${valuesClause}) AS t(json_data)
+        `;
+
+        await this.query(createViewQuery);
+    }
+
+    /**
+     * Create view using temporary table approach - better for large datasets
+     */
+    async createArrayViewTable<T extends Record<string, any>>(
+        viewName: string,
+        data: T[]
+    ): Promise<void> {
+        // Create a temporary table first
+        const tempTableName = `${viewName}_temp_${Date.now()}`;
+        await this.createTempTableFromArray(tempTableName, data);
+
+        // Create a view that references the temp table
+        const createViewQuery = `
+            CREATE OR REPLACE VIEW ${viewName} AS
+            SELECT * FROM ${tempTableName}
         `;
 
         await this.query(createViewQuery);

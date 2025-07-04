@@ -9,7 +9,7 @@
  */
 
 // import { getEnv } from '@/lib/env';
-import { DuckDBManager } from '../manager';
+import { DuckDBCore } from '../core';
 import type { DuckDBConfig } from '../types';
 
 async function createPostgresQueryDemo() {
@@ -22,16 +22,16 @@ async function createPostgresQueryDemo() {
             connectionString: process.env.DATABASE_URL || '',
             connectionLimit: 5,
             timeout: 30000,
-            
+
             // DuckDB PostgreSQL extension specific options
-            alias: 'main_db',        // Custom database alias instead of 'pg_db'
-            schema: 'public',        // Only attach 'public' schema
-            readOnly: false,         // Allow read/write operations
-            useSecret: false,        // Use connection string directly
+            alias: 'main_db', // Custom database alias instead of 'pg_db'
+            schema: 'public', // Only attach 'public' schema
+            readOnly: false, // Allow read/write operations
+            useSecret: false, // Use connection string directly
         },
     };
 
-    const duckdb = new DuckDBManager(config);
+    const duckdb = new DuckDBCore(config);
 
     try {
         // Initialize DuckDB with PostgreSQL extension
@@ -41,11 +41,14 @@ async function createPostgresQueryDemo() {
         // Get the configured PostgreSQL alias
         const pgAlias = duckdb.getPostgresAlias();
         console.log(`📋 PostgreSQL attached as: ${pgAlias}`);
-        
+
         const result = await duckdb.query(`
             SELECT * FROM ${pgAlias}.global_bank_account LIMIT 5
         `);
-        console.log('Sample global bank accounts:', result.rows.length > 0 ? result.rows : 'No data found');
+        console.log(
+            'Sample global bank accounts:',
+            result.rows.length > 0 ? result.rows : 'No data found'
+        );
     } catch (error) {
         console.error('❌ Demo failed:', error);
     } finally {
