@@ -1,4 +1,6 @@
 export * from './errors';
-export { DuckDBManager } from './manager';
-export { DuckDBSingleton } from './singleton';
+
+export { DuckDBCore as DuckDBManager } from './core';
+export { DuckDBSingleton, DuckDBTransactionTransformSingleton } from './singleton';
+export { DuckDBTransactionTransformManager } from './transaction-transform-manager';
 export * from './types';

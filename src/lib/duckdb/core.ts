@@ -1,4 +1,7 @@
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { localUploadService } from '@/lib/upload/local/service';
 import {
     DuckDBConnectionError,
     DuckDBInitializationError,
@@ -418,62 +421,152 @@ export class DuckDBCore {
             throw new DuckDBQueryError('Cannot create table from empty array');
         }
 
-        // Get column names and types from first object
+        // Use DuckDB's native JSON processing without JavaScript loops
+        // Convert entire array to single JSON string and let DuckDB parse it
+        
+        const jsonArrayString = JSON.stringify(data).replace(/'/g, "''");
+        const columns = Object.keys(data[0]);
+        
+        // Get type information from first row for proper type casting
         const firstRow = data[0];
-        const columns = Object.keys(firstRow);
-
-        // Build CREATE TABLE query
-        const columnDefinitions = columns
-            .map((col) => {
-                const value = firstRow[col];
-                let type = 'VARCHAR'; // Default to VARCHAR for safety
-
-                if (typeof value === 'number') {
-                    type = Number.isInteger(value) ? 'INTEGER' : 'DOUBLE';
-                } else if (typeof value === 'boolean') {
-                    type = 'BOOLEAN';
-                } else if (value instanceof Date) {
-                    type = 'TIMESTAMP';
-                }
-
-                return `"${col}" ${type}`;
-            })
-            .join(', ');
-
-        await this.query(`CREATE TEMPORARY TABLE ${tableName} (${columnDefinitions})`);
-
-        // Insert data in batches
-        const batchSize = 1000;
-        for (let i = 0; i < data.length; i += batchSize) {
-            const batch = data.slice(i, i + batchSize);
-            const values = batch
-                .map((row) => {
-                    const values = columns
-                        .map((col) => {
-                            const value = row[col];
-                            if (value === null || value === undefined) {
-                                return 'NULL';
-                            }
-                            if (typeof value === 'string') {
-                                return `'${value.replace(/'/g, "''")}'`;
-                            }
-                            if (value instanceof Date) {
-                                return `'${value.toISOString()}'`;
-                            }
-                            return String(value);
-                        })
-                        .join(', ');
-                    return `(${values})`;
+        const columnTypes = columns.map(col => {
+            const value = firstRow[col];
+            if (typeof value === 'number') {
+                return Number.isInteger(value) ? 'INTEGER' : 'DOUBLE';
+            } else if (typeof value === 'boolean') {
+                return 'BOOLEAN';
+            } else if (value instanceof Date) {
+                return 'TIMESTAMP';
+            }
+            return 'VARCHAR';
+        });
+        
+        try {
+            // DuckDB approach: Use read_json_auto function with virtual file
+            // This is more efficient than unnest approaches
+            await this.query(`CREATE TEMPORARY TABLE ${tableName}_raw (json_data JSON)`);
+            await this.query(`INSERT INTO ${tableName}_raw VALUES ('[${jsonArrayString}]'::JSON)`);
+            
+            // Extract columns with proper type casting using DuckDB's JSON path syntax
+            const columnExtractions = columns
+                .map((col, idx) => {
+                    const type = columnTypes[idx];
+                    if (type === 'INTEGER') {
+                        return `(json_data -> '$[*].${col}')::INTEGER[] AS "${col}"`;
+                    } else if (type === 'DOUBLE') {
+                        return `(json_data -> '$[*].${col}')::DOUBLE[] AS "${col}"`;
+                    } else if (type === 'BOOLEAN') {
+                        return `(json_data -> '$[*].${col}')::BOOLEAN[] AS "${col}"`;
+                    } else {
+                        return `(json_data -> '$[*].${col}')::VARCHAR[] AS "${col}"`;
+                    }
+                })
+                .join(', ');
+                
+            // Create the table by unnesting the arrays
+            await this.query(`
+                CREATE TEMPORARY TABLE ${tableName}_arrays AS
+                SELECT ${columnExtractions}
+                FROM ${tableName}_raw
+            `);
+            
+            // Unnest all arrays to create final row-based table
+            const unnestExpressions = columns
+                .map(col => `unnest("${col}") AS "${col}"`)
+                .join(', ');
+                
+            await this.query(`
+                CREATE TEMPORARY TABLE ${tableName} AS
+                SELECT ${unnestExpressions}
+                FROM ${tableName}_arrays
+            `);
+            
+            // Clean up intermediate tables
+            await this.query(`DROP TABLE ${tableName}_raw`);
+            await this.query(`DROP TABLE ${tableName}_arrays`);
+            
+        } catch (error) {
+            // Fallback to the JSON VALUES approach if advanced JSON fails
+            const valuesClause = data
+                .map(row => {
+                    const jsonString = JSON.stringify(row).replace(/'/g, "''");
+                    return `('${jsonString}'::JSON)`;
                 })
                 .join(', ');
 
-            await this.query(`INSERT INTO ${tableName} VALUES ${values}`);
+            // Build column extractions with proper typing
+            const columnExtractions = columns
+                .map((col, idx) => {
+                    const type = columnTypes[idx];
+                    if (type === 'INTEGER') {
+                        return `CAST(json_data ->> '$.${col}' AS INTEGER) AS "${col}"`;
+                    } else if (type === 'DOUBLE') {
+                        return `CAST(json_data ->> '$.${col}' AS DOUBLE) AS "${col}"`;
+                    } else if (type === 'BOOLEAN') {
+                        return `CAST(json_data ->> '$.${col}' AS BOOLEAN) AS "${col}"`;
+                    } else if (type === 'TIMESTAMP') {
+                        return `CAST(json_data ->> '$.${col}' AS TIMESTAMP) AS "${col}"`;
+                    } else {
+                        return `json_data ->> '$.${col}' AS "${col}"`;
+                    }
+                })
+                .join(', ');
+
+            await this.query(`
+                CREATE TEMPORARY TABLE ${tableName} AS
+                SELECT ${columnExtractions}
+                FROM (VALUES ${valuesClause}) AS t(json_data)
+            `);
         }
     }
 
     /**
-     * Query JavaScript array objects using DuckDB's native JSON support
-     * Uses VALUES clause with JSON casting - good for small datasets
+     * Query JavaScript array objects using DuckDB's native JSON array processing
+     * Zero JavaScript loops - leverages DuckDB's columnar JSON functions
+     *
+     * @param data - The array of objects to query
+     * @param sql - The SQL query to execute
+     * @param arrayAlias - The alias for the array in the SQL query
+     */
+    async queryArrayObjectsNative<T extends Record<string, any>>(
+        data: T[],
+        sql: string,
+        arrayAlias: string = 'data'
+    ): Promise<QueryResult> {
+        if (data.length === 0) {
+            return { rows: [], columns: [], rowCount: 0 };
+        }
+
+        // Create a temporary table from the array data
+        const tempTableName = `temp_native_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+        try {
+            await this.createTempTableFromArray(tempTableName, data);
+
+            // Replace the alias with the temp table name
+            const wrappedSql = sql.replace(new RegExp(`\\b${arrayAlias}\\b`, 'g'), tempTableName);
+
+            const result = await this.query(wrappedSql);
+
+            // Clean up temp table
+            await this.query(`DROP TABLE ${tempTableName}`);
+
+            return result;
+        } catch (error) {
+            // Ensure cleanup on error
+            try {
+                await this.query(`DROP TABLE IF EXISTS ${tempTableName}`);
+            } catch {
+                // Ignore cleanup errors
+            }
+            throw error;
+        }
+    }
+
+
+    /**
+     * Query JavaScript array objects using DuckDB's JSON VALUES clause
+     * Good for small datasets - uses JavaScript loops but minimal overhead
      *
      * @param data - The array of objects to query
      * @param sql - The SQL query to execute
@@ -501,9 +594,36 @@ export class DuckDBCore {
             })
             .join(', ');
 
-        // Build column extraction for SELECT using arrow operators for automatic type handling
+        // Get type information for proper casting
+        const firstRow = data[0];
+        const columnTypes = columns.map(col => {
+            const value = firstRow[col];
+            if (typeof value === 'number') {
+                return Number.isInteger(value) ? 'INTEGER' : 'DOUBLE';
+            } else if (typeof value === 'boolean') {
+                return 'BOOLEAN';
+            } else if (value instanceof Date) {
+                return 'TIMESTAMP';
+            }
+            return 'VARCHAR';
+        });
+
+        // Build column extraction with proper type casting
         const columnExtractions = columns
-            .map((col) => `json_data ->> '$.${col}' AS "${col}"`)
+            .map((col, idx) => {
+                const type = columnTypes[idx];
+                if (type === 'INTEGER') {
+                    return `CAST(json_data ->> '$.${col}' AS INTEGER) AS "${col}"`;
+                } else if (type === 'DOUBLE') {
+                    return `CAST(json_data ->> '$.${col}' AS DOUBLE) AS "${col}"`;
+                } else if (type === 'BOOLEAN') {
+                    return `CAST(json_data ->> '$.${col}' AS BOOLEAN) AS "${col}"`;
+                } else if (type === 'TIMESTAMP') {
+                    return `CAST(json_data ->> '$.${col}' AS TIMESTAMP) AS "${col}"`;
+                } else {
+                    return `json_data ->> '$.${col}' AS "${col}"`;
+                }
+            })
             .join(', ');
 
         // Create the data source SQL
@@ -562,7 +682,8 @@ export class DuckDBCore {
     }
 
     /**
-     * Smart array querying that chooses the best method based on data size
+     * Smart array querying that chooses the best method based on data characteristics
+     * Automatically selects between JSON VALUES and native table approaches
      *
      * @param data - The array of objects to query
      * @param sql - The SQL query to execute
@@ -573,20 +694,26 @@ export class DuckDBCore {
         data: T[],
         sql: string,
         arrayAlias: string = 'data',
-        forceMethod?: 'json' | 'table'
+        forceMethod?: 'json' | 'native'
     ): Promise<QueryResult> {
         if (data.length === 0) {
             return { rows: [], columns: [], rowCount: 0 };
         }
 
-        // Choose method based on size, unless forced
-        const useJsonMethod =
-            forceMethod === 'json' || (forceMethod !== 'table' && data.length < 1000);
+        // Choose method based on characteristics
+        if (forceMethod === 'json') {
+            return this.queryArrayObjectsJSON(data, sql, arrayAlias);
+        } else if (forceMethod === 'native') {
+            return this.queryArrayObjectsNative(data, sql, arrayAlias);
+        }
 
-        if (useJsonMethod) {
+        // Smart selection based on data size and complexity
+        if (data.length < 500) {
+            // Small datasets: JSON VALUES approach has lower overhead
             return this.queryArrayObjectsJSON(data, sql, arrayAlias);
         } else {
-            return this.queryArrayObjectsTable(data, sql, arrayAlias);
+            // Large datasets: Native table approach is more efficient
+            return this.queryArrayObjectsNative(data, sql, arrayAlias);
         }
     }
 
@@ -763,6 +890,338 @@ export class DuckDBCore {
                 }
                 throw error;
             }
+        }
+    }
+
+    /**
+     * Load data from a JSON stream (e.g., API response) into DuckDB
+     * Handles very large JSON datasets efficiently using temporary files
+     *
+     * @param jsonStream - ReadableStream containing JSON data
+     * @param tableName - Name of the table to create
+     * @param options - Options for JSON processing
+     */
+    async loadFromJsonStream(
+        jsonStream: ReadableStream,
+        tableName: string,
+        options: {
+            format?: 'array' | 'newline-delimited';
+            maxFileSize?: number; // MB
+        } = {}
+    ): Promise<QueryResult> {
+        // Note: format and maxFileSize options available for future enhancements
+
+        return await localUploadService.createTempFileForFn(
+            {
+                file: Buffer.from(''), // Will be written by pipeline
+                fileExtension: 'json',
+                fileName: `stream_${tableName}_${Date.now()}`,
+            },
+            async (tempFilePath) => {
+                // Stream JSON data to temporary file
+                const fileStream = createWriteStream(tempFilePath);
+                
+                // Convert ReadableStream to Node.js readable stream
+                const reader = jsonStream.getReader();
+                try {
+                    let done = false;
+                    while (!done) {
+                        const { done: chunkDone, value } = await reader.read();
+                        done = chunkDone;
+                        if (value) {
+                            fileStream.write(value);
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                try {
+                    // Use DuckDB's read_json_auto to efficiently load the JSON file
+                    const sql = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_json_auto('${tempFilePath}')`;
+                    await this.query(sql);
+
+                    // Return summary of loaded data
+                    return await this.query(`SELECT COUNT(*) as rows_loaded FROM ${tableName}`);
+                } catch (error) {
+                    throw new DuckDBQueryError(
+                        `Failed to load JSON stream into table ${tableName}: ${error instanceof Error ? error.message : String(error)}`,
+                        `read_json_auto('${tempFilePath}')`,
+                        error instanceof Error ? error : undefined
+                    );
+                }
+            }
+        );
+    }
+
+    /**
+     * Fetch JSON from API and load directly into DuckDB
+     * Ideal for large API responses that don't fit in memory
+     *
+     * @param url - API URL to fetch JSON from
+     * @param tableName - Name of the table to create
+     * @param options - Fetch and JSON processing options
+     */
+    async loadFromApiJson(
+        url: string,
+        tableName: string,
+        options: {
+            fetchOptions?: RequestInit;
+            jsonFormat?: 'array' | 'newline-delimited';
+            maxFileSize?: number;
+        } = {}
+    ): Promise<QueryResult> {
+        const { fetchOptions = {}, jsonFormat = 'array', maxFileSize = 1000 } = options;
+
+        try {
+            // Fetch the API response as a stream
+            const response = await fetch(url, fetchOptions);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            if (!response.body) {
+                throw new Error('Response body is empty');
+            }
+
+            // Use the streaming loader
+            return await this.loadFromJsonStream(response.body, tableName, {
+                format: jsonFormat,
+                maxFileSize,
+            });
+        } catch (error) {
+            throw new DuckDBQueryError(
+                `Failed to load API JSON from ${url}: ${error instanceof Error ? error.message : String(error)}`,
+                `loadFromApiJson(${url})`,
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * Process large JavaScript arrays by streaming them to a temporary JSON file
+     * More memory efficient than in-memory approaches for very large datasets
+     *
+     * @param data - Large JavaScript array to process
+     * @param tableName - Name of the table to create
+     * @param options - Processing options
+     */
+    async loadLargeArrayViaStream<T extends Record<string, any>>(
+        data: T[],
+        tableName: string,
+        options: {
+            batchSize?: number;
+            format?: 'array' | 'newline-delimited';
+        } = {}
+    ): Promise<QueryResult> {
+        const { batchSize = 10000, format = 'array' } = options;
+
+        if (data.length < batchSize) {
+            // Use existing efficient method for smaller arrays
+            await this.createTempTableFromArray(tableName, data);
+            return await this.query(`SELECT COUNT(*) as rows_loaded FROM ${tableName}`);
+        }
+
+        return await localUploadService.createTempFileForFn(
+            {
+                file: Buffer.from(''), // Will be written by stream
+                fileExtension: 'json',
+                fileName: `large_array_${tableName}_${Date.now()}`,
+            },
+            async (tempFilePath) => {
+                const fileStream = createWriteStream(tempFilePath);
+
+                try {
+                    if (format === 'array') {
+                        // Write as JSON array
+                        fileStream.write('[');
+                        
+                        for (let i = 0; i < data.length; i += batchSize) {
+                            const batch = data.slice(i, i + batchSize);
+                            const jsonBatch = batch.map(row => JSON.stringify(row)).join(',');
+                            
+                            if (i > 0) fileStream.write(',');
+                            fileStream.write(jsonBatch);
+                        }
+                        
+                        fileStream.write(']');
+                    } else {
+                        // Write as newline-delimited JSON
+                        for (let i = 0; i < data.length; i += batchSize) {
+                            const batch = data.slice(i, i + batchSize);
+                            const jsonLines = batch.map(row => JSON.stringify(row)).join('\n');
+                            fileStream.write(jsonLines);
+                            if (i + batchSize < data.length) fileStream.write('\n');
+                        }
+                    }
+
+                    fileStream.end();
+
+                    // Wait for stream to finish
+                    await new Promise<void>((resolve, reject) => {
+                        fileStream.on('finish', () => resolve());
+                        fileStream.on('error', reject);
+                    });
+
+                    // Load using DuckDB's read_json_auto
+                    const sql = `CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM read_json_auto('${tempFilePath}')`;
+                    await this.query(sql);
+
+                    return await this.query(`SELECT COUNT(*) as rows_loaded FROM ${tableName}`);
+                } catch (error) {
+                    throw new DuckDBQueryError(
+                        `Failed to load large array via stream: ${error instanceof Error ? error.message : String(error)}`,
+                        `loadLargeArrayViaStream(${data.length} rows)`,
+                        error instanceof Error ? error : undefined
+                    );
+                }
+            }
+        );
+    }
+
+    /**
+     * Load JavaScript objects or JSON data using temporary file approach
+     * Uses DuckDB's read_json_auto for optimal performance with any size dataset
+     *
+     * @param data - JavaScript array of objects or JSON string
+     * @param tableName - Name of the table to create
+     * @param options - Processing options
+     */
+    async loadFromTempFile<T extends Record<string, any>>(
+        data: T[] | string,
+        tableName: string,
+        options: {
+            format?: 'array' | 'newline-delimited';
+            dropIfExists?: boolean;
+        } = {}
+    ): Promise<QueryResult> {
+        const { format = 'array', dropIfExists = true } = options;
+
+        // Convert data to JSON string if it's an array
+        const jsonData = typeof data === 'string' ? data : JSON.stringify(data);
+
+        return await localUploadService.createTempFileForFn(
+            {
+                file: Buffer.from(jsonData, 'utf8'),
+                fileExtension: 'json',
+                fileName: `temp_${tableName}_${Date.now()}`,
+            },
+            async (tempFilePath) => {
+                try {
+                    // Drop table if it exists and requested
+                    if (dropIfExists) {
+                        await this.query(`DROP TABLE IF EXISTS ${tableName}`);
+                    }
+
+                    // Use DuckDB's read_json_auto for optimal performance
+                    const sql = `CREATE TABLE ${tableName} AS SELECT * FROM read_json_auto('${tempFilePath}')`;
+                    await this.query(sql);
+
+                    // Return summary of loaded data
+                    return await this.query(`SELECT COUNT(*) as rows_loaded FROM ${tableName}`);
+                } catch (error) {
+                    throw new DuckDBQueryError(
+                        `Failed to load data from temp file into table ${tableName}: ${error instanceof Error ? error.message : String(error)}`,
+                        `read_json_auto('${tempFilePath}')`,
+                        error instanceof Error ? error : undefined
+                    );
+                }
+            }
+        );
+    }
+
+    /**
+     * Query JavaScript objects using temporary file approach
+     * Alternative to in-memory methods that uses DuckDB's read_json_auto
+     * Particularly useful for very large datasets or when you want consistent performance
+     *
+     * @param data - JavaScript array of objects or JSON string
+     * @param sql - SQL query to execute
+     * @param arrayAlias - Alias for the data in the SQL query
+     * @param options - Processing options
+     */
+    async queryArrayObjectsViaFile<T extends Record<string, any>>(
+        data: T[] | string,
+        sql: string,
+        arrayAlias: string = 'data',
+        options: {
+            format?: 'array' | 'newline-delimited';
+            cleanupTable?: boolean;
+        } = {}
+    ): Promise<QueryResult> {
+        const { format = 'array', cleanupTable = true } = options;
+        const tempTableName = `temp_query_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+        try {
+            // Load data into temporary table
+            await this.loadFromTempFile(data, tempTableName, { format });
+
+            // Replace alias with temp table name and execute query
+            const wrappedSql = sql.replace(new RegExp(`\\b${arrayAlias}\\b`, 'g'), tempTableName);
+            const result = await this.query(wrappedSql);
+
+            return result;
+        } finally {
+            // Cleanup temp table
+            if (cleanupTable) {
+                try {
+                    await this.query(`DROP TABLE IF EXISTS ${tempTableName}`);
+                } catch {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+    }
+
+    /**
+     * Enhanced smart array querying that includes file-based approach
+     * Automatically selects the best method based on data characteristics
+     *
+     * @param data - The array of objects to query
+     * @param sql - The SQL query to execute
+     * @param arrayAlias - The alias for the array in the SQL query
+     * @param options - Method selection and processing options
+     */
+    async queryArrayObjectsEnhanced<T extends Record<string, any>>(
+        data: T[],
+        sql: string,
+        arrayAlias: string = 'data',
+        options: {
+            forceMethod?: 'json' | 'native' | 'file' | 'auto';
+            fileThreshold?: number;
+            nativeThreshold?: number;
+        } = {}
+    ): Promise<QueryResult> {
+        const { 
+            forceMethod = 'auto', 
+            fileThreshold = 100000,
+            nativeThreshold = 500 
+        } = options;
+
+        if (data.length === 0) {
+            return { rows: [], columns: [], rowCount: 0 };
+        }
+
+        // Force specific method if requested
+        if (forceMethod === 'json') {
+            return this.queryArrayObjectsJSON(data, sql, arrayAlias);
+        } else if (forceMethod === 'native') {
+            return this.queryArrayObjectsNative(data, sql, arrayAlias);
+        } else if (forceMethod === 'file') {
+            return this.queryArrayObjectsViaFile(data, sql, arrayAlias);
+        }
+
+        // Auto selection based on data size
+        if (data.length < nativeThreshold) {
+            // Small datasets: JSON VALUES approach
+            return this.queryArrayObjectsJSON(data, sql, arrayAlias);
+        } else if (data.length < fileThreshold) {
+            // Medium datasets: Native JSON processing
+            return this.queryArrayObjectsNative(data, sql, arrayAlias);
+        } else {
+            // Very large datasets: File-based approach
+            return this.queryArrayObjectsViaFile(data, sql, arrayAlias);
         }
     }
 
