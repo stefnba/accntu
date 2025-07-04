@@ -4,7 +4,7 @@ import {
 } from '@/features/bank/schemas/global-bank-account';
 import { globalBankAccountQueries } from '@/features/bank/server/db/queries';
 import { transactionServiceSchemas } from '@/features/transaction/schemas';
-import { DuckDBSingleton } from '@/lib/duckdb';
+import { DuckDBTransactionTransformSingleton } from '@/lib/duckdb';
 import {
     TQueryDeleteRecord,
     TQueryInsertRecord,
@@ -78,46 +78,42 @@ const remove = async ({ id }: TQueryDeleteRecord) => {
  * @returns The result of the global bank account transformation query
  */
 const testTransformQuery = async (data: TTestTransformQuery) => {
-    // save sample data to disk
-    const csvFile = await localUploadService.writeFileToDisk({
-        file: data.sampleTransformData,
-        fileExtension: 'csv',
-    });
-
-    const duckdb = await DuckDBSingleton.getInstance();
-
-    const idColumns = data.transformConfig.idColumns;
-
-    if (!idColumns) {
-        throw new Error('ID columns are required');
-    }
-
-    const result = await duckdb.transformData({
-        source: {
-            type: 'csv',
-            path: csvFile,
-            options: {
-                header: true,
-                delim: data.transformConfig.delimiter,
-            },
+    return localUploadService.createTempFileForFn(
+        {
+            file: data.sampleTransformData,
+            fileExtension: 'csv',
         },
-        idConfig: {
-            columns: idColumns,
-            fieldName: 'key',
-        },
-        transformSql: data.transformQuery,
-        schema: transactionServiceSchemas.create,
-    });
+        async (csvFile) => {
+            const duckdb = await DuckDBTransactionTransformSingleton.getInstance();
 
-    // delete sample data from disk
-    await localUploadService.deleteFileFromDisk({
-        filePath: csvFile,
-    });
+            const idColumns = data.transformConfig.idColumns;
 
-    return {
-        csvFile,
-        result,
-    };
+            if (!idColumns) {
+                throw new Error('ID columns are required');
+            }
+
+            const result = await duckdb.transformData({
+                source: {
+                    type: 'csv',
+                    path: csvFile,
+                    options: {
+                        header: true,
+                        delim: data.transformConfig.delimiter,
+                    },
+                },
+                idConfig: {
+                    columns: idColumns,
+                    fieldName: 'key',
+                },
+                transformSql: data.transformQuery,
+                schema: transactionServiceSchemas.create,
+            });
+            return {
+                csvFile,
+                result,
+            };
+        }
+    );
 };
 
 export const globalBankAccountServices = {
