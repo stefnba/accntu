@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBucketEndpoints, useBucketParticipantEndpoints } from '@/features/bucket/api';
-import { ParticipantManager } from '@/features/bucket/components/participant-manager';
+import { ParticipantManager } from '@/features/bucket/components/bucketParticipant-manager';
 
 interface BucketDetailsViewProps {
     bucketId: string;

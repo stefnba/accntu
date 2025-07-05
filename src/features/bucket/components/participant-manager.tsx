@@ -1,6 +1,6 @@
 'use client';
 
-import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/bucketParticipant';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToggle } from 'react-use';
 
@@ -14,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ParticipantForm } from './participant-form';
+import { ParticipantForm } from './bucketParticipant-form';
 
 interface ParticipantManagerProps {
     bucketId?: string;
@@ -27,7 +27,7 @@ export function ParticipantManager({ bucketId }: ParticipantManagerProps) {
     const { mutate: deleteParticipant } = useParticipantEndpoints.delete();
 
     const handleDelete = (id: string) => {
-        const confirmed = window.confirm('Are you sure you want to delete this participant?');
+        const confirmed = window.confirm('Are you sure you want to delete this bucketParticipant?');
         if (confirmed) {
             deleteParticipant({ param: { id } });
         }

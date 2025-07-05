@@ -2,7 +2,7 @@
 
 import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/bucketParticipant';
 import { insertParticipantSchema } from '@/features/bucket/server/db/schemas';
 import { z } from 'zod';
 
@@ -11,26 +11,26 @@ type FormValues = z.infer<typeof insertParticipantSchema>;
 export function ParticipantForm({
     isOpen,
     onClose,
-    participant,
+    bucketParticipant,
 }: {
     isOpen: boolean;
     onClose: () => void;
-    participant?: { id: string } & FormValues;
+    bucketParticipant?: { id: string } & FormValues;
 }) {
     const { mutate: createParticipant, isPending: isCreating } = useParticipantEndpoints.create();
     const { mutate: updateParticipant, isPending: isUpdating } = useParticipantEndpoints.update();
 
     const form = useForm({
         schema: insertParticipantSchema,
-        defaultValues: participant || {
+        defaultValues: bucketParticipant || {
             name: '',
             email: '',
         },
     });
 
     const onSubmit = (data: FormValues) => {
-        if (participant) {
-            updateParticipant({ param: { id: participant.id }, json: data });
+        if (bucketParticipant) {
+            updateParticipant({ param: { id: bucketParticipant.id }, json: data });
         } else {
             createParticipant({ json: data });
         }
@@ -42,14 +42,14 @@ export function ParticipantForm({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        {participant ? 'Edit Participant' : 'Add Participant'}
+                        {bucketParticipant ? 'Edit Participant' : 'Add Participant'}
                     </DialogTitle>
                 </DialogHeader>
                 <Form form={form} onSubmit={onSubmit}>
                     <FormInput name="name" label="Name" form={form} />
                     <FormInput name="email" label="Email" type="email" form={form} />
                     <FormSubmitButton form={form} isPending={isCreating || isUpdating}>
-                        {participant ? 'Update' : 'Add'}
+                        {bucketParticipant ? 'Update' : 'Add'}
                     </FormSubmitButton>
                 </Form>
             </DialogContent>

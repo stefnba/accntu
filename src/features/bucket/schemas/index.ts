@@ -1,3 +1,3 @@
 export * from './bucket';
-export * from './bucket-participant';
+export * from './bucket-bucketParticipant';
 export * from './transaction-bucket';

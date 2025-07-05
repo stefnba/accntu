@@ -1,39 +1,70 @@
-import { bucketQuerySchemas } from '@/features/bucket/schemas';
-import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
-import { bucketParticipantQueries } from '@/features/bucket/server/db/queries/bucket-participant';
-import { bucketTransactionServices } from '@/features/bucket/server/services/transaction-bucket';
+import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+import {
+    bucket,
+    bucketParticipant,
+    insertBucketSchema,
+    updateBucketSchema,
+} from '@/features/bucket/server/db/schemas';
 import { TQueryUpdateUserRecord } from '@/lib/schemas';
+import { db } from '@/server/db';
+import { bucketQueries } from '../db/queries/bucket';
+import { bucketTransactionServices } from './transaction-bucket';
 
 const createBucket = async (
-    data: typeof bucketQuerySchemas.insert._type,
-    user: { id: string; name: string }
+    data: z.infer<typeof insertBucketSchema>,
+    userId: string,
+    participantIds: string[]
 ) => {
-    const newBucket = await bucketQueries.create(data, user.id);
+    return await db.transaction(async (tx) => {
+        const [newBucket] = await tx
+            .insert(bucket)
+            .values({ ...data, userId })
+            .returning();
 
-    if (!newBucket) {
-        throw new Error('Failed to create bucket');
-    }
+        if (participantIds.length > 0) {
+            const participantsData = participantIds.map((participantId) => ({
+                bucketId: newBucket.id,
+                participantId,
+            }));
+            await tx.insert(bucketParticipant).values(participantsData);
+        }
 
-    // Add the owner as the first participant
-    await bucketParticipantQueries.create({
-        bucketId: newBucket.id,
-        name: user.name,
-        userId: user.id,
+        return newBucket;
     });
-
-    return newBucket;
 };
 
 const updateBucket = async (
-    params: TQueryUpdateUserRecord<typeof bucketQuerySchemas.update._type>
+    params: TQueryUpdateUserRecord<z.infer<typeof updateBucketSchema>>,
+    participantIds?: string[]
 ) => {
-    // Ownership is already checked in the query by userId
-    const updatedBucket = await bucketQueries.update(params);
+    return await db.transaction(async (tx) => {
+        const [updatedBucket] = await tx
+            .update(bucket)
+            .set(params.data)
+            .where(and(eq(bucket.id, params.id), eq(bucket.userId, params.userId)))
+            .returning();
 
-    if (!updatedBucket) {
-        throw new Error('Failed to update bucket');
-    }
-    return updatedBucket;
+        if (participantIds) {
+            // Delete existing participants for this bucket
+            await tx.delete(bucketParticipant).where(eq(bucketParticipant.bucketId, params.id));
+
+            // Insert new participants if any are provided
+            if (participantIds.length > 0) {
+                const participantsData = participantIds.map((participantId) => ({
+                    bucketId: params.id,
+                    participantId,
+                }));
+                await tx.insert(bucketParticipant).values(participantsData);
+            }
+        }
+
+        if (!updatedBucket) {
+            throw new Error('Failed to update bucket');
+        }
+        return updatedBucket;
+    });
 };
 
 const deleteBucket = async (bucketId: string, userId: string) => {
@@ -43,14 +74,6 @@ const deleteBucket = async (bucketId: string, userId: string) => {
     if (!deletedBucket) {
         throw new Error('Failed to delete bucket');
     }
-
-    // We don't need to delete participants since the schema is set to cascade on delete.
-    // However, if we were doing soft deletes on participants too, we would do it here.
-    // For now, hard delete of participants is fine when a bucket is soft-deleted.
-    // If we want to soft-delete participants, we would call:
-    // await bucketParticipantQueries.removeAllForBucket(bucketId);
-    // and change removeAllForBucket to do a soft delete.
-
     return deletedBucket;
 };
 
@@ -108,6 +131,5 @@ export const bucketServices = {
     removeTransactionFromBucket,
     getBucketById: bucketQueries.getById,
     getAllBuckets: bucketQueries.getAll,
-    // Transaction-bucket operations
     bucketTransaction: bucketTransactionServices,
 };

@@ -24,13 +24,13 @@ This session successfully completed a major refactoring and enhancement of the D
 
 - **Deleted**: 2 files
 
-    - `src/features/bucket/server/endpoints/bucket-participant.ts`
-    - `src/features/bucket/server/services/bucket-participant.ts`
+    - `src/features/bucket/server/endpoints/bucket-bucketParticipant.ts`
+    - `src/features/bucket/server/services/bucket-bucketParticipant.ts`
 
 - **Added**: 6 new files
     - `src/features/bucket/hooks/` (directory)
-    - `src/features/bucket/server/endpoints/participant.ts`
-    - `src/features/bucket/server/services/participant.ts`
+    - `src/features/bucket/server/endpoints/bucketParticipant.ts`
+    - `src/features/bucket/server/services/bucketParticipant.ts`
     - `src/lib/duckdb/demos/file-based-demo.ts`
     - `src/lib/duckdb/demos/performance-benchmark.ts`
     - `src/lib/duckdb/demos/streaming-demo.ts`

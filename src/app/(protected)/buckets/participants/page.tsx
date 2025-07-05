@@ -1,6 +1,6 @@
 'use client';
 
-import { ParticipantManager } from '@/features/bucket/components/participant-manager';
+import { ParticipantManager } from '@/features/bucket/components/bucketParticipant-manager';
 
 export default function ParticipantsSettingsPage() {
     return (

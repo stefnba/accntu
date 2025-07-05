@@ -3,62 +3,82 @@ import {
     boolean,
     decimal,
     index,
+    integer,
     pgEnum,
     pgTable,
+    primaryKey,
     text,
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 import { transaction } from '@/features/transaction/server/db/schema';
 import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 
+// Enums
 export const bucketTypeEnum = pgEnum('bucket_type', ['trip', 'home', 'project', 'event', 'other']);
-
 export const bucketStatusEnum = pgEnum('bucket_status', ['open', 'settled']);
+
+// Tables
+
+export const bucketParticipant = pgTable('bucket_participant', {
+    id: text()
+        .primaryKey()
+        .$defaultFn(() => createId()),
+    userId: text()
+        .notNull()
+        .references(() => user.id, { onDelete: 'cascade' }),
+    name: text().notNull(),
+    email: text(),
+    linkedUserId: text().references(() => user.id, {
+        onDelete: 'set null',
+    }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    isActive: boolean().notNull().default(true),
+});
 
 export const bucket = pgTable('bucket', {
     id: text('id')
         .primaryKey()
         .$defaultFn(() => createId()),
-    userId: text('user_id')
+    userId: text()
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
-    title: text('title').notNull(),
-    type: bucketTypeEnum('type').notNull().default('other'),
-    status: bucketStatusEnum('status').notNull().default('open'),
+    title: text().notNull(),
+    type: bucketTypeEnum().notNull().default('other'),
+    status: bucketStatusEnum().notNull().default('open'),
+    currency: text().notNull().default('USD'),
     // Tracking fields for bucket statistics
-    paidAmount: decimal('paid_amount', { precision: 12, scale: 2 }).notNull().default('0.00'),
-    currency: text('currency').notNull().default('USD'),
-    // Computed fields (totalTransactions, totalAmount, openAmount) will be calculated in queries
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-    isActive: boolean('is_active').notNull().default(true),
+    paidAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
+    totalTransactions: integer().notNull().default(0),
+    totalAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
+    openAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
+    // metadata
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    isActive: boolean().notNull().default(true),
 });
 
-export const bucketParticipant = pgTable('bucket_participant', {
-    id: text('id')
-        .primaryKey()
-        .$defaultFn(() => createId()),
-    bucketId: text('bucket_id')
-        .notNull()
-        .references(() => bucket.id, { onDelete: 'cascade' }),
-    // If the participant is an existing user of the app
-    userId: text('user_id').references(() => user.id, {
-        onDelete: 'set null',
-    }),
-    // Name for external participants not on the app
-    name: text('name').notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
-    isActive: boolean('is_active').notNull().default(true),
-});
+export const bucketToBucketParticipant = pgTable(
+    'bucket_to_bucket_participant',
+    {
+        bucketId: text()
+            .notNull()
+            .references(() => bucket.id, { onDelete: 'cascade' }),
+        participantId: text()
+            .notNull()
+            .references(() => bucketParticipant.id, { onDelete: 'cascade' }),
+        createdAt: timestamp().notNull().defaultNow(),
+        updatedAt: timestamp().notNull().defaultNow(),
+    },
+    (table) => [primaryKey({ columns: [table.bucketId, table.participantId] })]
+);
 
-export const bucketTransaction = pgTable(
-    'bucket_transaction',
+export const bucketToTransaction = pgTable(
+    'bucket_to_transaction',
     {
         id: text()
             .primaryKey()
@@ -79,18 +99,54 @@ export const bucketTransaction = pgTable(
         updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
         isActive: boolean().notNull().default(true),
     },
-    (table) => ({
+    (table) => [
         // Unique constraint: one transaction can only be in one bucket
-        transactionUniqueIdx: uniqueIndex('bucket_transaction_transaction_unique').on(
+        uniqueIndex('bucket_transaction_transaction_unique').on(
             table.transactionId,
             table.isActive
         ),
         // Index for bucket queries
-        bucketIdx: index('bucket_transaction_bucket_idx').on(table.bucketId),
+        index('bucket_transaction_bucket_idx').on(table.bucketId),
         // Index for transaction queries
-        transactionIdx: index('bucket_transaction_transaction_idx').on(table.transactionId),
+        index('bucket_transaction_transaction_idx').on(table.transactionId),
+    ]
+);
+
+export const bucketTransactionParticipant = pgTable(
+    'bucket_transaction_participant',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => createId()),
+        bucketTransactionId: text('bucket_transaction_id')
+            .notNull()
+            .references(() => bucketToTransaction.id, { onDelete: 'cascade' }),
+        participantId: text('participant_id')
+            .notNull()
+            .references(() => bucketParticipant.id, { onDelete: 'cascade' }),
+        share: decimal('share', { precision: 12, scale: 2 }).notNull(),
+        createdAt: timestamp('created_at').notNull().defaultNow(),
+    },
+    (table) => ({
+        bucketTransactionIdx: index('btp_bucket_transaction_idx').on(table.bucketTransactionId),
+        participantIdx: index('btp_participant_idx').on(table.participantId),
     })
 );
+
+export const participantRelations = relations(bucketParticipant, ({ one, many }) => ({
+    user: one(user, {
+        fields: [bucketParticipant.userId],
+        references: [user.id],
+        relationName: 'creator',
+    }),
+    linkedUser: one(user, {
+        fields: [bucketParticipant.linkedUserId],
+        references: [user.id],
+        relationName: 'linked_user',
+    }),
+    bucketParticipants: many(bucketParticipant),
+    bucketTransactionParticipants: many(bucketTransactionParticipant),
+}));
 
 export const bucketsRelations = relations(bucket, ({ many, one }) => ({
     user: one(user, {
@@ -98,7 +154,7 @@ export const bucketsRelations = relations(bucket, ({ many, one }) => ({
         references: [user.id],
     }),
     participants: many(bucketParticipant),
-    bucketTransactions: many(bucketTransaction),
+    bucketTransactions: many(bucketToTransaction),
 }));
 
 export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }) => ({
@@ -106,62 +162,67 @@ export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }
         fields: [bucketParticipant.bucketId],
         references: [bucket.id],
     }),
-    user: one(user, {
-        fields: [bucketParticipant.userId],
-        references: [user.id],
+    bucketParticipant: one(bucketParticipant, {
+        fields: [bucketParticipant.participantId],
+        references: [bucketParticipant.id],
     }),
 }));
 
-export const bucketTransactionRelations = relations(bucketTransaction, ({ one }) => ({
+export const bucketTransactionRelations = relations(bucketToTransaction, ({ one, many }) => ({
     transaction: one(transaction, {
-        fields: [bucketTransaction.transactionId],
+        fields: [bucketToTransaction.transactionId],
         references: [transaction.id],
     }),
     bucket: one(bucket, {
-        fields: [bucketTransaction.bucketId],
+        fields: [bucketToTransaction.bucketId],
         references: [bucket.id],
     }),
+    participants: many(bucketTransactionParticipant),
 }));
 
+export const bucketTransactionParticipantRelations = relations(
+    bucketTransactionParticipant,
+    ({ one }) => ({
+        bucketTransaction: one(bucketToTransaction, {
+            fields: [bucketTransactionParticipant.bucketTransactionId],
+            references: [bucketToTransaction.id],
+        }),
+        bucketParticipant: one(bucketParticipant, {
+            fields: [bucketTransactionParticipant.participantId],
+            references: [bucketParticipant.id],
+        }),
+    })
+);
+
 // Zod schemas
+
+// bucket
 export const selectBucketSchema = createSelectSchema(bucket);
-export const insertBucketSchema = createInsertSchema(bucket, {
-    title: z.string().min(1, 'Title is required'),
-    paidAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format'),
-    currency: z.string().length(3, 'Currency must be 3 characters'),
-}).omit({
-    id: true,
-    userId: true,
-    createdAt: true,
-    updatedAt: true,
-    isActive: true,
-});
-export const updateBucketSchema = insertBucketSchema.partial();
+export const insertBucketSchema = createInsertSchema(bucket);
+export const updateBucketSchema = createUpdateSchema(bucket);
 
+// bucket participant
 export const selectBucketParticipantSchema = createSelectSchema(bucketParticipant);
-export const insertBucketParticipantSchema = createInsertSchema(bucketParticipant, {
-    name: z.string().min(1, 'Name is required'),
-}).omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-    isActive: true,
-});
-export const updateBucketParticipantSchema = insertBucketParticipantSchema.partial();
+export const insertBucketParticipantSchema = createInsertSchema(bucketParticipant);
+export const updateBucketParticipantSchema = createUpdateSchema(bucketParticipant);
 
-export const selectbucketTransactionSchema = createSelectSchema(bucketTransaction);
-export const insertbucketTransactionSchema = createInsertSchema(bucketTransaction, {
-    transactionId: z.string().min(1, 'Transaction ID is required'),
-    bucketId: z.string().min(1, 'Bucket ID is required'),
-    splitShare: z
-        .string()
-        .regex(/^\d+(\.\d{1,2})?$/, 'Invalid split share format')
-        .optional(),
-    notes: z.string().optional(),
-}).omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-    isActive: true,
-});
-export const updatebucketTransactionSchema = insertbucketTransactionSchema.partial();
+// bucket to bucket participant
+export const selectBucketToBucketParticipantSchema = createSelectSchema(bucketToBucketParticipant);
+export const insertBucketToBucketParticipantSchema = createInsertSchema(bucketToBucketParticipant);
+export const updateBucketToBucketParticipantSchema = createUpdateSchema(bucketToBucketParticipant);
+
+// bucket to transaction
+export const selectBucketToTransactionSchema = createSelectSchema(bucketToTransaction);
+export const insertBucketToTransactionSchema = createInsertSchema(bucketToTransaction);
+export const updateBucketToTransactionSchema = createUpdateSchema(bucketToTransaction);
+
+// bucket transaction participant
+export const selectBucketTransactionParticipantSchema = createSelectSchema(
+    bucketTransactionParticipant
+);
+export const insertBucketTransactionParticipantSchema = createInsertSchema(
+    bucketTransactionParticipant
+);
+export const updateBucketTransactionParticipantSchema = createUpdateSchema(
+    bucketTransactionParticipant
+);

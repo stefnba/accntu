@@ -10,7 +10,7 @@ import {
 } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBucketEndpoints } from '@/features/bucket/api/bucket';
-import { useParticipantEndpoints } from '@/features/bucket/hooks/participant';
+import { useParticipantEndpoints } from '@/features/bucket/hooks/bucketParticipant';
 import {
     apiInsertBucketSchema,
     bucketStatusEnum,

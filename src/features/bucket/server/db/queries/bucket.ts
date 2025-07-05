@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 
 import { bucketQuerySchemas } from '@/features/bucket/schemas';
-import { bucket, bucketTransaction } from '@/features/bucket/server/db/schemas';
+import { bucket, bucketToTransaction } from '@/features/bucket/server/db/schemas';
 import { transaction } from '@/features/transaction/server/db/schema';
 import { TQueryDeleteUserRecord, TQueryUpdateUserRecord } from '@/lib/schemas';
 import { db } from '@/server/db';
@@ -25,13 +25,13 @@ const getById = (id: string, userId: string) =>
                     // Computed fields via subqueries
                     totalTransactions: sql<number>`(
                         SELECT COUNT(*)::int
-                        FROM ${bucketTransaction} tb
+                        FROM ${bucketToTransaction} tb
                         WHERE tb.bucket_id = ${bucket.id}
                         AND tb.is_active = true
                     )`,
                     totalAmount: sql<string>`COALESCE((
                         SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                        FROM ${bucketTransaction} tb
+                        FROM ${bucketToTransaction} tb
                         JOIN ${transaction} t ON tb.transaction_id = t.id
                         WHERE tb.bucket_id = ${bucket.id}
                         AND tb.is_active = true
@@ -40,7 +40,7 @@ const getById = (id: string, userId: string) =>
                     openAmount: sql<string>`(
                         COALESCE((
                             SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                            FROM ${bucketTransaction} tb
+                            FROM ${bucketToTransaction} tb
                             JOIN ${transaction} t ON tb.transaction_id = t.id
                             WHERE tb.bucket_id = ${bucket.id}
                             AND tb.is_active = true

@@ -14,7 +14,7 @@ export const useBucketParticipantEndpoints = {
     ),
 
     /**
-     * Create a new participant
+     * Create a new bucketParticipant
      */
     create: createMutation(
         apiClient.buckets.participants[':bucketId'].$post,
@@ -22,7 +22,7 @@ export const useBucketParticipantEndpoints = {
     ),
 
     /**
-     * Update a participant
+     * Update a bucketParticipant
      */
     update: createMutation(
         apiClient.buckets.participants[':id'].$put,
@@ -30,7 +30,7 @@ export const useBucketParticipantEndpoints = {
     ),
 
     /**
-     * Delete a participant
+     * Delete a bucketParticipant
      */
     delete: createMutation(
         apiClient.buckets.participants[':id'].$delete,

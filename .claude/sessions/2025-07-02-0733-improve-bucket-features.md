@@ -61,7 +61,7 @@ This session focuses on enhancing the bucket functionality by implementing a pro
     - Update `getById` to include computed fields (totalTransactions, totalAmount, openAmount)
     - Update `getAll` to include transaction counts and amounts
     - Add queries to calculate and refresh bucket statistics
-    - Update participant-related queries
+    - Update bucketParticipant-related queries
 
 3. **Junction table queries**:
     - Create CRUD operations for transaction-bucket associations
@@ -267,9 +267,9 @@ This session focuses on enhancing the bucket functionality by implementing a pro
 - **Modified Files**:
 
     - `.claude/commands/session-start.md`, `CLAUDE.md`, `src/features/CLAUDE.md`
-    - `src/features/bucket/api/bucket-participant.ts`, `src/features/bucket/api/bucket.ts`, `src/features/bucket/api/index.ts`
+    - `src/features/bucket/api/bucket-bucketParticipant.ts`, `src/features/bucket/api/bucket.ts`, `src/features/bucket/api/index.ts`
     - `src/features/bucket/schemas/index.ts`, `src/features/bucket/server/db/queries/bucket.ts`, `src/features/bucket/server/db/schemas.ts`
-    - `src/features/bucket/server/endpoints/bucket-participant.ts`, `src/features/bucket/server/endpoints/bucket.ts`, `src/features/bucket/server/endpoints/index.ts`
+    - `src/features/bucket/server/endpoints/bucket-bucketParticipant.ts`, `src/features/bucket/server/endpoints/bucket.ts`, `src/features/bucket/server/endpoints/index.ts`
     - `src/features/bucket/server/services/bucket.ts`, `src/features/transaction/server/db/queries.ts`, `src/features/transaction/server/db/schema.ts`
     - `src/server/db/schemas/index.ts`, `src/server/endpoints.ts`
 

@@ -8,12 +8,20 @@ import { getUser } from '@/lib/auth/server';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 
+const apiInsertBucketSchema = insertBucketSchema.extend({
+    participantIds: z.array(z.string()).optional().default([]),
+});
+
+const apiUpdateBucketSchema = updateBucketSchema.extend({
+    participantIds: z.array(z.string()).optional(),
+});
+
 const app = new Hono()
     .get('/', (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const buckets = await bucketServices.getAllBuckets(user.id);
-            return buckets;
+            return c.json(buckets);
         })
     )
     .get('/:id', zValidator('param', endpointSelectSchema), (c) =>
@@ -24,32 +32,35 @@ const app = new Hono()
             if (!bucket) {
                 return c.json({ error: 'Bucket not found' }, 404);
             }
-            return bucket;
+            return c.json(bucket);
         })
     )
-    .post('/', zValidator('json', insertBucketSchema), (c) =>
+    .post('/', zValidator('json', apiInsertBucketSchema), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const data = c.req.valid('json');
-            const newBucket = await bucketServices.createBucket(data, user);
-            return newBucket;
+            const { participantIds, ...data } = c.req.valid('json');
+            const newBucket = await bucketServices.createBucket(data, user.id, participantIds);
+            return c.json(newBucket, 201);
         })
     )
     .put(
         '/:id',
         zValidator('param', endpointSelectSchema),
-        zValidator('json', updateBucketSchema),
+        zValidator('json', apiUpdateBucketSchema),
         (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
                 const { id } = c.req.valid('param');
-                const data = c.req.valid('json');
-                const updatedBucket = await bucketServices.updateBucket({
-                    id,
-                    data,
-                    userId: user.id,
-                });
-                return updatedBucket;
+                const { participantIds, ...data } = c.req.valid('json');
+                const updatedBucket = await bucketServices.updateBucket(
+                    {
+                        id,
+                        data,
+                        userId: user.id,
+                    },
+                    participantIds
+                );
+                return c.json(updatedBucket);
             })
     )
     .delete('/:id', zValidator('param', endpointSelectSchema), (c) =>
@@ -57,9 +68,9 @@ const app = new Hono()
             const user = getUser(c);
             const { id } = c.req.valid('param');
             await bucketServices.deleteBucket(id, user.id);
-            return {
+            return c.json({
                 success: true,
-            };
+            });
         })
     )
     // Transaction assignment endpoints
