@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBucketEndpoints, useBucketParticipantEndpoints } from '@/features/bucket/api';
-import { ParticipantManager } from '@/features/bucket/components/bucketParticipant-manager';
+import { ParticipantManager } from '../participant/participant-manager';
 
 interface BucketDetailsViewProps {
     bucketId: string;
@@ -29,7 +29,7 @@ export function BucketDetailsView({ bucketId }: BucketDetailsViewProps) {
                 </CardHeader>
             </Card>
 
-            <ParticipantManager bucketId={bucketId}} />
+            <ParticipantManager bucketId={bucketId} />
 
             <Card>
                 <CardHeader>

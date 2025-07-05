@@ -17,11 +17,16 @@ import { transaction } from '@/features/transaction/server/db/schema';
 import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 
+// ====================
 // Enums
+// ====================
+
 export const bucketTypeEnum = pgEnum('bucket_type', ['trip', 'home', 'project', 'event', 'other']);
 export const bucketStatusEnum = pgEnum('bucket_status', ['open', 'settled']);
 
+// ====================
 // Tables
+// ====================
 
 export const bucketParticipant = pgTable('bucket_participant', {
     id: text()
@@ -35,6 +40,7 @@ export const bucketParticipant = pgTable('bucket_participant', {
     linkedUserId: text().references(() => user.id, {
         onDelete: 'set null',
     }),
+    totalTransactions: integer().notNull().default(0),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     isActive: boolean().notNull().default(true),
@@ -50,12 +56,15 @@ export const bucket = pgTable('bucket', {
     title: text().notNull(),
     type: bucketTypeEnum().notNull().default('other'),
     status: bucketStatusEnum().notNull().default('open'),
-    currency: text().notNull().default('USD'),
+
     // Tracking fields for bucket statistics
-    paidAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
     totalTransactions: integer().notNull().default(0),
+    openTransactions: integer().notNull().default(0),
+    settledTransactions: integer().notNull().default(0),
     totalAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
     openAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
+    settledAmount: decimal({ precision: 12, scale: 2 }).notNull().default('0.00'),
+
     // metadata
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -93,6 +102,8 @@ export const bucketToTransaction = pgTable(
         splitShare: decimal({ precision: 12, scale: 2 }).default('100.00'),
         // SplitWise integration status
         isRecorded: boolean().notNull().default(false),
+        // Settlement status for each transaction
+        isSettled: boolean().notNull().default(false),
         // Optional notes for this transaction-bucket relationship
         notes: text(),
         createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -133,7 +144,11 @@ export const bucketTransactionParticipant = pgTable(
     })
 );
 
-export const participantRelations = relations(bucketParticipant, ({ one, many }) => ({
+// ====================
+// Relations
+// ====================
+
+export const bucketParticipantRelations = relations(bucketParticipant, ({ one, many }) => ({
     user: one(user, {
         fields: [bucketParticipant.userId],
         references: [user.id],
@@ -144,29 +159,32 @@ export const participantRelations = relations(bucketParticipant, ({ one, many })
         references: [user.id],
         relationName: 'linked_user',
     }),
-    bucketParticipants: many(bucketParticipant),
+    bucketParticipants: many(bucketToBucketParticipant),
     bucketTransactionParticipants: many(bucketTransactionParticipant),
 }));
 
-export const bucketsRelations = relations(bucket, ({ many, one }) => ({
+export const bucketRelations = relations(bucket, ({ many, one }) => ({
     user: one(user, {
         fields: [bucket.userId],
         references: [user.id],
     }),
-    participants: many(bucketParticipant),
-    bucketTransactions: many(bucketToTransaction),
+    participants: many(bucketToBucketParticipant),
+    transactions: many(bucketToTransaction),
 }));
 
-export const bucketParticipantsRelations = relations(bucketParticipant, ({ one }) => ({
-    bucket: one(bucket, {
-        fields: [bucketParticipant.bucketId],
-        references: [bucket.id],
-    }),
-    bucketParticipant: one(bucketParticipant, {
-        fields: [bucketParticipant.participantId],
-        references: [bucketParticipant.id],
-    }),
-}));
+export const bucketToBucketParticipantRelations = relations(
+    bucketToBucketParticipant,
+    ({ one }) => ({
+        bucket: one(bucket, {
+            fields: [bucketToBucketParticipant.bucketId],
+            references: [bucket.id],
+        }),
+        participant: one(bucketParticipant, {
+            fields: [bucketToBucketParticipant.participantId],
+            references: [bucketParticipant.id],
+        }),
+    })
+);
 
 export const bucketTransactionRelations = relations(bucketToTransaction, ({ one, many }) => ({
     transaction: one(transaction, {
@@ -194,7 +212,9 @@ export const bucketTransactionParticipantRelations = relations(
     })
 );
 
-// Zod schemas
+// ====================
+// Base Zod schemas
+// ====================
 
 // bucket
 export const selectBucketSchema = createSelectSchema(bucket);

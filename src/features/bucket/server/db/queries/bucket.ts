@@ -1,110 +1,66 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 import { bucketQuerySchemas } from '@/features/bucket/schemas';
-import { bucket, bucketToTransaction } from '@/features/bucket/server/db/schemas';
-import { transaction } from '@/features/transaction/server/db/schema';
-import { TQueryDeleteUserRecord, TQueryUpdateUserRecord } from '@/lib/schemas';
+import { bucket } from '@/features/bucket/server/db/schemas';
+import {
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
+} from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 
-const getById = (id: string, userId: string) =>
+/**
+ * Get a bucket by ID
+ * @param id - The ID of the bucket to get
+ * @param userId - The user ID of the bucket
+ * @returns The bucket
+ */
+const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .select({
-                    id: bucket.id,
-                    userId: bucket.userId,
-                    title: bucket.title,
-                    type: bucket.type,
-                    status: bucket.status,
-                    paidAmount: bucket.paidAmount,
-                    currency: bucket.currency,
-                    createdAt: bucket.createdAt,
-                    updatedAt: bucket.updatedAt,
-                    isActive: bucket.isActive,
-                    // Computed fields via subqueries
-                    totalTransactions: sql<number>`(
-                        SELECT COUNT(*)::int
-                        FROM ${bucketToTransaction} tb
-                        WHERE tb.bucket_id = ${bucket.id}
-                        AND tb.is_active = true
-                    )`,
-                    totalAmount: sql<string>`COALESCE((
-                        SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                        FROM ${bucketToTransaction} tb
-                        JOIN ${transaction} t ON tb.transaction_id = t.id
-                        WHERE tb.bucket_id = ${bucket.id}
-                        AND tb.is_active = true
-                        AND t.is_active = true
-                    ), '0.00')`,
-                    openAmount: sql<string>`(
-                        COALESCE((
-                            SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                            FROM ${bucketToTransaction} tb
-                            JOIN ${transaction} t ON tb.transaction_id = t.id
-                            WHERE tb.bucket_id = ${bucket.id}
-                            AND tb.is_active = true
-                            AND t.is_active = true
-                        ), '0.00')::decimal - ${bucket.paidAmount}
-                    )::text`,
-                })
+                .select()
                 .from(bucket)
                 .where(
                     and(eq(bucket.id, id), eq(bucket.userId, userId), eq(bucket.isActive, true))
                 );
             return result || null;
         },
-        operation: 'get_bucket_by_id_with_stats',
+        operation: 'get bucket by id',
         allowNull: true,
     });
 
-const getAll = (userId: string) =>
+/**
+ * Get all buckets for a user
+ * @param userId - The user ID
+ * @returns The buckets
+ */
+const getAll = async ({
+    userId,
+}: TQuerySelectUserRecords): Promise<z.infer<typeof bucketQuerySchemas.select>[]> =>
     withDbQuery({
         queryFn: () =>
             db
-                .select({
-                    id: bucket.id,
-                    userId: bucket.userId,
-                    title: bucket.title,
-                    type: bucket.type,
-                    status: bucket.status,
-                    paidAmount: bucket.paidAmount,
-                    currency: bucket.currency,
-                    createdAt: bucket.createdAt,
-                    updatedAt: bucket.updatedAt,
-                    isActive: bucket.isActive,
-                    // Computed fields via subqueries
-                    totalTransactions: sql<number>`(
-                        SELECT COUNT(*)::int
-                        FROM ${bucketTransaction} tb
-                        WHERE tb.bucket_id = ${bucket.id}
-                        AND tb.is_active = true
-                    )`,
-                    totalAmount: sql<string>`COALESCE((
-                        SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                        FROM ${bucketTransaction} tb
-                        JOIN ${transaction} t ON tb.transaction_id = t.id
-                        WHERE tb.bucket_id = ${bucket.id}
-                        AND tb.is_active = true
-                        AND t.is_active = true
-                    ), '0.00')`,
-                    openAmount: sql<string>`(
-                        COALESCE((
-                            SELECT SUM(CAST(t.user_amount AS DECIMAL))::text
-                            FROM ${bucketTransaction} tb
-                            JOIN ${transaction} t ON tb.transaction_id = t.id
-                            WHERE tb.bucket_id = ${bucket.id}
-                            AND tb.is_active = true
-                            AND t.is_active = true
-                        ), '0.00')::decimal - ${bucket.paidAmount}
-                    )::text`,
-                })
+                .select()
                 .from(bucket)
                 .where(and(eq(bucket.userId, userId), eq(bucket.isActive, true))),
-        operation: 'get_all_buckets_with_stats',
+        operation: 'get all buckets',
     });
 
-const create = (data: typeof bucketQuerySchemas.insert._type, userId: string) =>
+/**
+ * Create a bucket
+ * @param data - The bucket data
+ * @param userId - The user ID
+ * @returns The created bucket
+ */
+const create = async ({
+    data,
+    userId,
+}: TQueryInsertUserRecord<z.infer<typeof bucketQuerySchemas.insert>>) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
@@ -113,14 +69,21 @@ const create = (data: typeof bucketQuerySchemas.insert._type, userId: string) =>
                 .returning();
             return result;
         },
-        operation: 'create_bucket',
+        operation: 'create bucket',
     });
 
-const update = ({
+/**
+ * Update a bucket
+ * @param id - The ID of the bucket to update
+ * @param data - The bucket data
+ * @param userId - The user ID
+ * @returns The updated bucket
+ */
+const update = async ({
     id,
     data,
     userId,
-}: TQueryUpdateUserRecord<typeof bucketQuerySchemas.update._type>) =>
+}: TQueryUpdateUserRecord<z.infer<typeof bucketQuerySchemas.update>>) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
@@ -130,10 +93,16 @@ const update = ({
                 .returning();
             return result;
         },
-        operation: 'update_bucket',
+        operation: 'update bucket',
     });
 
-const remove = ({ id, userId }: TQueryDeleteUserRecord) =>
+/**
+ * Remove a bucket
+ * @param id - The ID of the bucket to remove
+ * @param userId - The user ID of the bucket
+ * @returns The removed bucket
+ */
+const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
@@ -144,29 +113,7 @@ const remove = ({ id, userId }: TQueryDeleteUserRecord) =>
 
             return result;
         },
-        operation: 'remove_bucket',
-    });
-
-const updatePaidAmount = ({
-    id,
-    userId,
-    paidAmount,
-}: {
-    id: string;
-    userId: string;
-    paidAmount: string;
-}) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .update(bucket)
-                .set({ paidAmount, updatedAt: new Date() })
-                .where(and(eq(bucket.id, id), eq(bucket.userId, userId)))
-                .returning();
-
-            return result;
-        },
-        operation: 'update_bucket_paid_amount',
+        operation: 'remove bucket',
     });
 
 export const bucketQueries = {
@@ -175,5 +122,4 @@ export const bucketQueries = {
     create,
     update,
     remove,
-    updatePaidAmount,
 };

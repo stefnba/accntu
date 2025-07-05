@@ -5,24 +5,43 @@ import {
 } from '@/features/bucket/server/db/schemas';
 import { z } from 'zod';
 
+// ====================
+// Query
+// ====================
+
 export const bucketQuerySchemas = {
     select: selectBucketSchema,
-    insert: insertBucketSchema,
-    update: updateBucketSchema,
+    insert: insertBucketSchema.omit({
+        userId: true,
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+    }),
+    update: updateBucketSchema.omit({
+        userId: true,
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+    }),
 };
+
 export type TBucketQuery = {
     select: z.infer<typeof bucketQuerySchemas.select>;
     insert: z.infer<typeof bucketQuerySchemas.insert>;
     update: z.infer<typeof bucketQuerySchemas.update>;
 };
 
-export const bukcetServiceSchemas = {
-    select: selectBucketSchema,
-    insert: insertBucketSchema,
-    update: updateBucketSchema,
+// ====================
+// Service/Endpoint
+// ====================
+
+export const bucketServiceSchemas = {
+    create: bucketQuerySchemas.insert,
+    update: bucketQuerySchemas.update,
 };
 export type TBucketService = {
-    select: z.infer<typeof bukcetServiceSchemas.select>;
-    insert: z.infer<typeof bukcetServiceSchemas.insert>;
-    update: z.infer<typeof bukcetServiceSchemas.update>;
+    create: z.infer<typeof bucketServiceSchemas.create>;
+    update: z.infer<typeof bucketServiceSchemas.update>;
 };

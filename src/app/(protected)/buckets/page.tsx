@@ -1,9 +1,15 @@
-import { BucketManager } from '@/features/bucket/components/bucket-manager';
+import { MainContent } from '@/components/layout/main';
+import { BucketManager } from '@/features/bucket/components//bucket';
 
 export default async function BucketsPage() {
     return (
-        <div className="container mx-auto p-4">
+        <MainContent
+            pageHeader={{
+                title: 'Buckets',
+                description: 'Manage the buckets you can assign to participants.',
+            }}
+        >
             <BucketManager />
-        </div>
+        </MainContent>
     );
 }

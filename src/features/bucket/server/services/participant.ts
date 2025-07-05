@@ -1,72 +1,84 @@
-import { and, eq, sql } from 'drizzle-orm';
-
+import { TBucketParticipantQuery } from '@/features/bucket/schemas';
+import { bucketParticipantQueries } from '@/features/bucket/server/db/queries/participant';
 import {
-    bucketParticipant,
-    insertParticipantSchema,
-    selectParticipantSchema,
-    updateParticipantSchema,
-} from '@/features/bucket/server/db/schemas';
-import { db } from '@/server/db';
-import { z } from 'zod';
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
+} from '@/lib/schemas';
 
 export const participantService = {
-    getParticipants: async (userId: string) => {
-        const result = await db
-            .select()
-            .from(bucketParticipant)
-            .where(eq(bucketParticipant.userId, userId))
-            .orderBy(bucketParticipant.name);
-
-        return z.array(selectParticipantSchema).parse(result);
+    /**
+     * Get all participants for a user
+     * @param userId - The user ID
+     * @returns The participants
+     */
+    getAll: async ({ userId }: TQuerySelectUserRecords) => {
+        const result = await bucketParticipantQueries.getAll({ userId });
+        console.log('result', result);
+        return result;
     },
 
-    getParticipantById: async (id: string, userId: string) => {
-        const result = await db
-            .select()
-            .from(bucketParticipant)
-            .where(and(eq(bucketParticipant.id, id), eq(bucketParticipant.userId, userId)));
+    /**
+     * Get a participant by ID
+     * @param id - The participant ID
+     * @param userId - The user ID
+     * @returns The participant
+     */
+    getById: async ({ id, userId }: TQuerySelectUserRecordById) => {
+        const result = await bucketParticipantQueries.getById({ id, userId });
 
-        if (result.length === 0) {
-            throw new Error('Participant not found');
+        if (!result) {
+            return {};
         }
 
-        return selectParticipantSchema.parse(result[0]);
+        return result;
     },
 
-    createParticipant: async (data: z.infer<typeof insertParticipantSchema>, userId: string) => {
-        const newParticipant = await db
-            .insert(bucketParticipant)
-            .values({ ...data, userId })
-            .returning();
+    /**
+     * Create a participant
+     * @param data - The participant data
+     * @param userId - The user ID
+     * @returns The created participant
+     */
+    create: async ({ data, userId }: TQueryInsertUserRecord<TBucketParticipantQuery['insert']>) => {
+        const newParticipant = await bucketParticipantQueries.create({ data, userId });
 
-        return selectParticipantSchema.parse(newParticipant[0]);
+        return newParticipant;
     },
 
-    updateParticipant: async (
-        id: string,
-        data: z.infer<typeof updateParticipantSchema>,
-        userId: string
-    ) => {
-        const updatedParticipant = await db
-            .update(bucketParticipant)
-            .set({ ...data, updatedAt: sql`now()` })
-            .where(and(eq(bucketParticipant.id, id), eq(bucketParticipant.userId, userId)))
-            .returning();
+    /**
+     * Update a participant
+     * @param id - The participant ID
+     * @param data - The participant data
+     * @param userId - The user ID
+     * @returns The updated participant
+     */
+    update: async ({
+        id,
+        userId,
+        data,
+    }: TQueryUpdateUserRecord<TBucketParticipantQuery['update']>) => {
+        const updatedParticipant = await bucketParticipantQueries.update({ id, userId, data });
 
-        if (updatedParticipant.length === 0) {
+        if (!updatedParticipant) {
             throw new Error('Participant not found or you do not have permission to update it');
         }
 
-        return selectParticipantSchema.parse(updatedParticipant[0]);
+        return updatedParticipant;
     },
 
-    deleteParticipant: async (id: string, userId: string) => {
-        const deletedParticipant = await db
-            .delete(bucketParticipant)
-            .where(and(eq(bucketParticipant.id, id), eq(bucketParticipant.userId, userId)))
-            .returning();
+    /**
+     * Delete a participant
+     * @param id - The participant ID
+     * @param userId - The user ID
+     * @returns The deleted participant
+     */
+    remove: async ({ id, userId }: TQueryDeleteUserRecord) => {
+        const deletedParticipant = await bucketParticipantQueries.remove({ id, userId });
 
-        if (deletedParticipant.length === 0) {
+        if (!deletedParticipant) {
             throw new Error('Participant not found or you do not have permission to delete it');
         }
 

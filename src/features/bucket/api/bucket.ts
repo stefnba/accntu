@@ -30,28 +30,4 @@ export const useBucketEndpoints = {
      * Delete a bucket
      */
     delete: createMutation(apiClient.buckets[':id'].$delete, BUCKET_QUERY_KEYS.ALL),
-
-    /**
-     * Assign transaction to bucket
-     */
-    assignTransaction: createMutation(
-        apiClient.buckets[':id'].transactions[':transactionId'].$post,
-        [BUCKET_QUERY_KEYS.ALL, BUCKET_QUERY_KEYS.ONE]
-    ),
-
-    /**
-     * Remove transaction from bucket
-     */
-    removeTransaction: createMutation(
-        apiClient.buckets[':id'].transactions[':transactionId'].$delete,
-        [BUCKET_QUERY_KEYS.ALL, BUCKET_QUERY_KEYS.ONE]
-    ),
-
-    /**
-     * Update bucket paid amount for SplitWise integration
-     */
-    updatePaidAmount: createMutation(
-        apiClient.buckets[':id']['paid-amount'].$patch,
-        [BUCKET_QUERY_KEYS.ALL, BUCKET_QUERY_KEYS.ONE]
-    ),
 };

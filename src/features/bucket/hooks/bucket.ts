@@ -1,15 +1,12 @@
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 
 /**
- * Hook to manage the add/update participant modal state
+ * Hook to manage the add/update bucket modal state
  *
  */
-export const useCreateUpdateParticipantModal = () => {
+export const useCreateUpdateBucketModal = () => {
     const [modalIsOpen, setModalOpen] = useQueryState('m', parseAsBoolean.withDefault(false));
-    const [bucketParticipantId, setBucketParticipantId] = useQueryState(
-        'bucketParticipantId',
-        parseAsString.withDefault('')
-    );
+    const [bucketId, setBucketId] = useQueryState('bucketId', parseAsString.withDefault(''));
 
     const openModal = () => {
         setModalOpen(true);
@@ -27,8 +24,8 @@ export const useCreateUpdateParticipantModal = () => {
         openModal,
         closeModal,
 
-        // Participant state
-        bucketParticipantId,
-        setBucketParticipantId,
+        // Bucket state
+        bucketId,
+        setBucketId,
     };
 };

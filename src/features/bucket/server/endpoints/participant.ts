@@ -1,59 +1,58 @@
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
-import {
-    insertParticipantSchema,
-    updateParticipantSchema,
-} from '@/features/bucket/server/db/schemas';
-import { participantService } from '@/features/bucket/server/services/bucketParticipant';
-
+import { bucketParticipantServiceSchemas } from '@/features/bucket/schemas';
+import { participantService } from '@/features/bucket/server/services/participant';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
+import { z } from 'zod';
 
 const app = new Hono()
     .get('/', (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const participants = await participantService.getParticipants(user.id);
-            return c.json(participants);
+            const participants = await participantService.getAll({ userId: user.id });
+            return participants;
         })
     )
-    .get('/:id', (c) =>
+    .get('/:id', zValidator('param', z.object({ id: z.string() })), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.param();
-            const bucketParticipant = await participantService.getParticipantById(id, user.id);
-            return c.json(bucketParticipant);
+            const bucketParticipant = await participantService.getById({ id, userId: user.id });
+            return bucketParticipant;
         })
     )
-    .post('/', zValidator('json', insertParticipantSchema), (c) =>
+    .post('/', zValidator('json', bucketParticipantServiceSchemas.create), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const values = c.req.valid('json');
-            const newParticipant = await participantService.createParticipant(values, user.id);
-            return c.json(newParticipant, 201);
+            const data = c.req.valid('json');
+            const newParticipant = await participantService.create({
+                data,
+                userId: user.id,
+            });
+            return newParticipant;
         })
     )
-    .patch('/:id', zValidator('json', updateParticipantSchema), (c) =>
+    .patch('/:id', zValidator('json', bucketParticipantServiceSchemas.update), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.param();
             const values = c.req.valid('json');
-            const updatedParticipant = await participantService.updateParticipant(
+            const updatedParticipant = await participantService.update({
                 id,
-                values,
-                user.id
-            );
-            return c.json(updatedParticipant);
+                data: values,
+                userId: user.id,
+            });
+            return updatedParticipant;
         })
     )
-    .delete('/:id', (c) =>
+    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.param();
-            const deletedParticipant = await participantService.deleteParticipant(id, user.id);
-            return c.json(deletedParticipant);
+            const { id } = c.req.valid('param');
+            return await participantService.remove({ id, userId: user.id });
         })
     );
 
-export const participantEndpoints = app;
+export default app;

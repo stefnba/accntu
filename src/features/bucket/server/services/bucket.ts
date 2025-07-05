@@ -1,135 +1,62 @@
-import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
-
+import { TBucketQuery } from '@/features/bucket/schemas';
+import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
 import {
-    bucket,
-    bucketParticipant,
-    insertBucketSchema,
-    updateBucketSchema,
-} from '@/features/bucket/server/db/schemas';
-import { TQueryUpdateUserRecord } from '@/lib/schemas';
-import { db } from '@/server/db';
-import { bucketQueries } from '../db/queries/bucket';
-import { bucketTransactionServices } from './transaction-bucket';
-
-const createBucket = async (
-    data: z.infer<typeof insertBucketSchema>,
-    userId: string,
-    participantIds: string[]
-) => {
-    return await db.transaction(async (tx) => {
-        const [newBucket] = await tx
-            .insert(bucket)
-            .values({ ...data, userId })
-            .returning();
-
-        if (participantIds.length > 0) {
-            const participantsData = participantIds.map((participantId) => ({
-                bucketId: newBucket.id,
-                participantId,
-            }));
-            await tx.insert(bucketParticipant).values(participantsData);
-        }
-
-        return newBucket;
-    });
-};
-
-const updateBucket = async (
-    params: TQueryUpdateUserRecord<z.infer<typeof updateBucketSchema>>,
-    participantIds?: string[]
-) => {
-    return await db.transaction(async (tx) => {
-        const [updatedBucket] = await tx
-            .update(bucket)
-            .set(params.data)
-            .where(and(eq(bucket.id, params.id), eq(bucket.userId, params.userId)))
-            .returning();
-
-        if (participantIds) {
-            // Delete existing participants for this bucket
-            await tx.delete(bucketParticipant).where(eq(bucketParticipant.bucketId, params.id));
-
-            // Insert new participants if any are provided
-            if (participantIds.length > 0) {
-                const participantsData = participantIds.map((participantId) => ({
-                    bucketId: params.id,
-                    participantId,
-                }));
-                await tx.insert(bucketParticipant).values(participantsData);
-            }
-        }
-
-        if (!updatedBucket) {
-            throw new Error('Failed to update bucket');
-        }
-        return updatedBucket;
-    });
-};
-
-const deleteBucket = async (bucketId: string, userId: string) => {
-    // Soft delete the bucket itself. Ownership is checked in the query.
-    const deletedBucket = await bucketQueries.remove({ id: bucketId, userId });
-
-    if (!deletedBucket) {
-        throw new Error('Failed to delete bucket');
-    }
-    return deletedBucket;
-};
-
-const updateBucketPaidAmount = async ({
-    bucketId,
-    userId,
-    paidAmount,
-}: {
-    bucketId: string;
-    userId: string;
-    paidAmount: string;
-}) => {
-    const updatedBucket = await bucketQueries.updatePaidAmount({
-        id: bucketId,
-        userId,
-        paidAmount,
-    });
-
-    if (!updatedBucket) {
-        throw new Error('Failed to update bucket paid amount');
-    }
-
-    return updatedBucket;
-};
-
-const assignTransactionToBucket = async ({
-    transactionId,
-    bucketId,
-    userId,
-    notes,
-}: {
-    transactionId: string;
-    bucketId: string;
-    userId: string;
-    notes?: string;
-}) => {
-    return await bucketTransactionServices.assignTransactionToBucket({
-        transactionId,
-        bucketId,
-        userId,
-        notes,
-    });
-};
-
-const removeTransactionFromBucket = async (transactionId: string) => {
-    return await bucketTransactionServices.removeTransactionFromBucket(transactionId);
-};
+    TQueryDeleteUserRecord,
+    TQueryInsertUserRecord,
+    TQuerySelectUserRecordById,
+    TQuerySelectUserRecords,
+    TQueryUpdateUserRecord,
+} from '@/lib/schemas';
 
 export const bucketServices = {
-    createBucket,
-    updateBucket,
-    deleteBucket,
-    updateBucketPaidAmount,
-    assignTransactionToBucket,
-    removeTransactionFromBucket,
-    getBucketById: bucketQueries.getById,
-    getAllBuckets: bucketQueries.getAll,
-    bucketTransaction: bucketTransactionServices,
+    /**
+     * Get all buckets for a user
+     */
+    getAll: async ({ userId }: TQuerySelectUserRecords) => {
+        const result = await bucketQueries.getAll({ userId });
+        return result;
+    },
+
+    /**
+     * Get a bucket by ID
+     */
+    getById: async ({ id, userId }: TQuerySelectUserRecordById) => {
+        const result = await bucketQueries.getById({ id, userId });
+
+        return result;
+    },
+
+    /**
+     * Create a bucket
+     */
+    create: async ({ data, userId }: TQueryInsertUserRecord<TBucketQuery['insert']>) => {
+        const newBucket = await bucketQueries.create({ data, userId });
+        return newBucket;
+    },
+
+    /**
+     * Update a bucket
+     */
+    update: async ({ id, userId, data }: TQueryUpdateUserRecord<TBucketQuery['update']>) => {
+        const updatedBucket = await bucketQueries.update({ id, userId, data });
+
+        if (!updatedBucket) {
+            throw new Error('Bucket not found or you do not have permission to update it');
+        }
+
+        return updatedBucket;
+    },
+
+    /**
+     * Delete a bucket
+     */
+    remove: async ({ id, userId }: TQueryDeleteUserRecord) => {
+        const deletedBucket = await bucketQueries.remove({ id, userId });
+
+        if (!deletedBucket) {
+            throw new Error('Bucket not found or you do not have permission to delete it');
+        }
+
+        return { id };
+    },
 };
