@@ -1,14 +1,10 @@
-import {
-    addTagToTransactionSchema,
-    createTagSchema,
-    updateTagFormSchema,
-} from '@/features/tag/schemas';
+import { tagServiceSchemas } from '@/features/tag/schemas';
+import { tagServices } from '@/features/tag/server/services';
 import { getUser } from '@/lib/auth';
+import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
-import { z } from 'zod';
-import * as queries from './db/queries';
 
 // Create Hono app with proper chaining for RPC type generation
 const app = new Hono()
@@ -16,15 +12,16 @@ const app = new Hono()
     .get('/', async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await queries.getTagsByUserId({ userId: user.id });
+            return await tagServices.getAll({ userId: user.id });
         })
     )
 
     // Get tag by ID
-    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+    .get('/:id', zValidator('param', endpointSelectSchema), async (c) =>
         withRoute(c, async () => {
+            const user = getUser(c);
             const { id } = c.req.valid('param');
-            const tag = await queries.getTagById({ id });
+            const tag = await tagServices.getById({ id, userId: user.id });
 
             if (!tag) {
                 throw new Error('Tag not found');
@@ -35,103 +32,24 @@ const app = new Hono()
     )
 
     // Create a new tag
-    .post('/', zValidator('json', createTagSchema), async (c) =>
+    .post('/', zValidator('json', tagServiceSchemas.create), async (c) =>
         withRoute(
             c,
             async () => {
                 const user = getUser(c);
                 const data = c.req.valid('json');
-                return await queries.createTag({ data: { ...data, userId: user.id } });
+                return await tagServices.create({ data, userId: user.id });
             },
             201
         )
-    )
-
-    // Update a tag
-    .put(
-        '/:id',
-        zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', updateTagFormSchema),
-        async (c) =>
-            withRoute(c, async () => {
-                const { id } = c.req.valid('param');
-                const data = c.req.valid('json');
-
-                const updatedTag = await queries.updateTag({ id, data });
-
-                if (!updatedTag) {
-                    throw new Error('Tag not found');
-                }
-
-                return updatedTag;
-            })
     )
 
     // Delete a tag (soft delete)
-    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
         withRoute(c, async () => {
+            const user = getUser(c);
             const { id } = c.req.valid('param');
-            await queries.deleteTag({ id });
-            return { success: true };
-        })
-    )
-
-    // Get tags for a transaction with metadata
-    .get(
-        '/transactions/:transactionId/tags',
-        zValidator('param', z.object({ transactionId: z.string() })),
-        async (c) =>
-            withRoute(c, async () => {
-                const { transactionId } = c.req.valid('param');
-                return await queries.getTransactionTags({ transactionId });
-            })
-    )
-
-    // Get simple tags for a transaction
-    .get(
-        '/transactions/:transactionId/tags/simple',
-        zValidator('param', z.object({ transactionId: z.string() })),
-        async (c) =>
-            withRoute(c, async () => {
-                const { transactionId } = c.req.valid('param');
-                return await queries.getTagsForTransaction({ transactionId });
-            })
-    )
-
-    // Add tag to transaction
-    .post('/transactions/tags', zValidator('json', addTagToTransactionSchema), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const { transactionId, tagId, source, confidence } = c.req.valid('json');
-                return await queries.addTagToTransaction({
-                    transactionId,
-                    tagId,
-                    source,
-                    confidence,
-                });
-            },
-            201
-        )
-    )
-
-    // Remove tag from transaction
-    .delete(
-        '/transactions/:transactionId/tags/:tagId',
-        zValidator('param', z.object({ transactionId: z.string(), tagId: z.string() })),
-        async (c) =>
-            withRoute(c, async () => {
-                const { transactionId, tagId } = c.req.valid('param');
-                await queries.removeTagFromTransaction({ transactionId, tagId });
-                return { success: true };
-            })
-    )
-
-    // Update tag transaction count
-    .put('/:tagId/update-count', zValidator('param', z.object({ tagId: z.string() })), async (c) =>
-        withRoute(c, async () => {
-            const { tagId } = c.req.valid('param');
-            await queries.updateTagTransactionCount({ tagId });
+            await tagServices.remove({ id, userId: user.id });
             return { success: true };
         })
     );

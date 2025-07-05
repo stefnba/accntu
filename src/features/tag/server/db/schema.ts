@@ -4,23 +4,17 @@ import { relations } from 'drizzle-orm';
 import {
     boolean,
     integer,
-    pgEnum,
     pgTable,
     primaryKey,
     text,
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
-export const tagTypeEnum = pgEnum('tag_type', [
-    'category',
-    'merchant',
-    'project',
-    'location',
-    'custom',
-]);
-
-// Flexible tags for user-defined categorization
+// ====================
+// Tables
+// ====================
 export const tag = pgTable(
     'tag',
     {
@@ -28,13 +22,11 @@ export const tag = pgTable(
             .primaryKey()
             .notNull()
             .$defaultFn(() => createId()),
-        userId: text().notNull(), // Tags are user-specific
+        userId: text().notNull(),
 
         name: text().notNull(),
         description: text(),
         color: text().notNull().default('#6366f1'), // Hex color for UI
-        icon: text(), // Icon name/identifier
-        type: tagTypeEnum().notNull().default('custom'),
 
         transactionCount: integer().default(0),
         isActive: boolean().notNull().default(true),
@@ -44,9 +36,8 @@ export const tag = pgTable(
     (table) => [uniqueIndex('tag_user_name_unique').on(table.userId, table.name)]
 );
 
-// Junction table for many-to-many relationship between transactions and tags
-export const transactionTag = pgTable(
-    'transaction_tag',
+export const tagToTransaction = pgTable(
+    'tag_to_transaction',
     {
         transactionId: text()
             .notNull()
@@ -55,32 +46,39 @@ export const transactionTag = pgTable(
             .notNull()
             .references(() => tag.id, { onDelete: 'cascade' }),
 
-        // Metadata for the relationship
-        confidence: text(), // Confidence level: 'high', 'medium', 'low'
-        source: text().notNull().default('manual'), // 'manual', 'auto', 'imported'
-
         createdAt: timestamp().notNull().defaultNow(),
+        updatedAt: timestamp().notNull().defaultNow(),
     },
     (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })]
 );
 
+// ====================
 // Relations
+// ====================
 export const tagRelations = relations(tag, ({ many }) => ({
-    transactionTags: many(transactionTag),
+    transactionTags: many(tagToTransaction),
 }));
 
-export const transactionTagRelations = relations(transactionTag, ({ one }) => ({
+export const transactionTagRelations = relations(tagToTransaction, ({ one }) => ({
     transaction: one(transaction, {
-        fields: [transactionTag.transactionId],
+        fields: [tagToTransaction.transactionId],
         references: [transaction.id],
     }),
     tag: one(tag, {
-        fields: [transactionTag.tagId],
+        fields: [tagToTransaction.tagId],
         references: [tag.id],
     }),
 }));
 
-export type Tag = typeof tag.$inferSelect;
-export type NewTag = typeof tag.$inferInsert;
-export type TransactionTag = typeof transactionTag.$inferSelect;
-export type NewTransactionTag = typeof transactionTag.$inferInsert;
+// ====================
+// Base Zod schemas
+// ====================
+
+// tag
+export const selectTagSchema = createSelectSchema(tag);
+export const insertTagSchema = createInsertSchema(tag);
+export const updateTagSchema = createUpdateSchema(tag);
+
+// transaction to tag
+export const selectTransactionToTagSchema = createSelectSchema(tagToTransaction);
+export const insertTransactionToTagSchema = createInsertSchema(tagToTransaction);
