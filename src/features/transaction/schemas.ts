@@ -9,6 +9,8 @@ import { z } from 'zod';
 // Query Layer
 // ====================
 
+const amountTransformSchema = z.number().transform((val) => val.toString());
+
 export const transactionQuerySchemas = {
     select: selectTransactionSchema,
     insert: insertTransactionSchema
@@ -21,12 +23,17 @@ export const transactionQuerySchemas = {
             isNew: true,
         })
         .extend({
-            userAmount: z.number(),
-            accountAmount: z.number(),
-            spendingAmount: z.number(),
-            balance: z.number().optional(),
+            userAmount: amountTransformSchema,
+            accountAmount: amountTransformSchema,
+            spendingAmount: amountTransformSchema,
+            balance: amountTransformSchema,
         }),
-    update: updateTransactionSchema,
+    update: updateTransactionSchema.extend({
+        userAmount: amountTransformSchema,
+        accountAmount: amountTransformSchema,
+        spendingAmount: amountTransformSchema,
+        balance: amountTransformSchema,
+    }),
 };
 
 export type TTransactionQuery = {
@@ -91,7 +98,7 @@ export const transactionFilterOptionsSchema = z.object({
 export type TTransactionFilterOptions = z.infer<typeof transactionFilterOptionsSchema>;
 
 export const transactionPaginationSchema = z.object({
-    page: z.number().min(1).default(1),
-    pageSize: z.number().min(1).max(100).default(50),
+    page: z.coerce.number().min(1).default(1),
+    pageSize: z.coerce.number().min(1).max(100).default(50),
 });
 export type TTransactionPagination = z.infer<typeof transactionPaginationSchema>;

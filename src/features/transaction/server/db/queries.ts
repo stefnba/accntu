@@ -1,6 +1,6 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
 import { label } from '@/features/label/server/db/schema';
-import { tag, transactionTag } from '@/features/tag/server/db/schema';
+import { tag, tagToTransaction } from '@/features/tag/server/db/schema';
 import {
     TTransactionFilterOptions,
     TTransactionPagination,
@@ -119,8 +119,8 @@ const getAll = async ({
             const transactionIds = transactions.map((t) => t.id);
             const transactionTagsData =
                 transactionIds.length > 0
-                    ? await db.query.transactionTag.findMany({
-                          where: inArray(transactionTag.transactionId, transactionIds),
+                    ? await db.query.tagToTransaction.findMany({
+                          where: inArray(tagToTransaction.transactionId, transactionIds),
                           with: {
                               tag: true,
                           },
@@ -202,8 +202,8 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
             }
 
             // Get tags for this transaction
-            const transactionTagsData = await db.query.transactionTag.findMany({
-                where: eq(transactionTag.transactionId, id),
+            const transactionTagsData = await db.query.tagToTransaction.findMany({
+                where: eq(tagToTransaction.transactionId, id),
                 with: {
                     tag: true,
                 },

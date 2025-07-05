@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
+import { formatCurrency } from '@/features/transaction/utils';
 import {
     IconArrowsUpDown,
     IconCalendar,
@@ -11,13 +11,6 @@ import {
 } from '@tabler/icons-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-
-const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency,
-    }).format(amount);
-};
 
 // Type for transaction with relations (we'll need to define this properly based on our query result)
 export type TransactionWithRelations = {
@@ -101,8 +94,8 @@ export const createTransactionColumns = (
         cell: ({ row }) => {
             const date = new Date(row.getValue('date'));
             return (
-                <div 
-                    className="flex flex-col cursor-pointer" 
+                <div
+                    className="flex flex-col cursor-pointer"
                     onClick={() => onRowClick?.(row.original)}
                 >
                     <span className="font-medium">{format(date, 'MMM dd, yyyy')}</span>
@@ -121,8 +114,8 @@ export const createTransactionColumns = (
             const reference = row.original.reference;
 
             return (
-                <div 
-                    className="max-w-[300px] cursor-pointer" 
+                <div
+                    className="max-w-[300px] cursor-pointer"
                     onClick={() => onRowClick?.(row.original)}
                 >
                     <div className="font-medium truncate">{title}</div>

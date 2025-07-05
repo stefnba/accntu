@@ -1,5 +1,5 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
-import { bucketTransaction } from '@/features/bucket/server/db/schemas';
+import { bucketToTransaction } from '@/features/bucket/server/db/schemas';
 import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
@@ -115,9 +115,9 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
         fields: [transaction.importFileId],
         references: [transactionImportFile.id],
     }),
-    bucketTransaction: one(bucketTransaction, {
+    bucketTransaction: one(bucketToTransaction, {
         fields: [transaction.id],
-        references: [bucketTransaction.transactionId],
+        references: [bucketToTransaction.transactionId],
     }),
     // Note: label relation will be added after label table is created to avoid circular imports
 }));
