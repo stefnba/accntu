@@ -1,70 +1,51 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-    Select, 
-    SelectContent, 
-    SelectItem, 
-    SelectTrigger, 
-    SelectValue 
-} from '@/components/ui/select';
-import { 
-    Popover, 
-    PopoverContent, 
-    PopoverTrigger 
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-    IconCalendar, 
-    IconFilter, 
-    IconSearch, 
-    IconX 
-} from '@tabler/icons-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useTransactionEndpoints } from '@/features/transaction/api';
+import { useTransactionFilters } from '@/features/transaction/hooks';
+import { IconCalendar, IconFilter, IconSearch, IconX } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { useTransactionEndpoints } from '../api';
-import { useTransactionTableStore } from '../store';
 
 export const TransactionTableFilters = () => {
-    const { 
-        filters, 
-        setSearch, 
-        setDateRange, 
-        setAccountIds, 
-        setLabelIds, 
-        setTagIds, 
-        setType, 
+    const {
+        filters,
+        setSearch,
+        setDateRange,
+        setAccountIds,
+        setLabelIds,
+        setTagIds,
+        setType,
         setCurrencies,
-        resetFilters 
-    } = useTransactionTableStore();
-    
+        resetFilters,
+    } = useTransactionFilters();
+
     const [searchValue, setSearchValue] = useState(filters.search || '');
-    
+
     // Get filter options
     const { data: filterOptions } = useTransactionEndpoints.getFilterOptions({});
-    
+
     const hasActiveFilters = Object.keys(filters).length > 0;
-    
+
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setSearch(searchValue);
     };
-    
+
     const handleDateRangeChange = (startDate?: Date, endDate?: Date) => {
         setDateRange(startDate, endDate);
     };
-    
-    const handleMultiSelectChange = (
-        values: string[], 
-        setter: (values: string[]) => void
-    ) => {
+
+    const handleMultiSelectChange = (values: string[], setter: (values: string[]) => void) => {
         setter(values);
     };
-    
+
     return (
         <div className="space-y-4 p-4 border rounded-lg bg-card">
             <div className="flex items-center justify-between">
@@ -73,9 +54,9 @@ export const TransactionTableFilters = () => {
                     <h3 className="font-medium">Filters</h3>
                 </div>
                 {hasActiveFilters && (
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={resetFilters}
                         className="text-muted-foreground"
                     >
@@ -84,7 +65,7 @@ export const TransactionTableFilters = () => {
                     </Button>
                 )}
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Search */}
                 <div className="space-y-2">
@@ -102,7 +83,7 @@ export const TransactionTableFilters = () => {
                         </Button>
                     </form>
                 </div>
-                
+
                 {/* Date Range */}
                 <div className="space-y-2">
                     <Label>Date Range</Label>
@@ -111,54 +92,53 @@ export const TransactionTableFilters = () => {
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className="flex-1">
                                     <IconCalendar className="h-4 w-4 mr-2" />
-                                    {filters.startDate 
-                                        ? format(filters.startDate, 'MMM dd') 
-                                        : 'Start'
-                                    }
+                                    {filters.startDate
+                                        ? format(filters.startDate, 'MMM dd')
+                                        : 'Start'}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                     mode="single"
                                     selected={filters.startDate}
-                                    onSelect={(date) => handleDateRangeChange(date, filters.endDate)}
+                                    onSelect={(date) =>
+                                        handleDateRangeChange(date, filters.endDate)
+                                    }
                                     initialFocus
                                 />
                             </PopoverContent>
                         </Popover>
-                        
+
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className="flex-1">
                                     <IconCalendar className="h-4 w-4 mr-2" />
-                                    {filters.endDate 
-                                        ? format(filters.endDate, 'MMM dd') 
-                                        : 'End'
-                                    }
+                                    {filters.endDate ? format(filters.endDate, 'MMM dd') : 'End'}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                     mode="single"
                                     selected={filters.endDate}
-                                    onSelect={(date) => handleDateRangeChange(filters.startDate, date)}
+                                    onSelect={(date) =>
+                                        handleDateRangeChange(filters.startDate, date)
+                                    }
                                     initialFocus
                                 />
                             </PopoverContent>
                         </Popover>
                     </div>
                 </div>
-                
+
                 {/* Account Filter */}
                 <div className="space-y-2">
                     <Label>Accounts</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full justify-start">
-                                {filters.accountIds?.length 
+                                {filters.accountIds?.length
                                     ? `${filters.accountIds.length} selected`
-                                    : 'All accounts'
-                                }
+                                    : 'All accounts'}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80" align="start">
@@ -167,16 +147,18 @@ export const TransactionTableFilters = () => {
                                     <div key={account.id} className="flex items-center space-x-2">
                                         <Checkbox
                                             id={`account-${account.id}`}
-                                            checked={filters.accountIds?.includes(account.id) || false}
+                                            checked={
+                                                filters.accountIds?.includes(account.id) || false
+                                            }
                                             onCheckedChange={(checked) => {
                                                 const current = filters.accountIds || [];
                                                 const updated = checked
                                                     ? [...current, account.id]
-                                                    : current.filter(id => id !== account.id);
+                                                    : current.filter((id) => id !== account.id);
                                                 setAccountIds(updated);
                                             }}
                                         />
-                                        <Label 
+                                        <Label
                                             htmlFor={`account-${account.id}`}
                                             className="text-sm font-normal"
                                         >
@@ -188,17 +170,16 @@ export const TransactionTableFilters = () => {
                         </PopoverContent>
                     </Popover>
                 </div>
-                
+
                 {/* Transaction Type */}
                 <div className="space-y-2">
                     <Label>Type</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full justify-start">
-                                {filters.type?.length 
+                                {filters.type?.length
                                     ? `${filters.type.length} selected`
-                                    : 'All types'
-                                }
+                                    : 'All types'}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-48" align="start">
@@ -212,11 +193,11 @@ export const TransactionTableFilters = () => {
                                                 const current = filters.type || [];
                                                 const updated = checked
                                                     ? [...current, type as any]
-                                                    : current.filter(t => t !== type);
+                                                    : current.filter((t) => t !== type);
                                                 setType(updated);
                                             }}
                                         />
-                                        <Label 
+                                        <Label
                                             htmlFor={`type-${type}`}
                                             className="text-sm font-normal capitalize"
                                         >
@@ -229,14 +210,14 @@ export const TransactionTableFilters = () => {
                     </Popover>
                 </div>
             </div>
-            
+
             {/* Active Filters Display */}
             {hasActiveFilters && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                     {filters.search && (
                         <Badge variant="secondary">
                             Search: {filters.search}
-                            <button 
+                            <button
                                 onClick={() => setSearch('')}
                                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                             >
@@ -247,7 +228,7 @@ export const TransactionTableFilters = () => {
                     {filters.startDate && (
                         <Badge variant="secondary">
                             From: {format(filters.startDate, 'MMM dd, yyyy')}
-                            <button 
+                            <button
                                 onClick={() => handleDateRangeChange(undefined, filters.endDate)}
                                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                             >
@@ -258,7 +239,7 @@ export const TransactionTableFilters = () => {
                     {filters.endDate && (
                         <Badge variant="secondary">
                             To: {format(filters.endDate, 'MMM dd, yyyy')}
-                            <button 
+                            <button
                                 onClick={() => handleDateRangeChange(filters.startDate, undefined)}
                                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                             >
@@ -267,13 +248,15 @@ export const TransactionTableFilters = () => {
                         </Badge>
                     )}
                     {filters.accountIds?.map((accountId) => {
-                        const account = filterOptions?.accounts?.find(a => a.id === accountId);
+                        const account = filterOptions?.accounts?.find((a) => a.id === accountId);
                         return account ? (
                             <Badge key={accountId} variant="secondary">
                                 {account.name}
-                                <button 
+                                <button
                                     onClick={() => {
-                                        const updated = filters.accountIds?.filter(id => id !== accountId) || [];
+                                        const updated =
+                                            filters.accountIds?.filter((id) => id !== accountId) ||
+                                            [];
                                         setAccountIds(updated);
                                     }}
                                     className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
@@ -286,9 +269,9 @@ export const TransactionTableFilters = () => {
                     {filters.type?.map((type) => (
                         <Badge key={type} variant="secondary">
                             {type}
-                            <button 
+                            <button
                                 onClick={() => {
-                                    const updated = filters.type?.filter(t => t !== type) || [];
+                                    const updated = filters.type?.filter((t) => t !== type) || [];
                                     setType(updated);
                                 }}
                                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"

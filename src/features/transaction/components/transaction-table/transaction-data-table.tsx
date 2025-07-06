@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import {
     Table,
     TableBody,
@@ -6,15 +7,14 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { 
-    IconChevronLeft, 
-    IconChevronRight, 
-    IconChevronsLeft, 
-    IconChevronsRight 
+import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconChevronsLeft,
+    IconChevronsRight,
 } from '@tabler/icons-react';
 import { flexRender, Table as TanStackTable } from '@tanstack/react-table';
-import { TransactionWithRelations } from './transaction-columns';
+import { TransactionWithRelations } from './table-columns';
 
 interface TransactionDataTableProps {
     table: TanStackTable<TransactionWithRelations>;
@@ -73,7 +73,7 @@ export const TransactionDataTable = ({ table }: TransactionDataTableProps) => {
                     </TableBody>
                 </Table>
             </div>
-            
+
             {/* Pagination */}
             <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">

@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/features/transaction/utils';
+import { TTransactionServicesResponse } from '@/features/transaction/server/services';
 import {
     IconArrowsUpDown,
     IconCalendar,
@@ -11,71 +11,50 @@ import {
 } from '@tabler/icons-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
+import { EditableAmountCell, EditableSelectCell, EditableTextCell } from './transaction-edit-cells';
 
-// Type for transaction with relations (we'll need to define this properly based on our query result)
-export type TransactionWithRelations = {
-    id: string;
-    date: string;
-    title: string;
-    originalTitle: string;
-    description: string | null;
-    note: string | null;
-    type: 'transfer' | 'credit' | 'debit';
-    status?: 'pending' | 'completed' | 'failed' | 'cancelled';
-    spendingAmount: string;
-    spendingCurrency: string;
-    accountAmount: string;
-    accountCurrency: string;
-    userAmount?: string;
-    userCurrency?: string;
-    balance?: string;
-    counterparty: string | null;
-    reference: string | null;
-    iban: string | null;
-    bic: string | null;
-    providerTransactionId?: string | null;
-    key?: string;
-    linkedTransactionId?: string | null;
-    country: string | null;
-    city: string | null;
-    connectedBankAccountId?: string;
-    importFileId?: string;
-    account?: {
-        id: string;
-        name: string;
-        type: string;
-        connectedBank?: {
-            globalBank?: {
-                name: string;
-                color: string;
-                logo: string | null;
-            };
-        };
-    } | null;
-    label?: {
-        id: string;
-        name: string;
-        color: string | null;
-    } | null;
-    tags?: Array<{
-        id: string;
-        name: string;
-        color: string;
-        type: string;
-    }>;
-    importFile?: {
-        id: string;
-    } | null;
-    isNew: boolean;
-    isActive?: boolean;
-    isHidden?: boolean;
-    createdAt: string;
-    updatedAt: string;
-};
+export type TTransaction = TTransactionServicesResponse['getAll']['transactions'][number];
 
 export const createTransactionColumns = (
-    onRowClick?: (transaction: TransactionWithRelations) => void
-): ColumnDef<TransactionWithRelations>[] => [
+    onRowClick?: (transaction: TTransaction) => void,
+    filterOptions?: {
+        labels?: Array<{ id: string; name: string; color: string | null }>;
+    },
+    enableSelection = false
+): ColumnDef<TTransaction>[] => [
+    // Selection column (only if enabled)
+    ...(enableSelection
+        ? [
+              {
+                  id: 'select',
+                  header: ({ table }: any) => (
+                      <div className="flex items-center justify-center">
+                          <input
+                              type="checkbox"
+                              checked={
+                                  table.getIsAllPageRowsSelected() ||
+                                  (table.getIsSomePageRowsSelected() && 'indeterminate')
+                              }
+                              onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+                              className="h-4 w-4 rounded border border-gray-300"
+                          />
+                      </div>
+                  ),
+                  cell: ({ row }: any) => (
+                      <div className="flex items-center justify-center">
+                          <input
+                              type="checkbox"
+                              checked={row.getIsSelected()}
+                              onChange={(e) => row.toggleSelected(e.target.checked)}
+                              className="h-4 w-4 rounded border border-gray-300"
+                          />
+                      </div>
+                  ),
+                  enableSorting: false,
+                  enableHiding: false,
+              },
+          ]
+        : []),
     {
         accessorKey: 'date',
         header: ({ column }) => {
@@ -114,13 +93,17 @@ export const createTransactionColumns = (
             const reference = row.original.reference;
 
             return (
-                <div
-                    className="max-w-[300px] cursor-pointer"
-                    onClick={() => onRowClick?.(row.original)}
-                >
-                    <div className="font-medium truncate">{title}</div>
-                    {(description || counterparty || reference) && (
-                        <div className="text-xs text-muted-foreground space-y-1 mt-1">
+                <div className="max-w-[300px] space-y-2">
+                    <EditableTextCell transaction={row.original} field="title" value={title} />
+                    {description && (
+                        <EditableTextCell
+                            transaction={row.original}
+                            field="description"
+                            value={description}
+                        />
+                    )}
+                    {(counterparty || reference) && (
+                        <div className="text-xs text-muted-foreground space-y-1">
                             {counterparty && (
                                 <div className="truncate">
                                     <span className="font-medium">To:</span> {counterparty}
@@ -131,7 +114,6 @@ export const createTransactionColumns = (
                                     <span className="font-medium">Ref:</span> {reference}
                                 </div>
                             )}
-                            {description && <div className="truncate">{description}</div>}
                         </div>
                     )}
                 </div>
@@ -215,8 +197,12 @@ export const createTransactionColumns = (
                       : 'text-foreground';
 
             return (
-                <div className={`font-medium text-right ${textColor}`}>
-                    {formatCurrency(displayAmount, spendingCurrency)}
+                <div className={`${textColor}`}>
+                    <EditableAmountCell
+                        transaction={row.original}
+                        field="spendingAmount"
+                        value={Math.abs(spendingAmount)}
+                    />
                 </div>
             );
         },
@@ -226,18 +212,20 @@ export const createTransactionColumns = (
         header: 'Label',
         cell: ({ row }) => {
             const label = row.original.label;
-            if (!label) return <span className="text-muted-foreground">—</span>;
+            const labels = filterOptions?.labels || [];
 
             return (
-                <Badge
-                    variant="outline"
-                    style={{
-                        borderColor: label.color || undefined,
-                        color: label.color || undefined,
-                    }}
-                >
-                    {label.name}
-                </Badge>
+                <EditableSelectCell
+                    transaction={row.original}
+                    field="labelId"
+                    value={label?.id || ''}
+                    options={labels.map((l) => ({
+                        id: l.id,
+                        name: l.name,
+                        color: l.color || undefined,
+                    }))}
+                    placeholder="Select label"
+                />
             );
         },
     },

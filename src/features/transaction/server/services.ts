@@ -159,3 +159,12 @@ export const transactionServices = {
     getByKeys,
     createMany,
 };
+
+export type TTransactionServicesResponse = {
+    getAll: Awaited<ReturnType<typeof getAll>>;
+    getById: Awaited<ReturnType<typeof getById>>;
+    getFilterOptions: Awaited<ReturnType<typeof getFilterOptions>>;
+    remove: Awaited<ReturnType<typeof remove>>;
+    getByKeys: Awaited<ReturnType<typeof getByKeys>>;
+    createMany: Awaited<ReturnType<typeof createMany>>;
+};

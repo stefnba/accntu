@@ -29,6 +29,14 @@ export const useTransactionEndpoints = {
     getById: createQuery(apiClient.transactions[':id'].$get, TRANSACTION_QUERY_KEYS.TRANSACTION),
 
     /**
+     * Update transaction
+     */
+    update: createMutation(
+        apiClient.transactions[':id'].$patch,
+        TRANSACTION_QUERY_KEYS.TRANSACTIONS
+    ),
+
+    /**
      * Import transactions
      */
     import: createMutation(

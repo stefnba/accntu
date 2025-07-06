@@ -1,6 +1,5 @@
 import { MainContent } from '@/components/layout/main';
-import { TransactionPeekSheet } from '@/features/transaction/components';
-import { TransactionTable } from '@/features/transaction/components/transaction-table';
+import { TransactionPeekSheet, TransactionTable } from '@/features/transaction/components';
 
 export default function TransactionsPage() {
     return (
