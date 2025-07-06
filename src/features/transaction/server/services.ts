@@ -45,6 +45,11 @@ const getById = async ({ id, userId }: TQuerySelectUserRecordById) => {
         userId,
     });
 
+    // TODO: replace with error factory
+    if (!transaction) {
+        throw new Error('Transaction not found');
+    }
+
     return transaction;
 };
 

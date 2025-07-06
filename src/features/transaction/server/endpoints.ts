@@ -55,10 +55,6 @@ const app = new Hono()
                 id,
             });
 
-            if (!transaction) {
-                throw new Error('Transaction not found');
-            }
-
             return transaction;
         })
     )
