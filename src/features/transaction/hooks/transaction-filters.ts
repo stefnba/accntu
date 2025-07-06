@@ -159,17 +159,21 @@ export const useTransactionFilters = () => {
         [filters]
     );
 
+    const hasActiveFilters = useMemo(() => {
+        return Object.values(filters).some((value) => value !== undefined && value !== null);
+    }, [filters]);
+
     return {
         filters,
         filtersUrl,
         setFilters,
         resetFilters,
+        hasActiveFilters,
 
         /**
          * Individual filter setters
          */
         setSearch,
-
         setDateRange,
         setAccountIds,
         setLabelIds,

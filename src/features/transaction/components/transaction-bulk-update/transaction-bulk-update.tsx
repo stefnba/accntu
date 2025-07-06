@@ -21,11 +21,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTransactionEndpoints } from '@/features/transaction/api';
 import { IconEdit } from '@tabler/icons-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useTransactionEndpoints } from '../api';
-import { TransactionWithRelations } from './transaction-table/table-columns';
+// import { TransactionWithRelations } from '@/features/transaction/schemas';
 
 interface BulkUpdateDrawerProps {
     isOpen: boolean;

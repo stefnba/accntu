@@ -16,6 +16,7 @@ import { useState } from 'react';
 
 export const TransactionTableFilters = () => {
     const {
+        hasActiveFilters,
         filters,
         setSearch,
         setDateRange,
@@ -31,10 +32,10 @@ export const TransactionTableFilters = () => {
 
     const [searchValue, setSearchValue] = useState(filters.search || '');
 
+    console.log('filters', filters, hasActiveFilters);
+
     // Get filter options
     const { data: filterOptions } = useTransactionEndpoints.getFilterOptions({});
-
-    const hasActiveFilters = Object.keys(filters).length > 0;
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,7 +80,7 @@ export const TransactionTableFilters = () => {
                         <Input
                             id="search"
                             placeholder="Search transactions..."
-                            value={searchValue}
+                            value={filters.search || searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
                             className="flex-1"
                         />

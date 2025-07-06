@@ -86,11 +86,21 @@ export type TTransactionParseDuplicateCheck = z.infer<typeof transactionParseDup
  * Schema for filtering transactions
  */
 export const transactionFilterOptionsSchema = z.object({
-    accountIds: z.array(z.string()).optional(),
-    labelIds: z.array(z.string()).optional(),
-    tagIds: z.array(z.string()).optional(),
-    type: z.array(z.string()).optional(),
-    currencies: z.array(z.string()).optional(),
+    accountIds: z
+        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
+        .optional(),
+    labelIds: z
+        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
+        .optional(),
+    tagIds: z
+        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
+        .optional(),
+    type: z
+        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
+        .optional(),
+    currencies: z
+        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
+        .optional(),
     search: z.string().optional(),
     startDate: z.coerce.date().optional(),
     endDate: z.coerce.date().optional(),
