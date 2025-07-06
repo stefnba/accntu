@@ -1,19 +1,19 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-    IconBuilding, 
-    IconTag, 
-    IconMapPin, 
-    IconCreditCard 
-} from '@tabler/icons-react';
-import { TransactionWithRelations } from '../transaction-columns';
+import { useTransactionEndpoints } from '@/features/transaction/api';
+import { IconBuilding, IconCreditCard, IconMapPin, IconTag } from '@tabler/icons-react';
 import { formatCurrency } from '../../utils';
 
 interface TransactionQuickInfoProps {
-    transaction: TransactionWithRelations;
+    transactionId: string;
 }
 
-export const TransactionQuickInfo = ({ transaction }: TransactionQuickInfoProps) => {
+export const TransactionQuickInfo = ({ transactionId }: TransactionQuickInfoProps) => {
+    const { data: transaction } = useTransactionEndpoints.getById({
+        param: { id: transactionId },
+    });
+
+    if (!transaction) return null;
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Account Info */}
@@ -28,12 +28,16 @@ export const TransactionQuickInfo = ({ transaction }: TransactionQuickInfoProps)
                                 </p>
                             </div>
                             <p className="font-medium">{transaction.account.name}</p>
-                            <p className="text-sm text-muted-foreground">{transaction.account.type}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {transaction.account.type}
+                            </p>
                             {transaction.account.connectedBank?.globalBank && (
                                 <p
                                     className="text-sm font-medium"
                                     style={{
-                                        color: transaction.account.connectedBank.globalBank.color || undefined,
+                                        color:
+                                            transaction.account.connectedBank.globalBank.color ||
+                                            undefined,
                                     }}
                                 >
                                     {transaction.account.connectedBank.globalBank.name}
@@ -105,9 +109,7 @@ export const TransactionQuickInfo = ({ transaction }: TransactionQuickInfoProps)
                                     Location
                                 </p>
                             </div>
-                            {transaction.city && (
-                                <p className="font-medium">{transaction.city}</p>
-                            )}
+                            {transaction.city && <p className="font-medium">{transaction.city}</p>}
                             {transaction.country && (
                                 <p className="text-sm text-muted-foreground">
                                     {transaction.country}
@@ -131,18 +133,27 @@ export const TransactionQuickInfo = ({ transaction }: TransactionQuickInfoProps)
                         <div className="space-y-1">
                             <div className="text-sm">
                                 <span className="text-muted-foreground">Spending:</span>{' '}
-                                {formatCurrency(parseFloat(transaction.spendingAmount), transaction.spendingCurrency)}
+                                {formatCurrency(
+                                    parseFloat(transaction.spendingAmount),
+                                    transaction.spendingCurrency
+                                )}
                             </div>
                             {transaction.accountAmount && transaction.accountCurrency && (
                                 <div className="text-sm">
                                     <span className="text-muted-foreground">Account:</span>{' '}
-                                    {formatCurrency(parseFloat(transaction.accountAmount), transaction.accountCurrency)}
+                                    {formatCurrency(
+                                        parseFloat(transaction.accountAmount),
+                                        transaction.accountCurrency
+                                    )}
                                 </div>
                             )}
                             {transaction.userAmount && transaction.userCurrency && (
                                 <div className="text-sm">
                                     <span className="text-muted-foreground">User:</span>{' '}
-                                    {formatCurrency(parseFloat(transaction.userAmount), transaction.userCurrency)}
+                                    {formatCurrency(
+                                        parseFloat(transaction.userAmount),
+                                        transaction.userCurrency
+                                    )}
                                 </div>
                             )}
                         </div>

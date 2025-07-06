@@ -1,17 +1,28 @@
-import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTransactionEndpoints } from '@/features/transaction/api';
 import { IconCalendar, IconEdit, IconTrash } from '@tabler/icons-react';
 import { format } from 'date-fns';
-import { TransactionWithRelations } from '../transaction-columns';
-import { formatCurrency, getTypeIcon, getTypeColor, getAmountWithSign, getTypeBadgeVariant } from '../../utils';
+import React from 'react';
+import {
+    formatCurrency,
+    getAmountWithSign,
+    getTypeBadgeVariant,
+    getTypeColor,
+    getTypeIcon,
+} from '../../utils';
 
 interface TransactionHeaderProps {
-    transaction: TransactionWithRelations;
+    transactionId: string;
 }
 
-export const TransactionHeader = ({ transaction }: TransactionHeaderProps) => {
+export const TransactionHeader = ({ transactionId }: TransactionHeaderProps) => {
+    const { data: transaction } = useTransactionEndpoints.getById({
+        param: { id: transactionId },
+    });
+
+    if (!transaction) return null;
     return (
         <Card className="border-gray-200">
             <CardContent className="p-6">
@@ -33,17 +44,20 @@ export const TransactionHeader = ({ transaction }: TransactionHeaderProps) => {
                                         {transaction.type}
                                     </Badge>
                                     {transaction.isNew && (
-                                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-blue-50 text-blue-700"
+                                        >
                                             New
                                         </Badge>
                                     )}
                                 </div>
-                                {transaction.originalTitle && 
-                                 transaction.originalTitle !== transaction.title && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Originally: {transaction.originalTitle}
-                                    </p>
-                                )}
+                                {transaction.originalTitle &&
+                                    transaction.originalTitle !== transaction.title && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Originally: {transaction.originalTitle}
+                                        </p>
+                                    )}
                             </div>
                         </div>
 
@@ -60,11 +74,14 @@ export const TransactionHeader = ({ transaction }: TransactionHeaderProps) => {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center">
                                 <IconCalendar className="w-4 h-4 mr-2" />
-                                {format(new Date(transaction.date), 'PPP')} at {format(new Date(transaction.date), 'p')}
+                                {format(new Date(transaction.date), 'PPP')} at{' '}
+                                {format(new Date(transaction.date), 'p')}
                             </div>
                             {transaction.status && (
-                                <Badge 
-                                    variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                                <Badge
+                                    variant={
+                                        transaction.status === 'completed' ? 'default' : 'secondary'
+                                    }
                                     className="capitalize"
                                 >
                                     {transaction.status}

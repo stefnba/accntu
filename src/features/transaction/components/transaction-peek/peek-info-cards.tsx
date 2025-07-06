@@ -1,13 +1,23 @@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { IconMapPin } from '@tabler/icons-react';
-import { TransactionWithRelations } from '../transaction-columns';
 
-interface PeekInfoCardsProps {
-    transaction: TransactionWithRelations;
-}
+import { useTransactionEndpoints } from '@/features/transaction/api';
+import { useTransactionPeek } from '@/features/transaction/hooks';
 
-export const PeekInfoCards = ({ transaction }: PeekInfoCardsProps) => {
+export const PeekInfoCards = () => {
+    const { peekTransactionId } = useTransactionPeek();
+
+    const { data: transaction } = useTransactionEndpoints.getById(
+        {
+            param: { id: peekTransactionId! },
+        },
+        {
+            enabled: !!peekTransactionId,
+        }
+    );
+
+    if (!transaction) return null;
     return (
         <div className="grid grid-cols-1 gap-3">
             {/* Account Info */}
@@ -22,7 +32,9 @@ export const PeekInfoCards = ({ transaction }: PeekInfoCardsProps) => {
                             <p
                                 className="text-sm"
                                 style={{
-                                    color: transaction.account.connectedBank.globalBank.color || undefined,
+                                    color:
+                                        transaction.account.connectedBank.globalBank.color ||
+                                        undefined,
                                 }}
                             >
                                 {transaction.account.connectedBank.globalBank.name}
@@ -150,9 +162,7 @@ export const PeekInfoCards = ({ transaction }: PeekInfoCardsProps) => {
                         </p>
                         {transaction.description && (
                             <div>
-                                <p className="text-xs text-muted-foreground mb-1">
-                                    Description
-                                </p>
+                                <p className="text-xs text-muted-foreground mb-1">Description</p>
                                 <p className="text-sm">{transaction.description}</p>
                             </div>
                         )}

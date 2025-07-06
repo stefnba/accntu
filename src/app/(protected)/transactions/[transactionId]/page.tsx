@@ -1,5 +1,5 @@
 import { MainContent } from '@/components/layout/main';
-import { TransactionDetailsView } from '@/features/transaction/components/transaction-details-view';
+import { TransactionDetailsView } from '@/features/transaction/components';
 
 interface TransactionPageProps {
     params: {
@@ -10,7 +10,7 @@ interface TransactionPageProps {
 export default async function TransactionPage({ params }: TransactionPageProps) {
     const { transactionId } = await params;
     return (
-        <MainContent limitWidth={true}>
+        <MainContent>
             <TransactionDetailsView transactionId={transactionId} />
         </MainContent>
     );

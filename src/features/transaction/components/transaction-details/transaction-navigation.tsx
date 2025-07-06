@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -9,11 +11,12 @@ export const TransactionNavigation = () => {
     return (
         <div className="flex items-center gap-4">
             <Button
+                className="cursor-pointer"
                 variant="outline"
                 size="sm"
                 onClick={() => router.back()}
             >
-                <IconArrowLeft className="h-4 w-4 mr-2" />
+                <IconArrowLeft className="h-4 w-4" />
                 Back
             </Button>
             <nav className="text-sm text-muted-foreground">
