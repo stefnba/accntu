@@ -5,3 +5,5 @@ export * from './transaction-details';
 export * from './transaction-peek';
 
 export * from './transaction-table';
+
+export * from './transaction-action-bar';

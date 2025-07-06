@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTransactionEndpoints } from '@/features/transaction/api';
 import { useTransactionFilters } from '@/features/transaction/hooks';
+import { useColumnManagement } from '@/features/transaction/hooks/transaction-column-management';
 import { IconCalendar, IconFilter, IconSearch, IconX } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
@@ -25,6 +26,8 @@ export const TransactionTableFilters = () => {
         setCurrencies,
         resetFilters,
     } = useTransactionFilters();
+
+    const { open: openColumnModal } = useColumnManagement();
 
     const [searchValue, setSearchValue] = useState(filters.search || '');
 
@@ -53,17 +56,19 @@ export const TransactionTableFilters = () => {
                     <IconFilter className="h-4 w-4" />
                     <h3 className="font-medium">Filters</h3>
                 </div>
-                {hasActiveFilters && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetFilters}
-                        className="text-muted-foreground"
-                    >
-                        <IconX className="h-4 w-4 mr-1" />
-                        Clear all
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {hasActiveFilters && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetFilters}
+                            className="text-muted-foreground"
+                        >
+                            <IconX className="h-4 w-4 mr-1" />
+                            Clear all
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

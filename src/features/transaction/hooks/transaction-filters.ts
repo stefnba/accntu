@@ -144,8 +144,24 @@ export const useTransactionFilters = () => {
         setFilterState({ currencies });
     };
 
+    // Build query parameters
+    const filtersUrl = useMemo(
+        () => ({
+            search: filters.search || undefined,
+            startDate: filters.startDate?.toISOString() || undefined,
+            endDate: filters.endDate?.toISOString() || undefined,
+            accountIds: filters.accountIds?.length ? filters.accountIds : undefined,
+            labelIds: filters.labelIds?.length ? filters.labelIds : undefined,
+            tagIds: filters.tagIds?.length ? filters.tagIds : undefined,
+            type: filters.type?.length ? filters.type : undefined,
+            currencies: filters.currencies?.length ? filters.currencies : undefined,
+        }),
+        [filters]
+    );
+
     return {
         filters,
+        filtersUrl,
         setFilters,
         resetFilters,
 

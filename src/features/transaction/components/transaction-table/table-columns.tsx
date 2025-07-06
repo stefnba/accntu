@@ -3,44 +3,61 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TTransactionServicesResponse } from '@/features/transaction/server/services';
+import { formatCurrency } from '@/features/transaction/utils';
 import {
     IconArrowsUpDown,
     IconCalendar,
     IconTrendingDown,
     IconTrendingUp,
 } from '@tabler/icons-react';
-import { ColumnDef } from '@tanstack/react-table';
+import { CellContext, ColumnDef, HeaderContext } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { EditableAmountCell, EditableSelectCell, EditableTextCell } from './transaction-edit-cells';
+import { TransactionActionsMenu } from './transaction-actions-menu';
+import { EditableSelectCell, EditableTextCell } from './transaction-edit-cells';
 
 export type TTransaction = TTransactionServicesResponse['getAll']['transactions'][number];
+
+/**
+ * Type for transaction column.
+ *
+ * This is used to define the columns that are displayed in the transaction table.
+ *
+ * The keyof TTransaction is used to get the keys of the TTransaction type.
+ *
+ * The TTransaction type is defined in the TTransactionServicesResponse type.
+ */
+export type TTransactionColumn = keyof TTransaction;
 
 export const createTransactionColumns = (
     onRowClick?: (transaction: TTransaction) => void,
     filterOptions?: {
         labels?: Array<{ id: string; name: string; color: string | null }>;
     },
-    enableSelection = false
+    enableSelection = true,
+    onEdit?: (transaction: TTransaction) => void
 ): ColumnDef<TTransaction>[] => [
     // Selection column (only if enabled)
     ...(enableSelection
         ? [
               {
                   id: 'select',
-                  header: ({ table }: any) => (
+                  header: ({ table }: HeaderContext<TTransaction, unknown>) => (
                       <div className="flex items-center justify-center">
                           <input
                               type="checkbox"
-                              checked={
-                                  table.getIsAllPageRowsSelected() ||
-                                  (table.getIsSomePageRowsSelected() && 'indeterminate')
-                              }
+                              checked={table.getIsAllPageRowsSelected()}
+                              ref={(el) => {
+                                  if (el)
+                                      el.indeterminate =
+                                          table.getIsSomePageRowsSelected() &&
+                                          !table.getIsAllPageRowsSelected();
+                              }}
                               onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
                               className="h-4 w-4 rounded border border-gray-300"
                           />
                       </div>
                   ),
-                  cell: ({ row }: any) => (
+                  cell: ({ row }: CellContext<TTransaction, unknown>) => (
                       <div className="flex items-center justify-center">
                           <input
                               type="checkbox"
@@ -82,6 +99,7 @@ export const createTransactionColumns = (
                 </div>
             );
         },
+        enableHiding: false, // Date is required
     },
     {
         accessorKey: 'title',
@@ -119,6 +137,7 @@ export const createTransactionColumns = (
                 </div>
             );
         },
+        enableHiding: false, // Description is required
     },
     {
         accessorKey: 'account',
@@ -144,6 +163,7 @@ export const createTransactionColumns = (
                 </div>
             );
         },
+        enableHiding: true, // Account can be hidden
     },
     {
         accessorKey: 'type',
@@ -167,6 +187,7 @@ export const createTransactionColumns = (
                 </Badge>
             );
         },
+        enableHiding: true, // Type can be hidden
     },
     {
         accessorKey: 'spendingAmount',
@@ -197,15 +218,12 @@ export const createTransactionColumns = (
                       : 'text-foreground';
 
             return (
-                <div className={`${textColor}`}>
-                    <EditableAmountCell
-                        transaction={row.original}
-                        field="spendingAmount"
-                        value={Math.abs(spendingAmount)}
-                    />
+                <div className={`font-medium text-right ${textColor}`}>
+                    {formatCurrency(displayAmount, spendingCurrency)}
                 </div>
             );
         },
+        enableHiding: false, // Amount is required
     },
     {
         accessorKey: 'label',
@@ -228,6 +246,7 @@ export const createTransactionColumns = (
                 />
             );
         },
+        enableHiding: true, // Label can be hidden
     },
     {
         accessorKey: 'tags',
@@ -260,6 +279,7 @@ export const createTransactionColumns = (
                 </div>
             );
         },
+        enableHiding: true, // Tags can be hidden
     },
     {
         accessorKey: 'location',
@@ -277,6 +297,20 @@ export const createTransactionColumns = (
                 </div>
             );
         },
+        enableHiding: true, // Location can be hidden
+    },
+    {
+        id: 'actions',
+        header: () => null,
+        cell: ({ row }) => (
+            <TransactionActionsMenu
+                transaction={row.original}
+                onView={onRowClick}
+                onEdit={onEdit}
+            />
+        ),
+        enableSorting: false,
+        enableHiding: false,
     },
 ];
 

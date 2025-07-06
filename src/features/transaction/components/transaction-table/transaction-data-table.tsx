@@ -7,20 +7,18 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTransactionTable } from '@/features/transaction/hooks';
 import {
     IconChevronLeft,
     IconChevronRight,
     IconChevronsLeft,
     IconChevronsRight,
 } from '@tabler/icons-react';
-import { flexRender, Table as TanStackTable } from '@tanstack/react-table';
-import { TransactionWithRelations } from './table-columns';
+import { flexRender } from '@tanstack/react-table';
 
-interface TransactionDataTableProps {
-    table: TanStackTable<TransactionWithRelations>;
-}
+export const TransactionDataTable = () => {
+    const { table } = useTransactionTable();
 
-export const TransactionDataTable = ({ table }: TransactionDataTableProps) => {
     return (
         <div className="space-y-4">
             <div className="rounded-md border">
