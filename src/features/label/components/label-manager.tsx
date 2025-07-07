@@ -1,12 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { useLabelEndpoints } from '../api';
 import { useLabelModal } from '../hooks';
@@ -14,8 +9,9 @@ import { LabelForm } from './label-form';
 import { LabelTree } from './label-tree';
 
 export const LabelManager = () => {
-    const { data: labels, isLoading } = useLabelEndpoints.getAll({});
-    const { modalOpen, modalType, labelId, parentId, openCreateModal, openEditModal, closeModal } = useLabelModal();
+    const { data: labels, isLoading } = useLabelEndpoints.getRoots({});
+    const { modalOpen, modalType, labelId, parentId, openCreateModal, openEditModal, closeModal } =
+        useLabelModal();
 
     const handleEdit = (editLabelId: string) => {
         openEditModal(editLabelId);
@@ -53,10 +49,10 @@ export const LabelManager = () => {
                             {modalType === 'create' ? 'Create New Label' : 'Edit Label'}
                         </DialogTitle>
                     </DialogHeader>
-                    <LabelForm 
+                    <LabelForm
                         labelId={modalType === 'edit' ? labelId : null}
                         parentId={parentId}
-                        onSuccess={closeModal} 
+                        onSuccess={closeModal}
                     />
                 </DialogContent>
             </Dialog>
