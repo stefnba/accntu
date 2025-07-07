@@ -91,7 +91,7 @@ export const transactionColumns: TransactionColumnDef[] = [
 
             return (
                 <div className="flex flex-col">
-                    <span className="font-medium">{date.format('MONTH_DAY_YEAR')}</span>
+                    <span className="font-medium">{date.format('DEFAULT_DATE')}</span>
                     <span className="text-xs text-muted-foreground">{date.dayOfWeekName()}</span>
                 </div>
             );

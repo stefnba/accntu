@@ -24,6 +24,7 @@ dayjs.extend(isoWeek);
 const NA_STRING = 'N/A';
 
 export const DATE_FORMATS = {
+    DEFAULT_DATE: 'D-MMM YYYY',
     /** e.g., 15-January-2024 */
     FULL_DATE: 'DD-MMMM-YYYY',
     /** e.g., 15-January-2024, 14:30 */
