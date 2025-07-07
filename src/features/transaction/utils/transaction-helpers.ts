@@ -1,5 +1,4 @@
 import { IconArrowsUpDown, IconTrendingDown, IconTrendingUp } from '@tabler/icons-react';
-import { format } from 'date-fns';
 
 export const formatCurrency = (amount: number, currency: string) => {
     // Fallback for invalid currency to prevent crashes
@@ -55,24 +54,5 @@ export const getTypeBadgeVariant = (type: string) => {
             return 'destructive' as const;
         default:
             return 'secondary' as const;
-    }
-};
-
-export const formatDateSafe = (
-    dateValue: string | null | undefined | Date,
-    formatString: string,
-    fallback = 'Invalid date'
-) => {
-    if (!dateValue) return fallback;
-
-    try {
-        const date = new Date(dateValue);
-        if (isNaN(date.getTime())) {
-            return fallback;
-        }
-        return format(date, formatString);
-    } catch (error) {
-        console.warn('Date formatting error:', error);
-        return fallback;
     }
 };

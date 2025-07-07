@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DeviceIcon } from '@/components/user-agent-device-icon';
 import { TSession } from '@/lib/auth';
-import { formatDateTime, formatSmartDate } from '@/lib/utils/date-formatter';
+import { formatDate } from '@/lib/utils/date-formatter';
 import { parseUserAgent } from '@/lib/utils/user-agent';
 import { Loader2, Trash2 } from 'lucide-react';
 
@@ -90,13 +90,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, currentSessio
                         <TooltipTrigger asChild>
                             <span>
                                 {session.lastActiveAt
-                                    ? `Last active ${formatSmartDate(session.lastActiveAt)}`
+                                    ? `Last active ${formatDate(session.lastActiveAt).smart()}`
                                     : 'Never active'}
                             </span>
                         </TooltipTrigger>
                         <TooltipContent>
                             {session.lastActiveAt
-                                ? formatDateTime(session.lastActiveAt)
+                                ? formatDate(session.lastActiveAt).toDateTimeString()
                                 : 'Never active'}
                         </TooltipContent>
                     </Tooltip>
@@ -104,15 +104,16 @@ export const SessionCard: React.FC<SessionCardProps> = ({ session, currentSessio
             </CardHeader>
             <CardContent>
                 <div className="text-sm text-muted-foreground">
-                    <p>
-                        Expires{' '}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span>{formatSmartDate(session.expiresAt)}</span>
-                            </TooltipTrigger>
-                            <TooltipContent>{formatDateTime(session.expiresAt)}</TooltipContent>
-                        </Tooltip>
-                    </p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <p className="text-sm text-gray-500">
+                                Expires: {formatDate(session.expiresAt).relativeTime()}
+                            </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {formatDate(session.expiresAt).toDateTimeString()}
+                        </TooltipContent>
+                    </Tooltip>
                     <p>IP: {session.ipAddress || 'Unknown'}</p>
                     <p>
                         Device: {deviceInfo.device.vendor} {deviceInfo.device.model}

@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTransactionPeek } from '@/features/transaction/hooks';
 import { TTransactionServicesResponse } from '@/features/transaction/server/services';
-import { formatCurrency, formatDateSafe } from '@/features/transaction/utils';
+import { formatCurrency } from '@/features/transaction/utils';
+import { formatDate } from '@/lib/utils/date-formatter';
 import {
     IconArrowsUpDown,
     IconCalendar,
@@ -84,13 +85,14 @@ export const transactionColumns: TransactionColumnDef[] = [
         },
         cell: ({ row }) => {
             const dateValue = row.getValue('date') as string;
+            if (!dateValue) return <span className="text-muted-foreground">No date</span>;
+
+            const date = formatDate(dateValue);
 
             return (
-                <div className="flex flex-col cursor-pointer">
-                    <span className="font-medium">{formatDateSafe(dateValue, 'MMM dd, yyyy')}</span>
-                    <span className="text-xs text-muted-foreground">
-                        {formatDateSafe(dateValue, 'EEEE')}
-                    </span>
+                <div className="flex flex-col">
+                    <span className="font-medium">{date.format('MONTH_DAY_YEAR')}</span>
+                    <span className="text-xs text-muted-foreground">{date.dayOfWeekName()}</span>
                 </div>
             );
         },
@@ -175,18 +177,7 @@ export const transactionColumns: TransactionColumnDef[] = [
         meta: {
             label: 'Amount',
         },
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                    className="h-8 p-0 hover:bg-transparent"
-                >
-                    Amount
-                    <IconArrowsUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            );
-        },
+        header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
             const spendingAmount = parseFloat(row.getValue('spendingAmount'));
             const spendingCurrency = row.original.spendingCurrency;

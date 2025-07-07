@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTransactionEndpoints } from '@/features/transaction/api';
+import { formatDate } from '@/lib/utils/date-formatter';
 import Link from 'next/link';
-import { formatCurrency, formatDateSafe } from '../../utils';
+import { formatCurrency } from '../../utils';
 
 interface TransactionTabsProps {
     transactionId: string;
@@ -47,13 +48,15 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                                     <p className="mt-1">{transaction.note}</p>
                                 </div>
                             )}
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Transaction Date
-                                </label>
-                                <p className="mt-1">
-                                    {formatDateSafe(transaction.date, 'PPP', 'No date available')}
-                                </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Date</p>
+                                    <p className="text-sm">
+                                        {formatDate(transaction.date).format(
+                                            'SHORT_MONTH_DAY_YEAR'
+                                        )}
+                                    </p>
+                                </div>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-muted-foreground">
@@ -169,18 +172,22 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-sm font-medium text-muted-foreground">
-                                    Created At
+                                    Date Created
                                 </label>
                                 <p className="mt-1">
-                                    {formatDateSafe(transaction.createdAt, 'PPP p', 'No creation date')}
+                                    {formatDate(transaction.createdAt).format(
+                                        'SHORT_MONTH_DAY_YEAR_TIME'
+                                    )}
                                 </p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-muted-foreground">
-                                    Updated At
+                                    Last Updated
                                 </label>
                                 <p className="mt-1">
-                                    {formatDateSafe(transaction.updatedAt, 'PPP p', 'Not updated')}
+                                    {formatDate(transaction.updatedAt).format(
+                                        'SHORT_MONTH_DAY_YEAR_TIME'
+                                    )}
                                 </p>
                             </div>
                             <div>
@@ -213,6 +220,16 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                         </div>
                     </CardContent>
                 </Card>
+                <div className="mt-4 text-xs text-gray-400">
+                    <p>
+                        Created:{' '}
+                        {formatDate(transaction.createdAt).format('SHORT_MONTH_DAY_YEAR_TIME')}
+                    </p>
+                    <p>
+                        Last updated:{' '}
+                        {formatDate(transaction.updatedAt).format('SHORT_MONTH_DAY_YEAR_TIME')}
+                    </p>
+                </div>
             </TabsContent>
         </Tabs>
     );
