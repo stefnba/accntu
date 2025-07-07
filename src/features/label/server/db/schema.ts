@@ -13,6 +13,8 @@ export const label = pgTable('label', {
         .references(() => user.id, { onDelete: 'cascade' }),
     name: text().notNull(),
     color: text(),
+    icon: text(),
+    imageUrl: text(),
     parentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
     firstParentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
     isActive: boolean().notNull().default(true),
