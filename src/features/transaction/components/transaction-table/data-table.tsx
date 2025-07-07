@@ -15,9 +15,14 @@ import {
     IconChevronsRight,
 } from '@tabler/icons-react';
 import { flexRender } from '@tanstack/react-table';
+import { TransactionTableSkeleton } from './table-skeleton';
 
 export const TransactionDataTable = () => {
-    const { table } = useTransactionTable();
+    const { table, isLoading } = useTransactionTable();
+
+    if (isLoading) {
+        return <TransactionTableSkeleton />;
+    }
 
     return (
         <div className="space-y-4">

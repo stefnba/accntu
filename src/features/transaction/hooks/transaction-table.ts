@@ -46,7 +46,7 @@ export const useTransactionTable = () => {
     } = useTransactionColumnState();
 
     // Get transaction data from API
-    const { data } = useTransactionEndpoints.getAll({
+    const { data, isLoading } = useTransactionEndpoints.getAll({
         query: {
             page: '1',
             pageSize: '50',
@@ -98,7 +98,6 @@ export const useTransactionTable = () => {
     };
 
     return {
-        // pagination,
         pagination: {
             pagination,
             setPagination,
@@ -111,11 +110,8 @@ export const useTransactionTable = () => {
             rowSelection,
             setRowSelection,
         },
-
-        // table
+        isLoading,
         table,
-
-        // actions
         resetTableState,
         resetColumns,
     };
