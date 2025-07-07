@@ -2,7 +2,7 @@ import { MainContent } from '@/components/layout/main';
 import {
     TransactionActionBar,
     TransactionPeekSheet,
-    TransactionTable,
+    TransactionTableManager,
 } from '@/features/transaction/components';
 import { ColumnManagementModal } from '@/features/transaction/components/transaction-table/column-management-modal';
 
@@ -16,7 +16,7 @@ export default function TransactionsPage() {
                 actionBar: <TransactionActionBar />,
             }}
         >
-            <TransactionTable />
+            <TransactionTableManager />
             <TransactionPeekSheet />
             <ColumnManagementModal />
         </MainContent>

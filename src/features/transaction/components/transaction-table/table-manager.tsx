@@ -2,9 +2,9 @@
 
 import { TransactionSelectionBar } from '@/features/transaction/components/transaction-selection-bar';
 import { TransactionTableFilters } from '@/features/transaction/components/transaction-table-filters';
-import { TransactionDataTable } from '@/features/transaction/components/transaction-table/transaction-data-table';
+import { TransactionDataTable } from '@/features/transaction/components/transaction-table/data-table';
 
-export const TransactionTable = () => {
+export const TransactionTableManager = () => {
     // if (error) {
     //     return (
     //         <div className="flex items-center justify-center p-8">

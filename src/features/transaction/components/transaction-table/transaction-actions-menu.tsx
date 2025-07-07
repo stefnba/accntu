@@ -12,41 +12,40 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    IconDotsVertical,
-    IconEye,
-    IconEdit,
-    IconTrash,
-    IconCopy,
-    IconTag,
     IconArchive,
-    IconChevronRight,
+    IconCopy,
+    IconDotsVertical,
+    IconEdit,
+    IconEye,
+    IconLabel,
+    IconTag,
+    IconTrash,
 } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { TTransaction } from './table-columns';
 
 interface TransactionActionsMenuProps {
-    transaction: TTransaction;
-    onView?: (transaction: TTransaction) => void;
-    onEdit?: (transaction: TTransaction) => void;
+    transactionId: string;
 }
 
-export const TransactionActionsMenu = ({
-    transaction,
-    onView,
-    onEdit,
-}: TransactionActionsMenuProps) => {
+export const TransactionActionsMenu = ({ transactionId }: TransactionActionsMenuProps) => {
     const [isOpen, setIsOpen] = useState(false);
+    const router = useRouter();
 
-    const handleView = (e: React.MouseEvent) => {
+    const clickWrapper = (fn: () => void) => (e: React.MouseEvent) => {
         e.stopPropagation();
-        onView?.(transaction);
+        fn();
         setIsOpen(false);
     };
 
+    const handleView = clickWrapper(() => {
+        router.push(`/transactions/${transactionId}`);
+    });
+
     const handleEdit = (e: React.MouseEvent) => {
         e.stopPropagation();
-        onEdit?.(transaction);
+
         setIsOpen(false);
     };
 
@@ -80,6 +79,13 @@ export const TransactionActionsMenu = ({
         setIsOpen(false);
     };
 
+    const handleAddLabel = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        // TODO: Implement add label functionality
+        toast.info('Add label functionality coming soon');
+        setIsOpen(false);
+    };
+
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
@@ -103,12 +109,11 @@ export const TransactionActionsMenu = ({
                     Edit Transaction
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                
+
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                         <IconTag className="mr-2 h-4 w-4" />
                         Quick Actions
-                        <IconChevronRight className="ml-auto h-4 w-4" />
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
                         <DropdownMenuItem onClick={handleDuplicate}>
@@ -119,13 +124,17 @@ export const TransactionActionsMenu = ({
                             <IconTag className="mr-2 h-4 w-4" />
                             Add Tag
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleAddLabel}>
+                            <IconLabel className="mr-2 h-4 w-4" />
+                            Add Label
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleArchive}>
                             <IconArchive className="mr-2 h-4 w-4" />
                             Archive
                         </DropdownMenuItem>
                     </DropdownMenuSubContent>
                 </DropdownMenuSub>
-                
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                     <IconTrash className="mr-2 h-4 w-4" />

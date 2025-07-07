@@ -2,78 +2,73 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTransactionPeek } from '@/features/transaction/hooks';
 import { TTransactionServicesResponse } from '@/features/transaction/server/services';
-import { formatCurrency } from '@/features/transaction/utils';
+import { formatCurrency, formatDateSafe } from '@/features/transaction/utils';
 import {
     IconArrowsUpDown,
     IconCalendar,
     IconTrendingDown,
     IconTrendingUp,
 } from '@tabler/icons-react';
-import { CellContext, ColumnDef, HeaderContext } from '@tanstack/react-table';
-import { format } from 'date-fns';
+import { ColumnDef } from '@tanstack/react-table';
 import { TransactionActionsMenu } from './transaction-actions-menu';
-import { EditableSelectCell, EditableTextCell } from './transaction-edit-cells';
+import { EditableSelectCell } from './transaction-edit-cells';
 
 export type TTransaction = TTransactionServicesResponse['getAll']['transactions'][number];
 
 /**
- * Type for transaction column.
- *
- * This is used to define the columns that are displayed in the transaction table.
- *
- * The keyof TTransaction is used to get the keys of the TTransaction type.
- *
- * The TTransaction type is defined in the TTransactionServicesResponse type.
+ * Transaction column definition.
+ * @param header - The header of the column.
+ * @param label - The label of the column.
+ * @param isDefaultVisible - Whether the column is visible by default.
  */
-export type TTransactionColumn = keyof TTransaction;
+export type TransactionColumnDef = ColumnDef<TTransaction> & { isDefaultVisible?: boolean };
 
-export const createTransactionColumns = (
-    onRowClick?: (transaction: TTransaction) => void,
-    filterOptions?: {
-        labels?: Array<{ id: string; name: string; color: string | null }>;
+/**
+ * Transaction columns.
+ */
+export const transactionColumns: TransactionColumnDef[] = [
+    {
+        id: 'select',
+        meta: {
+            label: 'Select',
+        },
+        header: ({ table }) => (
+            <div className="flex items-center justify-center">
+                <input
+                    type="checkbox"
+                    checked={table.getIsAllPageRowsSelected()}
+                    ref={(el) => {
+                        if (el)
+                            el.indeterminate =
+                                table.getIsSomePageRowsSelected() &&
+                                !table.getIsAllPageRowsSelected();
+                    }}
+                    onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+                    className="h-4 w-4 rounded border border-gray-300"
+                />
+            </div>
+        ),
+        cell: ({ row }) => (
+            <div className="flex items-center justify-center">
+                <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    onChange={(e) => row.toggleSelected(e.target.checked)}
+                    className="h-4 w-4 rounded border border-gray-300"
+                />
+            </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        isDefaultVisible: true,
     },
-    enableSelection = true,
-    onEdit?: (transaction: TTransaction) => void
-): ColumnDef<TTransaction>[] => [
-    // Selection column (only if enabled)
-    ...(enableSelection
-        ? [
-              {
-                  id: 'select',
-                  header: ({ table }: HeaderContext<TTransaction, unknown>) => (
-                      <div className="flex items-center justify-center">
-                          <input
-                              type="checkbox"
-                              checked={table.getIsAllPageRowsSelected()}
-                              ref={(el) => {
-                                  if (el)
-                                      el.indeterminate =
-                                          table.getIsSomePageRowsSelected() &&
-                                          !table.getIsAllPageRowsSelected();
-                              }}
-                              onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
-                              className="h-4 w-4 rounded border border-gray-300"
-                          />
-                      </div>
-                  ),
-                  cell: ({ row }: CellContext<TTransaction, unknown>) => (
-                      <div className="flex items-center justify-center">
-                          <input
-                              type="checkbox"
-                              checked={row.getIsSelected()}
-                              onChange={(e) => row.toggleSelected(e.target.checked)}
-                              className="h-4 w-4 rounded border border-gray-300"
-                          />
-                      </div>
-                  ),
-                  enableSorting: false,
-                  enableHiding: false,
-              },
-          ]
-        : []),
     {
         accessorKey: 'date',
+        meta: {
+            label: 'Date',
+        },
         header: ({ column }) => {
             return (
                 <Button
@@ -88,14 +83,14 @@ export const createTransactionColumns = (
             );
         },
         cell: ({ row }) => {
-            const date = new Date(row.getValue('date'));
+            const dateValue = row.getValue('date') as string;
+
             return (
-                <div
-                    className="flex flex-col cursor-pointer"
-                    onClick={() => onRowClick?.(row.original)}
-                >
-                    <span className="font-medium">{format(date, 'MMM dd, yyyy')}</span>
-                    <span className="text-xs text-muted-foreground">{format(date, 'EEEE')}</span>
+                <div className="flex flex-col cursor-pointer">
+                    <span className="font-medium">{formatDateSafe(dateValue, 'MMM dd, yyyy')}</span>
+                    <span className="text-xs text-muted-foreground">
+                        {formatDateSafe(dateValue, 'EEEE')}
+                    </span>
                 </div>
             );
         },
@@ -103,41 +98,25 @@ export const createTransactionColumns = (
     },
     {
         accessorKey: 'title',
-        header: 'Description',
+        header: 'Title',
         cell: ({ row }) => {
-            const title = row.getValue('title') as string;
-            const description = row.original.description;
-            const counterparty = row.original.counterparty;
-            const reference = row.original.reference;
+            const { title } = row.original;
+            const { openPeek } = useTransactionPeek();
+
+            const maxLength = 30;
 
             return (
-                <div className="max-w-[300px] space-y-2">
-                    <EditableTextCell transaction={row.original} field="title" value={title} />
-                    {description && (
-                        <EditableTextCell
-                            transaction={row.original}
-                            field="description"
-                            value={description}
-                        />
-                    )}
-                    {(counterparty || reference) && (
-                        <div className="text-xs text-muted-foreground space-y-1">
-                            {counterparty && (
-                                <div className="truncate">
-                                    <span className="font-medium">To:</span> {counterparty}
-                                </div>
-                            )}
-                            {reference && (
-                                <div className="truncate">
-                                    <span className="font-medium">Ref:</span> {reference}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                <Button
+                    variant="link"
+                    className="hover:underline cursor-pointer p-0 m-0"
+                    onClick={() => openPeek(row.original.id)}
+                >
+                    {title.length > maxLength ? title.slice(0, maxLength) + '...' : title}
+                </Button>
             );
         },
         enableHiding: false, // Description is required
+        isDefaultVisible: true,
     },
     {
         accessorKey: 'account',
@@ -164,6 +143,7 @@ export const createTransactionColumns = (
             );
         },
         enableHiding: true, // Account can be hidden
+        isDefaultVisible: true,
     },
     {
         accessorKey: 'type',
@@ -188,9 +168,13 @@ export const createTransactionColumns = (
             );
         },
         enableHiding: true, // Type can be hidden
+        isDefaultVisible: true,
     },
     {
         accessorKey: 'spendingAmount',
+        meta: {
+            label: 'Amount',
+        },
         header: ({ column }) => {
             return (
                 <Button
@@ -230,7 +214,7 @@ export const createTransactionColumns = (
         header: 'Label',
         cell: ({ row }) => {
             const label = row.original.label;
-            const labels = filterOptions?.labels || [];
+            const labels: any[] = [];
 
             return (
                 <EditableSelectCell
@@ -280,6 +264,7 @@ export const createTransactionColumns = (
             );
         },
         enableHiding: true, // Tags can be hidden
+        isDefaultVisible: true,
     },
     {
         accessorKey: 'location',
@@ -301,17 +286,12 @@ export const createTransactionColumns = (
     },
     {
         id: 'actions',
+        meta: {
+            label: 'Actions',
+        },
         header: () => null,
-        cell: ({ row }) => (
-            <TransactionActionsMenu
-                transaction={row.original}
-                onView={onRowClick}
-                onEdit={onEdit}
-            />
-        ),
+        cell: ({ row }) => <TransactionActionsMenu transactionId={row.original.id} />,
         enableSorting: false,
         enableHiding: false,
     },
 ];
-
-export const transactionColumns = createTransactionColumns();

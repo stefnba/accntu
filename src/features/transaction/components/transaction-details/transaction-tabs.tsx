@@ -1,9 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTransactionEndpoints } from '@/features/transaction/api';
-import { format } from 'date-fns';
 import Link from 'next/link';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, formatDateSafe } from '../../utils';
 
 interface TransactionTabsProps {
     transactionId: string;
@@ -52,7 +51,9 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                                 <label className="text-sm font-medium text-muted-foreground">
                                     Transaction Date
                                 </label>
-                                <p className="mt-1">{format(new Date(transaction.date), 'PPP')}</p>
+                                <p className="mt-1">
+                                    {formatDateSafe(transaction.date, 'PPP', 'No date available')}
+                                </p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-muted-foreground">
@@ -171,7 +172,7 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                                     Created At
                                 </label>
                                 <p className="mt-1">
-                                    {format(new Date(transaction.createdAt), 'PPP p')}
+                                    {formatDateSafe(transaction.createdAt, 'PPP p', 'No creation date')}
                                 </p>
                             </div>
                             <div>
@@ -179,7 +180,7 @@ export const TransactionTabs = ({ transactionId }: TransactionTabsProps) => {
                                     Updated At
                                 </label>
                                 <p className="mt-1">
-                                    {format(new Date(transaction.updatedAt || ''), 'PPP p')}
+                                    {formatDateSafe(transaction.updatedAt, 'PPP p', 'Not updated')}
                                 </p>
                             </div>
                             <div>

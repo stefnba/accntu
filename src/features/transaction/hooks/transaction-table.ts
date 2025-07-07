@@ -1,10 +1,12 @@
 import { useTransactionEndpoints } from '@/features/transaction/api';
-import { createTransactionColumns } from '@/features/transaction/components/transaction-table/table-columns';
+import { transactionColumns } from '@/features/transaction/components/transaction-table/table-columns';
+import { useTransactionColumnState } from '@/features/transaction/hooks/column-management';
 import { useTransactionFilters } from '@/features/transaction/hooks/transaction-filters';
 import { useTransactionTablePagination } from '@/features/transaction/hooks/transaction-pagination';
 import { useTransactionTableRowSelection } from '@/features/transaction/hooks/transaction-row-selection';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
+import { useMemo } from 'react';
 
 // ===================
 // Parsers
@@ -33,6 +35,16 @@ const useTransactionTableSorting = () => {
 export const useTransactionTable = () => {
     const { filtersUrl } = useTransactionFilters();
 
+    const columns = useMemo(() => transactionColumns, [transactionColumns]);
+
+    const {
+        columnVisibility,
+        onColumnVisibilityChange,
+        columnOrder,
+        onColumnOrderChange,
+        reset: resetColumns,
+    } = useTransactionColumnState();
+
     // Get transaction data from API
     const { data } = useTransactionEndpoints.getAll({
         query: {
@@ -42,7 +54,6 @@ export const useTransactionTable = () => {
         },
     });
 
-    const columns = createTransactionColumns();
     const { pagination, setPagination } = useTransactionTablePagination();
     const { rowSelection, setRowSelection } = useTransactionTableRowSelection();
     const { sorting, setSorting } = useTransactionTableSorting();
@@ -58,9 +69,13 @@ export const useTransactionTable = () => {
         manualFiltering: true,
         pageCount: data?.totalCount || 0,
 
+        onColumnVisibilityChange,
+        onColumnOrderChange,
         onRowSelectionChange: setRowSelection,
         state: {
             rowSelection,
+            columnVisibility,
+            columnOrder,
         },
 
         enableRowSelection: true,
@@ -79,6 +94,7 @@ export const useTransactionTable = () => {
         setPagination({ page: 0, pageSize: 50 });
         setSorting('date:desc');
         setRowSelection({});
+        resetColumns();
     };
 
     return {
@@ -101,5 +117,6 @@ export const useTransactionTable = () => {
 
         // actions
         resetTableState,
+        resetColumns,
     };
 };

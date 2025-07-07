@@ -1,1 +1,1 @@
-export { TransactionTable } from './transaction-table';
+export { TransactionTableManager } from './table-manager';

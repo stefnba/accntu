@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Dialog,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -11,7 +10,10 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { Separator } from '@/components/ui/separator';
+import { useTransactionTable } from '@/features/transaction/hooks';
+import { useColumnManagementModal } from '@/features/transaction/hooks/column-management';
 import {
     DndContext,
     DragEndEvent,
@@ -36,42 +38,49 @@ import {
     IconLayoutColumns,
     IconRefresh,
 } from '@tabler/icons-react';
-import { ALL_COLUMNS, useColumnManagement } from '../../hooks/transaction-column-management';
-
-interface ColumnManagementModalProps {
-    className?: string;
-}
+import { Column } from '@tanstack/react-table';
+import { useMemo } from 'react';
+import { TTransaction } from './table-columns';
 
 interface SortableColumnItemProps {
-    column: (typeof ALL_COLUMNS)[0];
-    isVisible: boolean;
+    column: Column<TTransaction, unknown>;
     onToggle: (columnId: string) => void;
 }
 
-const SortableColumnItem = ({ column, isVisible, onToggle }: SortableColumnItemProps) => {
+/**
+ * A component that renders a sortable column item.
+ * @param column - The column to render.
+ * @param onToggle - The function to call when the column visibility is toggled.
+ */
+const SortableColumnItem = ({ column, onToggle }: SortableColumnItemProps) => {
+    const { id, getCanHide, getIsVisible } = column;
+    const isVisible = getIsVisible();
+    const label =
+        column.columnDef.meta?.label ||
+        (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: column.id,
+        id,
         disabled: !isVisible, // Disable dragging for hidden columns
     });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
+        opacity: isDragging || !isVisible ? 0.5 : 1,
     };
 
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-3 border rounded-lg bg-card ${
-                isDragging ? 'opacity-50' : ''
-            } ${!isVisible ? 'opacity-60' : ''}`}
+            className="flex items-center gap-3 p-3 border rounded-lg bg-card"
         >
             <div
                 {...(isVisible ? { ...attributes, ...listeners } : {})}
                 className={`p-1 rounded ${
-                    isVisible 
-                        ? 'cursor-grab active:cursor-grabbing hover:bg-muted' 
+                    isVisible
+                        ? 'cursor-grab active:cursor-grabbing hover:bg-muted'
                         : 'cursor-not-allowed'
                 }`}
             >
@@ -80,17 +89,17 @@ const SortableColumnItem = ({ column, isVisible, onToggle }: SortableColumnItemP
 
             <div className="flex items-center space-x-2 flex-1">
                 <Checkbox
-                    id={`column-${column.id}`}
+                    id={`column-${id}`}
                     checked={isVisible}
-                    onCheckedChange={() => column.canHide && onToggle(column.id)}
-                    disabled={!column.canHide}
+                    onCheckedChange={() => getCanHide() && onToggle(id)}
+                    disabled={!getCanHide()}
                 />
                 <Label
-                    htmlFor={`column-${column.id}`}
-                    className={`flex-1 ${!column.canHide ? 'text-muted-foreground' : ''}`}
+                    htmlFor={`column-${id}`}
+                    className={`flex-1 ${!getCanHide() ? 'text-muted-foreground' : ''}`}
                 >
-                    {column.label}
-                    {!column.canHide && <span className="text-xs ml-1">(Required)</span>}
+                    {label}
+                    {!getCanHide() && <span className="text-xs ml-1">(Required)</span>}
                 </Label>
             </div>
 
@@ -105,18 +114,31 @@ const SortableColumnItem = ({ column, isVisible, onToggle }: SortableColumnItemP
     );
 };
 
-export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () => {
-    const {
-        isOpen,
-        close,
-        columnOrder,
-        setColumnOrder,
-        toggleColumnVisibility,
-        isColumnVisible,
-        resetAll,
-        getVisibleColumns,
-        getHiddenColumns,
-    } = useColumnManagement();
+/**
+ * A component that renders a modal for managing the column visibility and order.
+ */
+export const ColumnManagementModal: React.FC = () => {
+    const { isOpen, close } = useColumnManagementModal();
+    const { table, resetColumns } = useTransactionTable();
+
+    const { getState, setColumnOrder, getAllLeafColumns } = table;
+    const { columnOrder } = getState();
+
+    const managedColumns = useMemo(() => {
+        const columns = getAllLeafColumns().filter(
+            (col) => col.id !== 'select' && col.id !== 'actions'
+        );
+
+        // Sort columns based on columnOrder
+        return columns.sort((a, b) => {
+            const aIndex = columnOrder.indexOf(a.id);
+            const bIndex = columnOrder.indexOf(b.id);
+            // Put columns not in order at the end
+            if (aIndex === -1) return 1;
+            if (bIndex === -1) return -1;
+            return aIndex - bIndex;
+        });
+    }, [getAllLeafColumns, columnOrder]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -125,41 +147,29 @@ export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () =>
         })
     );
 
-    /**
-     * Handle the drag end event - only reorder visible columns
-     *
-     * @param event - The drag end event.
-     */
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         if (over && active.id !== over.id) {
-            // Only allow reordering if both columns are visible
-            const activeId = active.id as string;
-            const overId = over.id as string;
-            
-            if (isColumnVisible(activeId) && isColumnVisible(overId)) {
-                const oldIndex = columnOrder.indexOf(activeId);
-                const newIndex = columnOrder.indexOf(overId);
-                const newOrder = arrayMove(columnOrder, oldIndex, newIndex);
-                setColumnOrder(newOrder);
-            }
+            const oldIndex = columnOrder.indexOf(active.id as string);
+            const newIndex = columnOrder.indexOf(over.id as string);
+            setColumnOrder(arrayMove(columnOrder, oldIndex, newIndex));
         }
     };
 
-    /**
-     * Handle the reset event.
-     */
     const handleReset = () => {
-        resetAll();
+        resetColumns();
     };
 
-    const visibleCount = getVisibleColumns().length;
-    const hiddenCount = getHiddenColumns().length;
+    const toggleColumnVisibility = (columnId: string) => {
+        table.getColumn(columnId)?.toggleVisibility();
+    };
+
+    const visibleCount = managedColumns.filter((c) => c.getIsVisible()).length;
+    const hiddenCount = managedColumns.length - visibleCount;
 
     return (
-        <Dialog open={isOpen} onOpenChange={close}>
-            <DialogContent className="max-w-md">
+        <ResponsiveModal open={isOpen} onOpenChange={close}>
+            <DialogContent className="">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <IconLayoutColumns className="h-5 w-5" />
@@ -172,7 +182,6 @@ export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () =>
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    {/* Stats */}
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>
                             {visibleCount} visible, {hiddenCount} hidden
@@ -190,7 +199,6 @@ export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () =>
 
                     <Separator />
 
-                    {/* Column List */}
                     <div className="max-h-96 overflow-y-auto space-y-2">
                         <DndContext
                             sensors={sensors}
@@ -201,34 +209,13 @@ export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () =>
                                 items={columnOrder}
                                 strategy={verticalListSortingStrategy}
                             >
-                                {columnOrder.map((columnId) => {
-                                    const column = ALL_COLUMNS.find(col => col.id === columnId);
-                                    if (!column) return null;
-                                    
-                                    return (
-                                        <SortableColumnItem
-                                            key={column.id}
-                                            column={column}
-                                            isVisible={isColumnVisible(column.id)}
-                                            onToggle={toggleColumnVisibility}
-                                        />
-                                    );
-                                })}
-                                
-                                {/* Show hidden columns at the end */}
-                                {getHiddenColumns().map((columnId) => {
-                                    const column = ALL_COLUMNS.find(col => col.id === columnId);
-                                    if (!column) return null;
-                                    
-                                    return (
-                                        <SortableColumnItem
-                                            key={column.id}
-                                            column={column}
-                                            isVisible={false}
-                                            onToggle={toggleColumnVisibility}
-                                        />
-                                    );
-                                })}
+                                {managedColumns.map((column) => (
+                                    <SortableColumnItem
+                                        key={column.id}
+                                        column={column}
+                                        onToggle={toggleColumnVisibility}
+                                    />
+                                ))}
                             </SortableContext>
                         </DndContext>
                     </div>
@@ -240,6 +227,6 @@ export const ColumnManagementModal: React.FC<ColumnManagementModalProps> = () =>
                     </Button>
                 </DialogFooter>
             </DialogContent>
-        </Dialog>
+        </ResponsiveModal>
     );
 };
