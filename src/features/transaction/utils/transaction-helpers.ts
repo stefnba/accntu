@@ -58,9 +58,13 @@ export const getTypeBadgeVariant = (type: string) => {
     }
 };
 
-export const formatDateSafe = (dateValue: string | null | undefined, formatString: string, fallback = 'Invalid date') => {
+export const formatDateSafe = (
+    dateValue: string | null | undefined | Date,
+    formatString: string,
+    fallback = 'Invalid date'
+) => {
     if (!dateValue) return fallback;
-    
+
     try {
         const date = new Date(dateValue);
         if (isNaN(date.getTime())) {
