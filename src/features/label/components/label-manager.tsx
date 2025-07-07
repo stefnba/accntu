@@ -3,27 +3,13 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
-import { useLabelEndpoints } from '../api';
 import { useLabelModal } from '../hooks';
 import { LabelForm } from './label-form';
 import { LabelTree } from './label-tree';
 
 export const LabelManager = () => {
-    const { data: labels, isLoading } = useLabelEndpoints.getRoots({});
-    const { modalOpen, modalType, labelId, parentId, openCreateModal, openEditModal, closeModal } =
+    const { modalOpen, modalType, labelId, parentId, openCreateModal, closeModal } =
         useLabelModal();
-
-    const handleEdit = (editLabelId: string) => {
-        openEditModal(editLabelId);
-    };
-
-    const handleAddChild = (parentLabelId: string) => {
-        openCreateModal(parentLabelId);
-    };
-
-    if (isLoading) {
-        return <div className="p-4">Loading labels...</div>;
-    }
 
     return (
         <div className="space-y-4">
@@ -35,12 +21,7 @@ export const LabelManager = () => {
                 </Button>
             </div>
 
-            <LabelTree
-                labels={labels || []}
-                onEdit={handleEdit}
-                onAddChild={handleAddChild}
-                className="border rounded-lg p-4"
-            />
+            <LabelTree className="border rounded-lg p-4" />
 
             <Dialog open={modalOpen} onOpenChange={closeModal}>
                 <DialogContent>

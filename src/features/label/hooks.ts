@@ -1,4 +1,5 @@
 import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { create } from 'zustand';
 
 const LABEL_MODAL_TYPES = ['create', 'edit'] as const;
 export type TLabelModalType = (typeof LABEL_MODAL_TYPES)[number];
@@ -57,3 +58,24 @@ export const useLabelModal = () => {
         setModalOpen,
     };
 };
+
+export const useLabelSelectorModal = create<{
+    isOpen: boolean;
+    labelId: string | null;
+    transactionId: string | null;
+    open: ({ transactionId, labelId }: { transactionId: string; labelId?: string }) => void;
+    close: () => void;
+    setOpen: (isOpen: boolean) => void;
+}>((set) => ({
+    isOpen: false,
+    labelId: null,
+    transactionId: null,
+    open: ({ transactionId, labelId }: { transactionId: string; labelId?: string }) =>
+        set({
+            isOpen: true,
+            transactionId,
+            labelId: labelId || null,
+        }),
+    close: () => set({ isOpen: false, labelId: null, transactionId: null }),
+    setOpen: (isOpen: boolean) => set({ isOpen }),
+}));
