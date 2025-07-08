@@ -100,10 +100,35 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
                 const hashColumns = config.idConfig.columns
                     .map((col) => `COALESCE(CAST("${col}" AS VARCHAR), '')`)
                     .join(` || '|' || `);
-                const keyExpression = `SUBSTR(MD5(${hashColumns}), 1, ${idLength})`;
+                
+                // Always include connectedBankAccountId in the hash if provided
+                const bankAccountPart = config.idConfig.connectedBankAccountId 
+                    ? ` || '|' || '${config.idConfig.connectedBankAccountId}'`
+                    : '';
 
-                // Wrap the original source in a subquery that adds the key
-                dataSourceSql = `(SELECT *, ${keyExpression} AS "${idFieldName}" FROM (${dataSourceSql}))`;
+                // Generate keys with sequence numbers for identical transactions
+                const keyGenerationSql = `
+                    WITH base_data AS (
+                        SELECT *,
+                            ROW_NUMBER() OVER () as row_num,
+                            MD5(${hashColumns}${bankAccountPart}) as base_key
+                        FROM (${dataSourceSql})
+                    ),
+                    counted_data AS (
+                        SELECT *,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY base_key 
+                                ORDER BY row_num
+                            ) as occurrence_count
+                        FROM base_data
+                    )
+                    SELECT *,
+                        SUBSTR(MD5(base_key || '|' || occurrence_count), 1, ${idLength}) as "${idFieldName}"
+                    FROM counted_data
+                `;
+
+                // Wrap the enhanced query
+                dataSourceSql = `(${keyGenerationSql})`;
             }
 
             let fullQuery = config.transformSql;

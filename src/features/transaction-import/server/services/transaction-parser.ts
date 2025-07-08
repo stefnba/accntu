@@ -128,6 +128,7 @@ export const parseTransactionFile = async ({ id, userId }: TQuerySelectUserRecor
             schema: transactionParseSchema,
             idConfig: {
                 columns: transformConfig.idColumns || [],
+                connectedBankAccountId: file.import.connectedBankAccountId,
             },
         },
         {

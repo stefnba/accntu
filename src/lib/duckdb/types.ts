@@ -124,6 +124,8 @@ export interface TransformationConfig<T = any> {
         columns: string[];
         /** Field name to store the generated ID (default: 'id') */
         fieldName?: string;
+        /** Connected bank account ID for unique key generation */
+        connectedBankAccountId?: string;
     };
 }
 
