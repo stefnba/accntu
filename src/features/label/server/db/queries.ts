@@ -8,19 +8,25 @@ import type {
 } from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, ilike, isNull } from 'drizzle-orm';
 
 /**
  * Get all labels for a user with parent/child relationships
  * @param userId - The user ID to fetch labels for
  * @returns Promise resolving to array of labels with relationships
  */
-const getAll = async ({ userId }: TQuerySelectUserRecords) =>
+const getAll = async ({ userId, filters }: TQuerySelectUserRecords<TLabelQuery['filter']>) =>
     withDbQuery({
         operation: 'Get all labels for user',
         queryFn: async () => {
+            const where = [eq(label.userId, userId), eq(label.isActive, true)];
+
+            if (filters?.search) {
+                where.push(ilike(label.name, `%${filters.search}%`));
+            }
+
             return await db.query.label.findMany({
-                where: and(eq(label.userId, userId), eq(label.isActive, true)),
+                where: and(...where),
                 with: {
                     parent: true,
                     children: {

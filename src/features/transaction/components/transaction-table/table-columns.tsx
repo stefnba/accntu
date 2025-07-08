@@ -6,15 +6,10 @@ import { useTransactionPeek } from '@/features/transaction/hooks';
 import { TTransactionServicesResponse } from '@/features/transaction/server/services';
 import { formatCurrency } from '@/features/transaction/utils';
 import { formatDate } from '@/lib/utils/date-formatter';
-import {
-    IconArrowsUpDown,
-    IconCalendar,
-    IconTrendingDown,
-    IconTrendingUp,
-} from '@tabler/icons-react';
+import { IconArrowsUpDown, IconCalendar } from '@tabler/icons-react';
 import { ColumnDef } from '@tanstack/react-table';
+import { LabelEditCell, TagEditCell, TypeEditCell } from './label-edit-cell';
 import { TransactionActionsMenu } from './transaction-actions-menu';
-import { EditableSelectCell } from './transaction-edit-cells';
 
 export type TTransaction = TTransactionServicesResponse['getAll']['transactions'][number];
 
@@ -110,7 +105,7 @@ export const transactionColumns: TransactionColumnDef[] = [
             return (
                 <Button
                     variant="link"
-                    className="hover:underline cursor-pointer p-0 m-0"
+                    className="hover:underline cursor-pointer p-0 m-0 font-semibold"
                     onClick={() => openPeek(row.original.id)}
                 >
                     {title.length > maxLength ? title.slice(0, maxLength) + '...' : title}
@@ -151,23 +146,7 @@ export const transactionColumns: TransactionColumnDef[] = [
         accessorKey: 'type',
         header: 'Type',
         cell: ({ row }) => {
-            const type = row.getValue('type') as string;
-            const variant =
-                type === 'credit' ? 'default' : type === 'debit' ? 'destructive' : 'secondary';
-            const icon =
-                type === 'credit'
-                    ? IconTrendingUp
-                    : type === 'debit'
-                      ? IconTrendingDown
-                      : IconArrowsUpDown;
-            const Icon = icon;
-
-            return (
-                <Badge variant={variant} className="capitalize">
-                    <Icon className="w-3 h-3 mr-1" />
-                    {type}
-                </Badge>
-            );
+            return <TypeEditCell transaction={row.original} />;
         },
         enableHiding: true, // Type can be hidden
         isDefaultVisible: true,
@@ -204,22 +183,7 @@ export const transactionColumns: TransactionColumnDef[] = [
         accessorKey: 'label',
         header: 'Label',
         cell: ({ row }) => {
-            const label = row.original.label;
-            const labels: any[] = [];
-
-            return (
-                <EditableSelectCell
-                    transaction={row.original}
-                    field="labelId"
-                    value={label?.id || ''}
-                    options={labels.map((l) => ({
-                        id: l.id,
-                        name: l.name,
-                        color: l.color || undefined,
-                    }))}
-                    placeholder="Select label"
-                />
-            );
+            return <LabelEditCell transaction={row.original} />;
         },
         enableHiding: true, // Label can be hidden
     },
@@ -228,6 +192,9 @@ export const transactionColumns: TransactionColumnDef[] = [
         header: 'Tags',
         cell: ({ row }) => {
             const tags = row.original.tags || [];
+
+            return <TagEditCell transaction={row.original} />;
+
             if (!tags.length) return <span className="text-muted-foreground">—</span>;
 
             return (

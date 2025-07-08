@@ -23,11 +23,17 @@ export const labelQuerySchemas = {
         updatedAt: true,
         id: true,
     }),
+    filter: z
+        .object({
+            search: z.string().optional(),
+        })
+        .optional(),
 };
 export type TLabelQuery = {
     select: z.infer<typeof labelQuerySchemas.select>;
     insert: z.infer<typeof labelQuerySchemas.insert>;
     update: z.infer<typeof labelQuerySchemas.update>;
+    filter: z.infer<typeof labelQuerySchemas.filter>;
 };
 /**
  * Label service schemas for business logic operations
@@ -38,11 +44,13 @@ export const labelServiceSchemas = {
         firstParentId: true,
     }),
     update: labelQuerySchemas.update,
+    filter: labelQuerySchemas.filter,
 };
 export type TLabelService = {
     select: z.infer<typeof labelServiceSchemas.select>;
     insert: z.infer<typeof labelServiceSchemas.insert>;
     update: z.infer<typeof labelServiceSchemas.update>;
+    filter: z.infer<typeof labelServiceSchemas.filter>;
 };
 
 /**
@@ -78,3 +86,51 @@ export const labelColors = [
     '#F43F5E', // rose
     '#6B7280', // gray
 ] as const;
+
+/**
+ * Common Lucide React icon names for labels (using exact component names)
+ */
+export const labelIcons = [
+    'Home',
+    'ShoppingCart',
+    'Car',
+    'Plane',
+    'Utensils',
+    'Coffee',
+    'Heart',
+    'Gift',
+    'Book',
+    'Briefcase',
+    'CreditCard',
+    'Wallet',
+    'Zap',
+    'Phone',
+    'Wifi',
+    'Music',
+    'Camera',
+    'Monitor',
+    'Smartphone',
+    'DollarSign',
+    'MapPin',
+    'Calendar',
+    'Clock',
+    'User',
+    'Users',
+    'Building',
+] as const;
+
+export type LabelIcon = (typeof labelIcons)[number];
+
+/**
+ * Enhanced form schema with icon validation
+ */
+export const labelFormSchemaExtended = {
+    create: labelFormSchemas.create.extend({
+        icon: z.string().optional(),
+        imageUrl: z.string().url().optional(),
+    }),
+    update: labelFormSchemas.update.extend({
+        icon: z.string().optional(),
+        imageUrl: z.string().url().optional(),
+    }),
+};

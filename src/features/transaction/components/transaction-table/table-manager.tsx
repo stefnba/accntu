@@ -1,5 +1,7 @@
 'use client';
 
+import { LabelSelectorModal } from '@/features/label/components/label-selector-modal';
+import { TagSelectorModal } from '@/features/tag/components/tag-selector';
 import { TransactionSelectionBar } from '@/features/transaction/components/transaction-selection-bar';
 import { TransactionTableFilters } from '@/features/transaction/components/transaction-table-filters';
 import { TransactionDataTable } from '@/features/transaction/components/transaction-table/data-table';
@@ -13,6 +15,9 @@ export const TransactionTableManager = () => {
             <TransactionSelectionBar />
 
             <TransactionDataTable />
+
+            <LabelSelectorModal />
+            <TagSelectorModal />
         </div>
     );
 };

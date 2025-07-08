@@ -5,7 +5,8 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import type { TLabelService } from '../schemas';
+
+import { TLabelService } from '@/features/label/schemas';
 import { labelQueries } from './db/queries';
 
 export const labelServices = {
@@ -14,8 +15,8 @@ export const labelServices = {
      * @param userId - The user ID to fetch labels for
      * @returns Promise resolving to array of labels with relationships
      */
-    async getAll({ userId }: TQuerySelectUserRecords) {
-        return await labelQueries.getAll({ userId });
+    async getAll({ userId, filters }: TQuerySelectUserRecords<TLabelService['filter']>) {
+        return await labelQueries.getAll({ userId, filters });
     },
 
     /**

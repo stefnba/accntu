@@ -11,6 +11,8 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useLabelSelectorModal } from '@/features/label/hooks';
+import { useTagSelectorModal } from '@/features/tag/hooks';
 import {
     IconArchive,
     IconCopy,
@@ -30,9 +32,21 @@ interface TransactionActionsMenuProps {
 }
 
 export const TransactionActionsMenu = ({ transactionId }: TransactionActionsMenuProps) => {
+    // =========================
+    // API calls
+    // =========================
+
+    // =========================
+    // Hooks
+    // =========================
     const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
+    const { open: openLabelSelector } = useLabelSelectorModal();
+    const { open: openTagSelector } = useTagSelectorModal();
 
+    // =========================
+    // Handlers
+    // =========================
     const clickWrapper = (fn: () => void) => (e: React.MouseEvent) => {
         e.stopPropagation();
         fn();
@@ -120,13 +134,13 @@ export const TransactionActionsMenu = ({ transactionId }: TransactionActionsMenu
                             <IconCopy className="mr-2 h-4 w-4" />
                             Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleAddTag}>
+                        <DropdownMenuItem onClick={() => openTagSelector({ transactionId })}>
                             <IconTag className="mr-2 h-4 w-4" />
-                            Add Tag
+                            Update Tags
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleAddLabel}>
+                        <DropdownMenuItem onClick={() => openLabelSelector({ transactionId })}>
                             <IconLabel className="mr-2 h-4 w-4" />
-                            Add Label
+                            Update Label
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleArchive}>
                             <IconArchive className="mr-2 h-4 w-4" />

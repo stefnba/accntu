@@ -28,12 +28,14 @@ export const transactionQuerySchemas = {
             spendingAmount: amountTransformSchema,
             balance: amountTransformSchema,
         }),
-    update: updateTransactionSchema.extend({
-        userAmount: amountTransformSchema,
-        accountAmount: amountTransformSchema,
-        spendingAmount: amountTransformSchema,
-        balance: amountTransformSchema,
-    }),
+    update: updateTransactionSchema
+        .extend({
+            userAmount: amountTransformSchema,
+            accountAmount: amountTransformSchema,
+            spendingAmount: amountTransformSchema,
+            balance: amountTransformSchema,
+        })
+        .partial(),
 };
 
 export type TTransactionQuery = {

@@ -6,7 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { LabelBadge } from '@/features/label/components/label-badge';
 import { useLabelModal } from '@/features/label/hooks';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Edit2, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit2, Eye, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useLabelEndpoints } from '../api';
 import type { TLabelQuery } from '../schemas';
@@ -19,12 +20,20 @@ interface LabelTreeItemProps {
     label: TLabelQuery['select'] & { children?: TLabelQuery['select'][] };
     level?: number;
     actions?: React.ReactNode;
+    onSelect?: (labelId: string) => void;
+    showChildren?: boolean;
 }
 
 /**
  * Single label in the tree
  */
-export const LabelTreeItem = ({ label, level = 0, actions }: LabelTreeItemProps) => {
+export const LabelTreeItem = ({
+    label,
+    level = 0,
+    actions,
+    onSelect,
+    showChildren = true,
+}: LabelTreeItemProps) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const hasChildren = label.children && label.children.length > 0;
 
@@ -39,7 +48,7 @@ export const LabelTreeItem = ({ label, level = 0, actions }: LabelTreeItemProps)
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
             >
-                {hasChildren ? (
+                {hasChildren && showChildren ? (
                     isExpanded ? (
                         <ChevronDown className="w-3 h-3" />
                     ) : (
@@ -68,12 +77,24 @@ export const LabelTreeItem = ({ label, level = 0, actions }: LabelTreeItemProps)
         );
     };
 
+    const renderLabelBadge = () => {
+        if (onSelect) {
+            return (
+                <Button variant="ghost" size="sm" onClick={() => onSelect(label.id)}>
+                    <LabelBadge label={label} />
+                </Button>
+            );
+        }
+
+        return <LabelBadge label={label} />;
+    };
+
     /**
      * Render the label children
      * @returns
      */
     const renderLabelChildren = () => {
-        if (!hasChildren || !isExpanded) {
+        if (!hasChildren || !isExpanded || !showChildren) {
             return null;
         }
 
@@ -85,6 +106,7 @@ export const LabelTreeItem = ({ label, level = 0, actions }: LabelTreeItemProps)
                         label={child}
                         level={level + 1}
                         actions={actions ? <LabelTreeItemActions labelId={child.id} /> : null}
+                        onSelect={onSelect}
                     />
                 ))}
             </div>
@@ -102,7 +124,7 @@ export const LabelTreeItem = ({ label, level = 0, actions }: LabelTreeItemProps)
                 {renderCollapseButton()}
 
                 {/* Label badge */}
-                <LabelBadge label={label} />
+                {renderLabelBadge()}
 
                 {/* Label actions */}
                 {renderLabelActions()}
@@ -124,6 +146,7 @@ interface LabelTreeItemActionsProps {
  */
 export const LabelTreeItemActions = ({ labelId }: LabelTreeItemActionsProps) => {
     const { openCreateModal, openEditModal } = useLabelModal();
+    const router = useRouter();
 
     const deleteMutation = useLabelEndpoints.delete();
 
@@ -143,8 +166,21 @@ export const LabelTreeItemActions = ({ labelId }: LabelTreeItemActionsProps) => 
         openCreateModal(labelId);
     };
 
+    const handleView = () => {
+        // labelId is the label id to view
+        router.push(`/labels/${labelId}`);
+    };
+
     return (
         <>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={handleView} className="h-6 w-6 p-0">
+                        <Eye className="w-3 h-3" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>View label</TooltipContent>
+            </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button

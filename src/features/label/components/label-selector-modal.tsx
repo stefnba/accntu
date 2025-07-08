@@ -9,6 +9,7 @@ import { useLabelEndpoints } from '@/features/label/api';
 import { LabelTreeItem } from '@/features/label/components/label-tree';
 import { useLabelSelectorModal } from '@/features/label/hooks';
 import type { TLabelQuery } from '@/features/label/schemas';
+import { useTransactionEndpoints } from '@/features/transaction/api';
 import { cn } from '@/lib/utils';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { useMemo, useState } from 'react';
@@ -68,20 +69,41 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const SEARCH_TERM_MIN_LENGTH = 2;
+    const isSearchEnabled = searchTerm.length > SEARCH_TERM_MIN_LENGTH;
 
-    const { data: rootLabels = [] } = useLabelEndpoints.getRoots({});
-    const { data: allLabels = [] } = useLabelEndpoints.getAll(
-        {},
+    // =========================
+    // API calls
+    // =========================
+    const updateTransactionMutation = useTransactionEndpoints.update();
+    const { data: transaction } = useTransactionEndpoints.getById(
         {
-            enabled: searchTerm.length > SEARCH_TERM_MIN_LENGTH,
+            param: {
+                id: transactionId!,
+            },
+        },
+        {
+            enabled: !!transactionId && !labelId,
         }
     );
 
-    const labels = useMemo(() => {
-        if (searchTerm.length > SEARCH_TERM_MIN_LENGTH) {
-            return allLabels;
+    const { data: rootLabels = [] } = useLabelEndpoints.getRoots({});
+    const { data: allLabels = [] } = useLabelEndpoints.getAll(
+        {
+            query: {
+                search: searchTerm,
+            },
+        },
+        {
+            enabled: isSearchEnabled,
         }
-        return rootLabels;
+    );
+
+    // =========================
+    // Others
+    // =========================
+
+    const labels = useMemo(() => {
+        return isSearchEnabled ? allLabels : rootLabels;
     }, [searchTerm, allLabels, rootLabels]);
 
     const flatLabelsWithHierarchy = useMemo(() => {
@@ -121,25 +143,25 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
         return buildFlatList(labels);
     }, [labels]);
 
-    const filteredLabels = useMemo(() => {
-        if (!searchTerm) return flatLabelsWithHierarchy;
+    if (!transactionId) {
+        return <div>No transaction selected</div>;
+    }
 
-        return flatLabelsWithHierarchy.filter(
-            (label) =>
-                label.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                label.parentPath?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [flatLabelsWithHierarchy, searchTerm]);
+    const selectedLabel = labels.find((l) => l.id === labelId || transaction?.labelId);
 
-    const selectedLabel = labels.find((l) => l.id === labelId);
+    // =========================
+    // Handlers
+    // =========================
 
-    const handleSelect = (labelId: string) => {
-        // TODO: update label
-        console.log('update label', labelId, transactionId);
-        close();
-    };
-
-    const handleClear = () => {
+    const handleSelect = (labelId: string | null) => {
+        updateTransactionMutation.mutate({
+            param: {
+                id: transactionId,
+            },
+            json: {
+                labelId,
+            },
+        });
         close();
     };
 
@@ -176,7 +198,7 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
                                 {selectedLabel.name}
                             </Badge>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={handleClear}>
+                        <Button variant="ghost" size="sm" onClick={() => handleSelect(null)}>
                             Clear
                         </Button>
                     </div>
@@ -192,7 +214,12 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
                             </div>
                         ) : (
                             labels.map((label) => (
-                                <LabelTreeItem key={label.id} label={label} />
+                                <LabelTreeItem
+                                    key={label.id}
+                                    label={label}
+                                    onSelect={handleSelect}
+                                    showChildren={!isSearchEnabled}
+                                />
                                 // <LabelHierarchyItem
                                 //     key={label.id}
                                 //     label={label}

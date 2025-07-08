@@ -33,7 +33,10 @@ export const useLabelEndpoints = {
     /**
      * Update a label
      */
-    update: createMutation(apiClient.labels[':id'].$put, LABEL_QUERY_KEYS.LABEL),
+    update: createMutation(apiClient.labels[':id'].$put, [
+        LABEL_QUERY_KEYS.LABEL,
+        LABEL_QUERY_KEYS.LABELS,
+    ]),
 
     /**
      * Delete a label (soft delete)

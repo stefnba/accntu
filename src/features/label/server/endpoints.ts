@@ -1,21 +1,23 @@
+import { labelServiceSchemas } from '@/features/label/schemas';
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
-import { labelServiceSchemas } from '../schemas';
 import { labelServices } from './services';
 
 const app = new Hono()
     /**
      * GET /labels - Get all labels for the authenticated user
      */
-    .get('/', async (c) => {
+    .get('/', zValidator('query', labelServiceSchemas.filter), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            return await labelServices.getAll({ userId: user.id });
+            const { search } = c.req.query();
+            return await labelServices.getAll({ userId: user.id, filters: { search } });
         });
     })
+
     /**
      * GET /labels/roots - Get root labels with nested children for the authenticated user
      */
