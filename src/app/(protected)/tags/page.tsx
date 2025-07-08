@@ -1,5 +1,6 @@
 import { MainContent } from '@/components/layout/main';
-import { Metadata } from 'next';
+import { TagManager } from '@/features/tag/components/tag-manager';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: 'Tags | Accntu',
@@ -14,7 +15,7 @@ export default function TagsPage() {
                 description: 'View and manage your tags',
             }}
         >
-            <div>TagsPage</div>
+            <TagManager />
         </MainContent>
     );
 }
