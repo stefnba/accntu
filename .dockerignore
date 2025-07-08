@@ -1,0 +1,157 @@
+# =================================================================
+# Docker Build Optimization - .dockerignore
+# =================================================================
+# This file optimizes Docker build context by excluding unnecessary files
+
+# =================================================================
+# Version Control & Git
+# =================================================================
+.git
+.gitignore
+.gitattributes
+.github
+
+# =================================================================
+# Development & Build Tools
+# =================================================================
+node_modules
+.next
+out
+build
+dist
+
+# Development environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production.local
+
+# =================================================================
+# IDE & Editor Files
+# =================================================================
+.vscode
+.idea
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+
+# =================================================================
+# Documentation & Markdown
+# =================================================================
+README.md
+CHANGELOG.md
+*.md
+docs/
+.claude/
+
+# =================================================================
+# Testing & Coverage
+# =================================================================
+test/
+tests/
+__tests__/
+coverage/
+.nyc_output
+jest.config.*
+vitest.config.*
+
+# =================================================================
+# Logs & Debug Files
+# =================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# =================================================================
+# Runtime & Cache Files
+# =================================================================
+.npm
+.yarn
+.pnp
+.pnp.js
+.cache
+.temp
+.tmp
+
+# =================================================================
+# Development Dependencies & Tools
+# =================================================================
+.eslintrc*
+.prettierrc*
+.editorconfig
+tsconfig.json
+tsconfig.*.json
+tailwind.config.*
+postcss.config.*
+drizzle.config.*
+
+# =================================================================
+# Upload & User Generated Content
+# =================================================================
+uploads/
+public/uploads/
+
+# =================================================================
+# Docker & Deployment
+# =================================================================
+Dockerfile
+Dockerfile.*
+docker-compose.*
+.dockerignore
+
+# =================================================================
+# CI/CD
+# =================================================================
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# =================================================================
+# Package Manager Files
+# =================================================================
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# =================================================================
+# OS Generated Files
+# =================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =================================================================
+# Development Scripts & Utilities
+# =================================================================
+makefile
+Makefile
+scripts/
+bin/
+
+# =================================================================
+# Accntu Specific
+# =================================================================
+# DuckDB temporary files
+*.duckdb
+*.duckdb.wal
+
+# Bun specific
+.bun
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Development workspace
+*.code-workspace
