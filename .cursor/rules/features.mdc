@@ -3,6 +3,7 @@ description: Feature-based architecture guidelines for consistent development pa
 globs:
 alwaysApply: false
 ---
+
 # Feature Architecture Rules
 
 This project follows a strict feature-based architecture with consistent patterns across all features. Each feature is self-contained with its own database schemas, API endpoints, business logic, and client-side code.
@@ -10,6 +11,7 @@ This project follows a strict feature-based architecture with consistent pattern
 ## Feature Structure
 
 ### Simple Features
+
 For features with a single main entity, use this structure:
 
 ```
@@ -27,6 +29,7 @@ src/features/[feature-name]/
 ```
 
 ### Complex Features
+
 For features with multiple related entities (2+ tables), use this layered structure:
 
 ```
@@ -54,21 +57,25 @@ src/features/[feature-name]/
 ## Naming Conventions
 
 ### Feature Names
+
 - Use **singular** feature names (e.g., `tag`, `bank`, `transaction`, not `tags`, `banks`, `transactions`)
 - Use lowercase with hyphens for multi-word features (e.g., `bank-account`)
 
 ### Database Tables
+
 - Use **singular** table names (e.g., `tag`, `bank`, `transaction`)
 - Follow the pattern: `[feature-name]` for main tables
-- Use descriptive names for junction/relation tables (e.g., `transactionTag`, `connectedBank`)
+- Use descriptive names for junction/relation tables (e.g., `tagToTransaction`, `connectedBank`)
 
 ### File Names
+
 - Use singular feature names in directory structure
 - Use descriptive file names that indicate their purpose
 
 ## Database Schema Patterns
 
 ### Schema Organization
+
 ```typescript
 // src/features/[feature]/server/db/schema.ts
 import { createId } from '@paralleldrive/cuid2';
@@ -105,6 +112,7 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ```
 
 ### Key Schema Patterns
+
 1. **Always use CUID2** for primary keys with `createId()`
 2. **Include userId** for user-scoped data
 3. **Use timestamp fields** for `createdAt` and `updatedAt` with timezone
@@ -117,9 +125,11 @@ export type New[FeatureName] = typeof [featureName].$inferInsert;
 ## Layered Architecture (Complex Features)
 
 ### Separation of Concerns
+
 For complex features with multiple entities, use a strict three-layer architecture:
 
 #### Queries Layer (Pure Data Access)
+
 ```typescript
 // src/features/[feature]/server/db/queries/entity-name.ts
 import { db } from '@/server/db';
@@ -153,18 +163,13 @@ export const create = async ({ data }: { data: NewEntityType }) =>
 ```
 
 #### Services Layer (Business Logic)
+
 ```typescript
 // src/features/[feature]/server/db/services/entity-name.ts
 import * as entityQueries from '../queries/entity-name';
 
 // Descriptive, business-focused function names
-export const createEntity = async ({
-    userId,
-    name,
-}: {
-    userId: string;
-    name: string;
-}) => {
+export const createEntity = async ({ userId, name }: { userId: string; name: string }) => {
     // Business validation
     if (name.length > 100) {
         throw new Error('Name must be 100 characters or less');
@@ -172,7 +177,7 @@ export const createEntity = async ({
 
     // Check for duplicates
     const existing = await entityQueries.getAll({ userId });
-    if (existing.some(e => e.name === name)) {
+    if (existing.some((e) => e.name === name)) {
         throw new Error('Entity with this name already exists');
     }
 
@@ -188,6 +193,7 @@ export const getUserEntities = async ({ userId }: { userId: string }) => {
 ```
 
 #### Endpoints Layer (HTTP Concerns)
+
 ```typescript
 // src/features/[feature]/server/endpoints/entity-name.ts
 import { getUser } from '@/lib/auth';
@@ -211,21 +217,26 @@ app.get('/', async (c) =>
 );
 
 app.post('/', zValidator('json', CreateEntitySchema), async (c) =>
-    withRoute(c, async () => {
-        const user = getUser(c);
-        const data = c.req.valid('json');
+    withRoute(
+        c,
+        async () => {
+            const user = getUser(c);
+            const data = c.req.valid('json');
 
-        return await entityServices.createEntity({
-            userId: user.id,
-            name: data.name,
-        });
-    }, 201)
+            return await entityServices.createEntity({
+                userId: user.id,
+                name: data.name,
+            });
+        },
+        201
+    )
 );
 
 export default app;
 ```
 
 ### Layer Responsibilities
+
 - **Queries**: Pure data access, no business logic, simple names (`create`, `getAll`, `getById`)
 - **Services**: Business logic, validation, orchestration, descriptive names (`createEntity`, `getUserEntities`)
 - **Endpoints**: HTTP handling, authentication, input validation, delegate to services
@@ -233,6 +244,7 @@ export default app;
 ## Database Queries Pattern
 
 ### Query Organization (Simple Features)
+
 ```typescript
 // src/features/[feature]/server/db/queries.ts
 import { db } from '@/server/db';
@@ -308,6 +320,7 @@ export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void>
 ```
 
 ### Query Patterns
+
 1. **Use withDbQuery wrapper** for all database operations for consistent error handling
 2. **Use destructured object parameters** instead of positional parameters
 3. **Always return typed results** using the exported types
@@ -320,6 +333,7 @@ export const delete[FeatureName] = async ({ id }: { id: string }): Promise<void>
 ## API Endpoints Pattern
 
 ### Endpoint Organization
+
 ```typescript
 // src/features/[feature]/server/endpoints.ts
 import { getUser } from '@/lib/auth';
@@ -400,6 +414,7 @@ export default app;
 ```
 
 ### Endpoint Patterns
+
 1. **Use Hono framework** for all API endpoints (never Next.js server actions)
 2. **Use withRoute wrapper** for consistent error handling
 3. **Use getUser(c) for authentication** - Never include userId in URL parameters
@@ -413,6 +428,7 @@ export default app;
 ## Client API Pattern
 
 ### API Client Organization
+
 ```typescript
 // src/features/[feature]/api.ts
 import { apiClient, createMutation, createQuery } from '@/lib/api';
@@ -472,6 +488,7 @@ export const use[FeatureName]Endpoints = {
 ```
 
 ### API Client Patterns
+
 1. **Define query keys** for consistent caching and invalidation
 2. **Use descriptive function names** that match the backend operations
 3. **Include JSDoc comments** for all exported functions
@@ -483,6 +500,7 @@ export const use[FeatureName]Endpoints = {
 ## Utility Functions Pattern
 
 ### Utility Organization
+
 ```typescript
 // src/features/[feature]/lib/utils.ts
 import { type [FeatureName] } from '../server/db/schema';
@@ -522,6 +540,7 @@ export const generate[FeatureName]Color = (): string => {
 ```
 
 ### Utility Patterns
+
 1. **Export type extensions** for complex operations
 2. **Include validation functions** for business rules
 3. **Provide data transformation utilities** for complex data structures
@@ -531,6 +550,7 @@ export const generate[FeatureName]Color = (): string => {
 ## Integration Patterns
 
 ### Feature Registration
+
 When creating a new feature, ensure it's properly integrated:
 
 1. **Add to API routes** in the main server configuration
@@ -539,6 +559,7 @@ When creating a new feature, ensure it's properly integrated:
 4. **Add to API client** type definitions
 
 ### Cross-Feature Dependencies
+
 - **Minimize cross-feature dependencies** where possible
 - **Use shared utilities** in `src/lib/` for common functionality
 - **Import types** from other features when necessary for relationships
@@ -561,6 +582,7 @@ When creating a new feature, ensure it's properly integrated:
 ## Examples
 
 Reference the `bank`, `tag`, and `label` features as complete examples of this architecture:
+
 - `src/features/bank/` - Complex feature with multiple related entities
 - `src/features/tag/` - Feature with hierarchical data and transaction relationships
 - `src/features/label/` - Feature with hierarchical structure and validation

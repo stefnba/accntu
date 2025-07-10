@@ -53,7 +53,7 @@ Only create **directories** when files become too complex (>200-300 lines):
 
 - Use **singular** table names (e.g., `tag`, `bank`, `transaction`)
 - Follow the pattern: `[feature-name]` for main tables
-- Use descriptive names for junction/relation tables (e.g., `transactionTag`, `connectedBank`)
+- Use descriptive names for junction/relation tables (e.g., `tagToTransaction`, `connectedBank`)
 
 ### File Names
 
