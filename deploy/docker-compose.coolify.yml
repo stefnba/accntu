@@ -1,0 +1,56 @@
+# =================================================================
+# Coolify Deployment Configuration for Accntu
+# Simplified for Coolify platform deployment
+# =================================================================
+
+services:
+  # =================================================================
+  # Main Application
+  # =================================================================
+  accntu-app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.prod
+    
+    # Health check endpoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Environment variables (managed by Coolify)
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_TELEMETRY_DISABLED=1
+    
+    # Expose port for Coolify's reverse proxy
+    expose:
+      - "3000"
+    
+    # Volume for persistent uploads
+    volumes:
+      - accntu_uploads:/app/uploads
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+# =================================================================
+# Volumes
+# =================================================================
+volumes:
+  accntu_uploads:
+    driver: local
