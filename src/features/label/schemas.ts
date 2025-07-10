@@ -45,12 +45,22 @@ export const labelServiceSchemas = {
     }),
     update: labelQuerySchemas.update,
     filter: labelQuerySchemas.filter,
+    reorder: z.object({
+        updates: z.array(
+            z.object({
+                id: z.string(),
+                sortOrder: z.number().int().min(0),
+                parentId: z.string().nullable().optional(),
+            })
+        ),
+    }),
 };
 export type TLabelService = {
     select: z.infer<typeof labelServiceSchemas.select>;
     insert: z.infer<typeof labelServiceSchemas.insert>;
     update: z.infer<typeof labelServiceSchemas.update>;
     filter: z.infer<typeof labelServiceSchemas.filter>;
+    reorder: z.infer<typeof labelServiceSchemas.reorder>;
 };
 
 /**

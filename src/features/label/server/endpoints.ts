@@ -96,6 +96,26 @@ const app = new Hono()
 
             return { success: true };
         });
-    });
+    })
+    /**
+     * PUT /labels/reorder - Bulk reorder labels for drag and drop operations
+     */
+    .put('/reorder', zValidator('json', labelServiceSchemas.reorder), async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
+            const { updates } = c.req.valid('json');
+
+            const updatedLabels = await labelServices.reorder({ 
+                updates, 
+                userId: user.id 
+            });
+
+            return { 
+                success: true, 
+                updatedLabels,
+                count: updatedLabels.length 
+            };
+        });
+    })
 
 export default app;

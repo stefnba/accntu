@@ -8,7 +8,7 @@ import type {
 } from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
-import { and, eq, ilike, isNull } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, max } from 'drizzle-orm';
 
 /**
  * Get all labels for a user with parent/child relationships
@@ -33,7 +33,7 @@ const getAll = async ({ userId, filters }: TQuerySelectUserRecords<TLabelQuery['
                         where: eq(label.isActive, true),
                     },
                 },
-                orderBy: [label.name],
+                orderBy: [asc(label.sortOrder), asc(label.name)],
             });
         },
     });
@@ -63,7 +63,7 @@ const getRootLabels = async (userId: string) =>
                         },
                     },
                 },
-                orderBy: [label.name],
+                orderBy: [asc(label.sortOrder), asc(label.name)],
             });
         },
     });
@@ -100,11 +100,27 @@ const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['inse
     withDbQuery({
         operation: 'Create new label',
         queryFn: async () => {
+            // Get next sortOrder for this parent level
+            const parentId = data.parentId ?? null;
+            const maxSortOrderResult = await db
+                .select({ maxSort: max(label.sortOrder) })
+                .from(label)
+                .where(
+                    and(
+                        eq(label.userId, userId),
+                        eq(label.isActive, true),
+                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
+                    )
+                );
+
+            const nextSortOrder = (maxSortOrderResult[0]?.maxSort ?? -1) + 1;
+
             const [labelRecord] = await db
                 .insert(label)
                 .values({
                     ...data,
                     userId,
+                    sortOrder: nextSortOrder,
                 })
                 .returning();
 
@@ -123,6 +139,8 @@ const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TLabelQuery['
     withDbQuery({
         operation: 'Update label',
         queryFn: async () => {
+            console.log('update', id, data, userId);
+
             const [labelRecord] = await db
                 .update(label)
                 .set({
@@ -159,6 +177,47 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
         },
     });
 
+/**
+ * Bulk update label orders and parents for drag and drop operations
+ * @param updates - Array of label updates with id, sortOrder, and optional parentId
+ * @param userId - The user ID that owns all labels
+ * @returns Promise resolving to array of updated label records
+ */
+const reorder = async ({
+    updates,
+    userId,
+}: {
+    updates: Array<{ id: string; sortOrder: number; parentId?: string | null }>;
+    userId: string;
+}) =>
+    withDbQuery({
+        operation: 'Bulk reorder labels',
+        queryFn: async () => {
+            const updatedLabels = [];
+
+            // Update each label individually to ensure proper validation
+            for (const { id, sortOrder, parentId } of updates) {
+                const [updatedLabel] = await db
+                    .update(label)
+                    .set({
+                        sortOrder,
+                        parentId: parentId ?? null,
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true))
+                    )
+                    .returning();
+
+                if (updatedLabel) {
+                    updatedLabels.push(updatedLabel);
+                }
+            }
+
+            return updatedLabels;
+        },
+    });
+
 export const labelQueries = {
     getAll,
     getRootLabels,
@@ -166,4 +225,5 @@ export const labelQueries = {
     create,
     update,
     remove,
+    reorder,
 };

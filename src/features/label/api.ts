@@ -42,4 +42,12 @@ export const useLabelEndpoints = {
      * Delete a label (soft delete)
      */
     delete: createMutation(apiClient.labels[':id'].$delete, LABEL_QUERY_KEYS.LABEL),
+
+    /**
+     * Reorder labels (drag and drop)
+     */
+    reorder: createMutation(apiClient.labels.reorder.$put, [
+        LABEL_QUERY_KEYS.LABELS,
+        LABEL_QUERY_KEYS.ROOT_LABELS,
+    ]),
 };
