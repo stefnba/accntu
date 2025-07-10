@@ -1,8 +1,8 @@
 'use client';
 
 import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
-import { IconPicker } from '@/components/selectors/icon-picker';
 import { Badge } from '@/components/ui/badge';
+import { IconPicker } from '@/features/label/components/icon-picker';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { useEffect, useState } from 'react';
 import { useLabelEndpoints } from '../api';
@@ -16,15 +16,18 @@ interface LabelFormProps {
 
 export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
     const isEditMode = Boolean(labelId);
-    
+
     const { data: rootLabels } = useLabelEndpoints.getRoots({});
-    const { data: labelData } = useLabelEndpoints.getById({ 
-        param: { id: labelId || '' } 
-    }, { enabled: isEditMode });
-    
+    const { data: labelData } = useLabelEndpoints.getById(
+        {
+            param: { id: labelId || '' },
+        },
+        { enabled: isEditMode }
+    );
+
     const createMutation = useLabelEndpoints.create();
     const updateMutation = useLabelEndpoints.update();
-    
+
     const [selectedColor, setSelectedColor] = useState('#6B7280');
     const [selectedIcon, setSelectedIcon] = useState<string>('');
 
@@ -68,12 +71,13 @@ export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
         }
     }, [labelData, parentId, isEditMode]);
 
-    const parentOptions = rootLabels
-        ?.filter((label) => !isEditMode || label.id !== labelId)
-        ?.map((label) => ({
-            value: label.id,
-            label: label.name,
-        })) || [];
+    const parentOptions =
+        rootLabels
+            ?.filter((label) => !isEditMode || label.id !== labelId)
+            ?.map((label) => ({
+                value: label.id,
+                label: label.name,
+            })) || [];
 
     return (
         <Form form={form}>
@@ -114,7 +118,7 @@ export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
                 <div className="space-y-2">
                     <span className="text-sm font-medium">Preview</span>
                     <div className="flex items-center gap-2">
-                        <Badge 
+                        <Badge
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
                             style={{ backgroundColor: selectedColor, color: 'white' }}
                         >
