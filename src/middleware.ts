@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
+    return NextResponse.next();
     const { pathname } = request.nextUrl;
 
     // Check if the path is a public route
