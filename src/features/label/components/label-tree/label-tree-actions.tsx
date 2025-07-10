@@ -1,106 +1,94 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useLabelModal } from '@/features/label/hooks';
-import { cn } from '@/lib/utils';
-import { Edit2, Eye, Plus, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useLabelEndpoints } from '../../api';
-import { useLabelTreeContext } from './provider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { memo, useCallback } from 'react';
+import { useLabelTreeData } from './provider';
 
-export interface LabelTreeItemActionsContentProps {
-    labelId: string;
+// Types
+export interface LabelTreeItemActionsProps {
+    children?: React.ReactNode;
 }
 
-export function LabelTreeItemActionsWrapper({ className }: React.ComponentProps<'div'>) {
-    const { currentLabel, showActions } = useLabelTreeContext();
+export interface LabelTreeItemActionProps {
+    children?: React.ReactNode;
+    onClick?: (labelId: string) => void;
+    tooltip?: string;
+    className?: string;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+}
 
-    if (!currentLabel || !showActions) return null;
-
+/**
+ * Label tree item actions component.
+ * Responsible for rendering the action container of a label tree item.
+ */
+export const LabelTreeItemActions = memo(function LabelTreeItemActions({
+    children,
+}: LabelTreeItemActionsProps) {
     return (
         <div
             data-slot="label-tree-item-actions"
-            className={cn(
-                'flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity',
-                className
-            )}
+            className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         >
-            <LabelTreeItemActionsContent labelId={currentLabel.id} />
+            {children}
         </div>
     );
-}
+});
 
-export function LabelTreeItemActionsContent({ labelId }: LabelTreeItemActionsContentProps) {
-    const { openCreateModal, openEditModal } = useLabelModal();
-    const router = useRouter();
-    const deleteMutation = useLabelEndpoints.delete();
+/**
+ * Individual action button component for label tree items.
+ * Provides a generic action button with optional tooltip.
+ */
+export const LabelTreeItemAction = memo(function LabelTreeItemAction({
+    children,
+    onClick,
+    tooltip,
+    className,
+    variant = 'ghost',
+}: LabelTreeItemActionProps) {
+    const { currentLabel } = useLabelTreeData();
 
-    const handleDelete = async () => {
-        if (confirm('Are you sure you want to delete this label?')) {
-            await deleteMutation.mutateAsync({ param: { id: labelId } });
-        }
-    };
+    if (!currentLabel) return null;
 
-    const handleEdit = () => {
-        openEditModal(labelId);
-    };
+    const handleClick = useCallback(() => {
+        onClick?.(currentLabel.id);
+    }, [currentLabel.id, onClick]);
 
-    const handleAddChild = () => {
-        openCreateModal(labelId);
-    };
-
-    const handleView = () => {
-        router.push(`/labels/${labelId}`);
-    };
-
-    return (
-        <>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={handleView} className="h-6 w-6 p-0">
-                        <Eye className="w-3 h-3" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>View label</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleAddChild}
-                        className="h-6 w-6 p-0"
-                    >
-                        <Plus className="w-3 h-3" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>Add child label</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={handleEdit} className="h-6 w-6 p-0">
-                        <Edit2 className="w-3 h-3" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>Edit label</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDelete}
-                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                    >
-                        <Trash2 className="w-3 h-3" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete label</TooltipContent>
-            </Tooltip>
-        </>
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
+            if ((e.key === 'Enter' || e.key === ' ') && onClick) {
+                e.preventDefault();
+                onClick(currentLabel.id);
+            }
+        },
+        [currentLabel.id, onClick]
     );
-}
 
-// Legacy export for backward compatibility
-export const LabelTreeItemActions = LabelTreeItemActionsContent;
+    const renderButton = () => {
+        return (
+            <Button
+                variant={variant}
+                size="sm"
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}
+                aria-label={tooltip || 'Action'}
+                className={`h-6 w-6 p-0 ${variant === 'ghost' && className?.includes('text-red') ? 'text-red-600 hover:text-red-700' : ''} ${className || ''}`}
+            >
+                {children}
+            </Button>
+        );
+    };
+
+    if (tooltip) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>{renderButton()}</TooltipTrigger>
+                    <TooltipContent>{tooltip}</TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+
+    return renderButton();
+});

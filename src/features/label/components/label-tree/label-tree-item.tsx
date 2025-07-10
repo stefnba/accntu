@@ -2,33 +2,43 @@
 
 import { Button } from '@/components/ui/button';
 import { LabelBadge } from '@/features/label/components/label-badge';
-import type { TLabelQuery } from '@/features/label/schemas';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-// import { LabelTreeItemActionsWrapper } from './label-tree-actions';
-import { LabelTreeProvider, useLabelTreeContext } from './provider';
+import { memo, useCallback, useMemo } from 'react';
+import { useLabelTreeContext, useLabelTreeData, useLabelTreeState } from './provider';
 
 export interface LabelTreeItemProps extends React.ComponentProps<'div'> {
-    label: TLabelQuery['select'] & { children?: TLabelQuery['select'][] };
-    level?: number;
+    children?: React.ReactNode;
 }
 
-export function LabelTreeItem({ label, level = 0, className, children }: LabelTreeItemProps) {
-    return (
-        <LabelTreeProvider label={label} level={level} showChildren showActions>
-            <div data-slot="label-tree-item" className={cn('space-y-1', className)}>
-                <LabelTreeItemContent />
-                {children}
-                <LabelTreeItemChildren />
-            </div>
-        </LabelTreeProvider>
-    );
-}
-
-export function LabelTreeItemContent({ className }: React.ComponentProps<'div'>) {
-    const { currentLabel, currentLevel } = useLabelTreeContext();
+/**
+ * Label tree item component.
+ * Responsible for rendering the container for the label tree item.
+ */
+export const LabelTreeItem = memo(function LabelTreeItem({
+    className,
+    children,
+}: LabelTreeItemProps) {
+    const { currentLabel } = useLabelTreeData();
 
     if (!currentLabel) return null;
+
+    return (
+        <div data-slot="label-tree-item" className={cn('space-y-1', className)}>
+            {children}
+        </div>
+    );
+});
+
+/**
+ * Label tree item content component.
+ * Provides the layout container for label content with hover effects.
+ */
+export const LabelTreeItemContent = memo(function LabelTreeItemContent({
+    className,
+    children,
+}: React.ComponentProps<'div'>) {
+    const { currentLevel } = useLabelTreeData();
 
     return (
         <div
@@ -39,30 +49,65 @@ export function LabelTreeItemContent({ className }: React.ComponentProps<'div'>)
                 className
             )}
         >
-            <LabelTreeItemButton />
-            <LabelTreeItemBadge />
-            <LabelTreeItemActionsWrapper />
+            {children}
         </div>
     );
-}
+});
 
-export function LabelTreeItemButton({ className }: React.ComponentProps<'button'>) {
-    const { currentLabel, toggleExpanded, isExpanded, showChildren } = useLabelTreeContext();
+/**
+ * Label tree item expand/collapse button.
+ * Handles the expand/collapse functionality for tree items with children.
+ */
+export const LabelTreeItemButton = memo(function LabelTreeItemButton({
+    className,
+}: React.ComponentProps<'button'>) {
+    const { currentLabel } = useLabelTreeData();
+    const { toggleExpandedLabelId, isExpandedLabelId } = useLabelTreeState();
 
     if (!currentLabel) return null;
 
-    const hasChildren = currentLabel.children && currentLabel.children.length > 0;
-    const expanded = isExpanded(currentLabel.id);
+    const hasChildren = useMemo(
+        () => Boolean(currentLabel.children && currentLabel.children.length > 0),
+        [currentLabel.children]
+    );
+
+    const expanded = isExpandedLabelId(currentLabel.id);
+
+    const handleClick = useCallback(() => {
+        toggleExpandedLabelId(currentLabel.id);
+    }, [currentLabel.id, toggleExpandedLabelId]);
+
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleExpandedLabelId(currentLabel.id);
+            }
+            if (e.key === 'ArrowRight' && !expanded && hasChildren) {
+                e.preventDefault();
+                toggleExpandedLabelId(currentLabel.id);
+            }
+            if (e.key === 'ArrowLeft' && expanded && hasChildren) {
+                e.preventDefault();
+                toggleExpandedLabelId(currentLabel.id);
+            }
+        },
+        [currentLabel.id, toggleExpandedLabelId, expanded, hasChildren]
+    );
 
     return (
         <Button
             data-slot="label-tree-item-button"
             variant="ghost"
             size="icon"
-            onClick={() => toggleExpanded(currentLabel.id)}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            aria-expanded={hasChildren ? expanded : undefined}
+            aria-label={hasChildren ? (expanded ? 'Collapse' : 'Expand') : undefined}
+            tabIndex={hasChildren ? 0 : -1}
             className={cn('flex-shrink-0 w-4 h-4 flex items-center justify-center', className)}
         >
-            {hasChildren && showChildren ? (
+            {hasChildren ? (
                 expanded ? (
                     <ChevronDown className="w-3 h-3" />
                 ) : (
@@ -73,12 +118,33 @@ export function LabelTreeItemButton({ className }: React.ComponentProps<'button'
             )}
         </Button>
     );
-}
+});
 
-export function LabelTreeItemBadge({ className }: React.ComponentProps<'div'>) {
-    const { currentLabel, onSelect } = useLabelTreeContext();
+/**
+ * Label tree item badge component.
+ * Displays the label badge with optional selection functionality.
+ */
+export const LabelTreeItemBadge = memo(function LabelTreeItemBadge({
+    className,
+}: React.ComponentProps<'div'>) {
+    const { currentLabel } = useLabelTreeData();
+    const { onSelect } = useLabelTreeContext();
 
     if (!currentLabel) return null;
+
+    const handleSelect = useCallback(() => {
+        onSelect?.(currentLabel.id);
+    }, [currentLabel.id, onSelect]);
+
+    const handleKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
+            if ((e.key === 'Enter' || e.key === ' ') && onSelect) {
+                e.preventDefault();
+                onSelect(currentLabel.id);
+            }
+        },
+        [currentLabel.id, onSelect]
+    );
 
     if (onSelect) {
         return (
@@ -86,7 +152,9 @@ export function LabelTreeItemBadge({ className }: React.ComponentProps<'div'>) {
                 data-slot="label-tree-item-badge"
                 variant="ghost"
                 size="sm"
-                onClick={() => onSelect(currentLabel.id)}
+                onClick={handleSelect}
+                onKeyDown={handleKeyDown}
+                aria-label={`Select ${currentLabel.name}`}
                 className={className}
             >
                 <LabelBadge label={currentLabel} />
@@ -99,25 +167,4 @@ export function LabelTreeItemBadge({ className }: React.ComponentProps<'div'>) {
             <LabelBadge label={currentLabel} />
         </div>
     );
-}
-
-export function LabelTreeItemChildren({ className }: React.ComponentProps<'div'>) {
-    const { currentLabel, isExpanded, showChildren, currentLevel } = useLabelTreeContext();
-
-    if (!currentLabel) return null;
-
-    const hasChildren = currentLabel.children && currentLabel.children.length > 0;
-    const expanded = isExpanded(currentLabel.id);
-
-    if (!hasChildren || !expanded || !showChildren) {
-        return null;
-    }
-
-    return (
-        <div data-slot="label-tree-item-children" className={cn('space-y-1', className)}>
-            {currentLabel.children?.map((child) => (
-                <LabelTreeItem key={child.id} label={child} level={currentLevel + 1} />
-            ))}
-        </div>
-    );
-}
+});
