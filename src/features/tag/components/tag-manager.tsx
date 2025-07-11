@@ -11,7 +11,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -21,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTagEndpoints } from '@/features/tag/api';
+import { TagCard, TagCardSkeleton } from '@/features/tag/components/tag-card';
 import { TagDetailsView } from '@/features/tag/components/tag-details-view';
 import { TagForm } from '@/features/tag/components/tag-form';
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,7 +46,7 @@ export function TagManager() {
     const [editingTagId, setEditingTagId] = useState<string>();
     const [deleteTagId, setDeleteTagId] = useState<string>();
 
-    const { data: tags = [] } = useTagEndpoints.getAll({});
+    const { data: tags = [], isLoading } = useTagEndpoints.getAll({});
     const deleteMutation = useTagEndpoints.delete();
 
     const sortedAndFilteredTags = useMemo(() => {
@@ -88,6 +88,16 @@ export function TagManager() {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <TagCardSkeleton />
+                <TagCardSkeleton />
+                <TagCardSkeleton />
+            </div>
+        );
+    }
+
     const handleEdit = (tagId: string) => {
         setEditingTagId(tagId);
         setIsFormOpen(true);
@@ -127,21 +137,7 @@ export function TagManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {sortedAndFilteredTags.map((tag) => (
-                    <Card
-                        key={tag.id}
-                        className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-                        style={{
-                            borderLeft: `4px solid ${tag.color}`,
-                        }}
-                        onClick={() => setSelectedTagId(tag.id)}
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="font-medium">{tag.name}</span>
-                            <span className="text-sm text-muted-foreground">
-                                {tag.transactionCount || 0} transactions
-                            </span>
-                        </div>
-                    </Card>
+                    <TagCard key={tag.id} tag={tag} onClick={() => setSelectedTagId(tag.id)} />
                 ))}
 
                 {sortedAndFilteredTags.length === 0 && (
