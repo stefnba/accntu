@@ -1,6 +1,7 @@
 import { connectedBankAccount } from '@/features/bank/server/db/schemas';
-import { bucketToTransaction } from '@/features/bucket/server/db/schemas';
+import { bucketToTransaction } from '@/features/bucket/server/db/schema';
 import { label } from '@/features/label/server/db/schema';
+import { participantToTransaction } from '@/features/participant/server/db/schema';
 import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
@@ -107,7 +108,7 @@ export const transaction = pgTable(
 
 // Relations
 
-export const transactionRelations = relations(transaction, ({ one }) => ({
+export const transactionRelations = relations(transaction, ({ one, many }) => ({
     account: one(connectedBankAccount, {
         fields: [transaction.connectedBankAccountId],
         references: [connectedBankAccount.id],
@@ -124,6 +125,7 @@ export const transactionRelations = relations(transaction, ({ one }) => ({
         fields: [transaction.labelId],
         references: [label.id],
     }),
+    participants: many(participantToTransaction),
 }));
 
 // ===============================

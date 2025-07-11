@@ -7,7 +7,9 @@ import { Hono } from 'hono';
 import adminEndpoints from '@/features/admin/server/endpoints';
 import bankEndpoints from '@/features/bank/server/endpoints';
 import bucketEndpoints from '@/features/bucket/server/endpoints';
+import budgetEndpoints from '@/features/budget/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
+import participantEndpoints from '@/features/participant/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import transactionEndpoints from '@/features/transaction/server/endpoints';
@@ -33,7 +35,9 @@ export const appEndpoints = {
     status: statusEndpoints,
     admin: adminEndpoints,
     banks: bankEndpoints,
+    budgets: budgetEndpoints,
     labels: labelEndpoints,
+    participants: participantEndpoints,
     tags: tagEndpoints,
     transactions: transactionEndpoints,
     transactionImport: transactionImportEndpoints,

@@ -1,6 +1,7 @@
 import { type TApiCredentials } from '@/features/bank/schemas/connected-bank';
 import { type TTransformConfig } from '@/features/bank/schemas/global-bank-account';
 import { transactionImport } from '@/features/transaction-import/server/db/schemas';
+import { participantToConnectedBankAccount } from '@/features/participant/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
@@ -172,6 +173,7 @@ export const connectedBankAccountRelations = relations(connectedBankAccount, ({ 
         references: [globalBankAccount.id],
     }),
     transactionImports: many(transactionImport),
+    participants: many(participantToConnectedBankAccount),
 }));
 
 // ===============================
