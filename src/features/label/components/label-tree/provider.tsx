@@ -72,12 +72,12 @@ export const useLabelTreeContext = () => {
 };
 
 // Provider Component
-export function LabelTreeProvider({
+export const LabelTreeItemProvider = ({
     children,
     label,
     level = 0,
     onSelect,
-}: LabelTreeProviderProps) {
+}: LabelTreeProviderProps) => {
     const [expandedLabelIds, setExpandedLabelIds] = useState<Set<string>>(new Set());
 
     const toggleExpandedLabelId = useCallback((labelId: string) => {
@@ -131,4 +131,4 @@ export function LabelTreeProvider({
             </LabelTreeConfigContext.Provider>
         </LabelTreeStateContext.Provider>
     );
-}
+};

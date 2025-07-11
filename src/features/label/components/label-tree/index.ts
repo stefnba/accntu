@@ -26,7 +26,7 @@ export type { LabelTreeItemActionProps, LabelTreeItemActionsProps } from './labe
 
 // Provider and context
 export {
-    LabelTreeProvider,
+    LabelTreeItemProvider,
     useLabelTreeConfig,
     useLabelTreeContext,
     useLabelTreeData,
@@ -38,3 +38,10 @@ export type {
     LabelTreeProviderProps,
     LabelTreeState,
 } from './provider';
+
+// Sortable components
+export { LabelTreeSortable } from './label-tree';
+// export type { LabelTreeSortableProps } from './label-tree';
+
+export { LabelTreeItemSortableWrapper } from './item-sortable-wrapper';
+export type { LabelTreeItemSortableWrapperProps } from './item-sortable-wrapper';
