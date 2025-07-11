@@ -2,7 +2,7 @@ import {
     insertBucketSchema,
     selectBucketSchema,
     updateBucketSchema,
-} from '@/features/bucket/server/db/schemas';
+} from '@/features/bucket/server/db/schema';
 import { z } from 'zod';
 
 // ====================
@@ -41,7 +41,9 @@ export const bucketServiceSchemas = {
     create: bucketQuerySchemas.insert,
     update: bucketQuerySchemas.update,
 };
+
 export type TBucketService = {
     create: z.infer<typeof bucketServiceSchemas.create>;
     update: z.infer<typeof bucketServiceSchemas.update>;
+    select: z.infer<typeof bucketQuerySchemas.select>;
 };

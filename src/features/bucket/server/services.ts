@@ -1,5 +1,5 @@
 import { TBucketQuery } from '@/features/bucket/schemas';
-import { bucketQueries } from '@/features/bucket/server/db/queries/bucket';
+import { bucketQueries } from '@/features/bucket/server/db/queries';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,

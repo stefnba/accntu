@@ -1,8 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBucketEndpoints, useBucketParticipantEndpoints } from '@/features/bucket/api';
-import { ParticipantManager } from '../participant/participant-manager';
+import { useBucketEndpoints } from '@/features/bucket/api';
 
 interface BucketDetailsViewProps {
     bucketId: string;
@@ -10,9 +9,6 @@ interface BucketDetailsViewProps {
 
 export function BucketDetailsView({ bucketId }: BucketDetailsViewProps) {
     const { data: bucket } = useBucketEndpoints.getById({ param: { id: bucketId } });
-    const { data: participants } = useBucketParticipantEndpoints.getAllForBucket({
-        param: { bucketId },
-    });
 
     if (!bucket) {
         return <div>Bucket not found</div>;
@@ -27,9 +23,28 @@ export function BucketDetailsView({ bucketId }: BucketDetailsViewProps) {
                         {bucket.type} - {bucket.status}
                     </p>
                 </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Total Transactions</p>
+                            <p className="text-2xl font-bold">{bucket.totalTransactions}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Total Amount</p>
+                            <p className="text-2xl font-bold">{bucket.totalAmount}</p>
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
 
-            <ParticipantManager bucketId={bucketId} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Participants</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>Participants for this bucket are managed in the participants section.</p>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>

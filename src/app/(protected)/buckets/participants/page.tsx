@@ -1,7 +1,7 @@
 'use client';
 
 import { MainContent } from '@/components/layout/main';
-import { ParticipantManager } from '@/features/bucket/components/participant';
+import { ParticipantManager } from '@/features/participant/components';
 
 export default function ParticipantsPage() {
     return (

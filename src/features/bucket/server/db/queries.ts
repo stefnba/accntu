@@ -1,8 +1,7 @@
 import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
 
-import { bucketQuerySchemas } from '@/features/bucket/schemas';
-import { bucket } from '@/features/bucket/server/db/schemas';
+import { TBucketQuery } from '@/features/bucket/schemas';
+import { bucket } from '@/features/bucket/server/db/schema';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -41,7 +40,7 @@ const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
  */
 const getAll = async ({
     userId,
-}: TQuerySelectUserRecords): Promise<z.infer<typeof bucketQuerySchemas.select>[]> =>
+}: TQuerySelectUserRecords): Promise<TBucketQuery['select'][]> =>
     withDbQuery({
         queryFn: () =>
             db
@@ -60,7 +59,7 @@ const getAll = async ({
 const create = async ({
     data,
     userId,
-}: TQueryInsertUserRecord<z.infer<typeof bucketQuerySchemas.insert>>) =>
+}: TQueryInsertUserRecord<TBucketQuery['insert']>) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
@@ -83,7 +82,7 @@ const update = async ({
     id,
     data,
     userId,
-}: TQueryUpdateUserRecord<z.infer<typeof bucketQuerySchemas.update>>) =>
+}: TQueryUpdateUserRecord<TBucketQuery['update']>) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db

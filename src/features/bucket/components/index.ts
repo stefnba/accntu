@@ -1,5 +1,1 @@
-// Bucket components
-export * from './bucket';
-
-// Participant components  
-export * from './participant';
+export { BucketManager } from '@/features/bucket/components/bucket-manager';

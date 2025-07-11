@@ -2,7 +2,6 @@ import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 
 /**
  * Hook to manage the add/update bucket modal state
- *
  */
 export const useCreateUpdateBucketModal = () => {
     const [modalIsOpen, setModalOpen] = useQueryState('m', parseAsBoolean.withDefault(false));
@@ -15,6 +14,7 @@ export const useCreateUpdateBucketModal = () => {
     const closeModal = () => {
         setModalOpen(false);
     };
+    
     return {
         // Modal state
         modalIsOpen,

@@ -2,10 +2,10 @@
 
 import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useBucketEndpoints } from '@/features/bucket/api/bucket';
-import { useCreateUpdateBucketModal } from '@/features/bucket/hooks/bucket';
-import { bucketServiceSchemas } from '@/features/bucket/schemas/bucket';
-import { bucketStatusEnum, bucketTypeEnum } from '@/features/bucket/server/db/schemas';
+import { useBucketEndpoints } from '@/features/bucket/api';
+import { useCreateUpdateBucketModal } from '@/features/bucket/hooks';
+import { bucketServiceSchemas } from '@/features/bucket/schemas';
+import { bucketStatusEnum, bucketTypeEnum } from '@/features/bucket/server/db/schema';
 import toast from 'react-hot-toast';
 
 export function BucketCreateUpdateModal() {

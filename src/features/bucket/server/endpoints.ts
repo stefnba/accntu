@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
 import { bucketServiceSchemas } from '@/features/bucket/schemas';
-import { bucketServices } from '@/features/bucket/server/services/bucket';
+import { bucketServices } from '@/features/bucket/server/services';
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
