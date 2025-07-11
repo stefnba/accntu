@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { BaseError } from '../error/base';
 import { errorFactory } from '../error/factory';
+import { logDevError, shouldUseDevFormatting } from '../error/dev-formatter';
 
 /**
  * Type-safe database query wrapper with validation and error handling
@@ -172,27 +173,34 @@ export async function withDbQuery<
             throw error;
         }
 
+        let dbError: BaseError;
+
         // Check if it's a database error (PostgreSQL error codes start with numbers)
         if (error instanceof Error && 'code' in error && /^\d/.test(String(error.code))) {
-            throw errorFactory.createDatabaseError({
+            dbError = errorFactory.createDatabaseError({
                 message: `Database error in '${operation}': ${error.message}`,
                 code: 'OPERATION_FAILED',
                 cause: error,
             });
-        }
-
-        if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
-            throw errorFactory.createDatabaseError({
+        } else if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
+            dbError = errorFactory.createDatabaseError({
                 message: `Database connection refused in '${operation}'`,
                 code: 'CONNECTION_ERROR',
                 cause: error,
             });
+        } else {
+            dbError = errorFactory.createDatabaseError({
+                message: `Unknown error in '${operation}'`,
+                code: 'OPERATION_FAILED',
+                cause: error instanceof Error ? error : undefined,
+            });
         }
 
-        throw errorFactory.createDatabaseError({
-            message: `Unknown error in '${operation}'`,
-            code: 'OPERATION_FAILED',
-            cause: error instanceof Error ? error : undefined,
-        });
+        // Log immediately in development for better debugging
+        if (shouldUseDevFormatting()) {
+            logDevError(dbError);
+        }
+
+        throw dbError;
     }
 }

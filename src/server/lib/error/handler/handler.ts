@@ -1,6 +1,7 @@
+import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';
 import { TErrorRequestData } from '@/server/lib/error/types';
+import { convertToAppError } from '@/server/lib/error/utils';
 import { Context } from 'hono';
-import { convertToAppError } from '../utils';
 
 /**
  * Global error handler for Hono applications
@@ -27,8 +28,6 @@ export const handleGlobalError = (error: unknown, c: Context) => {
     const userId = c.get('user')?.id;
     const { error: appError } = convertToAppError(error);
 
-    console.log('appError', error, appError);
-
     const requestData: TErrorRequestData = {
         method: c.req.method,
         url: c.req.url,
@@ -36,10 +35,15 @@ export const handleGlobalError = (error: unknown, c: Context) => {
         userId,
     };
 
-    appError.logError(requestData, {
-        includeChain: true,
-        includeStack: appError.statusCode >= 500,
-    });
+    // Use simplified logging in development, full logging in production
+    if (shouldUseDevFormatting()) {
+        logDevError(appError, requestData);
+    } else {
+        appError.logError(requestData, {
+            includeChain: true,
+            includeStack: appError.statusCode >= 500,
+        });
+    }
 
     return c.json(appError.toResponse(), appError.statusCode);
 };
