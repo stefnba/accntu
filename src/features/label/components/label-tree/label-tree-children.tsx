@@ -36,7 +36,7 @@ export const LabelTreeChildren = memo(function LabelTreeChildren({
     }
 
     return (
-        <div className={cn('space-y-1', currentLevel > 0 && 'ml-6', className)}>
+        <div className={cn('ml-14 space-y-1 border-l-1 w-full', className)}>
             {childLabels.map((child) => (
                 <LabelTreeProvider key={child.id} label={child} level={currentLevel + 1}>
                     {children}

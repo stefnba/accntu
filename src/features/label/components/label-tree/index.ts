@@ -11,6 +11,9 @@ export {
     LabelTreeItemBadge,
     LabelTreeItemButton,
     LabelTreeItemContent,
+    LabelTreeItemHeader,
+    LabelTreeItemIcon,
+    LabelTreeItemTitle,
 } from './label-tree-item';
 export type { LabelTreeItemProps } from './label-tree-item';
 

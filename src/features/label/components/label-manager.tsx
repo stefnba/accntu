@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { Edit2, Eye, Plus, Trash2 } from 'lucide-react';
@@ -17,6 +16,7 @@ import {
     LabelTreeItemActions,
     LabelTreeItemButton,
     LabelTreeItemContent,
+    LabelTreeItemHeader,
     LabelTreeItemIcon,
     LabelTreeItemTitle,
     useLabelTreeData,
@@ -67,85 +67,60 @@ export const LabelManager = () => {
 
         if (!currentLabel) return null;
 
-        const labelColor = currentLabel.color || 'gray';
+        const labelColor = currentLabel.color || '#6b7280';
 
         return (
             <LabelTreeItem>
+                <LabelTreeItemButton />
                 <LabelTreeItemContent>
-                    <LabelTreeItemButton
-                        className="flex-shrink-0 font-medium transition-colors"
-                        style={{
-                            color: `color-mix(in srgb, ${labelColor} 80%, black)`,
-                        }}
-                    />
                     <div
-                        className="flex items-center justify-between px-6 py-2 bg-white border-l-6 border-t border-r border-b border-gray-200 rounded-lg transition-all duration-200 group w-full shadow-sm"
-                        style={{
-                            borderLeftColor: labelColor,
-                            // background: `linear-gradient(to right, white, color-mix(in srgb, ${labelColor} 5%, transparent))`,
-                        }}
+                        className="flex items-center justify-between px-5 py-3 bg-white border border-gray-200 rounded-lg  w-full shadow-sm hover:shadow-md"
+                        style={
+                            {
+                                '--label-color': labelColor,
+                            } as React.CSSProperties
+                        }
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = `linear-gradient(to right, color-mix(in srgb, ${labelColor} 8%, white), color-mix(in srgb, ${labelColor} 15%, white))`;
-                            e.currentTarget.style.borderColor = `color-mix(in srgb, ${labelColor} 70%, transparent)`;
+                            e.currentTarget.style.borderLeftWidth = '4px';
+                            e.currentTarget.style.borderLeftColor = labelColor;
+                            e.currentTarget.style.background = `linear-gradient(to right, color-mix(in srgb, ${labelColor} 5%, white), color-mix(in srgb, ${labelColor} 10%, white))`;
+                            e.currentTarget.style.borderTopLeftRadius = '0';
+                            e.currentTarget.style.borderBottomLeftRadius = '0';
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.background = `white`;
-                            e.currentTarget.style.borderColor = '';
+                            e.currentTarget.style.borderLeftWidth = '1px';
+                            e.currentTarget.style.borderLeftColor = '';
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.borderTopLeftRadius = '';
+                            e.currentTarget.style.borderBottomLeftRadius = '';
                         }}
                     >
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <LabelTreeItemIcon />
-                                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                    <LabelTreeItemTitle className="text-gray-900 font-semibold text-base group-hover:opacity-90 transition-all truncate" />
-                                </div>
-                            </div>
-                        </div>
-                        <LabelTreeItemActions className="flex space-x-1 flex-shrink-0 ml-4">
-                            <LabelTreeItemAction
-                                onClick={handleView}
-                                tooltip="View label"
-                                className="w-8 h-8 p-2 bg-white text hover:bg-gray-100 rounded-full transition-colors border border-gray-200"
-                                style={
-                                    {
-                                        borderColor: labelColor,
-                                    } as React.CSSProperties
-                                }
-                            >
-                                <Eye
-                                    className="w-3 h-3"
-                                    // style={{
-                                    //     color: labelColor,
-                                    // }}
-                                />
+                        <LabelTreeItemHeader>
+                            <LabelTreeItemIcon />
+                            <LabelTreeItemTitle />
+                        </LabelTreeItemHeader>
+                        <LabelTreeItemActions>
+                            <LabelTreeItemAction onClick={handleView} tooltip="View label">
+                                <Eye className="w-3 h-3" />
                             </LabelTreeItemAction>
-                            <LabelTreeItemAction
-                                onClick={handleAddChild}
-                                tooltip="Add child label"
-                                className="w-8 h-8 p-2 bg-green-100 hover:bg-green-200 rounded-full transition-colors border border-green-200"
-                            >
-                                <Plus className="w-3 h-3 text-green-700" />
+                            <LabelTreeItemAction onClick={handleAddChild} tooltip="Add child label">
+                                <Plus className="w-3 h-3" />
                             </LabelTreeItemAction>
-                            <LabelTreeItemAction
-                                onClick={handleEdit}
-                                tooltip="Edit label"
-                                className="w-8 h-8 p-2 bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-200"
-                            >
-                                <Edit2 className="w-3 h-3 text-amber-700" />
+                            <LabelTreeItemAction onClick={handleEdit} tooltip="Edit label">
+                                <Edit2 className="w-3 h-3" />
                             </LabelTreeItemAction>
                             <LabelTreeItemAction
                                 onClick={handleDelete}
                                 tooltip="Delete label"
-                                className="w-8 h-8 p-2 bg-red-100 hover:bg-red-200 rounded-full transition-colors border border-red-200"
+                                className="w-8 h-8 p-2 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200 hover:border-red-300 hover:scale-105"
                             >
-                                <Trash2 className="w-3 h-3 text-red-700" />
+                                <Trash2 className="w-3 h-3 text-red-600" />
                             </LabelTreeItemAction>
                         </LabelTreeItemActions>
                     </div>
                 </LabelTreeItemContent>
                 <LabelTreeChildren
-                    className="ml-8 mt-2 pl-4 border-l-2"
-                    style={{ borderLeftColor: `color-mix(in srgb, ${labelColor} 30%, gray)` }}
+                    style={{ borderLeftColor: `color-mix(in srgb, ${labelColor} 40%, #e5e7eb)` }}
                 >
                     <ModernEnterpriseVariantA />
                 </LabelTreeChildren>
@@ -161,101 +136,72 @@ export const LabelManager = () => {
 
         if (!currentLabel) return null;
 
-        const labelColor = currentLabel.color || 'gray';
+        const labelColor = currentLabel.color || '#6b7280';
 
         return (
             <LabelTreeItem>
+                <LabelTreeItemButton />
                 <LabelTreeItemContent>
-                    <div
-                        className="flex items-center justify-between p-3 bg-white border border-t-4 border-gray-200 rounded-sm transition-all duration-200 group w-full relative overflow-hidden"
-                        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-                            e.currentTarget.style.backgroundColor = `color-mix(in srgb, ${labelColor} 5%, white)`;
-                            e.currentTarget.style.borderColor = `color-mix(in srgb, ${labelColor} 40%, gray)`;
-                        }}
-                        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-                            e.currentTarget.style.backgroundColor = 'white';
-                            // e.currentTarget.style.borderColor = '';
-                        }}
-                        style={{
-                            borderTopColor: labelColor,
-                        }}
-                    >
-                        {/* <div
-                            className="absolute top-0 left-0 w-full h-1"
-                            style={{
-                                background: labelColor,
-                            }}
-                        ></div> */}
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <LabelTreeItemButton
-                                className="text-gray-600 flex-shrink-0 transition-colors"
-                                onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                                    e.currentTarget.style.color = `color-mix(in srgb, ${labelColor} 70%, black)`;
-                                }}
-                                onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                                    e.currentTarget.style.color = '';
+                    <div className="flex items-center w-full group">
+                        <div className="w-full">
+                            <div
+                                className="h-1.5 w-full"
+                                style={{
+                                    backgroundColor: labelColor,
                                 }}
                             />
-                            <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <LabelTreeItemIcon />
-                                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <LabelTreeItemTitle
-                                        className="text-gray-900 font-semibold text-base transition-colors truncate"
-                                        onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                                            e.currentTarget.style.color = `color-mix(in srgb, ${labelColor} 60%, black)`;
-                                        }}
-                                        onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                                            e.currentTarget.style.color = '';
-                                        }}
-                                    />
+                            <div
+                                className="bg-white border-x border-b border-gray-200 rounded-b-md transition-all duration-300 ease-out w-full relative hover:shadow-lg"
+                                onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                                    e.currentTarget.style.backgroundColor = `color-mix(in srgb, ${labelColor} 4%, white)`;
+                                    e.currentTarget.style.borderColor = `color-mix(in srgb, ${labelColor} 30%, #d1d5db)`;
+                                    e.currentTarget.style.boxShadow = `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px color-mix(in srgb, ${labelColor} 20%, transparent)`;
+                                }}
+                                onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                                    e.currentTarget.style.backgroundColor = 'white';
+                                    e.currentTarget.style.borderColor = '';
+                                    e.currentTarget.style.boxShadow = '';
+                                }}
+                            >
+                                <div className="flex items-center justify-between px-4 py-3">
+                                    <LabelTreeItemHeader>
+                                        <LabelTreeItemIcon />
+                                        <LabelTreeItemTitle />
+                                    </LabelTreeItemHeader>
+                                    <LabelTreeItemActions className="flex space-x-1 flex-shrink-0 ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                        <LabelTreeItemAction
+                                            onClick={handleView}
+                                            tooltip="View label"
+                                        >
+                                            <Eye className="w-3 h-3" />
+                                        </LabelTreeItemAction>
+                                        <LabelTreeItemAction
+                                            onClick={handleAddChild}
+                                            tooltip="Add child label"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </LabelTreeItemAction>
+                                        <LabelTreeItemAction
+                                            onClick={handleEdit}
+                                            tooltip="Edit label"
+                                        >
+                                            <Edit2 className="w-3 h-3" />
+                                        </LabelTreeItemAction>
+                                        <LabelTreeItemAction
+                                            onClick={handleDelete}
+                                            tooltip="Delete label"
+                                            className="w-8 h-8 p-2 bg-red-50 hover:bg-red-100 rounded-full transition-all border border-red-200 hover:border-red-300 hover:scale-105"
+                                        >
+                                            <Trash2 className="w-3 h-3 text-red-600" />
+                                        </LabelTreeItemAction>
+                                    </LabelTreeItemActions>
                                 </div>
                             </div>
                         </div>
-                        <LabelTreeItemActions className="flex space-x-1 flex-shrink-0 ml-4">
-                            <LabelTreeItemAction
-                                onClick={handleView}
-                                tooltip="View label"
-                                className="w-8 h-8 p-2 rounded-full transition-colors border"
-                                style={{
-                                    backgroundColor:
-                                        'color-mix(in srgb, var(--label-color) 8%, white)',
-                                    borderColor: 'color-mix(in srgb, var(--label-color) 20%, gray)',
-                                }}
-                            >
-                                <Eye
-                                    className="w-3 h-3"
-                                    style={{
-                                        color: 'color-mix(in srgb, var(--label-color) 70%, black)',
-                                    }}
-                                />
-                            </LabelTreeItemAction>
-                            <LabelTreeItemAction
-                                onClick={handleAddChild}
-                                tooltip="Add child label"
-                                className="w-8 h-8 p-2 bg-green-100 hover:bg-green-200 rounded-full transition-colors border border-green-200"
-                            >
-                                <Plus className="w-3 h-3 text-green-700" />
-                            </LabelTreeItemAction>
-                            <LabelTreeItemAction
-                                onClick={handleEdit}
-                                tooltip="Edit label"
-                                className="w-8 h-8 p-2 bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-200"
-                            >
-                                <Edit2 className="w-3 h-3 text-amber-700" />
-                            </LabelTreeItemAction>
-                            <LabelTreeItemAction
-                                onClick={handleDelete}
-                                tooltip="Delete label"
-                                className="w-8 h-8 p-2 bg-red-100 hover:bg-red-200 rounded-full transition-colors border border-red-200"
-                            >
-                                <Trash2 className="w-3 h-3 text-red-700" />
-                            </LabelTreeItemAction>
-                        </LabelTreeItemActions>
                     </div>
                 </LabelTreeItemContent>
                 <LabelTreeChildren
-                    className="ml-8 mt-2 pl-4 border-l-2"
-                    style={{ borderLeftColor: 'color-mix(in srgb, var(--label-color) 30%, gray)' }}
+                    style={{ borderLeftColor: `color-mix(in srgb, ${labelColor} 30%, #d1d5db)` }}
                 >
                     <ModernEnterpriseVariantA2 />
                 </LabelTreeChildren>
@@ -265,39 +211,24 @@ export const LabelManager = () => {
 
     return (
         <div className="space-y-8">
-            {/* Design 7A: Modern Enterprise - Color-Integrated Title */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-gray-900">
-                        Design 7A: Modern Enterprise - Color-Integrated Title
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">
-                        Dynamic label colors from data context integrated throughout: customized
-                        borders, hover backgrounds, text colors, and accent elements that adapt to
-                        each label's unique color
-                    </p>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">
-                                Variation 1: Gradient Background with Left Border
-                            </h4>
-                            <LabelTree className="space-y-2 w-full">
-                                <ModernEnterpriseVariantA />
-                            </LabelTree>
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">
-                                Variation 2: Subtle Color Accent
-                            </h4>
-                            <LabelTree className="space-y-2 w-full">
-                                <ModernEnterpriseVariantA2 />
-                            </LabelTree>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <LabelTree className="space-y-2 w-full">
+                <ModernEnterpriseVariantA />
+            </LabelTree>
+
+            <LabelTree className="space-y-2 w-full">
+                <ModernEnterpriseVariantA2 />
+            </LabelTree>
+
+            {/* <div>
+                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
+                Design 7A: Modern Enterprise - Color-Integrated Title
+            </div>
+            <div>
+                <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
+                <h4 className="text-base font-semibold text-gray-800">
+                    Variation 2: Gradient Background with Left Border
+                </h4>
+            </div> */}
 
             <ResponsiveModal open={modalOpen} onOpenChange={closeModal}>
                 <DialogHeader>

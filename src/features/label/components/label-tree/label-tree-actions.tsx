@@ -2,18 +2,21 @@
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { memo, useCallback } from 'react';
 import { useLabelTreeData } from './provider';
 
 // Types
 export interface LabelTreeItemActionsProps {
     children?: React.ReactNode;
+    className?: string;
 }
 
 export interface LabelTreeItemActionProps {
     children?: React.ReactNode;
     onClick?: (labelId: string) => void;
     tooltip?: string;
+    style?: React.CSSProperties;
     className?: string;
     variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 }
@@ -24,11 +27,15 @@ export interface LabelTreeItemActionProps {
  */
 export const LabelTreeItemActions = memo(function LabelTreeItemActions({
     children,
+    className,
 }: LabelTreeItemActionsProps) {
     return (
         <div
             data-slot="label-tree-item-actions"
-            className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={cn(
+                'flex space-x-1 flex-shrink-0 ml-4 duration-300 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity',
+                className
+            )}
         >
             {children}
         </div>
@@ -44,6 +51,7 @@ export const LabelTreeItemAction = memo(function LabelTreeItemAction({
     onClick,
     tooltip,
     className,
+    style,
     variant = 'ghost',
 }: LabelTreeItemActionProps) {
     const { currentLabel } = useLabelTreeData();
@@ -67,12 +75,13 @@ export const LabelTreeItemAction = memo(function LabelTreeItemAction({
     const renderButton = () => {
         return (
             <Button
+                style={style}
                 variant={variant}
                 size="sm"
                 onClick={handleClick}
                 onKeyDown={handleKeyDown}
                 aria-label={tooltip || 'Action'}
-                className={`h-6 w-6 p-0 ${variant === 'ghost' && className?.includes('text-red') ? 'text-red-600 hover:text-red-700' : ''} ${className || ''}`}
+                className={` w-8 h-8 p-2 rounded-full transition-all border hover:scale-105  bg-white ${variant === 'ghost' && className?.includes('text-red') ? 'text-red-600 hover:text-red-700' : ''} ${className || ''}`}
             >
                 {children}
             </Button>

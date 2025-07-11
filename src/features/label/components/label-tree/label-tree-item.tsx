@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { LabelBadge } from '@/features/label/components/label-badge';
 import { cn } from '@/lib/utils';
+import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { memo, useCallback, useMemo } from 'react';
 import { useLabelTreeContext, useLabelTreeData, useLabelTreeState } from './provider';
@@ -19,12 +20,30 @@ export const LabelTreeItem = memo(function LabelTreeItem({
     className,
     children,
 }: LabelTreeItemProps) {
-    const { currentLabel } = useLabelTreeData();
+    const { currentLabel, currentLevel } = useLabelTreeData();
 
     if (!currentLabel) return null;
 
     return (
-        <div data-slot="label-tree-item" className={cn('space-y-1', className)}>
+        <div
+            data-slot="label-tree-item"
+            className={cn(
+                'space-y-1 flex flex-wrap items-center',
+                currentLevel > 0 && 'ml-4',
+                className
+            )}
+        >
+            {children}
+        </div>
+    );
+});
+
+export const LabelTreeItemHeader = memo(function LabelTreeItemHeader({
+    className,
+    children,
+}: React.ComponentProps<'div'>) {
+    return (
+        <div className={cn('flex items-center space-x-3 flex-1 min-w-0', className)}>
             {children}
         </div>
     );
@@ -38,14 +57,11 @@ export const LabelTreeItemContent = memo(function LabelTreeItemContent({
     className,
     children,
 }: React.ComponentProps<'div'>) {
-    const { currentLevel } = useLabelTreeData();
-
     return (
         <div
             data-slot="label-tree-item-content"
             className={cn(
-                'flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 group',
-                currentLevel > 0 && 'ml-6',
+                'flex flex-1 min-w-0 items-center gap-2 p-2 group rounded-lg hover:bg-gray-50 group',
                 className
             )}
         >
@@ -95,6 +111,10 @@ export const LabelTreeItemButton = memo(function LabelTreeItemButton({
         [currentLabel.id, toggleExpandedLabelId, expanded, hasChildren]
     );
 
+    if (!hasChildren) {
+        return <div className="size-5 mr-2" />;
+    }
+
     return (
         <Button
             data-slot="label-tree-item-button"
@@ -105,17 +125,12 @@ export const LabelTreeItemButton = memo(function LabelTreeItemButton({
             aria-expanded={hasChildren ? expanded : undefined}
             aria-label={hasChildren ? (expanded ? 'Collapse' : 'Expand') : undefined}
             tabIndex={hasChildren ? 0 : -1}
-            className={cn('flex-shrink-0 w-4 h-4 flex items-center justify-center', className)}
-        >
-            {hasChildren ? (
-                expanded ? (
-                    <ChevronDown className="w-3 h-3" />
-                ) : (
-                    <ChevronRight className="w-3 h-3" />
-                )
-            ) : (
-                <div className="w-3 h-3" />
+            className={cn(
+                'cursor-pointer flex-shrink-0 size-5 flex items-center justify-center font-medium transition-colors text-gray-500 group-hover:text-gray-700 mr-2',
+                className
             )}
+        >
+            {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
         </Button>
     );
 });
@@ -165,6 +180,55 @@ export const LabelTreeItemBadge = memo(function LabelTreeItemBadge({
     return (
         <div data-slot="label-tree-item-badge" className={className}>
             <LabelBadge label={currentLabel} />
+        </div>
+    );
+});
+
+const iconSizeMap = {
+    sm: 'size-3',
+    md: 'size-4',
+    lg: 'size-5',
+} as const;
+
+export const LabelTreeItemIcon = memo(function LabelTreeItemIcon({
+    className,
+}: React.ComponentProps<'div'>) {
+    const { currentLabel } = useLabelTreeData();
+
+    if (!currentLabel) return null;
+
+    const icon = currentLabel.icon || 'folder';
+    const color = currentLabel.color || 'gray';
+
+    return (
+        <div
+            style={{ backgroundColor: color }}
+            className={cn(
+                'size-10 rounded-lg bg-blue-100 text-white flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0',
+                className
+            )}
+        >
+            {renderLabelIcon(icon, iconSizeMap['lg'])}
+        </div>
+    );
+});
+
+export const LabelTreeItemTitle = memo(function LabelTreeItemTitle({
+    className,
+}: React.ComponentProps<'div'>) {
+    const { currentLabel } = useLabelTreeData();
+
+    if (!currentLabel) return null;
+
+    return (
+        <div
+            data-slot="label-tree-item-title"
+            className={cn(
+                ' text-gray-900 font-semibold text-base group-hover:opacity-90 transition-all truncate',
+                className
+            )}
+        >
+            {currentLabel.name}
         </div>
     );
 });
