@@ -9,7 +9,7 @@ import { z } from 'zod';
 // Query Layer
 // ====================
 
-const amountTransformSchema = z.number().transform((val) => val.toString());
+const numericInputSchema = z.coerce.number();
 
 export const transactionQuerySchemas = {
     select: selectTransactionSchema,
@@ -23,17 +23,17 @@ export const transactionQuerySchemas = {
             isNew: true,
         })
         .extend({
-            userAmount: amountTransformSchema,
-            accountAmount: amountTransformSchema,
-            spendingAmount: amountTransformSchema,
-            balance: amountTransformSchema,
+            userAmount: numericInputSchema,
+            accountAmount: numericInputSchema,
+            spendingAmount: numericInputSchema,
+            balance: numericInputSchema.optional(),
         }),
     update: updateTransactionSchema
         .extend({
-            userAmount: amountTransformSchema,
-            accountAmount: amountTransformSchema,
-            spendingAmount: amountTransformSchema,
-            balance: amountTransformSchema,
+            userAmount: numericInputSchema.optional(),
+            accountAmount: numericInputSchema.optional(),
+            spendingAmount: numericInputSchema.optional(),
+            balance: numericInputSchema.optional(),
         })
         .partial(),
 };
@@ -49,14 +49,20 @@ export type TTransactionQuery = {
 // ====================
 
 export const transactionServiceSchemas = {
-    create: transactionQuerySchemas.insert.omit({
-        userId: true,
-        userAmount: true,
-        userCurrency: true,
-        originalTitle: true,
-        importFileId: true,
-        connectedBankAccountId: true,
-    }),
+    create: transactionQuerySchemas.insert
+        .omit({
+            userId: true,
+            userAmount: true,
+            userCurrency: true,
+            originalTitle: true,
+            importFileId: true,
+            connectedBankAccountId: true,
+        })
+        .extend({
+            accountAmount: numericInputSchema,
+            spendingAmount: numericInputSchema,
+            balance: numericInputSchema.optional(),
+        }),
     update: transactionQuerySchemas.update,
 };
 

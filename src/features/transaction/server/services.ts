@@ -134,13 +134,13 @@ const createMany = async ({
 
     // 1. Add userId and originalTitle to the transactions
     const transactionsToCreate = transactions.map((transaction) => ({
+        ...transaction,
         originalTitle: transaction.title,
         userId,
         userAmount: transaction.spendingAmount,
         userCurrency: transaction.spendingCurrency,
         importFileId,
         connectedBankAccountId: importFile.import.connectedBankAccountId,
-        ...transaction,
     }));
 
     // 2. Add currency conversion

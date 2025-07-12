@@ -62,19 +62,19 @@ export const transaction = pgTable(
         type: transactionTypeEnum().notNull(),
 
         // Amount in spending currency (what was actually spent/received)
-        spendingAmount: numeric({ precision: 12, scale: 2 }).notNull(),
+        spendingAmount: numeric({ precision: 12, scale: 2, mode: 'number' }).notNull(),
         spendingCurrency: char({ length: 3 }).notNull(),
 
         // Amount in account currency (account's native currency)
-        accountAmount: numeric({ precision: 12, scale: 2 }).notNull(),
+        accountAmount: numeric({ precision: 12, scale: 2, mode: 'number' }).notNull(),
         accountCurrency: char({ length: 3 }).notNull(),
 
         // Amount in user's base currency (for multi-currency users)
-        userAmount: numeric({ precision: 12, scale: 2 }).notNull(),
+        userAmount: numeric({ precision: 12, scale: 2, mode: 'number' }).notNull(),
         userCurrency: char({ length: 3 }).notNull(),
 
         // Account balance after transaction
-        balance: numeric({ precision: 12, scale: 2 }),
+        balance: numeric({ precision: 12, scale: 2, mode: 'number' }),
 
         // Location data
         country: char({ length: 2 }),
