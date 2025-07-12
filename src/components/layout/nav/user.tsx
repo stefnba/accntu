@@ -22,7 +22,7 @@ import {
 import Link from 'next/link';
 
 import { Admin } from '@/components/icons';
-import { useAuth } from '@/lib/auth/client';
+import { useAuth } from '@/lib/auth/client/session';
 import { userRoutes } from '@/lib/routes';
 
 export function NavUser() {

@@ -2,8 +2,8 @@ import { apiClient, createQuery } from '@/lib/api';
 import { createMutation } from '@/lib/api/mutation';
 
 export const AUTH_QUERY_KEYS = {
-    SESSION: () => ['session'] as const,
-    SESSIONS: () => ['sessions'] as const,
+    SESSION: ['auth', 'session'] as const,
+    ACTIVE_SESSIONS: ['active-sessions'] as const,
 } as const;
 
 /**
@@ -29,24 +29,24 @@ export const useAuthEndpoints = {
     /**
      * Get current user session
      */
-    getSession: createQuery(apiClient.auth.sessions['get'].$get, AUTH_QUERY_KEYS.SESSION()),
+    getSession: createQuery(apiClient.auth.sessions['get'].$get, AUTH_QUERY_KEYS.SESSION),
     /**
      * Get all active session for the user
      */
-    listsSessions: createQuery(apiClient.auth['sessions'].$get, AUTH_QUERY_KEYS.SESSIONS()),
+    listsSessions: createQuery(apiClient.auth['sessions'].$get, AUTH_QUERY_KEYS.ACTIVE_SESSIONS),
     /**
      * Revoke other sessions
      */
     revokeOtherSessions: createMutation(
         apiClient.auth.sessions['revoke-others'].$post,
-        AUTH_QUERY_KEYS.SESSIONS()
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
     ),
     /**
      * Revoke session
      */
     revokeSession: createMutation(
         apiClient.auth.sessions['revoke'].$post,
-        AUTH_QUERY_KEYS.SESSIONS()
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
     ),
     /**
      * Update user

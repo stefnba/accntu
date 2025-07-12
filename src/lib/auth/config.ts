@@ -12,7 +12,8 @@ import { getEnv } from '@/lib/env';
 // relative import required because of better-auth bug
 import { db } from '../../server/db';
 
-const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME } = getEnv();
+const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME } =
+    getEnv();
 
 const options = {
     emailAndPassword: {
@@ -133,7 +134,6 @@ const options = {
                         throw new Error('Failed to send OTP email');
                     }
                 } catch (error) {
-
                     if (error instanceof APIError) {
                         throw error;
                     }
@@ -154,7 +154,6 @@ export const auth = betterAuth({
     plugins: [
         ...(options.plugins ?? []),
         customSession(async ({ user, session }) => {
-
             // remove ban-related fields
             const { banReason, banExpires, banned, ...restUser } = user;
 

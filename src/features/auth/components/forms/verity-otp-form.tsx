@@ -7,19 +7,19 @@ import { emailOTPVerifySchema } from '@/features/auth/schemas';
 import { cn } from '@/lib/utils';
 
 import { Form, FormOTPInput, FormSubmitButton, useForm } from '@/components/form';
-import { useAuth } from '@/lib/auth/client';
+import { useSignIn } from '@/lib/auth/client';
 
 type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
     email: string;
 };
 
 export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps) {
-    const { signIn, isLoading } = useAuth();
+    const { verifyInEmailOTP, isSigningIn } = useSignIn();
 
     const form = useForm({
         schema: emailOTPVerifySchema,
         onSubmit: (values) => {
-            signIn.emailOTP.verify(email, values.code);
+            verifyInEmailOTP(email, values.code);
         },
         onError: (errors) => {
             console.error('Form validation errors:', errors);
@@ -42,7 +42,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
                         <FormSubmitButton
                             className="w-full"
                             form={form}
-                            disabled={isSubmitting || isLoading}
+                            disabled={isSubmitting || isSigningIn}
                         >
                             Submit
                         </FormSubmitButton>
@@ -55,7 +55,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
 
                     <div className="mt-8 text-center text-sm text-muted-foreground">
                         <p>Didn&apos;t receive a code?</p>
-                        <Button className="m-0 p-0" variant="link" disabled={isLoading}>
+                        <Button className="m-0 p-0" variant="link" disabled={isSigningIn}>
                             Resend
                         </Button>
                         {' or '}

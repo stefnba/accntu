@@ -1,7 +1,7 @@
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar';
 import { auth } from '@/lib/auth/config';
-import { LOGIN_URL } from '@/lib/routes';
+import { LOGIN_REDIRECT_URL, LOGIN_URL } from '@/lib/routes';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const { user } = sessionData;
 
     if (!user || user.role !== 'admin') {
-        redirect('/dashboard');
+        redirect(LOGIN_REDIRECT_URL);
     }
 
     return (

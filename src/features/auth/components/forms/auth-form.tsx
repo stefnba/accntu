@@ -5,17 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { loginEmailFormSchema, signupEmailFormSchema } from '@/features/auth/schemas';
-import { useAuth } from '@/lib/auth/client';
+import { useSignIn } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
 
 /*
     Social Auth
 */
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { signIn, isLoading } = useAuth();
+    const { signInSocial, isSigningIn } = useSignIn();
 
     const handleSocialLogin = async (provider: 'github' | 'google') => {
-        signIn.social(provider);
+        signInSocial(provider);
     };
 
     return (
@@ -24,7 +24,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('google')}
-                disabled={isLoading}
+                disabled={isSigningIn}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -38,7 +38,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('github')}
-                disabled={isLoading}
+                disabled={isSigningIn}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -56,7 +56,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     Email Auth
 */
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { isLoading, signIn } = useAuth();
+    const { initiateInEmailOTP, isSigningIn } = useSignIn();
 
     const isLogin = action === 'Login';
 
@@ -69,7 +69,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             },
             onSubmit: (data) => {
                 try {
-                    signIn.emailOTP.initiate(data.email);
+                    initiateInEmailOTP(data.email);
                 } catch (error) {
                     console.log('Login failed:', error);
                 }
@@ -84,7 +84,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                 <Form form={form} className="grid gap-4">
                     <FormInput placeholder="Enter your Email" name="email" form={form} />
                     <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
-                        {isLoading ? `${action}...` : action}
+                        {isSigningIn ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>
@@ -121,7 +121,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                     <FormInput placeholder="Enter your Name" name="name" form={form} />
                     <FormInput placeholder="Enter your Email" name="email" form={form} />
                     <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
-                        {isLoading ? `${action}...` : action}
+                        {isSigningIn ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>

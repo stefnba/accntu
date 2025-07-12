@@ -1,5 +1,11 @@
-export type { TSession, TUser } from './client';
+export type { TAuthSession } from './client';
 
 export { useAuthEndpoints } from './api';
-export { useAuth, useSession } from './hooks/index';
-export { useAuthStore } from './store';
+export {
+    useAuth,
+    useRequireAuth,
+    useSession,
+    // Authentication methods
+    useSignIn,
+    useSignOut,
+} from './session';
