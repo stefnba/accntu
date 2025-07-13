@@ -1,14 +1,17 @@
 'use client';
 
 import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth, useAuthEndpoints } from '@/lib/auth/client';
-import { UpdateUserSchema } from '@/server/db/schemas';
+import { UpdateUserSchema } from '@/lib/auth/server/db/schema';
+import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export function UserProfileForm() {
-    const { user } = useAuth();
+    const { user, refetchSession } = useAuth();
+
     const updateUser = useAuthEndpoints.updateUser();
     const router = useRouter();
 
@@ -23,26 +26,20 @@ export function UserProfileForm() {
         },
         onSubmit: async (data) => {
             updateUser.mutate(
-                {
-                    json: data,
-
-                    // name: data.name || '',
-                    // lastName: data.lastName || '',
-                },
+                { json: data },
                 {
                     onSuccess: () => {
+                        refetchSession();
                         router.refresh();
-                        toast.success('User updated successfully');
+                        toast.success('Profile updated successfully');
                     },
                     onError: ({ error }) => {
-                        toast.error(error.message || 'Error updating user');
+                        toast.error(error.message || 'Error updating profile');
                     },
                 }
             );
         },
     });
-
-    const resetForm = profileForm.reset;
 
     useEffect(() => {
         if (user) {
@@ -51,17 +48,57 @@ export function UserProfileForm() {
                 lastName: user.lastName || '',
             });
         }
-    }, [user, resetForm]);
+    }, [user, profileForm.reset]);
+
+    if (!user) {
+        return (
+            <Card>
+                <CardContent className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">Please sign in to edit your profile.</p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
-        <Form form={profileForm} className="space-y-4">
-            <div className="flex flex-col gap-6 max-w-lg">
-                <FormInput form={profileForm} name="name" label="First Name" />
-                <FormInput form={profileForm} name="lastName" label="Last Name" />
-            </div>
-            <div>
-                <FormSubmitButton form={profileForm}>Update Profile</FormSubmitButton>
-            </div>
-        </Form>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Basic Information
+                </CardTitle>
+                <CardDescription>Update your first and last name</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-6">
+                    {/* Profile Form */}
+                    <Form form={profileForm} className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormInput
+                                form={profileForm}
+                                name="name"
+                                label="First Name"
+                                placeholder="Enter your first name"
+                            />
+                            <FormInput
+                                form={profileForm}
+                                name="lastName"
+                                label="Last Name"
+                                placeholder="Enter your last name"
+                            />
+                        </div>
+
+                        <div className="flex justify-end">
+                            <FormSubmitButton
+                                form={profileForm}
+                                disabled={profileForm.formState.isSubmitting}
+                            >
+                                {profileForm.formState.isSubmitting ? 'Updating...' : 'Update Name'}
+                            </FormSubmitButton>
+                        </div>
+                    </Form>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
