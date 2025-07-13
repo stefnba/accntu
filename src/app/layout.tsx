@@ -1,4 +1,5 @@
-import { QueryProvider, ThemeProvider } from '@/providers';
+import { ThemeProvider } from '@/lib/theme';
+import { QueryProvider } from '@/providers';
 import { Inter } from 'next/font/google';
 
 import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies';

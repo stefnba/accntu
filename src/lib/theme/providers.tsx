@@ -3,9 +3,8 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import * as React from 'react';
 
-interface ThemeProviderProps {
+interface ThemeProviderProps extends React.ComponentProps<typeof NextThemesProvider> {
     children: React.ReactNode;
-    [key: string]: any;
 }
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
