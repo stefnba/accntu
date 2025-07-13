@@ -5,6 +5,11 @@ import type { auth } from '../config';
 export const authClient = createAuthClient({
     plugins: [emailOTPClient(), customSessionClient<typeof auth>(), passkeyClient()],
 });
+const authErrors = authClient.$ERROR_CODES;
+
+// ====================
+// Types
+// ====================
 
 export type TSession = typeof authClient.$Infer.Session.session;
 export type TUser = typeof authClient.$Infer.Session.user;
@@ -12,6 +17,4 @@ export type TAuthSession = {
     user: TUser;
     session: TSession;
 };
-
-const authErrors = authClient.$ERROR_CODES;
 export type TErrorCodes = keyof typeof authErrors;

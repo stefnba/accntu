@@ -3,7 +3,6 @@ import { z } from 'zod';
 export const loginEmailFormSchema = z.object({
     email: z.string().email('Invalid email address.'),
 });
-
 export type TLoginEmailFormSchema = z.infer<typeof loginEmailFormSchema>;
 
 export const signupEmailFormSchema = z.object({

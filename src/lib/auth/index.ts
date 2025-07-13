@@ -6,4 +6,5 @@ export {
     validateSession,
 } from '@/lib/auth/server';
 
-export type { TSession, TUser } from './client';
+export type { TSession, TUser } from '@/lib/auth/client/client';
+export type { TSocialProvider } from '@/lib/auth/client/hooks/sign-in';

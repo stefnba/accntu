@@ -56,7 +56,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     Email Auth
 */
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { initiateInEmailOTP, isSigningIn } = useSignIn();
+    const { initiateEmailOTP, isSigningIn } = useSignIn();
 
     const isLogin = action === 'Login';
 
@@ -69,7 +69,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             },
             onSubmit: (data) => {
                 try {
-                    initiateInEmailOTP(data.email);
+                    initiateEmailOTP(data.email);
                 } catch (error) {
                     console.log('Login failed:', error);
                 }
@@ -83,7 +83,11 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
             <div className="flex flex-col gap-6">
                 <Form form={form} className="grid gap-4">
                     <FormInput placeholder="Enter your Email" name="email" form={form} />
-                    <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
+                    <FormSubmitButton
+                        disabledBeforeValid={isSigningIn}
+                        form={form}
+                        className="w-full"
+                    >
                         {isSigningIn ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (

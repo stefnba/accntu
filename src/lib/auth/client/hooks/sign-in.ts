@@ -1,9 +1,12 @@
 'use client';
 
 import { AUTH_QUERY_KEYS, useAuthEndpoints } from '@/lib/auth/client/api';
+import { auth } from '@/lib/auth/config';
 import { LOGIN_REDIRECT_URL } from '@/lib/routes';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+
+export type TSocialProvider = keyof typeof auth.options.socialProviders;
 
 /**
  * Sign in with email OTP. It provides both the initiate and verify mutations.
@@ -59,7 +62,7 @@ export const useSignIn = () => {
     const signInEmailOTP = useSignInEmailOTP();
 
     return {
-        signInSocial: (provider: 'github' | 'google', callbackURL?: string) =>
+        signInSocial: (provider: TSocialProvider, callbackURL?: string) =>
             signInSocial.mutate({ json: { provider, callbackURL } }),
 
         initiateEmailOTP: (email: string) =>

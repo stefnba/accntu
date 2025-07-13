@@ -14,12 +14,12 @@ type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
 };
 
 export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps) {
-    const { verifyInEmailOTP, isSigningIn } = useSignIn();
+    const { verifyEmailOTP, isSigningIn } = useSignIn();
 
     const form = useForm({
         schema: emailOTPVerifySchema,
         onSubmit: (values) => {
-            verifyInEmailOTP(email, values.code);
+            verifyEmailOTP(email, values.code);
         },
         onError: (errors) => {
             console.error('Form validation errors:', errors);
