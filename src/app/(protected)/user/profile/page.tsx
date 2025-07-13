@@ -17,7 +17,7 @@ export default function ProfilePage() {
         >
             {/* <UserManager /> */}
 
-            <div className="space-y-10">
+            <div className="space-y-8">
                 <CurrentUserProfile />
                 <UserProfileForm />
                 <ProfileImageUpload />
