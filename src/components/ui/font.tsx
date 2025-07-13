@@ -16,27 +16,51 @@ export const Title = ({
 /**
  * Subtitle text
  */
-export const Subtitle = ({ children }: { children: React.ReactNode }) => {
-    return <h2 className="text-lg font-medium">{children}</h2>;
+export const Subtitle = ({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) => {
+    return <h2 className={cn('text-lg font-medium', className)}>{children}</h2>;
 };
 
 /**
  * Paragraph text
  */
-export const Paragraph = ({ children }: { children: React.ReactNode }) => {
-    return <p className="text-sm text-muted-foreground">{children}</p>;
+export const Paragraph = ({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) => {
+    return <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>;
 };
 
 /**
  * Header text
  */
-export const Header = ({ children }: { children: React.ReactNode }) => {
-    return <h3 className="text-base font-medium">{children}</h3>;
+export const Header = ({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) => {
+    return <h3 className={cn('text-base font-medium', className)}>{children}</h3>;
 };
 
 /**
  * Description text
  */
-export const Description = ({ children }: { children: React.ReactNode }) => {
-    return <p className="text-sm text-muted-foreground">{children}</p>;
+export const Description = ({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) => {
+    return <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>;
 };
