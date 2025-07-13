@@ -1,6 +1,6 @@
+import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import { auth } from '@/lib/auth/config';
 import { protectedServerRoute } from '@/lib/auth/server/validate';
-import { UpdateUserSchema } from '@/server/db/schemas';
 import { clearCookie, setCookie } from '@/server/lib/cookies';
 import { errorFactory } from '@/server/lib/error';
 import { withRoute } from '@/server/lib/handler';
@@ -146,16 +146,23 @@ const app = new Hono()
     /**
      * User management
      */
-    .patch('/user/update', protectedServerRoute, zValidator('json', UpdateUserSchema), async (c) =>
-        withRoute(c, async () => {
-            const body = c.req.valid('json');
+    .patch(
+        '/user/update',
+        protectedServerRoute,
+        zValidator('json', userServiceSchemas.update),
+        async (c) =>
+            withRoute(c, async () => {
+                const { settings, ...rest } = c.req.valid('json');
 
-            const response = await updateUser({
-                body,
-                headers: c.req.header(),
-            });
-            return response;
-        })
+                const response = await updateUser({
+                    body: rest,
+                    headers: c.req.header(),
+                });
+
+                // todo: update settings
+
+                return response;
+            })
     )
 
     .post('/user/change-email', zValidator('json', changeEmail.options.body), async (c) => {

@@ -3,7 +3,7 @@
 import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth, useAuthEndpoints } from '@/lib/auth/client';
-import { UpdateUserSchema } from '@/lib/auth/server/db/schema';
+import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -16,7 +16,7 @@ export function UserProfileForm() {
     const router = useRouter();
 
     const profileForm = useForm({
-        schema: UpdateUserSchema.pick({
+        schema: userServiceSchemas.update.pick({
             name: true,
             lastName: true,
         }),

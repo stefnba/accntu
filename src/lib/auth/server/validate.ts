@@ -1,4 +1,4 @@
-import { TUser } from '@/lib/auth/client';
+import { type TUser } from '@/lib/auth';
 import { auth } from '@/lib/auth/config';
 import { updateSessionActivity } from '@/lib/auth/server/db/queries';
 import { AuthContext } from '@/lib/auth/server/types';

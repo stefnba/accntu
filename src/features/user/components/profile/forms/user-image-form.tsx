@@ -2,7 +2,7 @@
 
 import { Form, FormFileDropzone, useForm } from '@/components/form';
 import { useAuthEndpoints } from '@/lib/auth/client';
-import { UpdateUserSchema } from '@/server/db/schemas';
+import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import toast from 'react-hot-toast';
 
 export function UserImageForm() {
@@ -18,10 +18,11 @@ export function UserImageForm() {
     });
 
     const profileForm = useForm({
-        schema: UpdateUserSchema,
+        schema: userServiceSchemas.update.pick({
+            image: true,
+        }),
         defaultValues: {
-            name: '',
-            lastName: '',
+            image: '',
         },
         onSubmit: async (data) => {
             updateUserMutate(
