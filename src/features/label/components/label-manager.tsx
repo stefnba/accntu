@@ -20,7 +20,6 @@ import {
     LabelTreeItemIcon,
     LabelTreeItemTitle,
     LabelTreeSortable,
-    useDragHandle,
     useLabelTreeData,
 } from './label-tree';
 
@@ -44,8 +43,7 @@ const ModernEnterpriseVariantA = () => {
     // Hooks
     // ================================
     const { currentLabel } = useLabelTreeData();
-    const { modalOpen, modalType, labelId, parentId, closeModal, openCreateModal, openEditModal } =
-        useLabelModal();
+    const { openCreateModal, openEditModal } = useLabelModal();
     const router = useRouter();
 
     // ================================
@@ -75,14 +73,6 @@ const ModernEnterpriseVariantA = () => {
             await deleteMutation.mutateAsync({ param: { id: labelId } });
         }
     };
-
-    // Try to get drag handle props, but don't fail if not in sortable context
-    let dragHandleProps = null;
-    try {
-        dragHandleProps = useDragHandle();
-    } catch {
-        // Not in sortable context, that's fine
-    }
 
     if (!currentLabel) return null;
 
@@ -115,12 +105,7 @@ const ModernEnterpriseVariantA = () => {
                     }}
                 >
                     <div className="flex items-center space-x-2">
-                        {/* Drag handle - only show in sortable context */}
-                        {dragHandleProps && (
-                            <div {...dragHandleProps.attributes} {...dragHandleProps.listeners}>
-                                <DragHandle size="sm" />
-                            </div>
-                        )}
+                        <DragHandle />
                         <LabelTreeItemHeader>
                             <LabelTreeItemIcon />
                             <LabelTreeItemTitle />

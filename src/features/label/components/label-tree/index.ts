@@ -43,5 +43,8 @@ export type {
 export { LabelTreeSortable } from './label-tree';
 // export type { LabelTreeSortableProps } from './label-tree';
 
-export { LabelTreeItemSortableWrapper } from './item-sortable-wrapper';
+export { LabelTreeItemSortableWrapper, useDragHandle } from './item-sortable-wrapper';
 export type { LabelTreeItemSortableWrapperProps } from './item-sortable-wrapper';
+
+export { DragHandle } from './drag-handle';
+export type { DragHandleProps } from './drag-handle';

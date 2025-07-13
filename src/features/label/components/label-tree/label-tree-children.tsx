@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { memo, useMemo } from 'react';
-import { LabelTreeProvider, useLabelTreeData, useLabelTreeState } from './provider';
+import { LabelTreeItemProvider, useLabelTreeData, useLabelTreeState } from './provider';
 
 // Types
 export interface LabelTreeChildrenProps extends React.ComponentProps<'div'> {
@@ -38,9 +38,9 @@ export const LabelTreeChildren = memo(function LabelTreeChildren({
     return (
         <div className={cn('ml-14 space-y-1 border-l-1 w-full', className)}>
             {childLabels.map((child) => (
-                <LabelTreeProvider key={child.id} label={child} level={currentLevel + 1}>
+                <LabelTreeItemProvider key={child.id} label={child} level={currentLevel + 1}>
                     {children}
-                </LabelTreeProvider>
+                </LabelTreeItemProvider>
             ))}
         </div>
     );
