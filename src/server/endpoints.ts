@@ -11,9 +11,9 @@ import budgetEndpoints from '@/features/budget/server/endpoints';
 import labelEndpoints from '@/features/label/server/endpoints';
 import participantEndpoints from '@/features/participant/server/endpoints';
 import tagEndpoints from '@/features/tag/server/endpoints';
+import transactionFxEndpoints from '@/features/transaction-fx/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import transactionEndpoints from '@/features/transaction/server/endpoints';
-import transactionFxEndpoints from '@/features/transaction-fx/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import authEndpoints from '@/lib/auth/server/endpoints';
 
