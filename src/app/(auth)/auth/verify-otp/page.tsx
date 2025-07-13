@@ -1,4 +1,4 @@
-import { VerifyOtpForm } from '@/features/auth/components/forms/verity-otp-form';
+import { VerifyOtpForm } from '@/features/auth/components/forms/verify-otp-form';
 import { COOKIE_NAMES_AUTH } from '@/server/lib/cookies';
 import { cookies } from 'next/headers';
 

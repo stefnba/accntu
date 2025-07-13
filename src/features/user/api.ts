@@ -1,8 +1,13 @@
-export const USER_QUERY_KEYS = {
-    USER: 'user',
-} as const;
+import { apiClient, createMutation } from '@/lib/api';
 
-/**
- * User API endpoints with integrated error handling
- */
-export const useUserEndpoints = {};
+export const useUserEndpoints = {
+    /**
+     * Create a signed URL for uploading a profile image to S3
+     */
+    createS3SignedUrl: createMutation(apiClient.user['upload-profile-image']['signed-url'].$post),
+
+    /**
+     * Delete a file from S3
+     */
+    deleteS3File: createMutation(apiClient.user['upload-profile-image']['delete-file'].$delete),
+};

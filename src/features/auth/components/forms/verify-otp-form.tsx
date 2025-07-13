@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 
 import { Form, FormOTPInput, FormSubmitButton, useForm } from '@/components/form';
 import { useSignIn } from '@/lib/auth/client';
+import { useEffect, useRef } from 'react';
 
 type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
     email: string;
@@ -15,6 +16,7 @@ type VerifyOtpFormProps = React.ComponentPropsWithoutRef<'div'> & {
 
 export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps) {
     const { verifyEmailOTP, isSigningIn } = useSignIn();
+    const hasAutoSubmitted = useRef(false);
 
     const form = useForm({
         schema: emailOTPVerifySchema,
@@ -23,16 +25,29 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
         },
         onError: (errors) => {
             console.error('Form validation errors:', errors);
+            hasAutoSubmitted.current = false;
         },
     });
 
     const { formState, isSubmitting } = form;
 
+    useEffect(() => {
+        const subscription = form.watch((value) => {
+            const code = value.code;
+            if (code?.length === 8 && !isSubmitting && !isSigningIn && !hasAutoSubmitted.current) {
+                hasAutoSubmitted.current = true;
+                form.handleSubmit();
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [form, isSubmitting, isSigningIn]);
+
     return (
         <div className={cn('flex flex-col gap-6', className)} {...props}>
             <Card>
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold">Verify Your Login</CardTitle>
+                    <CardTitle className="text-2xl font-semibold">Verify Your Login</CardTitle>
                     <CardDescription>Please enter the code sent to your Email</CardDescription>
                 </CardHeader>
                 <CardContent>

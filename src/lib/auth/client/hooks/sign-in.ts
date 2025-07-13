@@ -24,7 +24,9 @@ const useSignInEmailOTP = () => {
             setSigningIn('email-otp');
         },
         onSuccess: () => {
-            // OTP sent successfully - keep loading state for verify step
+            // OTP sent successfully - navigate to verify page after cookie is set
+            router.push('/auth/verify-otp');
+            router.refresh();
         },
         onError: () => {
             resetAuthLoading();
@@ -36,8 +38,9 @@ const useSignInEmailOTP = () => {
             setSigningIn('email-otp');
         },
         onSuccess: (data) => {
-            // Update session cache and redirect on successful OTP verification
+            // Update session cache and invalidate to trigger refetch on successful OTP verification
             queryClient.setQueryData(AUTH_QUERY_KEYS.SESSION, data);
+            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
             resetAuthLoading(); // Reset before redirect
             router.push(LOGIN_REDIRECT_URL);
             router.refresh();

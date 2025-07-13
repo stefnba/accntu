@@ -12,6 +12,6 @@ export const signupEmailFormSchema = z.object({
 export type TSignupEmailFormSchema = z.infer<typeof signupEmailFormSchema>;
 
 export const emailOTPVerifySchema = z.object({
-    code: z.string().min(6, 'Code must be 6 digits.'),
+    code: z.string().length(8, 'Code must be exactly 8 digits.'),
 });
 export type TEmailOTPVerifySchema = z.infer<typeof emailOTPVerifySchema>;

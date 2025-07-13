@@ -4,18 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Description } from '@/components/ui/font';
 import { Label } from '@/components/ui/label';
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { Separator } from '@/components/ui/separator';
-import { UserImageForm } from '@/features/user/components/profile/forms/user-image-form';
 import { useAuth } from '@/lib/auth/client';
-import { IconCamera, IconUserCircle } from '@tabler/icons-react';
+import { IconCamera, IconEdit, IconUserCircle } from '@tabler/icons-react';
 import { useState } from 'react';
+import { ProfileImageModal } from './profile-image-modal';
+
+type ModalMode = 'upload' | 'edit';
 
 export function ProfileImageUpload() {
     const { user } = useAuth();
-    const [open, setOpen] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<ModalMode>('upload');
 
     const hasImage = !!user?.image;
+
+    const openModal = (mode: ModalMode) => {
+        setModalMode(mode);
+        setModalOpen(true);
+    };
 
     return (
         <Card>
@@ -29,21 +36,23 @@ export function ProfileImageUpload() {
                 {/* Action Rows */}
                 <div className="space-y-3">
                     <Separator />
+                    
                     {/* Row 1: Edit Current Picture */}
                     {hasImage && (
-                        <div className="flex items-center justify-between py-2">
-                            <div className="flex-1">
-                                <Label>Edit Current Picture</Label>
-                                <Description>Crop or adjust your existing photo</Description>
+                        <>
+                            <div className="flex items-center justify-between py-2">
+                                <div className="flex-1">
+                                    <Label>Edit Current Picture</Label>
+                                    <Description>Crop, rotate, or adjust your existing photo</Description>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => openModal('edit')}>
+                                    <IconEdit className="w-4 h-4 mr-1" />
+                                    Edit
+                                </Button>
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-                                <IconCamera className="w-4 h-4 mr-1" />
-                                Edit
-                            </Button>
-                        </div>
+                            <Separator />
+                        </>
                     )}
-
-                    <Separator />
 
                     {/* Row 2: Upload New Picture */}
                     <div className="flex items-center justify-between py-2">
@@ -51,22 +60,19 @@ export function ProfileImageUpload() {
                             <Label>Upload New Picture</Label>
                             <Description>Choose a new image from your device</Description>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+                        <Button variant="outline" size="sm" onClick={() => openModal('upload')}>
                             <IconCamera className="w-4 h-4 mr-1" />
                             Upload
                         </Button>
                     </div>
                 </div>
 
-                {/* Modal */}
-                <ResponsiveModal
-                    open={open}
-                    onOpenChange={setOpen}
-                    title="Upload Profile Image"
-                    description="Upload an image for your profile"
-                >
-                    <UserImageForm />
-                </ResponsiveModal>
+                {/* Enhanced Modal */}
+                <ProfileImageModal
+                    open={modalOpen}
+                    onOpenChange={setModalOpen}
+                    mode={modalMode}
+                />
             </CardContent>
         </Card>
     );
