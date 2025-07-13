@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { loginEmailFormSchema, signupEmailFormSchema } from '@/features/auth/schemas';
-import { useSignIn } from '@/lib/auth/client';
+import { TSocialProvider, useSignIn } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
 
 /*
@@ -14,13 +14,14 @@ import { cn } from '@/lib/utils';
 const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     const { signInSocial, isSigningIn } = useSignIn();
 
-    const handleSocialLogin = async (provider: 'github' | 'google') => {
+    const handleSocialLogin = async (provider: TSocialProvider) => {
         signInSocial(provider);
     };
 
     return (
         <div className="flex flex-col gap-2">
-            <Button
+            {/* Google */}
+            {/* <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('google')}
@@ -33,7 +34,8 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
                     />
                 </svg>
                 {`${action} with Google`}
-            </Button>
+            </Button> */}
+            {/* GitHub */}
             <Button
                 variant="outline"
                 className="w-full"

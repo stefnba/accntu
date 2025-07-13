@@ -9,3 +9,5 @@ export {
     useSignIn,
     useSignOut,
 } from './session';
+
+export type { TSocialProvider } from './hooks/sign-in';
