@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth/config';
 import { LOGIN_REDIRECT_URL } from '@/lib/routes';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useAuthLoadingStore } from './auth-loading-store';
 
 export type TSocialProvider = keyof typeof auth.options.socialProviders;
 
@@ -16,19 +17,33 @@ export type TSocialProvider = keyof typeof auth.options.socialProviders;
 const useSignInEmailOTP = () => {
     const queryClient = useQueryClient();
     const router = useRouter();
+    const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
 
     const initiateMutation = useAuthEndpoints.sendVerificationOTP({
+        onMutate: () => {
+            setSigningIn('email-otp');
+        },
         onSuccess: () => {
-            // OTP sent successfully - no session update needed
+            // OTP sent successfully - keep loading state for verify step
+        },
+        onError: () => {
+            resetAuthLoading();
         },
     });
 
     const verifyMutation = useAuthEndpoints.signInEmailOTP({
+        onMutate: () => {
+            setSigningIn('email-otp');
+        },
         onSuccess: (data) => {
             // Update session cache and redirect on successful OTP verification
             queryClient.setQueryData(AUTH_QUERY_KEYS.SESSION, data);
+            resetAuthLoading(); // Reset before redirect
             router.push(LOGIN_REDIRECT_URL);
             router.refresh();
+        },
+        onError: () => {
+            resetAuthLoading();
         },
     });
 
@@ -44,12 +59,22 @@ const useSignInEmailOTP = () => {
  * This should not be used in the client. Use useSignIn instead.
  */
 const useSignInSocial = () => {
+    const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
+
     return useAuthEndpoints.signInSocial({
+        onMutate: () => {
+            setSigningIn('social');
+        },
         onSuccess: (data) => {
             if ('url' in data) {
-                // Redirect to social provider OAuth page
+                // Keep loading state during redirect - will auto-reset on page load
                 window.location.href = data.url;
+            } else {
+                resetAuthLoading();
             }
+        },
+        onError: () => {
+            resetAuthLoading();
         },
     });
 };
@@ -60,6 +85,7 @@ const useSignInSocial = () => {
 export const useSignIn = () => {
     const signInSocial = useSignInSocial();
     const signInEmailOTP = useSignInEmailOTP();
+    const { isSigningIn, signingInMethod } = useAuthLoadingStore();
 
     return {
         signInSocial: (provider: TSocialProvider, callbackURL?: string) =>
@@ -69,9 +95,9 @@ export const useSignIn = () => {
             signInEmailOTP.initiate.mutate({ json: { email, type: 'sign-in' } }),
         verifyEmailOTP: (email: string, otp: string) =>
             signInEmailOTP.verify.mutate({ json: { email, otp } }),
-        isSigningIn:
-            signInSocial.isPending ||
-            signInEmailOTP.initiate.isPending ||
-            signInEmailOTP.verify.isPending,
+
+        // Use global loading state instead of individual mutation states
+        isSigningIn,
+        signingInMethod,
     };
 };

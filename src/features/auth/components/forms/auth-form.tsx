@@ -58,7 +58,7 @@ const SocialAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
     Email Auth
 */
 const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
-    const { initiateEmailOTP, isSigningIn } = useSignIn();
+    const { initiateEmailOTP, isSigningIn, signingInMethod } = useSignIn();
 
     const isLogin = action === 'Login';
 
@@ -84,13 +84,18 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
         return (
             <div className="flex flex-col gap-6">
                 <Form form={form} className="grid gap-4">
-                    <FormInput placeholder="Enter your Email" name="email" form={form} />
+                    <FormInput
+                        placeholder="Enter your Email"
+                        name="email"
+                        form={form}
+                        disabled={isSigningIn}
+                    />
                     <FormSubmitButton
                         disabledBeforeValid={isSigningIn}
                         form={form}
                         className="w-full"
                     >
-                        {isSigningIn ? `${action}...` : action}
+                        {isSigningIn && signingInMethod == 'email-otp' ? `${action}...` : action}
                     </FormSubmitButton>
                     {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>

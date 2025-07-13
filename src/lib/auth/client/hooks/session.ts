@@ -4,6 +4,8 @@ import { apiClient } from '@/lib/api';
 import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
 import { TSession, TUser } from '@/lib/auth/client/client';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useAuthLoadingStore } from './auth-loading-store';
 
 const RETRY_COUNT = 2; // retry 2 times if the error is not 401
 const STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -32,6 +34,8 @@ export type TClientSession =
  * We can't use the useAuthEndpoints.getSession().
  */
 export const useSession = (): TClientSession => {
+    const { resetAuthLoading } = useAuthLoadingStore();
+    
     const {
         data: session,
         isLoading,
@@ -79,6 +83,13 @@ export const useSession = (): TClientSession => {
 
     // Derived state
     const isAuthenticated = !!session?.user && !!session?.session;
+
+    // Reset auth loading state when authentication succeeds
+    useEffect(() => {
+        if (isAuthenticated && !isLoading) {
+            resetAuthLoading();
+        }
+    }, [isAuthenticated, isLoading, resetAuthLoading]);
 
     if (!isAuthenticated) {
         return {
