@@ -2,14 +2,14 @@
 
 import { useCallback } from 'react';
 import { useSession } from './session';
-import { useSignOut } from './sign-out';
 import { useSignIn } from './sign-in';
+import { useSignOut } from './sign-out';
 
 /**
  * Global auth state hook (minimal re-renders)
  */
 export function useAuth() {
-    const { user, isAuthenticated, isLoading } = useSession();
+    const { user, isAuthenticated, isLoading, refetchSession } = useSession();
     const signOutMutation = useSignOut();
     const signIn = useSignIn();
 
@@ -23,6 +23,7 @@ export function useAuth() {
         isLoading,
         isSigningOut: signOutMutation.isPending,
         signOut,
+        refetchSession,
         ...signIn,
     };
 }
