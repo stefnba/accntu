@@ -22,10 +22,10 @@ const {
 
     // admin
     banUser,
-    unbanUser,
-    revokeUserSession,
-    removeUser,
-    revokeUserSessions,
+    // unbanUser,
+    // revokeUserSession,
+    // removeUser,
+    // revokeUserSessions,
 
     // user
     changeEmail,
@@ -38,7 +38,7 @@ const {
     revokeSessions,
 
     // passkey
-    deletePasskey,
+    // deletePasskey,
 } = endpoints;
 
 const app = new Hono()
@@ -160,6 +160,7 @@ const app = new Hono()
                 });
 
                 // todo: update settings
+                console.log('settings', settings);
 
                 return response;
             })
