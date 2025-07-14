@@ -55,13 +55,7 @@ export const useSession = (): TClientSession => {
 
             return data;
         },
-        enabled: (query) => {
-            // Disable query if we already know there's no session
-            const currentData = query.state.data;
-            // Only disable if we explicitly have null (meaning 401 was returned)
-            // Allow initial fetch when data is undefined
-            return currentData !== null;
-        },
+        enabled: true,
         staleTime: STALE_TIME,
         refetchInterval: (query) => {
             // Only refetch if we have a valid session
@@ -98,7 +92,7 @@ export const useSession = (): TClientSession => {
             isAuthenticated: false,
             isLoading,
             error: null,
-            refetchSession: () => {},
+            refetchSession: refetch,
         };
     }
 
