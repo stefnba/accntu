@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useTagUpsertModal } from '@/features/tag/hooks';
 import { TTagQuery } from '@/features/tag/schemas';
 import { cn } from '@/lib/utils';
 import { IconDotsVertical } from '@tabler/icons-react';
@@ -18,20 +19,29 @@ interface TagCardProps {
  * @returns A card component that displays a tag.
  */
 export const TagCard: React.FC<TagCardProps> = ({ tag, onClick, className }) => {
+    const { openModal } = useTagUpsertModal();
+
     return (
         <div className={cn('flex items-center w-full', className)}>
             <div className="w-2 h-full rounded-l-md" style={{ backgroundColor: tag.color }} />
 
             <Card
                 key={tag.id}
-                className=" border-l-0 p-4 h-full w-full hover:shadow-md transition-shadow rounded-l-none"
+                className=" border-l-0 p-4 h-full w-full hover:shadow-md transition-shadow rounded-l-none cursor-pointer"
                 onClick={onClick}
             >
                 <div className="flex items-center justify-between w-full">
                     <div className="font-medium truncate pr-2">{tag.name}</div>
                     <TagCardInfo>{tag.transactionCount || 0} transactions</TagCardInfo>
                     <TagCardActions>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                openModal({ mode: 'update', tagId: tag.id });
+                            }}
+                        >
                             <IconDotsVertical className="w-4 h-4" />
                         </Button>
                     </TagCardActions>

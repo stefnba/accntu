@@ -10,7 +10,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -22,9 +21,9 @@ import {
 import { useTagEndpoints } from '@/features/tag/api';
 import { TagCard, TagCardSkeleton } from '@/features/tag/components/tag-card';
 import { TagDetailsView } from '@/features/tag/components/tag-details-view';
-import { TagForm } from '@/features/tag/components/tag-form';
+import { TagUpsertModal } from '@/features/tag/components/tag-upsert-modal';
+import { useTagUpsertModal } from '@/features/tag/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type SortOption = 'popular' | 'recent' | 'created' | 'alpha' | 'color';
@@ -45,6 +44,7 @@ export function TagManager() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTagId, setEditingTagId] = useState<string>();
     const [deleteTagId, setDeleteTagId] = useState<string>();
+    const { openModal, isModalOpen, modalView } = useTagUpsertModal();
 
     const { data: tags = [], isLoading } = useTagEndpoints.getAll({});
     const deleteMutation = useTagEndpoints.delete();
@@ -106,23 +106,15 @@ export function TagManager() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold">Tags</h1>
-                <Button onClick={() => setIsFormOpen(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Tag
-                </Button>
-            </div>
-
             <div className="flex gap-4">
                 <Input
                     placeholder="Search tags..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-sm"
+                    className="max-w-sm bg-white"
                 />
                 <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] bg-white">
                         <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -158,14 +150,7 @@ export function TagManager() {
             />
 
             {/* Tag Form Modal */}
-            <TagForm
-                tagId={editingTagId}
-                isOpen={isFormOpen}
-                onClose={() => {
-                    setIsFormOpen(false);
-                    setEditingTagId(undefined);
-                }}
-            />
+            <TagUpsertModal />
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={!!deleteTagId} onOpenChange={() => setDeleteTagId(undefined)}>

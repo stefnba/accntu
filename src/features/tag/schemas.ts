@@ -25,6 +25,7 @@ export const tagQuerySchemas = {
             name: true,
             description: true,
             color: true,
+            isActive: true,
         })
         .extend({
             color: z
@@ -45,8 +46,17 @@ export type TTagQuery = {
 // ====================
 
 export const tagServiceSchemas = {
-    create: tagQuerySchemas.insert.omit({}),
-    update: tagQuerySchemas.update,
+    create: tagQuerySchemas.insert.pick({
+        name: true,
+        color: true,
+        description: true,
+    }),
+    update: tagQuerySchemas.update.pick({
+        name: true,
+        color: true,
+        description: true,
+        isActive: true,
+    }),
 };
 
 export type TTagService = {

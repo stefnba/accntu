@@ -28,7 +28,7 @@ export const useTagEndpoints = {
     /**
      * Update a tag
      */
-    // update: createMutation(apiClient.tags[':id'].$put, TAG_QUERY_KEYS.TAG),
+    update: createMutation(apiClient.tags[':id'].$put, TAG_QUERY_KEYS.TAG),
 
     /**
      * Delete a tag (soft delete)

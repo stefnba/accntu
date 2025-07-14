@@ -44,6 +44,20 @@ const app = new Hono()
         )
     )
 
+    // Update a tag
+    .put(
+        '/:id',
+        zValidator('param', endpointSelectSchema),
+        zValidator('json', tagServiceSchemas.update),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { id } = c.req.valid('param');
+                const data = c.req.valid('json');
+                return await tagServices.update({ id, data, userId: user.id });
+            })
+    )
+
     // Delete a tag (soft delete)
     .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
         withRoute(c, async () => {
