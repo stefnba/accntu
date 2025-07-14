@@ -155,7 +155,7 @@ export const auth = betterAuth({
         ...(options.plugins ?? []),
         customSession(async ({ user, session }) => {
             // remove ban-related fields
-            const { banReason, banExpires, banned, ...restUser } = user;
+            const { banReason, banExpires, banned, ...restUser } = user; // eslint-disable-line @typescript-eslint/no-unused-vars
 
             return {
                 user: {

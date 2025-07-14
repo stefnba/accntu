@@ -5,6 +5,7 @@ import type { auth } from '../config';
 export const authClient = createAuthClient({
     plugins: [emailOTPClient(), customSessionClient<typeof auth>(), passkeyClient()],
 });
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const authErrors = authClient.$ERROR_CODES;
 
 // ====================
