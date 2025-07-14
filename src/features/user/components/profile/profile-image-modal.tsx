@@ -1,40 +1,81 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
-import { Separator } from '@/components/ui/separator';
+import { useUserEndpoints } from '@/features/user/api';
+import { useProfileUpdateModal } from '@/features/user/hooks';
 import { useAuth, useAuthEndpoints } from '@/lib/auth/client';
 import { uploadFileToS3WithSignedUrl } from '@/lib/upload/cloud/s3/services';
 import { computeSHA256 } from '@/lib/upload/utils';
-import { IconArrowLeft, IconCheck } from '@tabler/icons-react';
+import { IconArrowLeft } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useUserEndpoints } from '../../api';
 import { FileDropzone } from './image-editor/file-dropzone';
 import { ImageEditor, type ImageEditData } from './image-editor/image-editor';
 import { UploadProgress } from './image-editor/upload-progress';
 
-type ModalMode = 'upload' | 'edit';
-type ModalStep = 'select' | 'edit' | 'uploading' | 'complete';
+export const getProfileImageModal = (): {
+    title: string;
+    description?: string;
+    footer?: React.ReactNode;
+} => {
+    const { step, setStep, closeModal } = useProfileUpdateModal();
 
-interface ProfileImageModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    mode: ModalMode;
-}
+    if (step === 'edit') {
+        return {
+            title: 'Edit Profile Image',
+            description: 'Edit your profile image',
+            footer: (
+                <>
+                    <Button variant="outline" onClick={() => setStep('select')}>
+                        <IconArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <Button onClick={() => setStep('uploading')}>Save Image</Button>
+                </>
+            ),
+        };
+    }
 
-export function ProfileImageModal({ open, onOpenChange, mode }: ProfileImageModalProps) {
+    if (step === 'uploading') {
+        return {
+            title: 'Uploading Image',
+            description: 'Uploading your image',
+        };
+    }
+
+    if (step === 'complete') {
+        return {
+            title: 'Upload Complete',
+            description: 'Your profile image has been updated',
+        };
+    }
+
+    return {
+        title: 'Upload Profile Image',
+        description: 'Upload a profile image for your account',
+        footer: (
+            <Button variant="outline" onClick={() => closeModal()}>
+                Cancel
+            </Button>
+        ),
+    };
+};
+
+export function ProfileImageModal() {
     // ====================
     // Hooks
     // ====================
 
     const { user, refetchSession } = useAuth();
+    const { step, setStep } = useProfileUpdateModal({
+        onClose() {
+            reset();
+        },
+    });
 
     // ====================
     // State
     // ====================
-    const [step, setStep] = useState<ModalStep>('select');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
     const [processedImageUrl, setProcessedImageUrl] = useState<string>('');
@@ -53,36 +94,20 @@ export function ProfileImageModal({ open, onOpenChange, mode }: ProfileImageModa
     // ====================
 
     // Reset modal state when closed
-    const handleOpenChange = useCallback(
-        (newOpen: boolean) => {
-            if (!newOpen) {
-                // Cleanup URLs to prevent memory leaks
-                if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
-                if (processedImageUrl) URL.revokeObjectURL(processedImageUrl);
+    const reset = useCallback(() => {
+        // Cleanup URLs to prevent memory leaks
+        if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
+        if (processedImageUrl) URL.revokeObjectURL(processedImageUrl);
 
-                // Reset state
-                setStep('select');
-                setSelectedFile(null);
-                setOriginalImageUrl('');
-                setProcessedImageUrl('');
-                setEditData(null);
-                setUploadProgress(0);
-                setUploadError('');
-            }
-            onOpenChange(newOpen);
-        },
-        [onOpenChange, originalImageUrl, processedImageUrl]
-    );
-
-    // Initialize based on mode
-    const initializeModal = useCallback(() => {
-        if (mode === 'edit' && user?.image) {
-            setOriginalImageUrl(user.image);
-            setStep('edit');
-        } else {
-            setStep('select');
-        }
-    }, [mode, user?.image]);
+        // Reset state
+        setStep('select');
+        setSelectedFile(null);
+        setOriginalImageUrl('');
+        setProcessedImageUrl('');
+        setEditData(null);
+        setUploadProgress(0);
+        setUploadError('');
+    }, [originalImageUrl, processedImageUrl]);
 
     // Handle file selection
     const handleFileSelect = useCallback((file: File, previewUrl: string) => {
@@ -189,22 +214,6 @@ export function ProfileImageModal({ open, onOpenChange, mode }: ProfileImageModa
         }
     }, [processedImageUrl, user?.id, createSignedUrlMutation]);
 
-    // Get modal title
-    const getTitle = () => {
-        switch (step) {
-            case 'select':
-                return mode === 'upload' ? 'Upload Profile Image' : 'Edit Profile Image';
-            case 'edit':
-                return 'Edit Your Image';
-            case 'uploading':
-                return 'Uploading Image';
-            case 'complete':
-                return 'Upload Complete';
-            default:
-                return 'Profile Image';
-        }
-    };
-
     // Get modal content
     const getContent = () => {
         switch (step) {
@@ -243,69 +252,5 @@ export function ProfileImageModal({ open, onOpenChange, mode }: ProfileImageModa
         }
     };
 
-    // Get footer actions
-    const getFooterActions = () => {
-        switch (step) {
-            case 'select':
-                return (
-                    <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                        Cancel
-                    </Button>
-                );
-
-            case 'edit':
-                return (
-                    <>
-                        <Button
-                            variant="outline"
-                            onClick={() =>
-                                mode === 'upload' ? setStep('select') : handleOpenChange(false)
-                            }
-                        >
-                            <IconArrowLeft className="w-4 h-4 mr-2" />
-                            {mode === 'upload' ? 'Back' : 'Cancel'}
-                        </Button>
-                        <Button
-                            onClick={uploadImage}
-                            disabled={!processedImageUrl || createSignedUrlMutation.isPending}
-                        >
-                            Save Image
-                        </Button>
-                    </>
-                );
-
-            case 'uploading':
-                return null; // No actions during upload
-
-            case 'complete':
-                return (
-                    <Button onClick={() => handleOpenChange(false)}>
-                        <IconCheck className="w-4 h-4 mr-2" />
-                        Done
-                    </Button>
-                );
-
-            default:
-                return null;
-        }
-    };
-
-    // Initialize when modal opens
-    if (open && step === 'select' && mode === 'edit') {
-        initializeModal();
-    }
-
-    return (
-        <ResponsiveModal open={open} onOpenChange={handleOpenChange}>
-            <DialogHeader>
-                <DialogTitle>{getTitle()}</DialogTitle>
-            </DialogHeader>
-
-            <div className="py-4">{getContent()}</div>
-
-            <Separator />
-
-            <DialogFooter className="flex gap-2">{getFooterActions()}</DialogFooter>
-        </ResponsiveModal>
-    );
+    return <div className="w-lg">{getContent()}</div>;
 }

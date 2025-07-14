@@ -6,13 +6,16 @@ import { Description } from '@/components/ui/font';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/auth/client';
-import { IconCamera, IconEdit, IconMail } from '@tabler/icons-react';
+import { IconCamera, IconEdit } from '@tabler/icons-react';
 import { User } from 'lucide-react';
 
+import { useProfileUpdateModal } from '@/features/user/hooks';
 import { generateDisplayName } from '@/features/user/utils';
 
 export const ProfileCard = () => {
     const { user } = useAuth();
+
+    const { openModal } = useProfileUpdateModal();
 
     const name = user
         ? generateDisplayName({
@@ -42,7 +45,7 @@ export const ProfileCard = () => {
                             <Label>Name</Label>
                             <Description>{name}</Description>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => openModal('name')}>
                             <IconEdit className="w-4 h-4 mr-1" />
                             Update Name
                         </Button>
@@ -56,10 +59,6 @@ export const ProfileCard = () => {
                             <Label>Email</Label>
                             <Description>{user?.email}</Description>
                         </div>
-                        <Button variant="outline" size="sm">
-                            <IconMail className="w-4 h-4 mr-1" />
-                            Update Email
-                        </Button>
                     </div>
 
                     <Separator />
@@ -70,7 +69,7 @@ export const ProfileCard = () => {
                             <Label>Profile Picture</Label>
                             {/* <Description>Update your profile picture</Description> */}
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => openModal('picture')}>
                             <IconCamera className="w-4 h-4 mr-1" />
                             Update Picture
                         </Button>

@@ -4,12 +4,16 @@ interface ModalOptions<T extends readonly string[]> {
     key?: string;
     views: T;
     defaultView?: T[number];
+    onOpen?: (view: T[number]) => void;
+    onClose?: () => void;
 }
 
 /**
  * A hook to manage a modal.
  * @param key - The key to use for the modal view.
  * @param views - The views to use for the modal, e.g. create, update, etc.
+ * @param onOpen - Optional callback when modal opens
+ * @param onClose - Optional callback when modal closes
  * @returns An object with the modal view, open function, and close function.
  */
 export const useQueryStateModal = <T extends readonly string[]>(options: ModalOptions<T>) => {
@@ -23,6 +27,7 @@ export const useQueryStateModal = <T extends readonly string[]>(options: ModalOp
      */
     const open = (type: T[number]) => {
         _setModalView(type);
+        options.onOpen?.(type);
     };
 
     /**
@@ -30,20 +35,27 @@ export const useQueryStateModal = <T extends readonly string[]>(options: ModalOp
      */
     const close = () => {
         _setModalView(null);
+        options.onClose?.();
     };
 
     /**
      * Toggle the modal open state.
      */
     const toggleModalOpen = () => {
-        _setModalView(modalView ? null : options.defaultView || options.views[0]);
+        if (modalView) {
+            close();
+        } else {
+            const defaultView = options.defaultView || options.views[0];
+            open(defaultView);
+        }
     };
 
     /**
      * Reset the modal view to the default view.
      */
     const resetModalView = () => {
-        _setModalView(options.defaultView || options.views[0]);
+        const defaultView = options.defaultView || options.views[0];
+        open(defaultView);
     };
 
     /**
@@ -51,7 +63,7 @@ export const useQueryStateModal = <T extends readonly string[]>(options: ModalOp
      * @param view - The view to set.
      */
     const setModalView = (view: T[number]) => {
-        _setModalView(view);
+        open(view);
     };
 
     return {
@@ -75,39 +87,39 @@ export type InferQueryStateModalViewOptions<
 
 interface StepModalOptions<T extends readonly string[]> {
     key?: string;
-    pages: T;
-    initialPage?: T[number];
+    steps: T;
+    initialStep?: T[number];
 }
 
 /**
  * A hook to manage a step modal.
  * @param key - The key to use for the step modal.
- * @param pages - The pages to use for the step modal, e.g. step1, step2, etc.
- * @param initialPage - The initial page to use for the step modal.
- * @returns An object with the current page, reset function, setPage function, and pages array.
+ * @param steps - The steps to use for the step modal, e.g. step1, step2, etc.
+ * @param initialStep - The initial step to use for the step modal.
+ * @returns An object with the current step, reset function, setStep function, and steps array.
  */
 export const useStepModal = <T extends readonly string[]>(options: StepModalOptions<T>) => {
-    const [page, _setPage] = useQueryState<T[number]>(
+    const [step, _setStep] = useQueryState<T[number]>(
         options.key || 'p',
-        parseAsStringLiteral(options.pages)
+        parseAsStringLiteral(options.steps).withDefault(options.initialStep || options.steps[0])
     );
 
-    const setPage = (page: T[number]) => {
-        _setPage(page);
+    const setStep = (step: T[number]) => {
+        _setStep(step);
     };
 
-    const resetPage = () => {
-        _setPage(options.initialPage || options.pages[0]);
+    const resetStep = () => {
+        _setStep(options.initialStep || options.steps[0]);
     };
 
     return {
-        page,
-        resetPage,
-        setPage,
-        pages: options.pages,
+        step,
+        resetStep,
+        setStep,
+        steps: options.steps,
     };
 };
 
-export type InferQueryStateStepModalPageOptions<
-    T extends (...args: any[]) => { pages: readonly string[] },
-> = ReturnType<T>['pages'][number];
+export type InferQueryStateStepModalStepOptions<
+    T extends (...args: any[]) => { steps: readonly string[] },
+> = ReturnType<T>['steps'][number];
