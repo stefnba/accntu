@@ -1,14 +1,21 @@
 import * as React from 'react';
 
+import { RoutePath } from '@/lib/routes';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import { IconType } from 'react-icons';
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+function Card({
+    className,
+    hoverable = false,
+    ...props
+}: React.ComponentProps<'div'> & { hoverable?: boolean }) {
     return (
         <div
             data-slot="card"
             className={cn(
                 'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
+                hoverable && 'hover:scale-105 hover:shadow-md transition-all duration-300',
                 className
             )}
             {...props}
@@ -67,4 +74,47 @@ function CardIcon({ icon: Icon, ...props }: React.ComponentProps<'svg'> & { icon
     return <Icon {...props} className="relative mb-6 h-6 w-6 text-primary" />;
 }
 
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardIcon, CardTitle };
+/**
+ * Custom Component for Card Actions on the top right of the card, usually used for buttons or dropdowns
+ */
+const CardAction = ({ children, className, ...props }: React.ComponentProps<'div'>) => {
+    return (
+        <div
+            data-slot="card-action"
+            className={cn('flex items-center gap-2 ml-auto', className)}
+            {...props}
+        >
+            {children}
+        </div>
+    );
+};
+
+/**
+ * Custom Component for Card that is used to navigate to a page
+ */
+const LinkCard = ({
+    className,
+    href,
+    ...props
+}: React.ComponentProps<'div'> & { href: RoutePath }) => {
+    return (
+        <Link href={href}>
+            <Card
+                className={cn('bg-transparent border-none shadow-none p-0', className)}
+                {...props}
+            ></Card>
+        </Link>
+    );
+};
+
+export {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardIcon,
+    CardTitle,
+    LinkCard,
+};
