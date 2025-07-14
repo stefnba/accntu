@@ -1,4 +1,5 @@
 import { FormCheckbox } from './checkbox';
+import { ColorSelect, FormColorSelect } from './color-select';
 import { FormFileDropzone } from './file-dropzone';
 import { Form } from './form-provider';
 import { FormInput } from './input';
@@ -8,12 +9,14 @@ import { FormSelect } from './select';
 import { FormSubmitButton } from './submit-button';
 import { FormSwitch } from './switch';
 import { FormTextarea } from './textarea';
-import { createFormSchema, useZodForm } from './use-form';
+import { createFormSchema, useUpsertForm, useZodForm } from './use-form';
 
 export {
+    ColorSelect,
     createFormSchema,
     Form,
     FormCheckbox,
+    FormColorSelect,
     FormFileDropzone,
     FormInput,
     FormOTPInput,
@@ -23,4 +26,5 @@ export {
     FormSwitch,
     FormTextarea,
     useZodForm as useForm,
+    useUpsertForm,
 };

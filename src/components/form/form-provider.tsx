@@ -39,7 +39,7 @@ export function Form<TFormValues extends Record<string, any>>({
                 id={id}
                 autoFocus={false}
                 noValidate
-                className={cn(className)}
+                className={cn('space-y-6', className)}
                 onSubmit={handleSubmit}
                 {...props}
             >

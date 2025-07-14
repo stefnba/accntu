@@ -192,3 +192,46 @@ export function createFormSchema<TSchema extends z.ZodType<any, any, any>>(
         defaultValues,
     };
 }
+
+/**
+ * Create a form that can be used to upsert a resource
+ *
+ * @param create - The create schema and options
+ * @param update - The update schema and options
+ * @param isUpdate - Whether the form is for an update
+ *
+ * @example
+ * ```tsx
+ * const form = useUpsertForm({
+ *   create: {
+ *     schema: z.object({ name: z.string() }),
+ *     onSubmit: (data) => {
+ *       console.log(data);
+ *     },
+ *   },
+ *   update: {
+ *     schema: z.object({ name: z.string() }),
+ *     onSubmit: (data) => {
+ *       console.log(data);
+ *     },
+ *   },
+ *   isUpdate: false,
+ * });
+ */
+export const useUpsertForm = <
+    TCreateSchema extends z.ZodObject<any>,
+    TUpdateSchema extends z.ZodObject<any>,
+>({
+    create,
+    update,
+    isUpdate,
+}: {
+    create: {
+        schema: TCreateSchema;
+    } & UseZodFormOptions<z.infer<TCreateSchema>>;
+    update: {
+        schema: TUpdateSchema;
+    } & UseZodFormOptions<z.infer<TUpdateSchema>>;
+    isUpdate: boolean;
+}): UseZodFormReturn<z.infer<TCreateSchema> | z.infer<TUpdateSchema>> =>
+    useZodForm<TCreateSchema | TUpdateSchema>(isUpdate ? update : create);
