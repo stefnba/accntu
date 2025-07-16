@@ -1,8 +1,9 @@
-import { Appearance, Notification, Security, Settings, User } from '@/components/icons';
+import { Appearance, Notification, Security, User } from '@/components/icons';
 import { MainContent } from '@/components/layout/main';
 import { NavCard } from '@/components/nav-card';
 import { CardDescription, CardHeader, CardIcon, CardTitle } from '@/components/ui/card';
 import { RoutePath } from '@/lib/routes';
+import { Globe } from 'lucide-react';
 import { IconType } from 'react-icons';
 
 type TNavItem = {
@@ -42,10 +43,10 @@ export const userNavItems: TNavItem[] = [
         avatar: Appearance,
     },
     {
-        title: 'Settings',
-        href: '/user/settings',
-        description: 'Set your default language and timezone',
-        avatar: Settings,
+        title: 'Language & Region',
+        href: '/user/language-and-region',
+        description: 'Set your default language, date format and timezone',
+        avatar: Globe,
     },
 ];
 
