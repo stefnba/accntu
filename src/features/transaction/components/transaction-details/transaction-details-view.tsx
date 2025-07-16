@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransactionEndpoints } from '@/features/transaction/api';
+import { TransactionDetailsTabContent } from '@/features/transaction/components/transaction-details/tab-content';
 import { TransactionError } from '@/features/transaction/components/transaction-details/transaction-error';
 import { TransactionHeader } from '@/features/transaction/components/transaction-details/transaction-header';
 import { TransactionLoading } from '@/features/transaction/components/transaction-details/transaction-loading';
@@ -35,6 +36,7 @@ export const TransactionDetailsView = ({ transactionId }: TransactionDetailsView
             <TransactionHeader transactionId={transactionId} />
             <TransactionQuickInfo transactionId={transactionId} />
             <TransactionTabs transactionId={transactionId} />
+            <TransactionDetailsTabContent transactionId={transactionId} />
         </div>
     );
 };
