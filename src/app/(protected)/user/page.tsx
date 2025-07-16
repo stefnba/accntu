@@ -30,8 +30,8 @@ export const userNavItems: TNavItem[] = [
         avatar: Security,
     },
     {
-        title: 'Notification',
-        href: '/user/notification',
+        title: 'Notifications',
+        href: '/user/notifications',
         description: 'Choose notification preferences and how you want to be contacted',
         avatar: Notification,
     },

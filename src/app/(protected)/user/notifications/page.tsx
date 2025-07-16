@@ -1,9 +1,10 @@
 import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
 import { MainContent } from '@/components/layout/main';
+import { NotificationPreferencesForm } from '@/features/user/components/notifications/notification-preferences-form';
 
-const item = getNavItem(userNavItems, '/user/notification');
+const item = getNavItem(userNavItems, '/user/notifications');
 
-export default function NotificationPage() {
+export default function NotificationsPage() {
     return (
         <MainContent
             pageHeader={{
@@ -12,7 +13,7 @@ export default function NotificationPage() {
             }}
             backButton
         >
-            Notification
+            <NotificationPreferencesForm />
         </MainContent>
     );
 }
