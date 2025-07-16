@@ -40,13 +40,8 @@ export const NotificationPreferencesForm = () => {
                 {/* Communication Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Mail className="h-5 w-5" />
-                            Communication
-                        </CardTitle>
-                        <CardDescription>
-                            How you receive updates and messages
-                        </CardDescription>
+                        <CardTitle className="flex items-center gap-2">Communication</CardTitle>
+                        <CardDescription>How you receive updates and messages</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-start space-x-3">
@@ -60,7 +55,7 @@ export const NotificationPreferencesForm = () => {
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                             <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
                             <div className="flex-1">
@@ -78,13 +73,8 @@ export const NotificationPreferencesForm = () => {
                 {/* Marketing Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Megaphone className="h-5 w-5" />
-                            Marketing
-                        </CardTitle>
-                        <CardDescription>
-                            Marketing and promotional content
-                        </CardDescription>
+                        <CardTitle className="flex items-center gap-2">Marketing</CardTitle>
+                        <CardDescription>Marketing and promotional content</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-start space-x-3">
@@ -104,10 +94,7 @@ export const NotificationPreferencesForm = () => {
                 {/* Financial Updates Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5" />
-                            Financial Updates
-                        </CardTitle>
+                        <CardTitle className="flex items-center gap-2">Financial Updates</CardTitle>
                         <CardDescription>
                             Notifications about your financial activity
                         </CardDescription>
@@ -124,7 +111,7 @@ export const NotificationPreferencesForm = () => {
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                             <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                             <div className="flex-1">
@@ -136,7 +123,7 @@ export const NotificationPreferencesForm = () => {
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                             <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
                             <div className="flex-1">
