@@ -1,13 +1,5 @@
-import {
-    SettingsRow,
-    SettingsRowActions,
-    SettingsRowHeader,
-    SettingsRowSection,
-    SettingsRowTitle,
-} from '@/components/settings-row';
 import { QueryStateTabsContent } from '@/components/tabs-query-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { AmountTab } from '@/features/transaction/components/transaction-details/amount-tab';
 import { BankingTab } from '@/features/transaction/components/transaction-details/banking-tab';
 import { DetailsTab } from '@/features/transaction/components/transaction-details/details-tab';
 import { MetadataTab } from '@/features/transaction/components/transaction-details/metadata-tab';
@@ -17,51 +9,14 @@ export const TransactionDetailsTabContent = ({ transactionId }: { transactionId:
     const tabsNav = useTransactionDetails();
 
     return (
-        <div>
-            <QueryStateTabsContent
-                tabs={tabsNav}
-                components={{
-                    amount: (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Amount</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Separator />
-                                <SettingsRowSection>
-                                    <SettingsRow>
-                                        <SettingsRowHeader>
-                                            <SettingsRowTitle>Spending Amount</SettingsRowTitle>
-                                        </SettingsRowHeader>
-                                        <SettingsRowActions>CHF 33.23</SettingsRowActions>
-                                    </SettingsRow>
-                                    <SettingsRow>
-                                        <SettingsRowHeader>
-                                            <SettingsRowTitle>Account Amount</SettingsRowTitle>
-                                        </SettingsRowHeader>
-                                        <SettingsRowActions>EUR 33.31</SettingsRowActions>
-                                    </SettingsRow>
-                                    <SettingsRow>
-                                        <SettingsRowHeader>
-                                            <SettingsRowTitle>Account Amount</SettingsRowTitle>
-                                        </SettingsRowHeader>
-                                        <SettingsRowActions>EUR 33.31</SettingsRowActions>
-                                    </SettingsRow>
-                                    <SettingsRow>
-                                        <SettingsRowHeader>
-                                            <SettingsRowTitle>Account Amount</SettingsRowTitle>
-                                        </SettingsRowHeader>
-                                        <SettingsRowActions>EUR 33.31</SettingsRowActions>
-                                    </SettingsRow>
-                                </SettingsRowSection>
-                            </CardContent>
-                        </Card>
-                    ),
-                    details: <DetailsTab transactionId={transactionId} />,
-                    banking: <BankingTab transactionId={transactionId} />,
-                    metadata: <MetadataTab transactionId={transactionId} />,
-                }}
-            />
-        </div>
+        <QueryStateTabsContent
+            tabs={tabsNav}
+            components={{
+                metadata: <MetadataTab transactionId={transactionId} />,
+                amount: <AmountTab transactionId={transactionId} />,
+                banking: <BankingTab transactionId={transactionId} />,
+                details: <DetailsTab transactionId={transactionId} />,
+            }}
+        />
     );
 };

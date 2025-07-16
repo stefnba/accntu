@@ -1,6 +1,7 @@
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCallback } from 'react';
 import { TTabItem, UseTabNavReturn } from './types';
 
 /**
@@ -27,24 +28,18 @@ export const QueryStateTabsNav = <T extends readonly TTabItem[]>({
     className,
     render,
 }: QueryStateTabsNavProps<T>) => {
-    const handleValueChange = (newValue: string) => {
-        const isValidValue = (val: string): val is T[number]['value'] =>
-            tabsNav.tabs.some((tab) => tab.value === val);
-
-        if (isValidValue(newValue)) {
-            tabsNav.setTab(newValue);
+    const handleValueChange = useCallback((newValue: string) => {
+        const validTab = tabsNav.tabs.find(tab => tab.value === newValue);
+        if (validTab) {
+            tabsNav.setTab(validTab.value);
         }
-    };
+    }, [tabsNav]);
 
-    // Custom render function
+    // Custom render function - needs Tabs wrapper
     if (render) {
         return (
-            <Tabs
-                value={tabsNav.currentTab}
-                onValueChange={handleValueChange}
-                className={className}
-            >
-                <TabsList className={className}>
+            <Tabs value={tabsNav.currentTab} onValueChange={handleValueChange} className={className}>
+                <TabsList>
                     {render({
                         tabs: tabsNav.tabs,
                         activeTab: tabsNav.currentTab,
@@ -59,30 +54,14 @@ export const QueryStateTabsNav = <T extends readonly TTabItem[]>({
     // Default render
     return (
         <Tabs value={tabsNav.currentTab} onValueChange={handleValueChange} className={className}>
-            <TabsList className={className}>
+            <TabsList>
                 {tabsNav.tabs.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value}>
-                        {tab.icon && tab.icon}
+                        {tab.icon && <span className="mr-2">{tab.icon}</span>}
                         {tab.label}
                     </TabsTrigger>
                 ))}
             </TabsList>
         </Tabs>
-    );
-};
-
-export const QueryStateTabsNavOnly = <T extends readonly TTabItem[]>({
-    tabsNav,
-    className,
-}: Omit<QueryStateTabsNavProps<T>, 'render'>) => {
-    return (
-        <TabsList className={className}>
-            {tabsNav.tabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                    {tab.icon && tab.icon}
-                    {tab.label}
-                </TabsTrigger>
-            ))}
-        </TabsList>
     );
 };

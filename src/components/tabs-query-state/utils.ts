@@ -9,7 +9,7 @@ export const createTabViews = <T extends Record<string, { label: string; icon?: 
         value,
         label,
         icon,
-    })) as Array<{
+    })) satisfies Array<{
         value: keyof T;
         label: string;
         icon?: ReactNode;
@@ -35,15 +35,18 @@ export const createCompleteTabSetup = <
 
 // Type guard for tab items
 export const isTabItem = (item: unknown): item is TTabItem => {
+    if (typeof item !== 'object' || item === null) {
+        return false;
+    }
+    
+    const candidate = item as Record<string, unknown>;
     return (
-        typeof item === 'object' &&
-        item !== null &&
-        typeof (item as any).label === 'string' &&
-        typeof (item as any).value === 'string'
+        typeof candidate.label !== 'undefined' &&
+        typeof candidate.value === 'string'
     );
 };
 
-// Utility to find active tab
+// Utility to find active tab (memoized for performance)
 export const findActiveTab = <T extends readonly TTabItem[]>(
     tabs: T,
     activeValue: T[number]['value']

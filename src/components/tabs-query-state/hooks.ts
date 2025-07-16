@@ -1,88 +1,48 @@
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { TTabItem } from './types';
-
-export type TTabNavHookOptions<T extends readonly TTabItem[]> = {
-    /**
-     * The query state key to use for the tab nav.
-     */
-    key?: string;
-    /**
-     * The tabs to use for the tab nav.
-     */
-    tabs: T;
-    /**
-     * The default tab to use for the tab nav.
-     */
-    defaultTab?: T[number]['value'];
-};
+import { useCallback, useMemo } from 'react';
+import { TTabItem, TTabNavHookOptions, UseTabNavReturn } from './types';
 
 /**
- * Type for useTabNav hook return
- */
-export type UseTabNavReturn<T extends readonly TTabItem[]> = {
-    /**
-     * The current tab value.
-     */
-    currentTab: T[number]['value'];
-    /**
-     * Set the tab value.
-     * @param tab - The tab value to set.
-     */
-    setTab: (tab: T[number]['value']) => void;
-    /**
-     * Reset the tab to the default tab.
-     */
-    resetToDefault: () => void;
-    /**
-     * The tabs to use for the tab nav.
-     */
-    tabs: T;
-    /**
-     * Get a tab by value.
-     * @param value - The value of the tab to get.
-     * @returns The tab.
-     */
-    getTab: (value: T[number]['value']) => TTabItem;
-};
-
-/**
- * A hook to manage a tab nav.
- * @param key - The query state key to use for the tab nav.
+ * A hook to manage a tab nav with simplified API.
  * @param tabs - The tabs to use for the tab nav, e.g. 'details', 'banking', 'amount', 'metadata'.
- * @param defaultTab - The default tab to use for the tab nav.
+ * @param options - Optional configuration (key, defaultTab).
  * @returns An object with the current tab, reset function, setTab function, and tabs array.
  */
 export const useQueryStateTabsNav = <T extends readonly TTabItem[]>(
-    options: TTabNavHookOptions<T>
+    tabs: T,
+    options: TTabNavHookOptions<T> = {}
 ): UseTabNavReturn<T> => {
+    const defaultTab = options.defaultTab || tabs[0].value;
+    
     const [currentTab, setCurrentTab] = useQueryState<T[number]['value']>(
         options.key || 'v',
-        parseAsStringLiteral(options.tabs.map((tab) => tab.value)).withDefault(
-            options.defaultTab || options.tabs[0].value
-        )
+        parseAsStringLiteral(tabs.map((tab) => tab.value)).withDefault(defaultTab)
     );
 
-    const setTab = (tab: T[number]['value']) => {
+    const setTab = useCallback((tab: T[number]['value']) => {
         setCurrentTab(tab);
-    };
+    }, [setCurrentTab]);
 
-    const resetToDefault = () => {
-        setCurrentTab(options.defaultTab || options.tabs[0].value);
-    };
+    const resetToDefault = useCallback(() => {
+        setCurrentTab(defaultTab);
+    }, [setCurrentTab, defaultTab]);
 
-    const getTab = (value: T[number]['value']) => {
-        const tab = options.tabs.find((tab) => tab.value === value);
+    const getTab = useCallback((value: T[number]['value']): T[number] => {
+        const tab = tabs.find((tab) => tab.value === value);
         if (!tab) {
-            throw new Error(`Tab ${value} not found`);
+            console.warn(`Tab ${value} not found, falling back to default`);
+            return tabs[0];
         }
         return tab;
-    };
+    }, [tabs]);
+
+    const memoizedTabs = useMemo(() => tabs, [tabs]);
 
     return {
         currentTab,
         resetToDefault,
         setTab,
-        tabs: options.tabs,
+        tabs: memoizedTabs,
         getTab,
     };
 };
@@ -93,5 +53,5 @@ export const useQueryStateTabsNav = <T extends readonly TTabItem[]>(
  * @returns The query state tab nav hook options
  */
 export type InferQueryStateTabNavHookOptions<
-    T extends (...args: any[]) => { tabs: readonly TTabItem[] },
+    T extends (...args: never[]) => { tabs: readonly TTabItem[] },
 > = ReturnType<T>['tabs'][number];

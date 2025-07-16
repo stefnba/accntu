@@ -1,13 +1,14 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { ComponentType, createElement, isValidElement, ReactNode, Suspense } from 'react';
-import { TTabItem, UseTabNavReturn } from './types';
+import { isValidElement, ReactNode, Suspense, useMemo } from 'react';
+import { TabComponent, TTabItem, UseTabNavReturn } from './types';
 
 /**
  * Props for tab content component
  * @param tabNav - The tab nav to use
  * @param components - The components to use
+ * @param componentProps - Shared props for all components
  * @param lazy - Whether to lazy load the components
  * @param fallback - The fallback to use
  * @param className - The class name to use
@@ -15,7 +16,7 @@ import { TTabItem, UseTabNavReturn } from './types';
  */
 export type QueryStateTabsContentProps<T extends readonly TTabItem[]> = {
     tabs: UseTabNavReturn<T>;
-    components: Record<T[number]['value'], ComponentType<TTabItem> | ReactNode>;
+    components: Record<T[number]['value'], TabComponent>;
     lazy?: boolean;
     fallback?: ReactNode;
     className?: string;
@@ -37,45 +38,30 @@ const NoContentFallback = () => {
 export const QueryStateTabsContent = <T extends readonly TTabItem[]>({
     tabs,
     components,
-    lazy = false,
+    lazy = true,
     fallback = <NoContentFallback />,
     className,
     suspenseFallback = <SuspenseFallback />,
 }: QueryStateTabsContentProps<T>) => {
     const activeComponent = components[tabs.currentTab];
 
-    if (!activeComponent) {
-        return fallback;
-    }
-
-    const renderComponent = (): ReactNode => {
-        // If it's already a ReactNode (JSX element), return it directly
-        if (
-            isValidElement(activeComponent) ||
-            typeof activeComponent === 'string' ||
-            typeof activeComponent === 'number'
-        ) {
-            return activeComponent as ReactNode;
+    const renderComponent = useMemo((): ReactNode => {
+        if (!activeComponent) {
+            return fallback;
         }
 
-        // If it's a component type, create an element with props
-        if (typeof activeComponent === 'function') {
-            const props = { ...tabs.getTab(tabs.currentTab) };
-
-            if (lazy) {
-                return (
-                    <Suspense fallback={suspenseFallback}>
-                        {createElement(activeComponent, props)}
-                    </Suspense>
-                );
-            }
-
-            return createElement(activeComponent, props);
+        // For lazy loading, wrap in Suspense if enabled
+        if (lazy && isValidElement(activeComponent)) {
+            return (
+                <Suspense fallback={suspenseFallback}>
+                    {activeComponent}
+                </Suspense>
+            );
         }
 
-        // Fallback for any other ReactNode types
-        return activeComponent as ReactNode;
-    };
+        // Return the ReactNode directly
+        return activeComponent;
+    }, [activeComponent, lazy, suspenseFallback, fallback]);
 
-    return <div className={cn('w-full', className)}>{renderComponent()}</div>;
+    return <div className={cn('w-full', className)}>{renderComponent}</div>;
 };
