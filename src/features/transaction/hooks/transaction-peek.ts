@@ -4,10 +4,7 @@ import { parseAsString, useQueryState } from 'nuqs';
  * Hook for managing the transaction peek state
  */
 export const useTransactionPeek = () => {
-    const [peekTransactionId, setPeekTransactionId] = useQueryState(
-        'peekTransactionId',
-        parseAsString
-    );
+    const [peekTransactionId, setPeekTransactionId] = useQueryState('p', parseAsString);
 
     const openPeek = (transactionId: string) => {
         setPeekTransactionId(transactionId);
