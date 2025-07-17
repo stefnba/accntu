@@ -48,3 +48,11 @@ export type { LabelTreeItemSortableWrapperProps } from './item-sortable-wrapper'
 
 export { DragHandle } from './drag-handle';
 export type { DragHandleProps } from './drag-handle';
+
+// Tree utilities and drag indicators
+export { DropIndicator } from './drop-indicator';
+export type { DropIndicatorProps } from './drop-indicator';
+
+export { SortableLabelTreeItemProvider } from './sortable-provider';
+
+export * from './tree-utilities';

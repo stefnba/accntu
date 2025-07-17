@@ -27,9 +27,9 @@ export interface LabelTreeProviderProps extends LabelTreeConfig {
 }
 
 // Split contexts for better performance
-const LabelTreeStateContext = createContext<LabelTreeState | null>(null);
-const LabelTreeConfigContext = createContext<LabelTreeConfig | null>(null);
-const LabelTreeDataContext = createContext<LabelTreeData | null>(null);
+export const LabelTreeStateContext = createContext<LabelTreeState | null>(null);
+export const LabelTreeConfigContext = createContext<LabelTreeConfig | null>(null);
+export const LabelTreeDataContext = createContext<LabelTreeData | null>(null);
 
 export const useLabelTreeState = () => {
     const context = useContext(LabelTreeStateContext);

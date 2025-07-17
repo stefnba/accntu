@@ -3,13 +3,20 @@
 import { Card } from '@/components/ui/card';
 import { useLabelEndpoints } from '@/features/label/api';
 import { LabelTreeItemSortableWrapper } from '@/features/label/components/label-tree/item-sortable-wrapper';
-import { LabelTreeItemProvider } from '@/features/label/components/label-tree/provider';
+import { SortableLabelTreeItemProvider } from '@/features/label/components/label-tree/sortable-provider';
 import { cn } from '@/lib/utils';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useQueryClient } from '@tanstack/react-query';
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
+import { 
+    flatten, 
+    getProjection, 
+    adjustTree, 
+    type TreeItem, 
+    type DropProjection 
+} from './tree-utilities';
 
 // ====================
 // Standard Label Tree
@@ -85,81 +92,176 @@ export const LabelTreeSortable = memo(function LabelTreeSortable({
     const queryClient = useQueryClient();
 
     const rootLabels = useMemo(() => labels || [], [labels]);
-    const labelIds = rootLabels.map((label) => label.id);
+    
+    // Shared expanded state for sortable tree
+    const [expandedLabelIds, setExpandedLabelIds] = useState<Set<string>>(new Set());
+    
+    const toggleExpandedLabelId = useCallback((labelId: string) => {
+        setExpandedLabelIds((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(labelId)) {
+                newSet.delete(labelId);
+            } else {
+                newSet.add(labelId);
+            }
+            return newSet;
+        });
+    }, []);
+
+    const isExpandedLabelId = useCallback(
+        (labelId: string) => expandedLabelIds.has(labelId),
+        [expandedLabelIds]
+    );
+    
+    // Convert tree structure to flat array for dnd-kit with expanded state
+    const flatItems = useMemo(() => flatten(rootLabels as TreeItem[], null, 0, expandedLabelIds), [rootLabels, expandedLabelIds]);
+    const labelIds = flatItems.map((item) => item.id);
 
     const [dragState, setDragState] = useState({
         isDragging: false,
         isUpdating: false,
+        activeId: null as string | null,
     });
+    
+    // Use refs for frequently changing values to avoid re-renders
+    const projectionRef = useRef<DropProjection | null>(null);
+    const overIdRef = useRef<string | null>(null);
 
-    const handleDragStart = () => {
-        setDragState((prev) => ({ ...prev, isDragging: true }));
-    };
+    // Enhanced sensor for better drag detection
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
 
-    const handleDragEnd = async (event: DragEndEvent) => {
-        setDragState((prev) => ({ ...prev, isDragging: false }));
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        projectionRef.current = null;
+        overIdRef.current = null;
+        setDragState((prev) => ({ 
+            ...prev, 
+            isDragging: true, 
+            activeId: String(event.active.id),
+        }));
+    }, []);
 
-        const { active, over } = event;
+    const handleDragOver = useCallback((event: DragOverEvent) => {
+        const { active, over, delta } = event;
 
-        if (over && active.id !== over.id && labels) {
-            const activeIndex = labels.findIndex((label) => label.id === active.id);
-            const overIndex = labels.findIndex((label) => label.id === over.id);
+        if (!over || !active) return;
 
-            if (activeIndex !== -1 && overIndex !== -1) {
-                // Create new order with the moved item
-                const newOrder = [...labels];
-                const [movedItem] = newOrder.splice(activeIndex, 1);
-                newOrder.splice(overIndex, 0, movedItem);
+        const activeId = String(active.id);
+        const overId = String(over.id);
+        const offsetLeft = delta.x;
 
-                // Create updates array with new sort orders
-                const updates = newOrder.map((label, index) => ({
-                    id: label.id,
-                    sortOrder: index,
-                    parentId: label.parentId || null,
-                }));
-
-                // Optimistic update - Update UI immediately
-                setDragState((prev) => ({ ...prev, isUpdating: true }));
-
-                // Correct query key with empty object parameter
-                const queryKey = ['root_labels', {}];
-
-                // Cancel outgoing refetches to avoid race conditions
-                await queryClient.cancelQueries({
-                    queryKey: ['root_labels'],
-                });
-
-                // Snapshot the previous value for potential rollback
-                const previousLabels = queryClient.getQueryData(queryKey);
-
-                // Optimistically update the cache with correct query key
-                queryClient.setQueryData(queryKey, newOrder);
-
-                try {
-                    // Call the API
-                    console.log(updates);
-                    // await reorderMutation.mutateAsync({ json: { updates } });
-
-                    // Success feedback
-                    toast.success('Labels reordered successfully');
-                } catch (error) {
-                    // Rollback to previous state on error
-                    if (previousLabels) {
-                        queryClient.setQueryData(queryKey, previousLabels);
-                    }
-                    toast.error('Failed to reorder labels. Changes have been reverted.');
-                    console.error('Reorder error:', error);
-                } finally {
-                    setDragState((prev) => ({ ...prev, isUpdating: false }));
-
-                    // Always invalidate queries to sync with server state
-                    // queryClient.invalidateQueries({
-                    //     queryKey: ['root_labels'],
-                    // });
-                }
-            }
+        // Only calculate projection if over a different item or significant movement
+        if (overIdRef.current !== overId) {
+            const projection = getProjection(flatItems, activeId, overId, offsetLeft);
+            projectionRef.current = projection;
+            overIdRef.current = overId;
         }
-    };
+    }, [flatItems]);
+
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        const { active, over } = event;
+        
+        setDragState((prev) => ({ 
+            ...prev, 
+            isDragging: false,
+            activeId: null,
+        }));
+
+        if (!over || !active || active.id === over.id || !projectionRef.current) {
+            return;
+        }
+
+        const activeId = String(active.id);
+        const projection = projectionRef.current;
+
+        try {
+            // Apply tree adjustment
+            const adjustedTree = adjustTree(rootLabels as TreeItem[], activeId, projection);
+            
+            // Create updates array with new hierarchical structure
+            const flatAdjusted = flatten(adjustedTree);
+            const updates = flatAdjusted.map((item, index) => ({
+                id: item.id,
+                sortOrder: index,
+                parentId: item.parentId,
+            }));
+
+            // Optimistic update - Update UI immediately
+            setDragState((prev) => ({ ...prev, isUpdating: true }));
+
+            // Correct query key with empty object parameter
+            const queryKey = ['root_labels', {}];
+
+            // Cancel outgoing refetches to avoid race conditions
+            await queryClient.cancelQueries({
+                queryKey: ['root_labels'],
+            });
+
+            // Snapshot the previous value for potential rollback
+            const previousLabels = queryClient.getQueryData(queryKey);
+
+            // Optimistically update the cache with new tree structure
+            queryClient.setQueryData(queryKey, adjustedTree);
+
+            // Call the API
+            console.log('Tree updates:', updates);
+            // await reorderMutation.mutateAsync({ json: { updates } });
+
+            // Success feedback
+            toast.success('Labels reordered successfully');
+        } catch (error) {
+            // Rollback to previous state on error
+            const queryKey = ['root_labels', {}];
+            const previousLabels = queryClient.getQueryData(queryKey);
+            if (previousLabels) {
+                queryClient.setQueryData(queryKey, previousLabels);
+            }
+            toast.error('Failed to reorder labels. Changes have been reverted.');
+            console.error('Reorder error:', error);
+        } finally {
+            setDragState((prev) => ({ ...prev, isUpdating: false }));
+        }
+    }, [rootLabels, queryClient, reorderMutation]);
+
+    // Render flat items with proper nesting - MUST be before any conditional returns
+    const sortableItems = useMemo(() => {
+        return flatItems.map((item) => {
+            const isGhost = dragState.activeId === item.id;
+            
+            return (
+                <LabelTreeItemSortableWrapper 
+                    key={item.id} 
+                    id={item.id}
+                    depth={item.depth}
+                    ghost={isGhost}
+                    disableSelection={dragState.isDragging}
+                    disableInteraction={dragState.isUpdating}
+                >
+                    <SortableLabelTreeItemProvider 
+                        label={item} 
+                        level={item.depth}
+                        onSelect={onSelect}
+                        expandedLabelIds={expandedLabelIds}
+                        toggleExpandedLabelId={toggleExpandedLabelId}
+                        isExpandedLabelId={isExpandedLabelId}
+                    >
+                        {children}
+                    </SortableLabelTreeItemProvider>
+                </LabelTreeItemSortableWrapper>
+            );
+        });
+    }, [flatItems, dragState.activeId, dragState.isDragging, dragState.isUpdating, children, onSelect, expandedLabelIds, toggleExpandedLabelId, isExpandedLabelId]);
+
+    // Find the currently dragged item for the overlay
+    const activeItem = useMemo(() => {
+        if (!dragState.activeId) return null;
+        return flatItems.find(item => item.id === dragState.activeId);
+    }, [dragState.activeId, flatItems]);
 
     if (isLoading) {
         return (
@@ -183,18 +285,34 @@ export const LabelTreeSortable = memo(function LabelTreeSortable({
 
     return (
         <div className="relative">
-            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <DndContext 
+                sensors={sensors}
+                onDragStart={handleDragStart} 
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+            >
                 <SortableContext items={labelIds} strategy={verticalListSortingStrategy}>
-                    <div className={cn('space-y-2 w-full', className)}>
-                        {rootLabels.map((label) => (
-                            <LabelTreeItemSortableWrapper key={label.id} id={label.id}>
-                                <LabelTreeItemProvider label={label} onSelect={onSelect}>
-                                    {children}
-                                </LabelTreeItemProvider>
-                            </LabelTreeItemSortableWrapper>
-                        ))}
+                    <div className={cn('space-y-1 w-full', className)}>
+                        {sortableItems}
                     </div>
                 </SortableContext>
+                
+                <DragOverlay>
+                    {activeItem ? (
+                        <div className="bg-white shadow-lg ring-1 ring-black/5 rounded-lg p-2 transform rotate-2 scale-105">
+                            <SortableLabelTreeItemProvider 
+                                label={activeItem} 
+                                level={0}
+                                onSelect={onSelect}
+                                expandedLabelIds={expandedLabelIds}
+                                toggleExpandedLabelId={toggleExpandedLabelId}
+                                isExpandedLabelId={isExpandedLabelId}
+                            >
+                                {children}
+                            </SortableLabelTreeItemProvider>
+                        </div>
+                    ) : null}
+                </DragOverlay>
             </DndContext>
 
             {/* Loading overlay when updating */}

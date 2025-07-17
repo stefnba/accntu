@@ -18,6 +18,7 @@ import { useLabelEndpoints } from '../../api';
 import { useLabelModal } from '../../hooks';
 import {
     LabelTree,
+    LabelTreeSortable,
     LabelTreeChildren,
     LabelTreeItem,
     LabelTreeItemAction,
@@ -25,6 +26,7 @@ import {
     LabelTreeItemBadge,
     LabelTreeItemButton,
     LabelTreeItemContent,
+    DragHandle,
 } from './index';
 
 // Example 1: Complete tree with all functionality (DRY Template Approach)
@@ -171,7 +173,97 @@ export function SelectableLabelTreeExample() {
     );
 }
 
-// Example 4: Custom layout - DRY Template Approach
+// Example 4: Nested Drag and Drop Tree - Advanced Functionality
+export function NestedDragDropLabelTreeExample() {
+    const { openCreateModal, openEditModal } = useLabelModal();
+    const deleteMutation = useLabelEndpoints.delete();
+
+    const handleView = (labelId: string) => {
+        console.log('View label:', labelId);
+    };
+
+    const handleEdit = (labelId: string) => {
+        openEditModal(labelId);
+    };
+
+    const handleAddChild = (labelId: string) => {
+        openCreateModal(labelId);
+    };
+
+    const handleDelete = async (labelId: string) => {
+        if (confirm('Are you sure you want to delete this label?')) {
+            await deleteMutation.mutateAsync({ param: { id: labelId } });
+        }
+    };
+
+    /*
+     * Sortable template with drag handle and full functionality
+     * Supports nested drag and drop across different levels
+     */
+    const SortableLabelTemplate = () => (
+        <LabelTreeItem>
+            <LabelTreeItemContent>
+                {/* Drag handle for reordering */}
+                <DragHandle />
+
+                {/* Button to expand/collapse the label */}
+                <LabelTreeItemButton />
+
+                {/* Badge with name and icon */}
+                <LabelTreeItemBadge />
+
+                {/* Actions */}
+                <LabelTreeItemActions>
+                    {/* View label */}
+                    <LabelTreeItemAction onClick={handleView} tooltip="View label">
+                        <Eye className="w-3 h-3" />
+                    </LabelTreeItemAction>
+
+                    {/* Add child label */}
+                    <LabelTreeItemAction onClick={handleAddChild} tooltip="Add child label">
+                        <Plus className="w-3 h-3" />
+                    </LabelTreeItemAction>
+
+                    {/* Edit label */}
+                    <LabelTreeItemAction onClick={handleEdit} tooltip="Edit label">
+                        <Edit2 className="w-3 h-3" />
+                    </LabelTreeItemAction>
+
+                    {/* Delete label */}
+                    <LabelTreeItemAction
+                        onClick={handleDelete}
+                        tooltip="Delete label"
+                        className="text-red-600"
+                    >
+                        <Trash2 className="w-3 h-3" />
+                    </LabelTreeItemAction>
+                </LabelTreeItemActions>
+            </LabelTreeItemContent>
+
+            {/*
+             * NOTE: Children are now handled automatically by the flattened tree structure
+             * No need for recursive LabelTreeChildren in sortable mode
+             */}
+        </LabelTreeItem>
+    );
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Nested Drag & Drop Labels</h3>
+                <p className="text-sm text-muted-foreground">
+                    Drag horizontally to change nesting level
+                </p>
+            </div>
+            
+            <LabelTreeSortable className="border rounded-lg p-4">
+                <SortableLabelTemplate />
+            </LabelTreeSortable>
+        </div>
+    );
+}
+
+// Example 5: Custom layout - DRY Template Approach  
 export function CustomLayoutLabelTreeExample() {
     const handleEdit = (labelId: string) => {
         console.log('Edit label:', labelId);
