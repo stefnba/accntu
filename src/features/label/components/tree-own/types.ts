@@ -1,23 +1,29 @@
-export type TreeItem = {
+export interface TreeItem {
     id: string;
     children: TreeItem[];
-};
+}
 
-export type FlattenedItem = TreeItem & {
-    /**
-     * The parent ID of the item.
-     */
+export interface FlattenedItem extends TreeItem {
     parentId: string | null;
-    /**
-     * The index of the item in the parent's children array.
-     */
     index: number;
-    /**
-     * The depth of the item in the tree.
-     */
     depth: number;
-    /**
-     * Whether the item is collapsed.
-     */
     collapsed: boolean;
-};
+    childrenCount: number;
+    hasChildren: boolean;
+}
+
+export interface TreeMoveOperation {
+    activeId: string;
+    overId: string;
+    activeIndex: number;
+    overIndex: number;
+    activeItem: FlattenedItem;
+    overItem: FlattenedItem;
+}
+
+// todo delete
+export interface TreeState {
+    items: TreeItem[];
+    flattenedItems: FlattenedItem[];
+    collapsedItems: Set<string>;
+}
