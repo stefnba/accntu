@@ -3,7 +3,7 @@ import { useSortableTree } from '@/features/label/components/tree-own/hooks';
 import { FlattenedItem } from '@/features/label/components/tree-own/types';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface TreeItemProps {
     item: FlattenedItem;
@@ -18,17 +18,8 @@ interface TreeItemProps {
 export const TreeItem = memo(({ item, dragButton, className }: TreeItemProps) => {
     const { handleToggleCollapse } = useSortableTree();
 
-    const depthIndent = item.depth * 30; // 20px per level
-
-    return (
-        <div
-            className={cn(
-                'border w-full p-3 rounded-md flex gap-2 items-center bg-white hover:bg-gray-50 transition-colors',
-                className
-            )}
-            style={{ marginLeft: depthIndent }}
-        >
-            {/* Collapse/Expand button */}
+    const renderCollapseButton = useMemo(() => {
+        return (
             <Button
                 variant="ghost"
                 size="sm"
@@ -46,6 +37,18 @@ export const TreeItem = memo(({ item, dragButton, className }: TreeItemProps) =>
                         <ChevronDown className="w-4 h-4" />
                     ))}
             </Button>
+        );
+    }, [item.hasChildren, item.collapsed, handleToggleCollapse]);
+
+    return (
+        <div
+            className={cn(
+                'border w-full p-3 rounded-md flex gap-2 items-center bg-white hover:bg-gray-50 transition-colors',
+                className
+            )}
+        >
+            {/* Collapse/Expand button */}
+            {renderCollapseButton}
 
             {/* Drag handle */}
             {dragButton}

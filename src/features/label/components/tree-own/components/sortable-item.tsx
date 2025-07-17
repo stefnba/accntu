@@ -14,16 +14,19 @@ interface SortableItemProps {
  * SortableItem is a memoized component that renders a tree item and allows it to be dragged and dropped.
  */
 export const SortableItem = memo(({ item }: SortableItemProps) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
-        useSortable({
-            id: item.id,
-        });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: item.id,
+    });
+
+    const depthIndent = item.depth * 30;
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 999 : 1,
+        marginLeft: `${depthIndent}px`,
+        width: `calc(100% - ${depthIndent}px)`,
     };
 
     return (

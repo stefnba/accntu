@@ -4,6 +4,7 @@ import { SortableItem } from '@/features/label/components/tree-own/components/so
 import { useSortableTree } from '@/features/label/components/tree-own/hooks';
 import { TreeItem } from '@/features/label/components/tree-own/types';
 import { moveTreeItem } from '@/features/label/components/tree-own/utils';
+import { cn } from '@/lib/utils';
 import {
     closestCenter,
     DndContext,
@@ -202,7 +203,7 @@ export const SortableTreeOwn = ({
     }, []);
 
     return (
-        <div className={className}>
+        <div className={cn('w-full', className)}>
             <DndContext
                 sensors={sensors}
                 collisionDetection={collisionDetectionStrategy}
@@ -216,7 +217,7 @@ export const SortableTreeOwn = ({
                     items={Array.from(sortableIds).map((id) => ({ id }))}
                     strategy={verticalListSortingStrategy}
                 >
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         {flattenedItems.map((item) => (
                             <SortableItem key={item.id} item={item} />
                         ))}
