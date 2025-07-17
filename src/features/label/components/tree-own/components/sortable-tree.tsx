@@ -2,6 +2,7 @@
 
 import { SortableItem } from '@/features/label/components/tree-own/components/sortable-item';
 import { FlattenedItem, type TreeItem } from '@/features/label/components/tree-own/types';
+import { flattenTree } from '@/features/label/components/tree-own/utils';
 import {
     DndContext,
     DragEndEvent,
@@ -41,14 +42,11 @@ export const SortableTreeOwn: React.FC<SortableTreeProps> = ({ defaultItems }) =
     // ====================
 
     const flattenedItems: FlattenedItem[] = useMemo(() => {
-        return items.map((item, index) => ({
-            ...item,
-            parentId: null,
-            index,
-            depth: 0,
-            collapsed: false,
-        }));
+        const flattened = flattenTree(items);
+        return flattened;
     }, [items]);
+
+    console.log(flattenedItems);
 
     // ====================
     // Handlers
