@@ -1,30 +1,38 @@
 'use client';
 
+import { TreeItem } from '@/features/label/components/tree-own/components/item';
 import { SortableItem } from '@/features/label/components/tree-own/components/sortable-item';
 import { useSortableTree } from '@/features/label/components/tree-own/hooks';
-import { TreeItem } from '@/features/label/components/tree-own/types';
-import { moveTreeItem } from '@/features/label/components/tree-own/utils';
+import { TreeItem as TreeItemType } from '@/features/label/components/tree-own/types';
+import {
+    canDropItem,
+    getChildCount,
+    moveTreeItem,
+} from '@/features/label/components/tree-own/utils';
 import { cn } from '@/lib/utils';
 import {
     closestCenter,
     DndContext,
     DragEndEvent,
     DragOverEvent,
+    DragOverlay,
     DragStartEvent,
     MeasuringStrategy,
     MouseSensor,
     pointerWithin,
     rectIntersection,
     TouchSensor,
+    UniqueIdentifier,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { startTransition, useCallback, useEffect, useMemo } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SortableTreeProps {
-    defaultItems: TreeItem[];
-    onItemMove?: (items: TreeItem[]) => void;
+    defaultItems: TreeItemType[];
+    onItemMove?: (items: TreeItemType[]) => void;
     onItemToggle?: (itemId: string, collapsed: boolean) => void;
     className?: string;
 }
@@ -36,20 +44,11 @@ export const SortableTreeOwn = ({
     className,
 }: SortableTreeProps) => {
     const { flattenedItems, sortableIds, items, setItems } = useSortableTree();
+    const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
     useEffect(() => {
         setItems(defaultItems);
     }, [defaultItems, setItems]);
-
-    // Optimistic updates for better UX
-    // const [optimisticState, setOptimisticState] = useOptimistic(
-    //     treeState,
-    //     (state, newItems: TreeItem[]) => ({
-    //         ...state,
-    //         items: newItems,
-    //         flattenedItems: flattenTree(newItems, state.collapsedItems),
-    //     })
-    // );
 
     // Memoized sensors configuration
     const sensors = useSensors(
@@ -77,7 +76,7 @@ export const SortableTreeOwn = ({
     );
 
     // Memoized collision detection
-    const collisionDetectionStrategy = useCallback((args: any) => {
+    const collisionDetectionStrategy = useCallback((args: Parameters<typeof closestCenter>[0]) => {
         // First, use pointer detection for better UX
         const pointerIntersections = pointerWithin(args);
         if (pointerIntersections.length > 0) {
@@ -96,21 +95,30 @@ export const SortableTreeOwn = ({
 
     // Handlers
     const handleDragStart = useCallback(({ active }: DragStartEvent) => {
-        // Optional: Add visual feedback or analytics
+        setActiveId(active.id);
         console.log('Drag started:', active.id);
     }, []);
 
+    /**
+     * Handle drag over event. This is used to determine if the drag is over a valid drop target.
+     *
+     * If returns true, the drag will be allowed.
+     * If returns false, the drag will be cancelled.
+     * If returns null, the drag will be ignored.
+     */
     const handleDragOver = useCallback(
-        ({ active, over }: DragOverEvent) => {
-            return;
-            // if (!over || active.id === over.id) return;
+        ({ active, over, collisions, activatorEvent }: DragOverEvent) => {
+            console.log('Drag over:', { active, over, collisions, activatorEvent });
 
-            // // Validate drop target
-            // const canDrop = canDropItem(active.id, over.id, optimisticState.items);
+            // If no over item, or the active item is the same as the over item, return null to ignore the drag
+            if (!over || active.id === over.id) return;
 
-            // if (!canDrop) {
-            //     console.warn('Invalid drop target:', { active: active.id, over: over.id });
-            // }
+            // Validate drop target
+            const canDrop = canDropItem(active.id, over.id, items);
+
+            if (!canDrop) {
+                console.warn('Invalid drop target:', { active: active.id, over: over.id });
+            }
         },
         [items]
     );
@@ -168,39 +176,20 @@ export const SortableTreeOwn = ({
                 // Notify parent component
                 onItemMove?.(newItems);
             });
+
+            // Clear active id
+            setActiveId(null);
         },
         [items, flattenedItems, onItemMove]
     );
 
-    // const handleToggleCollapse = useCallback(
-    //     (itemId: string) => {
-    //         const newCollapsedItems = new Set(treeState.collapsedItems);
-
-    //         if (newCollapsedItems.has(itemId)) {
-    //             newCollapsedItems.delete(itemId);
-    //         } else {
-    //             newCollapsedItems.add(itemId);
-    //         }
-
-    //         startTransition(() => {
-    //             const newTreeState = {
-    //                 ...treeState,
-    //                 collapsedItems: newCollapsedItems,
-    //                 flattenedItems: flattenTree(treeState.items, newCollapsedItems),
-    //             };
-
-    //             setTreeState(newTreeState);
-
-    //             // Notify parent component
-    //             onItemToggle?.(itemId, newCollapsedItems.has(itemId));
-    //         });
-    //     },
-    //     [treeState, onItemToggle]
-    // );
-
     const handleDragCancel = useCallback(() => {
+        setActiveId(null);
         console.log('Drag cancelled');
     }, []);
+
+    // Get the active item for drag overlay
+    const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
 
     return (
         <div className={cn('w-full', className)}>
@@ -223,6 +212,34 @@ export const SortableTreeOwn = ({
                         ))}
                     </div>
                 </SortableContext>
+
+                {typeof window !== 'undefined' &&
+                    createPortal(
+                        <DragOverlay
+                            dropAnimation={{
+                                duration: 150,
+                                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                            }}
+                        >
+                            {activeId && activeItem ? (
+                                <div className="bg-white border border-gray-200 rounded-md shadow-lg opacity-90">
+                                    <TreeItem
+                                        item={activeItem}
+                                        dragButton={
+                                            <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
+                                        }
+                                        className="border-none"
+                                    />
+                                    {getChildCount(items, activeId) > 0 && (
+                                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                                            {getChildCount(items, activeId) + 1}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+                        </DragOverlay>,
+                        document.body
+                    )}
             </DndContext>
         </div>
     );

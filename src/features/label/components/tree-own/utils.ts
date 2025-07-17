@@ -208,3 +208,14 @@ export const getDescendantIds = (items: TreeItem[], id: UniqueIdentifier): Uniqu
 
     return collectDescendants(item.children);
 };
+
+/**
+ * Gets the number of children for a given item
+ * @param items - The tree items
+ * @param id - The item ID
+ * @returns Number of direct children
+ */
+export const getChildCount = (items: TreeItem[], id: UniqueIdentifier): number => {
+    const item = findTreeItem(items, id);
+    return item ? item.children.length : 0;
+};
