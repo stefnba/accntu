@@ -1,10 +1,12 @@
+import { UniqueIdentifier } from '@dnd-kit/core';
+
 export interface TreeItem {
-    id: string;
+    id: UniqueIdentifier;
     children: TreeItem[];
 }
 
 export interface FlattenedItem extends TreeItem {
-    parentId: string | null;
+    parentId: UniqueIdentifier | null;
     index: number;
     depth: number;
     collapsed: boolean;
@@ -13,17 +15,10 @@ export interface FlattenedItem extends TreeItem {
 }
 
 export interface TreeMoveOperation {
-    activeId: string;
-    overId: string;
+    activeId: UniqueIdentifier;
+    overId: UniqueIdentifier;
     activeIndex: number;
     overIndex: number;
     activeItem: FlattenedItem;
     overItem: FlattenedItem;
-}
-
-// todo delete
-export interface TreeState {
-    items: TreeItem[];
-    flattenedItems: FlattenedItem[];
-    collapsedItems: Set<string>;
 }

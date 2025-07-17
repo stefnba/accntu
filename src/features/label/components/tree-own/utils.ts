@@ -16,7 +16,7 @@ import { UniqueIdentifier } from '@dnd-kit/core';
 const flatten = (
     items: TreeItem[],
     collapsedItems: Set<UniqueIdentifier> = new Set(),
-    parentId: string | null = null,
+    parentId: UniqueIdentifier | null = null,
     depth = 0
 ): FlattenedItem[] => {
     return items.reduce<FlattenedItem[]>((acc, item, index) => {
@@ -73,7 +73,7 @@ export const findTreeItem = (items: TreeItem[], id: UniqueIdentifier): TreeItem 
  * @param id - The ID to remove
  * @returns New tree without the item
  */
-export const removeTreeItem = (items: TreeItem[], id: string): TreeItem[] => {
+export const removeTreeItem = (items: TreeItem[], id: UniqueIdentifier): TreeItem[] => {
     return items.reduce<TreeItem[]>((acc, item) => {
         if (item.id === id) return acc;
 
@@ -106,7 +106,7 @@ export const moveTreeItem = (items: TreeItem[], operation: TreeMoveOperation): T
     // Helper function to insert item at specific position
     const insertAtPosition = (
         targetItems: TreeItem[],
-        targetParentId: string | null,
+        targetParentId: UniqueIdentifier | null,
         insertIndex: number
     ): TreeItem[] => {
         if (targetParentId === null) {
@@ -148,12 +148,12 @@ export const moveTreeItem = (items: TreeItem[], operation: TreeMoveOperation): T
  * @param id - The item ID
  * @returns Array of ancestor IDs from root to immediate parent
  */
-export const getAncestorIds = (items: TreeItem[], id: string): string[] => {
+export const getAncestorIds = (items: TreeItem[], id: UniqueIdentifier): UniqueIdentifier[] => {
     const findAncestors = (
         items: TreeItem[],
-        targetId: string,
-        ancestors: string[] = []
-    ): string[] | null => {
+        targetId: UniqueIdentifier,
+        ancestors: UniqueIdentifier[] = []
+    ): UniqueIdentifier[] | null => {
         for (const item of items) {
             if (item.id === targetId) {
                 return ancestors;
@@ -193,12 +193,12 @@ export const canDropItem = (
  * @param id - The item ID
  * @returns Array of all descendant IDs
  */
-export const getDescendantIds = (items: TreeItem[], id: UniqueIdentifier): string[] => {
+export const getDescendantIds = (items: TreeItem[], id: UniqueIdentifier): UniqueIdentifier[] => {
     const item: TreeItem | null = findTreeItem(items, id);
     if (!item) return [];
 
-    const collectDescendants = (children: TreeItem[]): string[] => {
-        const descendants: string[] = [];
+    const collectDescendants = (children: TreeItem[]): UniqueIdentifier[] => {
+        const descendants: UniqueIdentifier[] = [];
         for (const child of children) {
             descendants.push(child.id);
             descendants.push(...collectDescendants(child.children));
