@@ -64,6 +64,18 @@ export const SortableTreeOwn = ({
     // Get the full item data for the drag overlay - derived from activeId state
     // This pattern ensures the drag overlay updates reactively when activeId changes
     const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
+    
+    // Memoize child count to avoid double calculation in drag overlay
+    const activeItemChildCount = useMemo(() => 
+        activeId ? getChildCount(items, activeId) : 0, 
+        [activeId, items]
+    );
+    
+    // Memoize SortableContext items to prevent unnecessary re-renders
+    const sortableContextItems = useMemo(() => 
+        flattenedItems.map(item => ({ id: item.id })), 
+        [flattenedItems]
+    );
 
     // Memoized sensors configuration
     const sensors = useSensors(
@@ -125,9 +137,7 @@ export const SortableTreeOwn = ({
      * If returns null, the drag will be ignored.
      */
     const handleDragOver = useCallback(
-        ({ active, over, collisions, activatorEvent }: DragOverEvent) => {
-            console.log('Drag over:', { active, over, collisions, activatorEvent });
-
+        ({ active, over }: DragOverEvent) => {
             // If no over item, or the active item is the same as the over item, return null to ignore the drag
             if (!over || active.id === over.id) return;
 
@@ -173,18 +183,6 @@ export const SortableTreeOwn = ({
                 return;
             }
 
-            // Debug logging
-            console.log('Drag operation:', {
-                activeId,
-                overId,
-                activeItem: {
-                    id: activeItem.id,
-                    parentId: activeItem.parentId,
-                    index: activeItem.index,
-                },
-                overItem: { id: overItem.id, parentId: overItem.parentId, index: overItem.index },
-            });
-
             // Perform the move
             const newItems = moveTreeItem(items, {
                 activeId,
@@ -195,8 +193,6 @@ export const SortableTreeOwn = ({
                 overItem,
             });
 
-            console.log('New items after move:', newItems);
-
             // Update state with transition
             startTransition(() => {
                 // setItems(newItems);
@@ -204,8 +200,6 @@ export const SortableTreeOwn = ({
                 // Notify parent component
                 onItemMove?.(newItems);
             });
-
-            console.log('Move completed - activeId already cleared');
         },
         [items, flattenedItems, onItemMove]
     );
@@ -230,7 +224,7 @@ export const SortableTreeOwn = ({
                 onDragCancel={handleDragCancel}
             >
                 <SortableContext
-                    items={flattenedItems.map((item) => ({ id: item.id }))}
+                    items={sortableContextItems}
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="flex flex-col gap-2">
@@ -257,9 +251,9 @@ export const SortableTreeOwn = ({
                                         }
                                         className="border-none"
                                     />
-                                    {getChildCount(items, activeId) > 0 && (
+                                    {activeItemChildCount > 0 && (
                                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
-                                            {getChildCount(items, activeId) + 1}
+                                            {activeItemChildCount + 1}
                                         </div>
                                     )}
                                 </div>
