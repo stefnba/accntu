@@ -88,58 +88,156 @@ export const removeTreeItem = (items: TreeItem[], id: UniqueIdentifier): TreeIte
 };
 
 /**
- * Moves an item within the tree structure
- * @param items - The tree items
- * @param operation - The move operation details
- * @returns New tree with the item moved
+ * Drop intent types for enhanced tree operations
  */
-export const moveTreeItem = (items: TreeItem[], operation: TreeMoveOperation): TreeItem[] => {
-    const { activeId, activeItem, overItem } = operation;
+export type DropIntent = 
+    | { type: 'insert-before'; targetId: UniqueIdentifier }
+    | { type: 'insert-after'; targetId: UniqueIdentifier }
+    | { type: 'nest-under'; parentId: UniqueIdentifier };
 
-    // Remove the active item from its current position
-    const itemsWithoutActive = removeTreeItem(items, activeId);
+/**
+ * Detects drop intent based on mouse position within target item
+ */
+export const detectDropIntent = (
+    relativeY: number, 
+    targetItem: FlattenedItem,
+    maxDepth: number = 5
+): DropIntent => {
+    // Top 25% = insert before
+    if (relativeY < 0.25) {
+        return { type: 'insert-before', targetId: targetItem.id };
+    }
+    
+    // Bottom 25% = insert after  
+    if (relativeY > 0.75) {
+        return { type: 'insert-after', targetId: targetItem.id };
+    }
+    
+    // Middle 50% = nest under (if depth allows)
+    if (targetItem.depth < maxDepth) {
+        return { type: 'nest-under', parentId: targetItem.id };
+    }
+    
+    // Fallback to insert after if max depth reached
+    return { type: 'insert-after', targetId: targetItem.id };
+};
 
-    // Find the item to move
+/**
+ * Inserts an item before the target item at the same level
+ */
+export const insertItemBefore = (items: TreeItem[], activeId: UniqueIdentifier, targetId: UniqueIdentifier): TreeItem[] => {
     const itemToMove = findTreeItem(items, activeId);
     if (!itemToMove) return items;
 
-    // Helper function to insert item at specific position
-    const insertAtPosition = (
-        targetItems: TreeItem[],
-        targetParentId: UniqueIdentifier | null,
-        insertIndex: number
-    ): TreeItem[] => {
-        if (targetParentId === null) {
-            // Insert at root level
-            const newItems = [...targetItems];
-            newItems.splice(insertIndex, 0, itemToMove);
-            return newItems;
-        }
-
-        // Insert as child of target parent
-        return targetItems.map((item) => {
-            if (item.id === targetParentId) {
-                const newChildren = [...item.children];
-                newChildren.splice(insertIndex, 0, itemToMove);
-                return { ...item, children: newChildren };
+    const itemsWithoutActive = removeTreeItem(items, activeId);
+    
+    const insertAtPosition = (currentItems: TreeItem[]): TreeItem[] => {
+        return currentItems.reduce<TreeItem[]>((acc, item) => {
+            if (item.id === targetId) {
+                // Insert before this item
+                return [...acc, itemToMove, item];
             }
+            
+            return [
+                ...acc,
+                {
+                    ...item,
+                    children: insertAtPosition(item.children),
+                },
+            ];
+        }, []);
+    };
+    
+    return insertAtPosition(itemsWithoutActive);
+};
+
+/**
+ * Inserts an item after the target item at the same level
+ */
+export const insertItemAfter = (items: TreeItem[], activeId: UniqueIdentifier, targetId: UniqueIdentifier): TreeItem[] => {
+    const itemToMove = findTreeItem(items, activeId);
+    if (!itemToMove) return items;
+
+    const itemsWithoutActive = removeTreeItem(items, activeId);
+    
+    const insertAtPosition = (currentItems: TreeItem[]): TreeItem[] => {
+        return currentItems.reduce<TreeItem[]>((acc, item) => {
+            if (item.id === targetId) {
+                // Insert after this item
+                return [...acc, item, itemToMove];
+            }
+            
+            return [
+                ...acc,
+                {
+                    ...item,
+                    children: insertAtPosition(item.children),
+                },
+            ];
+        }, []);
+    };
+    
+    return insertAtPosition(itemsWithoutActive);
+};
+
+/**
+ * Nests an item under the target item as its first child
+ */
+export const nestItemUnder = (items: TreeItem[], activeId: UniqueIdentifier, parentId: UniqueIdentifier): TreeItem[] => {
+    const itemToMove = findTreeItem(items, activeId);
+    if (!itemToMove) return items;
+
+    const itemsWithoutActive = removeTreeItem(items, activeId);
+    
+    const insertAsChild = (currentItems: TreeItem[]): TreeItem[] => {
+        return currentItems.map((item) => {
+            if (item.id === parentId) {
+                // Add as first child
+                return {
+                    ...item,
+                    children: [itemToMove, ...item.children],
+                };
+            }
+            
             return {
                 ...item,
-                children: insertAtPosition(item.children, targetParentId, insertIndex),
+                children: insertAsChild(item.children),
             };
         });
     };
+    
+    return insertAsChild(itemsWithoutActive);
+};
 
-    // Determine target position - insert after the over item
-    const targetParentId = overItem.parentId;
-    let targetIndex = overItem.index + 1; // Insert after the target item
-
-    // If moving within the same parent and the active item is before the target
-    if (activeItem.parentId === targetParentId && activeItem.index < overItem.index) {
-        targetIndex = overItem.index; // No need to add 1 since we removed the active item
+/**
+ * Enhanced move function that handles different drop intents
+ */
+export const moveTreeItemWithIntent = (
+    items: TreeItem[], 
+    activeId: UniqueIdentifier, 
+    intent: DropIntent
+): TreeItem[] => {
+    switch (intent.type) {
+        case 'insert-before':
+            return insertItemBefore(items, activeId, intent.targetId);
+        case 'insert-after':
+            return insertItemAfter(items, activeId, intent.targetId);
+        case 'nest-under':
+            return nestItemUnder(items, activeId, intent.parentId);
+        default:
+            return items;
     }
+};
 
-    return insertAtPosition(itemsWithoutActive, targetParentId, targetIndex);
+/**
+ * Legacy move function for backward compatibility
+ * @deprecated Use moveTreeItemWithIntent instead
+ */
+export const moveTreeItem = (items: TreeItem[], operation: TreeMoveOperation): TreeItem[] => {
+    const { activeId, overItem } = operation;
+    
+    // Default to insert-after behavior for compatibility
+    return insertItemAfter(items, activeId, overItem.id);
 };
 
 /**
