@@ -131,6 +131,13 @@ export const insertItemBefore = (
 
     const itemsWithoutActive = removeTreeItem(items, activeId);
 
+    /**
+     * Inserts an item before the target item at the same level
+     * @param items - The tree items
+     * @param activeId - The ID of the item to move
+     * @param targetId - The ID of the item to insert before
+     * @returns The new tree with the item inserted before the target item
+     */
     const insertAtPosition = (currentItems: TreeItem[]): TreeItem[] => {
         return currentItems.reduce<TreeItem[]>((acc, item) => {
             if (item.id === targetId) {
@@ -301,4 +308,28 @@ export const removeChildrenOf = (
 
         return true;
     });
+};
+
+export const getDropProjection = (
+    items: FlattenedItem[],
+    activeId: UniqueIdentifier | null,
+    overId: UniqueIdentifier | null
+) => {
+    if (!activeId || !overId) {
+        return null;
+    }
+
+    const activeItem = items.find((item) => item.id === activeId);
+    const overItem = items.find((item) => item.id === overId);
+
+    if (!overItem || !activeItem) {
+        return null;
+    }
+
+    return {
+        overId: overItem.id,
+        parentId: overItem.parentId,
+        depth: overItem.depth,
+        insertIndex: overItem.index,
+    };
 };
