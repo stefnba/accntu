@@ -48,17 +48,17 @@ export const SortableTreeOwn = ({
     // as it's component-scoped state that triggers re-renders for the drag overlay
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
-    // Hide children of items being dragged
+    // Hide children of items being dragged - OPTIMIZED
     const flattenedAndFilteredItems = useMemo(() => {
-        const collapsedItems = flattenedItems.reduce<UniqueIdentifier[]>(
-            (acc, { collapsed, id, hasChildren }) =>
-                collapsed && hasChildren ? [...acc, id] : acc,
-            []
-        );
+        // No filtering needed when not dragging
+        if (!activeId) return flattenedItems;
 
-        const itemsToHide = activeId != null ? [activeId, ...collapsedItems] : collapsedItems;
+        // Only calculate collapsed items when dragging
+        const collapsedIds = flattenedItems
+            .filter((item) => item.collapsed && item.hasChildren)
+            .map((item) => item.id);
 
-        return removeChildrenOf(flattenedItems, itemsToHide);
+        return removeChildrenOf(flattenedItems, [activeId, ...collapsedIds]);
     }, [activeId, flattenedItems]);
 
     // Get the full item data for the drag overlay - derived from activeId state
@@ -149,10 +149,14 @@ export const SortableTreeOwn = ({
      */
     const handleDragEnd = useCallback(
         ({ active, over }: DragEndEvent) => {
+            // Always clear activeId first to show children again
+            setActiveId(null);
+
+            // If no valid drop target or dropping on self, exit early
             if (!over || active.id === over.id) return;
 
-            const activeId = active.id as string;
-            const overId = over.id as string;
+            const activeId = active.id;
+            const overId = over.id;
 
             // todo Validate the move
             // if (!canDropItem(activeId, overId, optimisticState.items)) {
@@ -160,9 +164,9 @@ export const SortableTreeOwn = ({
             //     return;
             // }
 
-            // Find items in base flattened structure (not filtered)
-            const activeItem = flattenedAndFilteredItems.find((item) => item.id === activeId);
-            const overItem = flattenedAndFilteredItems.find((item) => item.id === overId);
+            // Find items in unfiltered structure to handle hidden children
+            const activeItem = flattenedItems.find((item) => item.id === activeId);
+            const overItem = flattenedItems.find((item) => item.id === overId);
 
             if (!activeItem || !overItem) {
                 console.error('Could not find active or over item');
@@ -201,11 +205,9 @@ export const SortableTreeOwn = ({
                 onItemMove?.(newItems);
             });
 
-            // Clear active id to show children again
-            console.log('Clearing activeId - children should reappear');
-            setActiveId(null);
+            console.log('Move completed - activeId already cleared');
         },
-        [items, flattenedAndFilteredItems, onItemMove]
+        [items, flattenedItems, onItemMove]
     );
 
     /**
@@ -213,7 +215,6 @@ export const SortableTreeOwn = ({
      */
     const handleDragCancel = useCallback(() => {
         // Clear the active item ID
-        console.log('Drag cancelled - clearing activeId');
         setActiveId(null);
     }, []);
 
@@ -229,11 +230,11 @@ export const SortableTreeOwn = ({
                 onDragCancel={handleDragCancel}
             >
                 <SortableContext
-                    items={flattenedAndFilteredItems.map((item) => ({ id: item.id }))}
+                    items={flattenedItems.map((item) => ({ id: item.id }))}
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="flex flex-col gap-2">
-                        {flattenedItems.map((item) => (
+                        {flattenedAndFilteredItems.map((item) => (
                             <SortableItem key={item.id} item={item} />
                         ))}
                     </div>
