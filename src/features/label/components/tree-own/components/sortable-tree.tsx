@@ -8,6 +8,7 @@ import {
     canDropItem,
     getChildCount,
     moveTreeItem,
+    removeChildrenOf,
 } from '@/features/label/components/tree-own/utils';
 import { cn } from '@/lib/utils';
 import {
@@ -27,28 +28,42 @@ import {
     useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import { startTransition, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface SortableTreeProps {
-    defaultItems: TreeItemType[];
     onItemMove?: (items: TreeItemType[]) => void;
     onItemToggle?: (itemId: string, collapsed: boolean) => void;
     className?: string;
 }
 
 export const SortableTreeOwn = ({
-    defaultItems,
     onItemMove,
 
     className,
 }: SortableTreeProps) => {
-    const { flattenedItems, sortableIds, items, setItems } = useSortableTree();
+    const { flattenedItems, items } = useSortableTree();
+
+    // Track the ID of the currently dragged item - useState is best practice here
+    // as it's component-scoped state that triggers re-renders for the drag overlay
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
-    useEffect(() => {
-        setItems(defaultItems);
-    }, [defaultItems, setItems]);
+    // Hide children of items being dragged
+    const flattenedAndFilteredItems = useMemo(() => {
+        const collapsedItems = flattenedItems.reduce<UniqueIdentifier[]>(
+            (acc, { collapsed, id, hasChildren }) =>
+                collapsed && hasChildren ? [...acc, id] : acc,
+            []
+        );
+
+        const itemsToHide = activeId != null ? [activeId, ...collapsedItems] : collapsedItems;
+
+        return removeChildrenOf(flattenedItems, itemsToHide);
+    }, [activeId, flattenedItems]);
+
+    // Get the full item data for the drag overlay - derived from activeId state
+    // This pattern ensures the drag overlay updates reactively when activeId changes
+    const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
 
     // Memoized sensors configuration
     const sensors = useSensors(
@@ -93,10 +108,13 @@ export const SortableTreeOwn = ({
         return closestCenter(args);
     }, []);
 
+    // ====================
     // Handlers
+    // ====================
+
     const handleDragStart = useCallback(({ active }: DragStartEvent) => {
+        // Set the active item ID to the ID of the item being dragged
         setActiveId(active.id);
-        console.log('Drag started:', active.id);
     }, []);
 
     /**
@@ -113,7 +131,7 @@ export const SortableTreeOwn = ({
             // If no over item, or the active item is the same as the over item, return null to ignore the drag
             if (!over || active.id === over.id) return;
 
-            // Validate drop target
+            // Validate drop target using original items (not filtered)
             const canDrop = canDropItem(active.id, over.id, items);
 
             if (!canDrop) {
@@ -123,6 +141,12 @@ export const SortableTreeOwn = ({
         [items]
     );
 
+    /**
+     * Handle drag end event. This is used to perform the move operation.
+     *
+     * If returns true, the move will be performed.
+     * If returns false, the move will be cancelled.
+     */
     const handleDragEnd = useCallback(
         ({ active, over }: DragEndEvent) => {
             if (!over || active.id === over.id) return;
@@ -136,9 +160,9 @@ export const SortableTreeOwn = ({
             //     return;
             // }
 
-            // Find items in flattened structure
-            const activeItem = flattenedItems.find((item) => item.id === activeId);
-            const overItem = flattenedItems.find((item) => item.id === overId);
+            // Find items in base flattened structure (not filtered)
+            const activeItem = flattenedAndFilteredItems.find((item) => item.id === activeId);
+            const overItem = flattenedAndFilteredItems.find((item) => item.id === overId);
 
             if (!activeItem || !overItem) {
                 console.error('Could not find active or over item');
@@ -171,25 +195,27 @@ export const SortableTreeOwn = ({
 
             // Update state with transition
             startTransition(() => {
-                setItems(newItems);
+                // setItems(newItems);
 
                 // Notify parent component
                 onItemMove?.(newItems);
             });
 
-            // Clear active id
+            // Clear active id to show children again
+            console.log('Clearing activeId - children should reappear');
             setActiveId(null);
         },
-        [items, flattenedItems, onItemMove]
+        [items, flattenedAndFilteredItems, onItemMove]
     );
 
+    /**
+     * Handle drag cancel event. This is used to cancel the drag operation.
+     */
     const handleDragCancel = useCallback(() => {
+        // Clear the active item ID
+        console.log('Drag cancelled - clearing activeId');
         setActiveId(null);
-        console.log('Drag cancelled');
     }, []);
-
-    // Get the active item for drag overlay
-    const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
 
     return (
         <div className={cn('w-full', className)}>
@@ -203,7 +229,7 @@ export const SortableTreeOwn = ({
                 onDragCancel={handleDragCancel}
             >
                 <SortableContext
-                    items={Array.from(sortableIds).map((id) => ({ id }))}
+                    items={flattenedAndFilteredItems.map((item) => ({ id: item.id }))}
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="flex flex-col gap-2">

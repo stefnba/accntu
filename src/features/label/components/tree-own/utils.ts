@@ -8,14 +8,14 @@ import { UniqueIdentifier } from '@dnd-kit/core';
 /**
  * Flattens a tree structure into a linear array with hierarchy information
  * @param items - The tree items to flatten
- * @param collapsedItems - Set of collapsed item IDs
+ * @param expandedIds - Set of expanded item IDs
  * @param parentId - The parent ID for the current level
  * @param depth - The current depth level
  * @returns A flat array of items with depth and parent information
  */
 const flatten = (
     items: TreeItem[],
-    collapsedItems: Set<UniqueIdentifier> = new Set(),
+    expandedIds: Set<UniqueIdentifier> = new Set(),
     parentId: UniqueIdentifier | null = null,
     depth = 0
 ): FlattenedItem[] => {
@@ -25,7 +25,7 @@ const flatten = (
             parentId,
             depth,
             index,
-            collapsed: collapsedItems.has(item.id),
+            collapsed: !expandedIds.has(item.id),
             childrenCount: item.children.length,
             hasChildren: item.children.length > 0,
         };
@@ -33,8 +33,8 @@ const flatten = (
         acc.push(flattenedItem);
 
         // Only flatten children if item is not collapsed
-        if (item.children.length > 0 && !collapsedItems.has(item.id)) {
-            acc.push(...flatten(item.children, collapsedItems, item.id, depth + 1));
+        if (item.children.length > 0 && expandedIds.has(item.id)) {
+            acc.push(...flatten(item.children, expandedIds, item.id, depth + 1));
         }
 
         return acc;
@@ -44,13 +44,13 @@ const flatten = (
 /**
  * Public API for flattening a tree structure
  * @param items - The tree items to flatten
- * @param collapsedItems - Set of collapsed item IDs
+ * @param expandedIds - Set of expanded item IDs
  * @returns A flat array of items with hierarchy information
  */
 export const flattenTree = (
     items: TreeItem[],
-    collapsedItems: Set<UniqueIdentifier> = new Set()
-): FlattenedItem[] => flatten(items, collapsedItems);
+    expandedIds: Set<UniqueIdentifier> = new Set()
+): FlattenedItem[] => flatten(items, expandedIds);
 
 /**
  * Finds an item in the tree by ID
@@ -218,4 +218,29 @@ export const getDescendantIds = (items: TreeItem[], id: UniqueIdentifier): Uniqu
 export const getChildCount = (items: TreeItem[], id: UniqueIdentifier): number => {
     const item = findTreeItem(items, id);
     return item ? item.children.length : 0;
+};
+
+/**
+ * Removes children of specified parent IDs from flattened items
+ * Used to hide children when their parent is being dragged
+ * @param items - The flattened items
+ * @param ids - Parent IDs whose children should be removed
+ * @returns Filtered items without the children
+ */
+export const removeChildrenOf = (
+    items: FlattenedItem[],
+    ids: UniqueIdentifier[]
+): FlattenedItem[] => {
+    const excludeParentIds = [...ids];
+
+    return items.filter((item) => {
+        if (item.parentId && excludeParentIds.includes(item.parentId)) {
+            if (item.hasChildren) {
+                excludeParentIds.push(item.id);
+            }
+            return false;
+        }
+
+        return true;
+    });
 };

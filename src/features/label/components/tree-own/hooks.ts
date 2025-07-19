@@ -1,62 +1,45 @@
-import useSortableTreeStore from '@/features/label/components/tree-own/store';
+import { useSortableTreeUIStore } from '@/features/label/components/tree-own/store';
+import { FlattenedItem } from '@/features/label/components/tree-own/types';
 import { flattenTree } from '@/features/label/components/tree-own/utils';
-import { UniqueIdentifier } from '@dnd-kit/core';
-import { useCallback, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 export const useSortableTree = () => {
-    const {
-        items,
-        flattenedItems,
-        collapsedItems,
-        setCollapsedItems,
-        setItems,
-        setFlattenedItems,
-        setSortableIds,
-        sortableIds,
-    } = useSortableTreeStore();
+    const { expandedIds, toggleExpandedId } = useSortableTreeUIStore();
+    const [flattenedItems, setFlattenedItems] = useState<FlattenedItem[]>([]);
 
+    const { data: items = [] } = useQuery({
+        queryKey: ['labals'],
+        queryFn: () => {
+            return [
+                {
+                    id: 'Home',
+                    children: [],
+                },
+                {
+                    id: 'Collections',
+                    children: [
+                        { id: 'Spring', children: [] },
+                        { id: 'Summer', children: [] },
+                    ],
+                },
+                {
+                    id: 'My Account',
+                    children: [{ id: 'Addresses', children: [] }],
+                },
+            ];
+        },
+    });
+
+    // flatten the tree when the items or expanded items change
     useEffect(() => {
-        setSortableIds(new Set(items.map((item) => item.id)));
-        setFlattenedItems(flattenTree(items, collapsedItems));
-    }, [items, collapsedItems, setFlattenedItems, setSortableIds]);
-
-    const handleFlattenItems = useCallback(() => {
-        setFlattenedItems(flattenTree(items, collapsedItems));
-    }, [items, collapsedItems, setFlattenedItems]);
-
-    /**
-     * Toggle the collapse state of an item
-     */
-    const handleToggleCollapse = useCallback(
-        (id: UniqueIdentifier) => {
-            if (isCollapsed(id)) {
-                collapsedItems.delete(id);
-            } else {
-                collapsedItems.add(id);
-            }
-            setCollapsedItems(collapsedItems);
-            handleFlattenItems();
-        },
-        [collapsedItems, setCollapsedItems]
-    );
-
-    /**
-     * Check if an children of an item is collapsed
-     */
-    const isCollapsed = useCallback(
-        (id: UniqueIdentifier) => {
-            return collapsedItems.has(id);
-        },
-        [collapsedItems]
-    );
+        setFlattenedItems(flattenTree(items, expandedIds));
+    }, [items, expandedIds]);
 
     return {
         items,
         flattenedItems,
-        collapsedItems,
-        handleToggleCollapse,
-        isCollapsed,
-        sortableIds,
-        setItems,
+        expandedIds,
+        toggleExpandedId,
     };
 };

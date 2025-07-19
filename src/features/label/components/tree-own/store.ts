@@ -1,33 +1,35 @@
-import { FlattenedItem, TreeItem } from '@/features/label/components/tree-own/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { create } from 'zustand';
 
 interface SortableTreeState {
-    items: TreeItem[];
-    flattenedItems: FlattenedItem[];
-    collapsedItems: Set<UniqueIdentifier>;
-    sortableIds: Set<UniqueIdentifier>;
+    expandedIds: Set<UniqueIdentifier>;
 }
 
 interface SortableTreeActions {
-    setItems: (items: TreeItem[]) => void;
-    setFlattenedItems: (flattenedItems: FlattenedItem[]) => void;
-    setCollapsedItems: (collapsedItems: Set<UniqueIdentifier>) => void;
-    setSortableIds: (sortableIds: Set<UniqueIdentifier>) => void;
+    setExpandedIds: (expandedIds: Set<UniqueIdentifier>) => void;
+    toggleExpandedId: (id: UniqueIdentifier) => void;
 }
 
-const useSortableTreeStore = create<SortableTreeState & SortableTreeActions>((set) => ({
+/**
+ * Global store for keep track of expanded items
+ */
+export const useSortableTreeUIStore = create<SortableTreeState & SortableTreeActions>((set) => ({
     // State
-    items: [],
-    flattenedItems: [],
-    collapsedItems: new Set(),
-    sortableIds: new Set(),
+    expandedIds: new Set(),
 
     // Actions
-    setItems: (items) => set({ items }),
-    setFlattenedItems: (flattenedItems) => set({ flattenedItems }),
-    setCollapsedItems: (collapsedItems) => set({ collapsedItems }),
-    setSortableIds: (sortableIds) => set({ sortableIds }),
-}));
+    setExpandedIds: (expandedIds) => set({ expandedIds }),
+    toggleExpandedId: (id) =>
+        set((state) => {
+            // Create new Set, required to avoid mutating the original Set
+            const newExpandedIds = new Set(state.expandedIds);
 
-export default useSortableTreeStore;
+            if (newExpandedIds.has(id)) {
+                newExpandedIds.delete(id);
+            } else {
+                newExpandedIds.add(id);
+            }
+
+            return { expandedIds: newExpandedIds };
+        }),
+}));

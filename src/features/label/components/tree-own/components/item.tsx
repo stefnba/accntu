@@ -16,7 +16,11 @@ interface TreeItemProps {
  * TreeItem is a memoized component that renders a tree item with depth indication and collapse functionality.
  */
 export const TreeItem = memo(({ item, dragButton, className }: TreeItemProps) => {
-    const { handleToggleCollapse } = useSortableTree();
+    const { toggleExpandedId, expandedIds } = useSortableTree();
+
+    const isExpanded = useMemo(() => {
+        return expandedIds.has(item.id);
+    }, [item.id, expandedIds]);
 
     const renderCollapseButton = useMemo(() => {
         return (
@@ -27,18 +31,18 @@ export const TreeItem = memo(({ item, dragButton, className }: TreeItemProps) =>
                     'w-6 h-6 p-0 flex items-center justify-center',
                     !item.hasChildren && 'invisible'
                 )}
-                onClick={() => handleToggleCollapse(item.id)}
+                onClick={() => toggleExpandedId(item.id)}
                 disabled={!item.hasChildren}
             >
                 {item.hasChildren &&
-                    (item.collapsed ? (
+                    (!isExpanded ? (
                         <ChevronRight className="w-4 h-4" />
                     ) : (
                         <ChevronDown className="w-4 h-4" />
                     ))}
             </Button>
         );
-    }, [item.hasChildren, item.collapsed, handleToggleCollapse]);
+    }, [item.hasChildren, isExpanded, toggleExpandedId]);
 
     return (
         <div
