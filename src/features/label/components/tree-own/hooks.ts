@@ -1,15 +1,13 @@
 import { useSortableTreeUIStore } from '@/features/label/components/tree-own/store';
-import { FlattenedItem } from '@/features/label/components/tree-own/types';
 import { flattenTree } from '@/features/label/components/tree-own/utils';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 export const useSortableTree = () => {
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore();
-    const [flattenedItems, setFlattenedItems] = useState<FlattenedItem[]>([]);
 
     const { data: items = [] } = useQuery({
-        queryKey: ['labals'],
+        queryKey: ['labels'],
         queryFn: () => {
             return [
                 {
@@ -32,9 +30,7 @@ export const useSortableTree = () => {
     });
 
     // flatten the tree when the items or expanded items change
-    useEffect(() => {
-        setFlattenedItems(flattenTree(items, expandedIds));
-    }, [items, expandedIds]);
+    const flattenedItems = useMemo(() => flattenTree(items, expandedIds), [items, expandedIds]);
 
     return {
         items,
