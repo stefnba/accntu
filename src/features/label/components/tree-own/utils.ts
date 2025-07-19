@@ -1,7 +1,6 @@
 import {
     FlattenedItem,
     TreeItem,
-    TreeMoveOperation,
 } from '@/features/label/components/tree-own/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
 
@@ -229,42 +228,7 @@ export const moveTreeItemWithIntent = (
     }
 };
 
-/**
- * Legacy move function for backward compatibility
- * @deprecated Use moveTreeItemWithIntent instead
- */
-export const moveTreeItem = (items: TreeItem[], operation: TreeMoveOperation): TreeItem[] => {
-    const { activeId, overItem } = operation;
-    
-    // Default to insert-after behavior for compatibility
-    return insertItemAfter(items, activeId, overItem.id);
-};
 
-/**
- * Gets all ancestor IDs for a given item
- * @param items - The tree items
- * @param id - The item ID
- * @returns Array of ancestor IDs from root to immediate parent
- */
-export const getAncestorIds = (items: TreeItem[], id: UniqueIdentifier): UniqueIdentifier[] => {
-    const findAncestors = (
-        items: TreeItem[],
-        targetId: UniqueIdentifier,
-        ancestors: UniqueIdentifier[] = []
-    ): UniqueIdentifier[] | null => {
-        for (const item of items) {
-            if (item.id === targetId) {
-                return ancestors;
-            }
-
-            const found = findAncestors(item.children, targetId, [...ancestors, item.id]);
-            if (found) return found;
-        }
-        return null;
-    };
-
-    return findAncestors(items, id) || [];
-};
 
 /**
  * Checks if an item can be dropped on another item
@@ -281,34 +245,24 @@ export const canDropItem = (
     if (activeId === overId) return false;
 
     // Check if trying to drop on a descendant (would create a cycle)
-    const activeDescendants = getDescendantIds(items, activeId);
-    return !activeDescendants.includes(overId.toString());
-};
+    const activeItem = findTreeItem(items, activeId);
+    if (!activeItem) return false;
 
-/**
- * Gets all (including children of children) descendant IDs for a given item
- * @param items - The tree items
- * @param id - The item ID
- * @returns Array of all descendant IDs
- */
-export const getDescendantIds = (items: TreeItem[], id: UniqueIdentifier): UniqueIdentifier[] => {
-    const item: TreeItem | null = findTreeItem(items, id);
-    if (!item) return [];
-
-    const collectDescendants = (children: TreeItem[]): UniqueIdentifier[] => {
-        const descendants: UniqueIdentifier[] = [];
-        for (const child of children) {
-            descendants.push(child.id);
-            descendants.push(...collectDescendants(child.children));
+    // Simple descendant check - inline the logic
+    const isDescendant = (parent: TreeItem, targetId: UniqueIdentifier): boolean => {
+        for (const child of parent.children) {
+            if (child.id === targetId) return true;
+            if (isDescendant(child, targetId)) return true;
         }
-        return descendants;
+        return false;
     };
 
-    return collectDescendants(item.children);
+    return !isDescendant(activeItem, overId);
 };
 
+
 /**
- * Gets the number of children for a given item
+ * Gets the number of children for a given item (simplified inline)
  * @param items - The tree items
  * @param id - The item ID
  * @returns Number of direct children
