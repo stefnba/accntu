@@ -1,5 +1,6 @@
 import { DragHandleButton } from '@/components/drag-handle-button';
 import { TreeItem } from '@/features/label/components/tree-own/components/item';
+import { INDENTATION_WIDTH } from '@/features/label/components/tree-own/config';
 import { FlattenedItem } from '@/features/label/components/tree-own/types';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
@@ -24,9 +25,7 @@ export const SortableItem = memo(({ item, depth }: SortableItemProps) => {
             },
         });
 
-    const depthIndent = depth * 30;
-
-    console.log('isOver', isOver, item.id);
+    const depthIndent = depth * INDENTATION_WIDTH;
 
     return (
         <div
