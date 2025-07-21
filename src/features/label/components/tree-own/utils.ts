@@ -1,5 +1,7 @@
+import { INDENTATION_WIDTH } from '@/features/label/components/tree-own/config';
 import { FlattenedItem, TreeItem } from '@/features/label/components/tree-own/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 
 /**
  * Flattens a tree structure into a linear array with hierarchy information
@@ -310,11 +312,17 @@ export const removeChildrenOf = (
     });
 };
 
-export const getDropProjection = (
-    items: FlattenedItem[],
-    activeId: UniqueIdentifier | null,
-    overId: UniqueIdentifier | null
-) => {
+export const getDropProjection = ({
+    items,
+    activeId,
+    overId,
+    dragOffset,
+}: {
+    items: FlattenedItem[];
+    activeId: UniqueIdentifier | null;
+    overId: UniqueIdentifier | null;
+    dragOffset: number;
+}) => {
     if (!activeId || !overId) {
         return null;
     }
@@ -326,10 +334,103 @@ export const getDropProjection = (
         return null;
     }
 
+    // Calculate the projected depth based on the drag offset
+    // It should never be less than 0
+    // It should never be greater the over item's depth + 1
+    const projectedDepth = Math.min(
+        overItem.depth + 1,
+        Math.max(0, activeItem.depth + Math.round(dragOffset / INDENTATION_WIDTH))
+    );
+
     return {
         overId: overItem.id,
         parentId: overItem.parentId,
-        depth: overItem.depth,
+        currentDepth: activeItem.depth,
+        projectedDepth,
         insertIndex: overItem.index,
     };
 };
+
+export function getProjection(
+    items: FlattenedItem[],
+    activeId: UniqueIdentifier,
+    overId: UniqueIdentifier,
+    dragOffset: number,
+    indentationWidth: number
+) {
+    const overItemIndex = items.findIndex(({ id }) => id === overId);
+    const activeItemIndex = items.findIndex(({ id }) => id === activeId);
+    const activeItem = items[activeItemIndex];
+    const newItems = arrayMove(items, activeItemIndex, overItemIndex);
+    const previousItem = newItems[overItemIndex - 1];
+    const nextItem = newItems[overItemIndex + 1];
+    const dragDepth = getDragDepth(dragOffset, indentationWidth);
+    const projectedDepth = activeItem.depth + dragDepth;
+    const maxDepth = getMaxDepth({
+        previousItem,
+    });
+    const minDepth = getMinDepth({ nextItem });
+    let depth = projectedDepth;
+
+    if (projectedDepth >= maxDepth) {
+        depth = maxDepth;
+    } else if (projectedDepth < minDepth) {
+        depth = minDepth;
+    }
+
+    return {
+        depth,
+        maxDepth,
+        minDepth,
+        parentId: getParentIdForProjection({ depth, previousItem, newItems, overItemIndex }),
+    };
+}
+
+const getParentIdForProjection = ({
+    depth,
+    previousItem,
+    newItems,
+    overItemIndex,
+}: {
+    depth: number;
+    previousItem: FlattenedItem;
+    newItems: FlattenedItem[];
+    overItemIndex: number;
+}) => {
+    if (depth === 0 || !previousItem) {
+        return null;
+    }
+
+    if (depth === previousItem.depth) {
+        return previousItem.parentId;
+    }
+
+    if (depth > previousItem.depth) {
+        return previousItem.id;
+    }
+
+    const newParent = newItems
+        .slice(0, overItemIndex)
+        .reverse()
+        .find((item) => item.depth === depth)?.parentId;
+
+    return newParent ?? null;
+};
+const getMaxDepth = ({ previousItem }: { previousItem: FlattenedItem }) => {
+    if (previousItem) {
+        return previousItem.depth + 1;
+    }
+
+    return 0;
+};
+
+const getMinDepth = ({ nextItem }: { nextItem: FlattenedItem }) => {
+    if (nextItem) {
+        return nextItem.depth;
+    }
+
+    return 0;
+};
+
+const getDragDepth = (offset: number, indentationWidth: number) =>
+    Math.round(offset / indentationWidth);
