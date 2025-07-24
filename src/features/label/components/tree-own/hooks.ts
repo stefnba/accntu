@@ -1,6 +1,8 @@
 import { TreeItem } from '@/features/label/components/sortable-tree';
 import { useSortableTreeUIStore } from '@/features/label/components/tree-own/store';
+import { FlattenedItem } from '@/features/label/components/tree-own/types';
 import {
+    buildTreeFromFlattenedItems,
     DropIntent,
     flattenTree,
     moveTreeItemWithIntent,
@@ -8,6 +10,8 @@ import {
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+
+const QUERY_KEY = 'labels-sortable';
 
 export const useSortableTree = () => {
     const queryClient = useQueryClient();
@@ -19,14 +23,17 @@ export const useSortableTree = () => {
         isLoading,
         error,
     } = useQuery({
-        queryKey: ['labels'],
+        queryKey: [QUERY_KEY],
         queryFn: async () => {
             // TODO: Replace with actual API call
             // return await api.labels.getAll();
             return [
                 {
                     id: 'Home',
-                    children: [],
+                    children: [
+                        { id: 'Home1', children: [] },
+                        { id: 'Home2', children: [] },
+                    ],
                 },
                 {
                     id: 'Collections',
@@ -57,26 +64,23 @@ export const useSortableTree = () => {
             activeId: UniqueIdentifier;
             intent: DropIntent;
         }) => {
-            // TODO: Replace with actual API call
-            // return await api.labels.move({ activeId, intent });
-            await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
-
             // Get the current state and apply the move
-            const currentItems = queryClient.getQueryData<TreeItem[]>(['labels']) || items;
+            const currentItems = queryClient.getQueryData<TreeItem[]>([QUERY_KEY]) || items;
             const result = moveTreeItemWithIntent(currentItems, activeId, intent);
+            // TODO: Replace with actual API call
             return result;
         },
         onMutate: async ({ activeId, intent }) => {
             // Cancel outgoing refetches
-            await queryClient.cancelQueries({ queryKey: ['labels'] });
+            // await queryClient.cancelQueries({ queryKey: ['labels'] });
 
             // Snapshot previous value
-            const previousItems = queryClient.getQueryData<TreeItem[]>(['labels']);
+            const previousItems = queryClient.getQueryData<TreeItem[]>([QUERY_KEY]);
 
             // Optimistically update cache
             if (previousItems) {
                 const newItems = moveTreeItemWithIntent(previousItems, activeId, intent);
-                queryClient.setQueryData(['labels'], newItems);
+                queryClient.setQueryData([QUERY_KEY], newItems);
             }
 
             // Return context for rollback
@@ -91,17 +95,24 @@ export const useSortableTree = () => {
         },
         onSettled: (data, error) => {
             // If successful, update the cache with the final result
-            if (data && !error) {
-                queryClient.setQueryData(['labels'], data);
-            }
+            // if (data && !error) {
+            //     queryClient.setQueryData(['labels'], data);
+            // }
             // Don't invalidate queries since we're using mock data
         },
     });
 
     // Enhanced move handler with React Query integration
-    const handleMove = useCallback(
-        (activeId: UniqueIdentifier, intent: DropIntent) => {
-            return moveMutation.mutate({ activeId, intent });
+    const handleOptimisticMove = useCallback(
+        (newItems: FlattenedItem[]) => {
+            // Build the tree from the new items
+            const tree = buildTreeFromFlattenedItems(newItems);
+
+            // Optimistic update to the cache
+            queryClient.setQueryData([QUERY_KEY], tree);
+
+            // todo: call the mutation
+            // return moveMutation.mutate({ activeId, intent });
         },
         [moveMutation]
     );
@@ -119,7 +130,7 @@ export const useSortableTree = () => {
         expandedIds,
 
         // Actions
-        handleMove,
+        handleOptimisticMove,
         toggleExpandedId,
 
         // Mutation state
