@@ -20,7 +20,7 @@ const flatten = (
             ...item,
             parent, // Full parent object with id, index, depth
             depth,
-            index: acc.length, // Global index in the final flattened array
+            index: 0, // Will be updated after all items are flattened
             currentDepthIndex, // Index under the same parent (0, 1, 2, 3 under Collections, etc.)
             collapsed: !expandedIds.has(item.id),
             childrenCount: item.children.length,
@@ -31,10 +31,10 @@ const flatten = (
 
         // Only flatten children if item is not collapsed
         if (item.children.length > 0 && expandedIds.has(item.id)) {
-            // Create parent reference for children
+            // Create parent reference for children (index will be updated later)
             const parentRef = {
                 id: item.id,
-                index: flattenedItem.index,
+                index: 0, // Temporary, will be updated
                 depth: flattenedItem.depth,
                 childrenCount: flattenedItem.childrenCount,
             };
@@ -55,4 +55,25 @@ const flatten = (
 export const flattenTree = (
     items: TreeItem[],
     expandedIds: Set<UniqueIdentifier> = new Set()
-): FlattenedItem[] => flatten(items, expandedIds);
+): FlattenedItem[] => {
+    const flattenedItems = flatten(items, expandedIds);
+    
+    // Update global indices and parent references after flattening
+    return flattenedItems.map((item, globalIndex) => {
+        const updatedItem = {
+            ...item,
+            index: globalIndex,
+        };
+        
+        // Update parent reference with correct index if parent exists
+        if (item.parent) {
+            const parentIndex = flattenedItems.findIndex(p => p.id === item.parent!.id);
+            updatedItem.parent = {
+                ...item.parent,
+                index: parentIndex,
+            };
+        }
+        
+        return updatedItem;
+    });
+};

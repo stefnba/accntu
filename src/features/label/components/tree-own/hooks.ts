@@ -102,7 +102,10 @@ export const useSortableTree = () => {
         },
     });
 
-    // Enhanced move handler with React Query integration
+    /**
+     * Optimistic move handler
+     * @param newItems - The new items to move
+     */
     const handleOptimisticMove = useCallback(
         (newItems: FlattenedItem[]) => {
             // Build the tree from the new items
@@ -130,6 +133,9 @@ export const useSortableTree = () => {
         expandedIds,
 
         // Actions
+        /**
+         * ksks
+         */
         handleOptimisticMove,
         toggleExpandedId,
 

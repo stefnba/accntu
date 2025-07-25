@@ -4,10 +4,8 @@ import { TreeItem } from '@/features/label/components/tree-own/components/item';
 import { SortableItem } from '@/features/label/components/tree-own/components/sortable-item';
 import { useSortableTree } from '@/features/label/components/tree-own/hooks';
 import {
-    canDropItem,
     getChildCount,
     getDropProjection,
-    moveTreeItem,
     removeChildrenOf,
 } from '@/features/label/components/tree-own/utils';
 import { cn } from '@/lib/utils';
@@ -26,8 +24,8 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useCallback, useMemo, useState } from 'react';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface SortableTreeProps {
@@ -47,6 +45,10 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
     const [dropProjection, setDropProjection] = useState<ReturnType<
         typeof getDropProjection
     > | null>(null);
+
+    // Refs for throttling
+    const rafIdRef = useRef<number | null>(null);
+    const lastMoveDataRef = useRef<{ delta: { x: number; y: number } } | null>(null);
 
     // Hide children of items being dragged - OPTIMIZED
     const flattenedAndFilteredItems = useMemo(() => {
@@ -106,6 +108,9 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
     // Handlers
     // ====================
 
+    /**
+     * Handle drag start event. This is used to set the active item ID and over item ID.
+     */
     const handleDragStart = useCallback(({ active }: DragStartEvent) => {
         // Set the active item ID to the ID of the item being dragged
         setActiveId(active.id);
@@ -114,7 +119,58 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
     }, []);
 
     /**
+     * Handle drag move event. This is used to update the drop projection.
+     * Uses requestAnimationFrame throttling to optimize performance.
+     */
+    const handleDragMove = useCallback(
+        ({ delta }: DragMoveEvent) => {
+            if (!activeId || !overId) return;
+
+            // Store the latest move data
+            lastMoveDataRef.current = { delta };
+
+            // Cancel previous frame if it hasn't executed yet
+            if (rafIdRef.current !== null) {
+                cancelAnimationFrame(rafIdRef.current);
+            }
+
+            // Schedule projection calculation for the next frame
+            rafIdRef.current = requestAnimationFrame(() => {
+                const moveData = lastMoveDataRef.current;
+                if (!moveData || !activeId || !overId) return;
+
+                const projection = getDropProjection({
+                    items: flattenedItems,
+                    activeId,
+                    overId,
+                    dragOffset: moveData.delta.x,
+                });
+
+                // If no projection, exit early
+                if (!projection) return;
+
+                // Only update if projection actually changed to avoid unnecessary re-renders
+                setDropProjection((prev) => {
+                    if (
+                        !prev ||
+                        prev.projectedItem.index !== projection.projectedItem.index ||
+                        prev.projectedItem.depth !== projection.projectedItem.depth
+                    ) {
+                        console.log('projection', projection);
+                        return projection;
+                    }
+                    return prev;
+                });
+
+                rafIdRef.current = null;
+            });
+        },
+        [flattenedItems, activeId, overId]
+    );
+
+    /**
      * Handle drag over event. This is used to determine if the drag is over a valid drop target.
+     * We can't use this to update drop projection, since it's only callled when the over item changes.
      *
      * If returns true, the drag will be allowed.
      * If returns false, the drag will be cancelled.
@@ -122,20 +178,12 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
      */
     const handleDragOver = useCallback(
         ({ active, over }: DragOverEvent) => {
+            if (!over || !active) return;
+
             const newOverId = over?.id ?? null;
-            
+
             // Only update if overId actually changed to prevent unnecessary re-renders
-            setOverId(prev => prev !== newOverId ? newOverId : prev);
-
-            // If no over item, or the active item is the same as the over item, return null to ignore the drag
-            if (!over || active.id === over.id) return;
-
-            // Validate drop target using original items (not filtered)
-            const canDrop = canDropItem(active.id, over.id, items);
-
-            if (!canDrop) {
-                console.warn('Invalid drop target:', { active: active.id, over: over.id });
-            }
+            setOverId((prev) => (prev !== newOverId ? newOverId : prev));
         },
         [items]
     );
@@ -155,42 +203,17 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
             // If no valid drop target or dropping on self, exit early
             if (!over || !active || !dropProjection) return;
 
-            const activeId = active.id;
-            const overId = over.id;
+            const { projectedItem, activeItem, operation } = dropProjection;
 
-            // Validate the move
-            if (!canDropItem(activeId, overId, items)) {
-                console.warn('Invalid move operation');
-                return;
-            }
+            // move the item to the new position
+            const newItems = arrayMove(flattenedItems, activeItem.index, projectedItem.index);
 
-            const { projected, current } = dropProjection;
+            // update the item in the new position
+            newItems[projectedItem.index] = projectedItem;
 
-            const clonedItems = flattenedItems;
-
-            const activeIndex = current.index;
-            const overIndex = projected.index;
-
-            const newItems = moveTreeItem(clonedItems, activeIndex, overIndex);
-
-            // // Get the active tree item
-            // const activeTreeItem = clonedItems[activeIndex];
-
-            // // Update the active tree item with the new projected values
-            // const newParent = projected.parentId
-            //     ? clonedItems.find(item => item.id === projected.parentId)
-            //     : null;
-
-            // clonedItems[activeIndex] = {
-            //     ...activeTreeItem,
-            //     index: overIndex,
-            //     parent: newParent ? { id: newParent.id, index: newParent.index, depth: newParent.depth } : null,
-            //     depth: projected.depth,
-            // };
-
-            // const newItems = arrayMove(clonedItems, activeIndex, overIndex);
-
-            console.log('dropProjection', dropProjection);
+            console.log('projectedItem', projectedItem);
+            console.log('activeItem', activeItem);
+            console.log('operation', operation);
             console.log('newItems', newItems);
 
             // Perform the move using the hook's handleMove function
@@ -203,6 +226,12 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
      * Handle drag cancel event. This is used to cancel the drag operation.
      */
     const handleDragCancel = useCallback(() => {
+        // Cancel any pending projection updates
+        if (rafIdRef.current !== null) {
+            cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = null;
+        }
+
         // Clear the active item ID
         setActiveId(null);
         // Clear the drop projection
@@ -210,33 +239,6 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
         // Clear the over item ID
         setOverId(null);
     }, []);
-
-    const handleDragMove = useCallback(
-        ({ delta }: DragMoveEvent) => {
-            if (!activeId || !overId || activeId === overId) return;
-
-            // Throttle projection updates to reduce flickering
-            const projection = getDropProjection({
-                items: flattenedItems,
-                activeId,
-                overId,
-                dragOffset: delta.x,
-            });
-            
-            if (projection) {
-                // Only update if projection actually changed to avoid unnecessary re-renders
-                setDropProjection(prev => {
-                    if (!prev || 
-                        prev.projected.index !== projection.projected.index ||
-                        prev.projected.depth !== projection.projected.depth) {
-                        return projection;
-                    }
-                    return prev;
-                });
-            }
-        },
-        [flattenedItems, activeId, overId]
-    );
 
     return (
         <div className={cn('w-full', className)}>
@@ -258,8 +260,9 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
                         {flattenedAndFilteredItems.map((item) => (
                             <SortableItem
                                 depth={
+                                    // If the active item is the same as the item, use the projected depth
                                     activeId === item.id
-                                        ? (dropProjection?.depth.projected ?? 0)
+                                        ? (dropProjection?.projectedItem.depth ?? 0)
                                         : item.depth
                                 }
                                 key={item.id}
