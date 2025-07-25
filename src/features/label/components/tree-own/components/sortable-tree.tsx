@@ -7,6 +7,7 @@ import {
     canDropItem,
     getChildCount,
     getDropProjection,
+    moveTreeItem,
     removeChildrenOf,
 } from '@/features/label/components/tree-own/utils';
 import { cn } from '@/lib/utils';
@@ -20,8 +21,6 @@ import {
     DragStartEvent,
     MeasuringStrategy,
     MouseSensor,
-    pointerWithin,
-    rectIntersection,
     TouchSensor,
     UniqueIdentifier,
     useSensor,
@@ -36,15 +35,18 @@ interface SortableTreeProps {
 }
 
 export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
-    const { flattenedItems, items, handleMove } = useSortableTree();
+    const { flattenedItems, items, handleOptimisticMove } = useSortableTree();
 
     // Track the ID of the currently dragged item - useState is best practice here
     // as it's component-scoped state that triggers re-renders for the drag overlay
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
     // Track the ID of the currently hovered item
     const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
-    // Track the offset left of the currently dragged item, this is used to calculate the projected depth
-    const [offsetLeft, setOffsetLeft] = useState<number>(0);
+
+    // Track the drop projection for the drag overlay
+    const [dropProjection, setDropProjection] = useState<ReturnType<
+        typeof getDropProjection
+    > | null>(null);
 
     // Hide children of items being dragged - OPTIMIZED
     const flattenedAndFilteredItems = useMemo(() => {
@@ -62,14 +64,6 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
     // Get the full item data for the drag overlay - derived from activeId state
     // This pattern ensures the drag overlay updates reactively when activeId changes
     const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
-
-    // Get the drop projection for the drag overlay
-    const dropProjection = getDropProjection({
-        items: flattenedItems,
-        activeId,
-        overId,
-        dragOffset: offsetLeft,
-    });
 
     // Memoize child count to avoid double calculation in drag overlay
     const activeItemChildCount = useMemo(
@@ -108,23 +102,6 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
         []
     );
 
-    // Memoized collision detection
-    const collisionDetectionStrategy = useCallback((args: Parameters<typeof closestCenter>[0]) => {
-        // Final fallback
-        return closestCenter(args);
-        // First, use pointer detection for better UX
-        const pointerIntersections = pointerWithin(args);
-        if (pointerIntersections.length > 0) {
-            return pointerIntersections;
-        }
-
-        // Fallback to rectangle intersection
-        const rectIntersections = rectIntersection(args);
-        if (rectIntersections.length > 0) {
-            return rectIntersections;
-        }
-    }, []);
-
     // ====================
     // Handlers
     // ====================
@@ -145,8 +122,10 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
      */
     const handleDragOver = useCallback(
         ({ active, over }: DragOverEvent) => {
-            // Set the over item ID to the ID of the item being hovered
-            setOverId(over?.id ?? null);
+            const newOverId = over?.id ?? null;
+            
+            // Only update if overId actually changed to prevent unnecessary re-renders
+            setOverId(prev => prev !== newOverId ? newOverId : prev);
 
             // If no over item, or the active item is the same as the over item, return null to ignore the drag
             if (!over || active.id === over.id) return;
@@ -171,9 +150,10 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
         ({ active, over }: DragEndEvent) => {
             // Always clear activeId first to show children again
             setActiveId(null);
+            setOverId(null);
 
             // If no valid drop target or dropping on self, exit early
-            if (!over || active.id === over.id) return;
+            if (!over || !active || !dropProjection) return;
 
             const activeId = active.id;
             const overId = over.id;
@@ -184,14 +164,39 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
                 return;
             }
 
-            // Simple intent - just insert after for now (you can enhance this later)
-            // TODO: detect the intent based on the drop position
-            const intent = { type: 'insert-after' as const, targetId: overId };
+            const { projected, current } = dropProjection;
+
+            const clonedItems = flattenedItems;
+
+            const activeIndex = current.index;
+            const overIndex = projected.index;
+
+            const newItems = moveTreeItem(clonedItems, activeIndex, overIndex);
+
+            // // Get the active tree item
+            // const activeTreeItem = clonedItems[activeIndex];
+
+            // // Update the active tree item with the new projected values
+            // const newParent = projected.parentId
+            //     ? clonedItems.find(item => item.id === projected.parentId)
+            //     : null;
+
+            // clonedItems[activeIndex] = {
+            //     ...activeTreeItem,
+            //     index: overIndex,
+            //     parent: newParent ? { id: newParent.id, index: newParent.index, depth: newParent.depth } : null,
+            //     depth: projected.depth,
+            // };
+
+            // const newItems = arrayMove(clonedItems, activeIndex, overIndex);
+
+            console.log('dropProjection', dropProjection);
+            console.log('newItems', newItems);
 
             // Perform the move using the hook's handleMove function
-            handleMove(activeId, intent);
+            handleOptimisticMove(newItems);
         },
-        [items, handleMove]
+        [items, handleOptimisticMove]
     );
 
     /**
@@ -200,17 +205,44 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
     const handleDragCancel = useCallback(() => {
         // Clear the active item ID
         setActiveId(null);
+        // Clear the drop projection
+        setDropProjection(null);
+        // Clear the over item ID
+        setOverId(null);
     }, []);
 
-    const handleDragMove = useCallback(({ delta }: DragMoveEvent) => {
-        setOffsetLeft(delta.x);
-    }, []);
+    const handleDragMove = useCallback(
+        ({ delta }: DragMoveEvent) => {
+            if (!activeId || !overId || activeId === overId) return;
+
+            // Throttle projection updates to reduce flickering
+            const projection = getDropProjection({
+                items: flattenedItems,
+                activeId,
+                overId,
+                dragOffset: delta.x,
+            });
+            
+            if (projection) {
+                // Only update if projection actually changed to avoid unnecessary re-renders
+                setDropProjection(prev => {
+                    if (!prev || 
+                        prev.projected.index !== projection.projected.index ||
+                        prev.projected.depth !== projection.projected.depth) {
+                        return projection;
+                    }
+                    return prev;
+                });
+            }
+        },
+        [flattenedItems, activeId, overId]
+    );
 
     return (
         <div className={cn('w-full', className)}>
             <DndContext
                 sensors={sensors}
-                collisionDetection={collisionDetectionStrategy}
+                collisionDetection={closestCenter}
                 measuring={measuring}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -227,7 +259,7 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
                             <SortableItem
                                 depth={
                                     activeId === item.id
-                                        ? (dropProjection?.projectedDepth ?? 0)
+                                        ? (dropProjection?.depth.projected ?? 0)
                                         : item.depth
                                 }
                                 key={item.id}

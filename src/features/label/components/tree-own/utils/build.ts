@@ -21,8 +21,8 @@ export function buildTreeFromFlattenedItems(flattenedItems: FlattenedItem[]): Tr
         };
         nodes[item.id] = node;
 
-        // Group by parent (use 'root' for null parentId)
-        const parentKey = item.parentId ?? 'root';
+        // Group by parent (use 'root' for null parent)
+        const parentKey = item.parent?.id ?? 'root';
         if (!childrenByParent[parentKey]) {
             childrenByParent[parentKey] = [];
         }

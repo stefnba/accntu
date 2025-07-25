@@ -33,24 +33,11 @@ export const SortableItem = memo(({ item, depth }: SortableItemProps) => {
             style={{
                 transform: CSS.Transform.toString(transform),
                 transition,
-                opacity: isDragging ? 0.5 : 1,
                 marginLeft: `${depthIndent}px`,
                 width: `calc(100% - ${depthIndent}px)`,
             }}
-            className={cn(
-                'relative transition-colors duration-200',
-                // Subtle drop zone highlighting
-                isOver && 'bg-blue-50 border-l-2 border-blue-300'
-                // Hover state when not dragging
-                // !isDragging && 'hover:bg-gray-50',
-                // isDragging && 'h-0'
-            )}
+            className={cn('relative transition-all duration-200')}
         >
-            {/* Simple drop indicator line */}
-            {/* {isOver && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 opacity-75" />
-            )} */}
-
             <TreeItem
                 item={item}
                 dragButton={<DragHandleButton {...attributes} {...listeners} />}

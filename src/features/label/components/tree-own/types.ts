@@ -14,19 +14,25 @@ export interface TreeItem {
     children: TreeItem[];
 }
 
+export type ParentItem = Pick<FlattenedItem, 'id' | 'index' | 'depth' | 'childrenCount'>;
+
 /**
  * A flattened tree item, no nested children
  */
 export interface FlattenedItem extends TreeItem {
     /**
-     * The parent ID of the item.
+     * The parent of the item.
      * Null if the item is a root item.
      */
-    parentId: UniqueIdentifier | null;
+    parent: ParentItem | null;
     /**
-     * The index of the item in the flattened array
+     * The index of the item in the flattened array (global index)
      */
     index: number;
+    /**
+     * The index of the item in the current depth (ordinal index under the same parent)
+     */
+    currentDepthIndex: number;
     /**
      * The depth of the item in the tree
      */
@@ -43,14 +49,6 @@ export interface FlattenedItem extends TreeItem {
      * Whether the item has children
      */
     hasChildren: boolean;
-    /**
-     * The index of the item in the current depth
-     */
-    currentDepthIndex: number;
-    /**
-     * The index of the item in the parent's children
-     */
-    parentIndex: number;
 }
 
 export interface TreeMoveOperation {

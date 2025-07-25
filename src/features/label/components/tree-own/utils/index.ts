@@ -1,5 +1,6 @@
 export { buildTreeFromFlattenedItems } from './build';
 export { flattenTree } from './flatten';
+export { moveTreeItem } from './move';
 export {
     canDropItem,
     findTreeItem,

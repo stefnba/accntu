@@ -70,7 +70,7 @@ export function getDropProjection({
             index: activeItemIndex,
             id: activeId,
             depth: activeItem.depth,
-            parentId: activeItem.parentId,
+            parentId: activeItem.parent?.id ?? null,
         },
         projected: {
             index: overItemIndex,
@@ -109,7 +109,7 @@ const getParentIdForProjection = ({
     }
 
     if (depth === previousItem.depth) {
-        return previousItem.parentId;
+        return previousItem.parent?.id ?? null;
     }
 
     if (depth > previousItem.depth) {
@@ -119,7 +119,7 @@ const getParentIdForProjection = ({
     const newParent = newItems
         .slice(0, overItemIndex)
         .reverse()
-        .find((item) => item.depth === depth)?.parentId;
+        .find((item) => item.depth === depth)?.parent?.id;
 
     return newParent ?? null;
 };

@@ -26,7 +26,7 @@ export const removeChildrenOf = (
     const excludeParentIds = [...ids];
 
     return items.filter((item) => {
-        if (item.parentId && excludeParentIds.includes(item.parentId)) {
+        if (item.parent?.id && excludeParentIds.includes(item.parent.id)) {
             if (item.hasChildren) {
                 excludeParentIds.push(item.id);
             }
