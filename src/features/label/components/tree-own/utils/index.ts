@@ -1,6 +1,6 @@
 export { buildTreeFromFlattenedItems } from './build';
 export { flattenTree } from './flatten';
-export { moveTreeItem } from './move';
+export { canPerformMove, performMove } from './move';
 export {
     canDropItem,
     findTreeItem,
@@ -9,4 +9,4 @@ export {
     removeChildrenOf,
     type DropIntent,
 } from './operation';
-export { getDropProjection, getMoveIntent } from './projection';
+export { getProjectedDepth } from './projection';

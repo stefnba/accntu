@@ -11,33 +11,20 @@ type DropProjectionArgs = {
     dragOffset: number;
 };
 
-type TDropOperation = {
-    type: 'insert-before' | 'insert-after' | 'nest-under';
-    targetId: UniqueIdentifier;
-    activeId: UniqueIdentifier;
-};
-
-type DropProjectionReturn = null | {
-    operation: TDropOperation;
-    totalItems: number;
-    activeItem: FlattenedItem;
-    projectedItem: FlattenedItem;
-};
-
 /**
- * Gets the drop projection for a given item
+ * Get the projected depth for drag preview
  * @param items - The flattened items
  * @param activeId - The ID of the active item
  * @param overId - The ID of the over item
  * @param dragOffset - The drag offset
- * @returns The drop projection
+ * @returns The projected depth or null if invalid
  */
-export function getDropProjection({
+export function getProjectedDepth({
     items,
     activeId,
     overId,
     dragOffset,
-}: DropProjectionArgs): DropProjectionReturn {
+}: DropProjectionArgs): number | null {
     // If no active or over item, exit early
     if (!activeId || !overId) {
         return null;
@@ -64,141 +51,15 @@ export function getDropProjection({
     // Calculate the new depth: original depth + change from horizontal dragging
     let projectedDepth = activeItem.depth + Math.round(dragOffset / INDENTATION_WIDTH);
 
-    // clamp to the minimum depth
-    if (projectedDepth < getMinDepth({ nextItem })) {
-        const minDepth = getMinDepth({ nextItem });
-        console.log('minDepth', minDepth);
-        projectedDepth = minDepth;
-    }
+    // Validate against min/max depth constraints
+    const minDepth = getMinDepth({ nextItem });
+    const maxDepth = getMaxDepth({ previousItem });
 
-    // clamp to the maximum depth
-    if (projectedDepth > getMaxDepth({ previousItem })) {
-        const maxDepth = getMaxDepth({ previousItem });
-        console.log('maxDepth', maxDepth);
-        projectedDepth = maxDepth;
-    }
+    // Clamp to valid range
+    projectedDepth = Math.max(minDepth, Math.min(maxDepth, projectedDepth));
 
-    // build return value with field that are the same for all cases
-    const returnValue = {
-        totalItems: newItems.length,
-        activeItem,
-    };
-
-    // insert after
-    if (previousItem) {
-        const newCurrentDepthIndex = previousItem.currentDepthIndex + 1;
-        const newParent = previousItem.parent;
-
-        // need to find parent item of previous item
-        if (projectedDepth < previousItem.depth) {
-            console.log('need to find parent item of previous item');
-        }
-
-        // nesting under previous item
-        // todo check if has no existing children
-        if (projectedDepth > previousItem.depth) {
-            const newParent = previousItem;
-            let newCurrentDepthIndex = 0;
-
-            if (previousItem.hasChildren) {
-                newCurrentDepthIndex = previousItem.childrenCount;
-            }
-
-            return {
-                ...returnValue,
-                operation: {
-                    type: 'nest-under',
-                    targetId: previousItem.id,
-                    activeId,
-                },
-                projectedItem: {
-                    ...activeItem,
-                    index: overItemIndex,
-                    currentDepthIndex: newCurrentDepthIndex,
-                    depth: projectedDepth,
-                    parent: newParent,
-                },
-            };
-        }
-
-        return {
-            ...returnValue,
-            operation: {
-                type: 'insert-after',
-                targetId: overId,
-                activeId,
-            },
-            projectedItem: {
-                ...activeItem,
-                index: overItemIndex,
-
-                currentDepthIndex: newCurrentDepthIndex,
-                depth: projectedDepth,
-                parent: newParent,
-            },
-        };
-    }
-
-    // first item in the list
-    if (nextItem) {
-        return {
-            ...returnValue,
-            operation: {
-                type: 'insert-before',
-                targetId: overId,
-                activeId,
-            },
-            projectedItem: {
-                ...activeItem,
-                index: 0,
-                currentDepthIndex: 0,
-                depth: 0,
-                parent: null,
-            },
-        };
-    }
-
-    return null;
+    return projectedDepth;
 }
-
-/**
- * Gets the parent ID for a given depth
- * @param depth - The depth
- * @param previousItem - The previous item
- * @param newItems - The new items
- * @param overItemIndex - The index of the over item
- * @returns The parent ID
- */
-const getParentIdForProjection = ({
-    depth,
-    previousItem,
-    newItems,
-    overItemIndex,
-}: {
-    depth: number;
-    previousItem: FlattenedItem;
-    newItems: FlattenedItem[];
-    overItemIndex: number;
-}) => {
-    if (depth === 0 || !previousItem) {
-        return null;
-    }
-
-    if (depth === previousItem.depth) {
-        return previousItem.parent?.id ?? null;
-    }
-
-    if (depth > previousItem.depth) {
-        return previousItem.id;
-    }
-
-    const newParent = newItems
-        .slice(0, overItemIndex)
-        .reverse()
-        .find((item) => item.depth === depth)?.parent?.id;
-
-    return newParent ?? null;
-};
 
 /**
  * Gets the maximum depth for a given item
@@ -224,25 +85,4 @@ const getMinDepth = ({ nextItem }: { nextItem: FlattenedItem }) => {
     }
 
     return 0;
-};
-
-type MoveIntentType = 'insert-before' | 'insert-after' | 'nest-under';
-type MoveIntentReturn = {
-    type: MoveIntentType;
-    targetId: UniqueIdentifier;
-    parentId: UniqueIdentifier;
-    index: number;
-};
-
-export const getMoveIntent = (): MoveIntentReturn => {
-    return {
-        type: 'insert-after',
-        targetId: '1',
-        parentId: '2',
-        index: 0,
-    };
-};
-
-const calculateDepth = (activeItemDepth: number, dragOffset: number) => {
-    return activeItemDepth + Math.round(dragOffset / INDENTATION_WIDTH);
 };
