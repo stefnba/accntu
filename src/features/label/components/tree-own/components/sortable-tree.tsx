@@ -34,7 +34,7 @@ interface SortableTreeProps {
 }
 
 export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
-    const { flattenedItems, items, handleOptimisticMove } = useSortableTree();
+    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId } = useSortableTree();
 
     // Track the ID of the currently dragged item - useState is best practice here
     // as it's component-scoped state that triggers re-renders for the drag overlay
@@ -194,7 +194,7 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
             setProjectedDepth(null);
 
             // If no valid drop target or dropping on self, exit early
-            if (!over || !active || !currentProjectedDepth) return;
+            if (!over || !active || currentProjectedDepth === null) return;
 
             // Validate the move operation
             // if (!canPerformMove(active.id, over.id, flattenedItems)) {
@@ -204,12 +204,15 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
             //     return;
             // }
 
+            console.log('flattenedItems', flattenedItems);
+
             // Perform the heavy calculation once on drop
             const moveResult = performMove(
                 active.id,
                 over.id,
                 currentProjectedDepth,
-                flattenedItems
+                flattenedItems,
+                toggleExpandedId
             );
 
             if (!moveResult) {
@@ -218,6 +221,7 @@ export const SortableTreeOwn = ({ className }: SortableTreeProps) => {
             }
 
             console.log('Move operation:', moveResult.operation);
+            console.log('Changes:', moveResult.changes);
             console.log('New items:', moveResult.items);
 
             // Perform the move using the hook's handleMove function

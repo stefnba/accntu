@@ -21,7 +21,8 @@ type TMoveOperation =
 
 interface MoveResult {
     items: FlattenedItem[];
-    operation: TMoveOperation & {
+    operation: TMoveOperation;
+    changes: {
         depth: {
             previous: number;
             new: number;
@@ -53,7 +54,8 @@ export function performMove(
     activeId: UniqueIdentifier,
     overId: UniqueIdentifier,
     projectedDepth: number,
-    items: FlattenedItem[]
+    items: FlattenedItem[],
+    expandItem: (id: UniqueIdentifier) => void
 ): MoveResult | null {
     // Find indices
     const activeIndex = items.findIndex((item) => item.id === activeId);
@@ -72,10 +74,11 @@ export function performMove(
 
     // Determine the operation type and calculate new properties
     let operation: TMoveOperation;
-    let newParent: FlattenedItem | null = null;
+    let newParent: ParentItem | null = null;
     let newCurrentDepthIndex = 0;
 
     // Nesting under previous item
+    // Previous item can be a node w/o children or a node w/ children that is collapsed (i.e. children are not visible)
     if (previousItem && projectedDepth > previousItem.depth) {
         operation = {
             type: 'nest-under',
@@ -83,7 +86,15 @@ export function performMove(
             activeId,
         };
         newParent = previousItem;
+        // If the previous item has children, we need to set the current depth index to the number of children
+        // Otherwise, we set it to 0 (to make it the first child)
         newCurrentDepthIndex = previousItem.hasChildren ? previousItem.childrenCount : 0;
+
+        // If the previous item is collapsed, expand it
+        if (previousItem.collapsed) {
+            // Expand the previous item
+            expandItem(previousItem.id);
+        }
     }
     // Insert before (first item in list or at start of level)
     else if (!previousItem || (nextItem && projectedDepth < nextItem.depth)) {
@@ -102,6 +113,28 @@ export function performMove(
             newParent = findParentAtDepth(newItems, overIndex, projectedDepth);
             newCurrentDepthIndex = 0;
         }
+    }
+    // Insert after (higher level than previous item)
+    // Example: Inserting after a node that has children that are expanded
+    else if (previousItem && projectedDepth < previousItem.depth) {
+        // Find the item at the same depth as the projection that is directtly before the over index
+        const previousItemAtDepth =
+            newItems
+                .filter((item) => item.depth === projectedDepth)
+                .filter((item) => overIndex > item.index)
+                .at(-1) || null;
+
+        // If there is no item at the same depth as the projection, return null
+        if (!previousItemAtDepth) return null;
+
+        operation = {
+            type: 'insert-after',
+            targetId: previousItemAtDepth.id,
+            activeId,
+        };
+
+        newParent = previousItemAtDepth.parent;
+        newCurrentDepthIndex = previousItemAtDepth.currentDepthIndex + 1;
     }
     // Insert after (same level as previous item)
     else {
@@ -138,8 +171,8 @@ export function performMove(
 
     return {
         items: newItems,
-        operation: {
-            ...operation,
+        operation: operation,
+        changes: {
             depth: {
                 previous: activeItem.depth,
                 new: projectedDepth,

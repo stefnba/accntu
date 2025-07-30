@@ -33,7 +33,12 @@ export function buildTreeFromFlattenedItems(flattenedItems: FlattenedItem[]): Tr
 
         const parent = nodes[parentId];
         if (parent) {
-            parent.children = children;
+            // if parent already has children, we need to add the new children to the end of the children array
+            if (parent.children.length > 0) {
+                parent.children.push(...children);
+            } else {
+                parent.children = children;
+            }
         }
     }
 
