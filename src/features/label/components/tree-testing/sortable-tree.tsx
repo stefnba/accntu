@@ -36,6 +36,17 @@ import {
     setProperty,
 } from './utils';
 
+/**
+ * Initial demo data for the sortable tree component.
+ * Represents a hierarchical structure with nested items.
+ * 
+ * Purpose: Provides example data to demonstrate tree functionality
+ * 
+ * Optimization suggestions:
+ * - Consider lazy loading for large datasets
+ * - Use virtualization for trees with 1000+ items
+ * - Implement data normalization for better performance
+ */
 const initialItems: TreeItems = [
     {
         id: 'Home',
@@ -63,12 +74,34 @@ const initialItems: TreeItems = [
     },
 ];
 
+/**
+ * DndKit measuring configuration for optimized collision detection.
+ * 
+ * Purpose: Configures how droppable areas are measured during drag operations
+ * - MeasuringStrategy.Always ensures accurate collision detection
+ * 
+ * Optimization suggestions:
+ * - Use MeasuringStrategy.BeforeDragging for better performance on large trees
+ * - Consider MeasuringStrategy.WhileDragging for dynamic layouts
+ */
 const measuring = {
     droppable: {
         strategy: MeasuringStrategy.Always,
     },
 };
 
+/**
+ * Custom drop animation configuration for smooth visual feedback.
+ * 
+ * Purpose: Defines how items animate when dropped
+ * - Creates fade-out effect with slight position offset
+ * - Provides visual feedback for successful drops
+ * 
+ * Optimization suggestions:
+ * - Use CSS transforms instead of keyframes for better performance
+ * - Consider reducing animation duration for snappier feel
+ * - Implement will-change CSS property for smooth animations
+ */
 const dropAnimationConfig: DropAnimation = {
     keyframes({ transform }) {
         return [
@@ -100,6 +133,22 @@ interface Props {
     removable?: boolean;
 }
 
+/**
+ * Main sortable tree component with drag-and-drop functionality.
+ * 
+ * Purpose: Provides a hierarchical tree structure that supports:
+ * - Drag and drop reordering
+ * - Nesting/un-nesting items
+ * - Collapsing/expanding branches
+ * - Keyboard navigation
+ * - Item removal
+ * 
+ * Optimization suggestions:
+ * - Implement virtualization for large datasets (react-window)
+ * - Use React.memo for tree items to prevent unnecessary re-renders
+ * - Consider using useCallback for event handlers
+ * - Implement debouncing for rapid drag movements
+ */
 export function SortableTree({
     collapsible,
     defaultItems = initialItems,
@@ -116,6 +165,18 @@ export function SortableTree({
         overId: UniqueIdentifier;
     } | null>(null);
 
+    /**
+     * Flattens the tree structure and handles collapsed items.
+     * 
+     * Purpose: Converts hierarchical tree into flat array for DndKit
+     * - Filters out children of collapsed items
+     * - Excludes children of currently dragged item
+     * 
+     * Optimization suggestions:
+     * - Cache flattened result with stable key
+     * - Use WeakMap for collapsed items tracking
+     * - Consider incremental updates instead of full recalculation
+     */
     const flattenedItems = useMemo(() => {
         const flattenedTree = flattenTree(items);
         const collapsedItems = flattenedTree.reduce<string[]>(
@@ -129,17 +190,62 @@ export function SortableTree({
             activeId != null ? [activeId, ...collapsedItems] : collapsedItems
         );
     }, [activeId, items]);
+    /**
+     * Calculates the projected position and depth of dragged item.
+     * 
+     * Purpose: Determines where item will be placed when dropped
+     * - Calculates new depth based on horizontal drag offset
+     * - Finds appropriate parent based on position
+     * 
+     * Optimization suggestions:
+     * - Throttle projection calculations during drag
+     * - Pre-calculate valid drop zones
+     * - Use requestAnimationFrame for smooth updates
+     */
     const projected =
         activeId && overId
             ? getProjection(flattenedItems, activeId, overId, offsetLeft, indentationWidth)
             : null;
+    /**
+     * Context object for keyboard sensor coordination.
+     * 
+     * Purpose: Provides current state to keyboard navigation handler
+     * - Shares flattened items array
+     * - Provides current horizontal offset
+     * 
+     * Optimization suggestions:
+     * - Use stable reference to avoid sensor recreation
+     * - Consider using context API for deep component trees
+     */
     const sensorContext: SensorContext = useRef({
         items: flattenedItems,
         offset: offsetLeft,
     });
+    /**
+     * Custom keyboard coordinate getter for tree navigation.
+     * 
+     * Purpose: Enables keyboard-based drag and drop operations
+     * - Handles arrow key navigation
+     * - Manages depth changes with left/right arrows
+     * 
+     * Optimization suggestions:
+     * - Memoize coordinate getter creation
+     * - Use useCallback to prevent recreation
+     */
     const [coordinateGetter] = useState(() =>
         sortableTreeKeyboardCoordinates(sensorContext, indicator, indentationWidth)
     );
+    /**
+     * Configures input sensors for drag and drop operations.
+     * 
+     * Purpose: Enables mouse/touch and keyboard interactions
+     * - PointerSensor for mouse/touch drag
+     * - KeyboardSensor for accessibility
+     * 
+     * Optimization suggestions:
+     * - Use activation constraints to prevent accidental drags
+     * - Consider touch-specific sensors for mobile
+     */
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -147,7 +253,25 @@ export function SortableTree({
         })
     );
 
+    /**
+     * Extracts IDs from flattened items for SortableContext.
+     * 
+     * Purpose: Provides sorted array of IDs for DndKit context
+     * 
+     * Optimization suggestions:
+     * - Use stable array reference when items don't change
+     * - Consider using Set for O(1) lookup performance
+     */
     const sortedIds = useMemo(() => flattenedItems.map(({ id }) => id), [flattenedItems]);
+    /**
+     * Finds the currently active (dragged) item.
+     * 
+     * Purpose: Provides item data for drag overlay rendering
+     * 
+     * Optimization suggestions:
+     * - Use Map for O(1) item lookup instead of array.find
+     * - Cache active item to avoid repeated searches
+     */
     const activeItem = activeId ? flattenedItems.find(({ id }) => id === activeId) : null;
 
     useEffect(() => {
@@ -157,6 +281,17 @@ export function SortableTree({
         };
     }, [flattenedItems, offsetLeft]);
 
+    /**
+     * Screen reader announcements for accessibility.
+     * 
+     * Purpose: Provides audio feedback for drag and drop operations
+     * - Announces drag start/end events
+     * - Describes movement and final position
+     * 
+     * Optimization suggestions:
+     * - Debounce announcements to prevent spam
+     * - Use more descriptive language for complex movements
+     */
     const announcements: Announcements = {
         onDragStart({ active }) {
             return `Picked up ${active.id}.`;
@@ -225,6 +360,19 @@ export function SortableTree({
         </DndContext>
     );
 
+    /**
+     * Handles the start of a drag operation.
+     * 
+     * Purpose: Initializes drag state and visual feedback
+     * - Sets active item ID
+     * - Records initial position
+     * - Changes cursor to grabbing
+     * 
+     * Optimization suggestions:
+     * - Use useCallback to prevent function recreation
+     * - Pre-calculate drag constraints
+     * - Consider haptic feedback for touch devices
+     */
     function handleDragStart({ active: { id: activeId } }: DragStartEvent) {
         setActiveId(activeId);
         setOverId(activeId);
@@ -241,14 +389,51 @@ export function SortableTree({
         document.body.style.setProperty('cursor', 'grabbing');
     }
 
+    /**
+     * Handles drag movement to update horizontal offset.
+     * 
+     * Purpose: Tracks horizontal movement for depth calculation
+     * - Updates offset for nesting/un-nesting
+     * - Triggers projection recalculation
+     * 
+     * Optimization suggestions:
+     * - Throttle offset updates to reduce calculations
+     * - Use requestAnimationFrame for smooth updates
+     * - Consider snapping to indent levels
+     */
     function handleDragMove({ delta }: DragMoveEvent) {
         setOffsetLeft(delta.x);
     }
 
+    /**
+     * Handles drag over events to track current drop target.
+     * 
+     * Purpose: Updates overId for projection calculations
+     * - Tracks which item is being hovered
+     * - Triggers visual feedback updates
+     * 
+     * Optimization suggestions:
+     * - Debounce over events to reduce state updates
+     * - Use native drag events for better performance
+     */
     function handleDragOver({ over }: DragOverEvent) {
         setOverId(over?.id ?? null);
     }
 
+    /**
+     * Handles the end of a drag operation and commits changes.
+     * 
+     * Purpose: Finalizes the drag operation and updates tree structure
+     * - Calculates final position and depth
+     * - Rebuilds tree with new arrangement
+     * - Resets drag state
+     * 
+     * Optimization suggestions:
+     * - Use immutable updates for better performance
+     * - Implement undo/redo functionality
+     * - Batch multiple drag operations
+     * - Consider using Immer for cleaner state updates
+     */
     function handleDragEnd({ active, over }: DragEndEvent) {
         resetState();
 
@@ -268,10 +453,33 @@ export function SortableTree({
         }
     }
 
+    /**
+     * Handles drag cancellation (ESC key or invalid drop).
+     * 
+     * Purpose: Resets drag state without making changes
+     * - Clears all drag-related state
+     * - Restores original cursor
+     * 
+     * Optimization suggestions:
+     * - Use useCallback for stable reference
+     * - Consider animation for cancelled drags
+     */
     function handleDragCancel() {
         resetState();
     }
 
+    /**
+     * Resets all drag-related state to initial values.
+     * 
+     * Purpose: Centralizes state cleanup after drag operations
+     * - Clears active and over IDs
+     * - Resets offset and position
+     * - Restores cursor
+     * 
+     * Optimization suggestions:
+     * - Use batch state updates
+     * - Consider using reducer for complex state
+     */
     function resetState() {
         setOverId(null);
         setActiveId(null);
@@ -281,10 +489,34 @@ export function SortableTree({
         document.body.style.setProperty('cursor', '');
     }
 
+    /**
+     * Removes an item from the tree.
+     * 
+     * Purpose: Provides item deletion functionality
+     * - Recursively removes item and its children
+     * - Updates tree state
+     * 
+     * Optimization suggestions:
+     * - Add confirmation dialog for safety
+     * - Implement soft delete with undo
+     * - Use optimistic updates for better UX
+     */
     function handleRemove(id: UniqueIdentifier) {
         setItems((items) => removeItem(items, id));
     }
 
+    /**
+     * Toggles the collapsed state of a tree item.
+     * 
+     * Purpose: Manages expand/collapse functionality
+     * - Toggles collapsed property
+     * - Updates tree display
+     * 
+     * Optimization suggestions:
+     * - Persist collapsed state in localStorage
+     * - Use CSS transitions for smooth animations
+     * - Consider lazy loading for collapsed children
+     */
     function handleCollapse(id: UniqueIdentifier) {
         setItems((items) =>
             setProperty(items, id, 'collapsed', (value) => {
@@ -293,6 +525,19 @@ export function SortableTree({
         );
     }
 
+    /**
+     * Generates accessibility announcements for drag movements.
+     * 
+     * Purpose: Provides detailed audio feedback for screen readers
+     * - Describes item movement relative to siblings
+     * - Handles nesting level changes
+     * - Provides contextual position information
+     * 
+     * Optimization suggestions:
+     * - Cache announcement strings to avoid recalculation
+     * - Use more natural language patterns
+     * - Consider internationalization support
+     */
     function getMovementAnnouncement(
         eventName: string,
         activeId: UniqueIdentifier,
@@ -351,6 +596,17 @@ export function SortableTree({
     }
 }
 
+/**
+ * Adjusts the drag overlay position for better visual alignment.
+ * 
+ * Purpose: Fine-tunes drag overlay positioning
+ * - Offsets Y position to center on cursor
+ * - Improves visual feedback during drag
+ * 
+ * Optimization suggestions:
+ * - Use CSS transforms for hardware acceleration
+ * - Consider dynamic offset based on item height
+ */
 const adjustTranslate: Modifier = ({ transform }) => {
     return {
         ...transform,

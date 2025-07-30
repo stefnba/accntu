@@ -22,6 +22,24 @@ export interface Props extends Omit<HTMLAttributes<HTMLLIElement>, 'id'> {
     wrapperRef?(node: HTMLLIElement): void;
 }
 
+/**
+ * Core tree item component with visual styling and interactions.
+ *
+ * Purpose: Renders individual tree items with:
+ * - Hierarchical indentation based on depth
+ * - Collapse/expand functionality
+ * - Drag handle for reordering
+ * - Remove button for deletion
+ * - Visual states (ghost, clone, disabled)
+ * - Accessibility support
+ *
+ * Optimization suggestions:
+ * - Use React.memo for performance with large trees
+ * - Implement virtual scrolling for 1000+ items
+ * - Use CSS custom properties for dynamic styling
+ * - Add intersection observer for lazy rendering
+ * - Implement gesture recognition for mobile
+ */
 export const TreeItem = forwardRef<HTMLDivElement, Props>(
     (
         {
@@ -44,7 +62,25 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
         },
         ref
     ) => {
+        /**
+         * Renders the tree item with all interactive elements.
+         *
+         * Structure:
+         * - li: Main container with indentation
+         * - div: Content container with styling
+         * - Handle: Drag handle for reordering
+         * - Action: Collapse/expand button
+         * - span: Item text content
+         * - Remove: Delete button
+         * - Child count badge (for clones)
+         *
+         * Optimization suggestions:
+         * - Use CSS containment for better performance
+         * - Implement efficient re-rendering strategies
+         * - Add will-change CSS property for animations
+         */
         return (
+            {/* Main list item container with dynamic indentation */}
             <li
                 ref={wrapperRef}
                 style={
@@ -63,6 +99,7 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
                 `.trim()}
                 {...props}
             >
+                {/* Content container with visual styling */}
                 <div
                     className={`
                         relative flex items-center py-[var(--vertical-padding)] px-2.5
@@ -74,7 +111,9 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
                     ref={ref}
                     style={style}
                 >
+                    {/* Drag handle for reordering */}
                     <Handle {...handleProps} />
+                    {/* Collapse/expand button */}
                     {onCollapse && (
                         <Action
                             onClick={onCollapse}
@@ -88,6 +127,7 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
                             {collapseIcon}
                         </Action>
                     )}
+                    {/* Item text content */}
                     <span
                         className={`
                         flex-grow pl-2 whitespace-nowrap text-ellipsis overflow-hidden
@@ -97,8 +137,11 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
                     >
                         {value}
                     </span>
+                    {/* Remove button (hidden for clones) */}
                     {!clone && onRemove && <Remove onClick={onRemove} />}
+                    {/* Child count badge for clones */}
                     {clone && childCount && childCount > 1 ? (
+                        {/* Child count badge */}
                         <span
                             className={`
                             absolute -top-2.5 -right-2.5 flex items-center justify-center
@@ -115,6 +158,18 @@ export const TreeItem = forwardRef<HTMLDivElement, Props>(
     }
 );
 
+/**
+ * SVG icon for collapse/expand functionality.
+ *
+ * Purpose: Provides visual indicator for collapsible items
+ * - Rotates to show expand/collapse state
+ * - Uses CSS transforms for smooth animation
+ *
+ * Optimization suggestions:
+ * - Use CSS mask for better performance
+ * - Consider using icon fonts or sprite sheets
+ * - Implement lazy loading for complex icons
+ */
 const collapseIcon = (
     <svg
         width="6"
