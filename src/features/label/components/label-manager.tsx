@@ -3,10 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
-import { SortableTree } from '@/features/label/components/sortable-tree';
 import { Edit2, Eye, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { useLabelEndpoints } from '../api';
 import { useLabelModal } from '../hooks';
 import { LabelForm } from './label-form';
@@ -250,120 +248,6 @@ const ModernEnterpriseVariantA2 = () => {
     );
 };
 
-const OptimizedTreeExample = () => {
-    const [demoItems, setDemoItems] = useState([
-        {
-            id: 'Work',
-            children: [
-                {
-                    id: 'Projects',
-                    children: [
-                        { id: 'Project Alpha', children: [] },
-                        { id: 'Project Beta', children: [] },
-                        { id: 'Project Gamma', children: [] },
-                    ],
-                },
-                {
-                    id: 'Tasks',
-                    children: [
-                        { id: 'High Priority', children: [] },
-                        { id: 'Medium Priority', children: [] },
-                    ],
-                },
-            ],
-        },
-        {
-            id: 'Personal',
-            children: [
-                { id: 'Health', children: [] },
-                { id: 'Finance', children: [] },
-                { id: 'Learning', children: [] },
-            ],
-        },
-        {
-            id: 'Archive',
-            children: [],
-        },
-    ]);
-
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">🚀 Optimized React 19 Tree</h3>
-                <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setDemoItems([])}>
-                        Clear
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                            setDemoItems([
-                                {
-                                    id: 'Work',
-                                    children: [
-                                        {
-                                            id: 'Projects',
-                                            children: [
-                                                { id: 'Project Alpha', children: [] },
-                                                { id: 'Project Beta', children: [] },
-                                                { id: 'Project Gamma', children: [] },
-                                            ],
-                                        },
-                                        {
-                                            id: 'Tasks',
-                                            children: [
-                                                { id: 'High Priority', children: [] },
-                                                { id: 'Medium Priority', children: [] },
-                                            ],
-                                        },
-                                    ],
-                                },
-                                {
-                                    id: 'Personal',
-                                    children: [
-                                        { id: 'Health', children: [] },
-                                        { id: 'Finance', children: [] },
-                                        { id: 'Learning', children: [] },
-                                    ],
-                                },
-                                {
-                                    id: 'Archive',
-                                    children: [],
-                                },
-                            ])
-                        }
-                    >
-                        Reset
-                    </Button>
-                </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                <SortableTree
-                    defaultItems={demoItems}
-                    onItemsChange={setDemoItems}
-                    collapsible={true}
-                    indicator={true}
-                    indentationWidth={40}
-                />
-            </div>
-
-            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                <div className="font-medium mb-2">✨ Features:</div>
-                <ul className="space-y-1 text-xs">
-                    <li>• React 19 concurrent features (useTransition, useDeferredValue)</li>
-                    <li>• Zustand store with optimized subscriptions</li>
-                    <li>• Structured cloning for better performance</li>
-                    <li>• Memoized components with custom comparisons</li>
-                    <li>• Full keyboard navigation & accessibility</li>
-                    <li>• Smooth drag animations with drop indicators</li>
-                </ul>
-            </div>
-        </div>
-    );
-};
-
 export const LabelManager = () => {
     // ================================
     // Hooks
@@ -376,9 +260,7 @@ export const LabelManager = () => {
                 <ModernEnterpriseVariantA />
             </LabelTreeSortable>
 
-            <SortableTree collapsible={true} />
-
-            <OptimizedTreeExample />
+            {/* <OptimizedTreeExample /> */}
 
             {/* <LabelTree className="space-y-2 w-full">
                 <ModernEnterpriseVariantA2 />

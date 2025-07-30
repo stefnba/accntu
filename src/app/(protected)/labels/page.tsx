@@ -1,6 +1,7 @@
 import { MainContent } from '@/components/layout/main';
-import { LabelManager } from '@/features/label/components';
-import { LabelManagerActionBar } from '@/features/label/components/label-manager';
+import { LabelManager, LabelManagerActionBar } from '@/features/label/components/label-manager';
+
+import { SortableTreeOwn } from '@/features/label/components/tree-own/components/sortable-tree';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -18,6 +19,8 @@ export default function LabelsPage() {
             }}
         >
             <LabelManager />
+
+            <SortableTreeOwn />
         </MainContent>
     );
 }
