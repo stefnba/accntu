@@ -1,6 +1,5 @@
-import { TreeItem } from '@/features/label/components/sortable-tree';
 import { useSortableTreeUIStore } from '@/features/label/components/tree-own/store';
-import { FlattenedItem } from '@/features/label/components/tree-own/types';
+import { FlattenedItem, TreeItem } from '@/features/label/components/tree-own/types';
 import {
     buildTreeFromFlattenedItems,
     DropIntent,
