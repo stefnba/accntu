@@ -6,8 +6,6 @@ import { FlattenedItem, TreeItem } from '@/features/label/components/tree-own/ty
  * @returns The tree structure
  */
 export function buildTreeFromFlattenedItems(flattenedItems: FlattenedItem[]): TreeItem[] {
-    if (flattenedItems.length === 0) return [];
-
     // Single pass optimization: create nodes and group by parent simultaneously
     const nodes: Record<string, TreeItem> = {};
     const childrenByParent: Record<string, TreeItem[]> = { root: [] };
@@ -17,7 +15,7 @@ export function buildTreeFromFlattenedItems(flattenedItems: FlattenedItem[]): Tr
         // Create the node
         const node: TreeItem = {
             id: item.id,
-            children: [], // Will be populated from childrenByParent
+            children: item.collapsed && item.children.length > 0 ? item.children : [], // Will be populated from childrenByParent if not collapsed, otherwise we use item.children
         };
         nodes[item.id] = node;
 
