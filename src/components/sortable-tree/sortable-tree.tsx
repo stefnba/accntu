@@ -1,7 +1,7 @@
 'use client';
 
-import { SortableItem } from '@/components/sortable-tree/components/sortable-item';
 import { SortableTreeOptions, useSortableTree } from '@/components/sortable-tree/hooks';
+import { SortableItem } from '@/components/sortable-tree/sortable-item';
 import { FlattenedItem, TreeItem } from '@/components/sortable-tree/types';
 import {
     getChildCount,
@@ -35,12 +35,13 @@ interface SortableTreeProps<T extends TreeItem> {
     className?: string;
 }
 
-export const SortableTree = <T extends TreeItem>({ 
-    options, 
-    children, 
-    className 
+export const SortableTree = <T extends TreeItem>({
+    options,
+    children,
+    className,
 }: SortableTreeProps<T>) => {
-    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId, indentationWidth } = useSortableTree(options);
+    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId, indentationWidth } =
+        useSortableTree(options);
 
     // Track the ID of the currently dragged item - useState is best practice here
     // as it's component-scoped state that triggers re-renders for the drag overlay
@@ -174,17 +175,14 @@ export const SortableTree = <T extends TreeItem>({
      * If returns false, the drag will be cancelled.
      * If returns null, the drag will be ignored.
      */
-    const handleDragOver = useCallback(
-        ({ active, over }: DragOverEvent) => {
-            if (!over || !active) return;
+    const handleDragOver = useCallback(({ active, over }: DragOverEvent) => {
+        if (!over || !active) return;
 
-            const newOverId = over?.id ?? null;
+        const newOverId = over?.id ?? null;
 
-            // Only update if overId actually changed to prevent unnecessary re-renders
-            setOverId((prev) => (prev !== newOverId ? newOverId : prev));
-        },
-        []
-    );
+        // Only update if overId actually changed to prevent unnecessary re-renders
+        setOverId((prev) => (prev !== newOverId ? newOverId : prev));
+    }, []);
 
     /**
      * Handle drag end event. This is used to perform the move operation.
@@ -290,7 +288,10 @@ export const SortableTree = <T extends TreeItem>({
                         >
                             {activeId && activeItem ? (
                                 <div className="bg-white border border-gray-200 rounded-md shadow-lg opacity-90">
-                                    {children(activeItem, <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />)}
+                                    {children(
+                                        activeItem,
+                                        <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
+                                    )}
                                     {activeItemChildCount > 0 && (
                                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
                                             {activeItemChildCount + 1}
