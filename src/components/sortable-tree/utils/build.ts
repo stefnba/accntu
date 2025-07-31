@@ -5,18 +5,19 @@ import { FlattenedItem, TreeItem } from '@/components/sortable-tree/types';
  * @param flattenedItems - The flattened items to build the tree from
  * @returns The tree structure
  */
-export function buildTreeFromFlattenedItems(flattenedItems: FlattenedItem[]): TreeItem[] {
+export function buildTreeFromFlattenedItems<T extends TreeItem>(flattenedItems: FlattenedItem<T>[]): T[] {
     // Single pass optimization: create nodes and group by parent simultaneously
-    const nodes: Record<string, TreeItem> = {};
-    const childrenByParent: Record<string, TreeItem[]> = { root: [] };
+    const nodes: Record<string, T> = {};
+    const childrenByParent: Record<string, T[]> = { root: [] };
 
     // Single loop to create nodes and group by parent
     for (const item of flattenedItems) {
-        // Create the node
-        const node: TreeItem = {
-            id: item.id,
-            children: item.collapsed && item.children.length > 0 ? item.children : [], // Will be populated from childrenByParent if not collapsed, otherwise we use item.children
-        };
+        // Create the node preserving all original properties
+        const { parent, index, currentDepthIndex, depth, collapsed, childrenCount, hasChildren, ...originalItem } = item;
+        const node: T = {
+            ...originalItem,
+            children: collapsed && item.children.length > 0 ? item.children : [], // Will be populated from childrenByParent if not collapsed, otherwise we use item.children
+        } as T;
         nodes[item.id] = node;
 
         // Group by parent (use 'root' for null parent)

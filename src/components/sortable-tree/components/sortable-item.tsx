@@ -1,5 +1,4 @@
 import { DragHandleButton } from '@/components/drag-handle-button';
-import { INDENTATION_WIDTH } from '@/components/sortable-tree/config';
 import { FlattenedItem, TreeItem } from '@/components/sortable-tree/types';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
@@ -9,6 +8,7 @@ import { memo } from 'react';
 interface SortableItemProps<T extends TreeItem> {
     item: FlattenedItem<T>;
     depth: number;
+    indentationWidth: number;
     children: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
 }
 
@@ -18,6 +18,7 @@ interface SortableItemProps<T extends TreeItem> {
 export const SortableItem = memo(<T extends TreeItem>({ 
     item, 
     depth, 
+    indentationWidth,
     children 
 }: SortableItemProps<T>) => {
     const { attributes, listeners, setNodeRef, transform, transition } =
@@ -29,7 +30,7 @@ export const SortableItem = memo(<T extends TreeItem>({
             },
         });
 
-    const depthIndent = depth * INDENTATION_WIDTH;
+    const depthIndent = depth * indentationWidth;
     const dragButton = <DragHandleButton {...attributes} {...listeners} />;
 
     return (

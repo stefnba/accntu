@@ -1,4 +1,3 @@
-import { INDENTATION_WIDTH } from '@/components/sortable-tree/config';
 import { FlattenedItem } from '@/components/sortable-tree/types';
 
 import { UniqueIdentifier } from '@dnd-kit/core';
@@ -9,6 +8,7 @@ type DropProjectionArgs = {
     activeId: UniqueIdentifier | null;
     overId: UniqueIdentifier | null;
     dragOffset: number;
+    indentationWidth: number;
 };
 
 /**
@@ -24,6 +24,7 @@ export function getProjectedDepth({
     activeId,
     overId,
     dragOffset,
+    indentationWidth,
 }: DropProjectionArgs): number | null {
     // If no active or over item, exit early
     if (!activeId || !overId) {
@@ -49,7 +50,7 @@ export function getProjectedDepth({
     const nextItem = newItems[overItemIndex + 1] || null;
 
     // Calculate the new depth: original depth + change from horizontal dragging
-    let projectedDepth = activeItem.depth + Math.round(dragOffset / INDENTATION_WIDTH);
+    let projectedDepth = activeItem.depth + Math.round(dragOffset / indentationWidth);
 
     // Validate against min/max depth constraints
     const minDepth = getMinDepth({ nextItem });

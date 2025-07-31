@@ -9,5 +9,3 @@ export type { TreeItem, FlattenedItem, TreeMoveOperation } from './types';
 // Utilities for advanced usage
 export * from './utils';
 
-// Configuration
-export { INDENTATION_WIDTH } from './config';

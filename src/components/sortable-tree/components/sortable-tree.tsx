@@ -40,7 +40,7 @@ export const SortableTree = <T extends TreeItem>({
     children, 
     className 
 }: SortableTreeProps<T>) => {
-    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId } = useSortableTree(options);
+    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId, indentationWidth } = useSortableTree(options);
 
     // Track the ID of the currently dragged item - useState is best practice here
     // as it's component-scoped state that triggers re-renders for the drag overlay
@@ -149,6 +149,7 @@ export const SortableTree = <T extends TreeItem>({
                     activeId,
                     overId,
                     dragOffset: moveData.delta.x,
+                    indentationWidth,
                 });
 
                 // Only update if depth actually changed to avoid unnecessary re-renders
@@ -162,7 +163,7 @@ export const SortableTree = <T extends TreeItem>({
                 rafIdRef.current = null;
             });
         },
-        [flattenedItems, activeId, overId]
+        [flattenedItems, activeId, overId, indentationWidth]
     );
 
     /**
@@ -271,6 +272,7 @@ export const SortableTree = <T extends TreeItem>({
                                 }
                                 key={item.id}
                                 item={item}
+                                indentationWidth={indentationWidth}
                             >
                                 {children}
                             </SortableItem>

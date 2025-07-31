@@ -14,10 +14,11 @@ export interface SortableTreeOptions<T extends TreeItem> {
     queryKey: readonly string[];
     queryFn: () => Promise<T[]>;
     mutateFn: (data: { activeId: UniqueIdentifier; intent: DropIntent }) => Promise<T[]>;
+    indentationWidth?: number;
 }
 
 export const useSortableTree = <T extends TreeItem>(options: SortableTreeOptions<T>) => {
-    const { queryKey, queryFn, mutateFn } = options;
+    const { queryKey, queryFn, mutateFn, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(queryKey);
 
@@ -73,9 +74,9 @@ export const useSortableTree = <T extends TreeItem>(options: SortableTreeOptions
      * @param newItems - The new items to move
      */
     const handleOptimisticMove = useCallback(
-        (newItems: FlattenedItem[]) => {
+        (newItems: FlattenedItem<T>[]) => {
             // Build the tree from the new items
-            const tree = buildTreeFromFlattenedItems(newItems);
+            const tree = buildTreeFromFlattenedItems<T>(newItems);
 
             // Optimistic update to the cache
             queryClient.setQueryData(queryKey, tree);
@@ -106,5 +107,8 @@ export const useSortableTree = <T extends TreeItem>(options: SortableTreeOptions
         // Mutation state
         isMoving: moveMutation.isPending,
         moveError: moveMutation.error,
+
+        // Configuration
+        indentationWidth,
     };
 };
