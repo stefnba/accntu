@@ -24,6 +24,9 @@ interface LabelSortableTreeProps {
  * Main sortable tree component for labels with drag & drop functionality
  */
 export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
+    // Get expand state at component level (not inside render function)
+    const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(['labels']);
+
     // Transform the flat labels into tree structure
     const options: SortableTreeOptions<TLabelTreeItem> = useMemo(
         () => ({
@@ -56,8 +59,6 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
 
     // Custom label item renderer
     const renderLabelItem = (item: FlattenedItem<TLabelTreeItem>, dragButton: React.ReactNode) => {
-        // Get expand state from the same store instance used by the tree
-        const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(['labels']);
         const isExpanded = expandedIds.has(item.id);
 
         return (
