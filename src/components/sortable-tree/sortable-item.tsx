@@ -9,7 +9,7 @@ interface SortableItemProps<T extends TreeItem> {
     item: FlattenedItem<T>;
     depth: number;
     indentationWidth: number;
-    children: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
+    renderItem: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
 }
 
 /**
@@ -19,7 +19,7 @@ export const SortableItem = memo(<T extends TreeItem>({
     item, 
     depth, 
     indentationWidth,
-    children 
+    renderItem 
 }: SortableItemProps<T>) => {
     const { attributes, listeners, setNodeRef, transform, transition } =
         useSortable({
@@ -44,7 +44,7 @@ export const SortableItem = memo(<T extends TreeItem>({
             }}
             className={cn('relative transition-all duration-200')}
         >
-            {children(item, dragButton)}
+            {renderItem(item, dragButton)}
         </div>
     );
 });

@@ -1,5 +1,5 @@
 import { TLabelService } from '@/features/label/schemas';
-import { LabelTreeItem } from './types';
+import { TLabelTreeItem } from './types';
 
 /**
  * Transform a single label to tree item with nested children
@@ -10,7 +10,7 @@ import { LabelTreeItem } from './types';
 export const labelToTreeItem = (
     label: TLabelService['select'],
     allLabels: TLabelService['select'][]
-): LabelTreeItem => {
+): TLabelTreeItem => {
     const children = allLabels
         .filter((l) => l.parentId === label.id)
         .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -37,7 +37,7 @@ export const labelToTreeItem = (
  * @param labels - Flat array of labels
  * @returns Hierarchical tree structure
  */
-export const labelsToTree = (labels: TLabelService['select'][]): LabelTreeItem[] => {
+export const labelsToTree = (labels: TLabelService['select'][]): TLabelTreeItem[] => {
     // Get root labels (those without a parent)
     const rootLabels = labels
         .filter((label) => !label.parentId)

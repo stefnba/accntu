@@ -31,14 +31,14 @@ import { createPortal } from 'react-dom';
 
 interface SortableTreeProps<T extends TreeItem> {
     options: SortableTreeOptions<T>;
-    children: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
     className?: string;
+    renderItem: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
 }
 
 export const SortableTree = <T extends TreeItem>({
     options,
-    children,
     className,
+    renderItem,
 }: SortableTreeProps<T>) => {
     const { flattenedItems, items, handleOptimisticMove, toggleExpandedId, indentationWidth } =
         useSortableTree(options);
@@ -271,9 +271,8 @@ export const SortableTree = <T extends TreeItem>({
                                 key={item.id}
                                 item={item}
                                 indentationWidth={indentationWidth}
-                            >
-                                {children}
-                            </SortableItem>
+                                renderItem={(item, dragButton) => renderItem(item, dragButton)}
+                            />
                         ))}
                     </div>
                 </SortableContext>
@@ -288,7 +287,7 @@ export const SortableTree = <T extends TreeItem>({
                         >
                             {activeId && activeItem ? (
                                 <div className="bg-white border border-gray-200 rounded-md shadow-lg opacity-90">
-                                    {children(
+                                    {renderItem(
                                         activeItem,
                                         <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
                                     )}
