@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
+import { forwardRef } from 'react';
 
 export interface DragHandleProps {
     className?: string;
     size?: 'sm' | 'md' | 'lg';
 }
 
-export const DragHandleButton = ({ className, size = 'md' }: DragHandleProps) => {
+export const DragHandleButton = forwardRef<HTMLButtonElement, DragHandleProps>(({ className, size = 'md', ...props }, ref) => {
     const sizeClasses = {
         sm: 'w-3 h-3',
         md: 'w-4 h-4',
@@ -16,6 +17,7 @@ export const DragHandleButton = ({ className, size = 'md' }: DragHandleProps) =>
 
     return (
         <Button
+            ref={ref}
             variant="ghost"
             size="icon"
             className={cn(
@@ -26,8 +28,11 @@ export const DragHandleButton = ({ className, size = 'md' }: DragHandleProps) =>
                 className
             )}
             title="Drag to reorder"
+            {...props}
         >
             <GripVertical className={sizeClasses[size]} />
         </Button>
     );
-};
+});
+
+DragHandleButton.displayName = 'DragHandleButton';
