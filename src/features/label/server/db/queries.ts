@@ -33,7 +33,7 @@ const getAll = async ({ userId, filters }: TQuerySelectUserRecords<TLabelQuery['
                         where: eq(label.isActive, true),
                     },
                 },
-                orderBy: [asc(label.sortOrder), asc(label.name)],
+                orderBy: [asc(label.index), asc(label.name)],
             });
         },
     });
@@ -63,7 +63,7 @@ const getRootLabels = async (userId: string) =>
                         },
                     },
                 },
-                orderBy: [asc(label.sortOrder), asc(label.name)],
+                orderBy: [asc(label.index), asc(label.name)],
             });
         },
     });
@@ -100,10 +100,10 @@ const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['inse
     withDbQuery({
         operation: 'Create new label',
         queryFn: async () => {
-            // Get next sortOrder for this parent level
+            // Get next index for this parent level
             const parentId = data.parentId ?? null;
-            const maxSortOrderResult = await db
-                .select({ maxSort: max(label.sortOrder) })
+            const maxindexResult = await db
+                .select({ maxSort: max(label.index) })
                 .from(label)
                 .where(
                     and(
@@ -113,14 +113,14 @@ const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['inse
                     )
                 );
 
-            const nextSortOrder = (maxSortOrderResult[0]?.maxSort ?? -1) + 1;
+            const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
 
             const [labelRecord] = await db
                 .insert(label)
                 .values({
                     ...data,
                     userId,
-                    sortOrder: nextSortOrder,
+                    index: nextindex,
                 })
                 .returning();
 
@@ -179,7 +179,7 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
 
 /**
  * Bulk update label orders and parents for drag and drop operations
- * @param updates - Array of label updates with id, sortOrder, and optional parentId
+ * @param updates - Array of label updates with id, index, and optional parentId
  * @param userId - The user ID that owns all labels
  * @returns Promise resolving to array of updated label records
  */
@@ -187,7 +187,7 @@ const reorder = async ({
     updates,
     userId,
 }: {
-    updates: Array<{ id: string; sortOrder: number; parentId?: string | null }>;
+    updates: Array<{ id: string; index: number; parentId?: string | null }>;
     userId: string;
 }) =>
     withDbQuery({
@@ -196,11 +196,11 @@ const reorder = async ({
             const updatedLabels = [];
 
             // Update each label individually to ensure proper validation
-            for (const { id, sortOrder, parentId } of updates) {
+            for (const { id, index, parentId } of updates) {
                 const [updatedLabel] = await db
                     .update(label)
                     .set({
-                        sortOrder,
+                        index,
                         parentId: parentId ?? null,
                         updatedAt: new Date(),
                     })

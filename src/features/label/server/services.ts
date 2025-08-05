@@ -71,11 +71,17 @@ export const labelServices = {
 
     /**
      * Bulk reorder labels for drag and drop operations
-     * @param updates - Array of label updates with id, sortOrder, and optional parentId
+     * @param updates - Array of label updates with id, index, and optional parentId
      * @param userId - The user ID that owns all labels
      * @returns Promise resolving to array of updated labels
      */
-    async reorder({ updates, userId }: { updates: TLabelService['reorder']['updates']; userId: string }) {
+    async reorder({
+        updates,
+        userId,
+    }: {
+        updates: TLabelService['reorder']['updates'];
+        userId: string;
+    }) {
         return await labelQueries.reorder({ updates, userId });
     },
 };
