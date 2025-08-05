@@ -5,9 +5,10 @@ import {
 } from '@/features/label/server/db/schema';
 import { z } from 'zod';
 
-/**
- * Label query schemas for database operations
- */
+// ====================
+// Query
+// ====================
+
 export const labelQuerySchemas = {
     select: selectLabelSchema,
     insert: insertLabelSchema.omit({
@@ -26,6 +27,7 @@ export const labelQuerySchemas = {
     filter: z
         .object({
             search: z.string().optional(),
+            parentId: z.string().optional(),
         })
         .optional(),
 };
@@ -35,21 +37,30 @@ export type TLabelQuery = {
     update: z.infer<typeof labelQuerySchemas.update>;
     filter: z.infer<typeof labelQuerySchemas.filter>;
 };
-/**
- * Label service schemas for business logic operations
- */
+
+// ====================
+// Service/Endpoint
+// ====================
 export const labelServiceSchemas = {
     select: labelQuerySchemas.select,
-    insert: labelQuerySchemas.insert.omit({
+    insert: labelQuerySchemas.insert
+        .omit({
+            firstParentId: true,
+            index: true,
+        })
+        .extend({
+            name: z.string().min(1),
+        }),
+    update: labelQuerySchemas.update.omit({
         firstParentId: true,
+        index: true,
     }),
-    update: labelQuerySchemas.update,
     filter: labelQuerySchemas.filter,
     reorder: z.object({
         updates: z.array(
             z.object({
                 id: z.string(),
-                sortOrder: z.number().int().min(0),
+                index: z.number().int().min(0),
                 parentId: z.string().nullable().optional(),
             })
         ),
@@ -63,22 +74,10 @@ export type TLabelService = {
     reorder: z.infer<typeof labelServiceSchemas.reorder>;
 };
 
-/**
- * Label form schemas for frontend form handling
- */
-export const labelFormSchemas = {
-    create: labelQuerySchemas.insert,
-    update: labelQuerySchemas.update,
-};
+// ====================
+// UI
+// ====================
 
-export type TLabelForm = {
-    create: z.infer<typeof labelFormSchemas.create>;
-    update: z.infer<typeof labelFormSchemas.update>;
-};
-
-/**
- * Available colors for labels
- */
 export const labelColors = [
     '#EF4444', // red
     '#F97316', // orange
@@ -130,17 +129,3 @@ export const labelIcons = [
 ] as const;
 
 export type LabelIcon = (typeof labelIcons)[number];
-
-/**
- * Enhanced form schema with icon validation
- */
-export const labelFormSchemaExtended = {
-    create: labelFormSchemas.create.extend({
-        icon: z.string().optional(),
-        imageUrl: z.string().url().optional(),
-    }),
-    update: labelFormSchemas.update.extend({
-        icon: z.string().optional(),
-        imageUrl: z.string().url().optional(),
-    }),
-};

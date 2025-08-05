@@ -218,6 +218,26 @@ const reorder = async ({
         },
     });
 
+const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: string | null }) =>
+    withDbQuery({
+        operation: 'Get max index for user and parent',
+        queryFn: async () => {
+            const maxIndex = await db
+                .select({ maxIndex: max(label.index) })
+                .from(label)
+                .where(
+                    and(
+                        eq(label.userId, userId),
+                        eq(label.isActive, true),
+                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
+                    )
+                )
+                .then((results) => results[0]?.maxIndex);
+
+            return { maxIndex: maxIndex ?? 0 };
+        },
+    });
+
 export const labelQueries = {
     getAll,
     getRootLabels,
@@ -226,4 +246,5 @@ export const labelQueries = {
     update,
     remove,
     reorder,
+    getMaxIndex,
 };

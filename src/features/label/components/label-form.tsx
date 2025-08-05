@@ -1,20 +1,19 @@
 'use client';
 
-import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
+import { Form, FormInput, FormSelect, FormSubmitButton, useUpsertForm } from '@/components/form';
 import { Badge } from '@/components/ui/badge';
 import { IconPicker } from '@/features/label/components/icon-picker';
+import { labelColors, labelServiceSchemas } from '@/features/label/schemas';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { useEffect, useState } from 'react';
 import { useLabelEndpoints } from '../api';
-import { labelColors, labelFormSchemaExtended } from '../schemas';
 
 interface LabelFormProps {
     labelId?: string | null;
     parentId?: string | null;
-    onSuccess?: () => void;
 }
 
-export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
+export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
     const isEditMode = Boolean(labelId);
 
     const { data: rootLabels } = useLabelEndpoints.getRoots({});
@@ -31,22 +30,30 @@ export const LabelForm = ({ labelId, parentId, onSuccess }: LabelFormProps) => {
     const [selectedColor, setSelectedColor] = useState('#6B7280');
     const [selectedIcon, setSelectedIcon] = useState<string>('');
 
-    const form = useForm({
-        schema: isEditMode ? labelFormSchemaExtended.update : labelFormSchemaExtended.create,
-        defaultValues: {
-            name: '',
-            color: '#6B7280',
-            icon: '',
-            parentId: parentId || undefined,
-        },
-        onSubmit: async (data) => {
-            if (isEditMode && labelId) {
-                await updateMutation.mutateAsync({ param: { id: labelId }, json: data });
-            } else {
+    const form = useUpsertForm({
+        create: {
+            schema: labelServiceSchemas.insert,
+            defaultValues: {
+                name: '',
+                color: '#6B7280',
+            },
+            onSubmit: async (data) => {
                 await createMutation.mutateAsync({ json: data });
-            }
-            onSuccess?.();
+            },
         },
+        update: {
+            schema: labelServiceSchemas.update,
+            defaultValues: {
+                name: labelData?.name || '',
+                color: labelData?.color || '#6B7280',
+                icon: labelData?.icon || '',
+                parentId: labelData?.parentId || undefined,
+            },
+            onSubmit: async (data) => {
+                await updateMutation.mutateAsync({ param: { id: labelId! }, json: data });
+            },
+        },
+        isUpdate: isEditMode,
     });
 
     useEffect(() => {

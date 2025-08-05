@@ -45,7 +45,15 @@ export const labelServices = {
      * @returns Promise resolving to the created label
      */
     async create({ data, userId }: TQueryInsertUserRecord<TLabelService['insert']>) {
-        return await labelQueries.create({ data, userId });
+        const maxIndex = await labelQueries.getMaxIndex({
+            userId,
+            parentId: data.parentId ?? undefined,
+        });
+
+        return await labelQueries.create({
+            data: { ...data, index: maxIndex.maxIndex + 1 },
+            userId,
+        });
     },
 
     /**
