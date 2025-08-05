@@ -27,7 +27,7 @@ export const label = pgTable(
         imageUrl: text(),
         parentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
         firstParentId: text().references((): PgColumn => label.id, { onDelete: 'cascade' }),
-        index: integer().notNull(),
+        index: integer().notNull(), // local index under current parent
         isActive: boolean().notNull().default(true),
         createdAt: timestamp().notNull().defaultNow(),
         updatedAt: timestamp()
@@ -35,7 +35,7 @@ export const label = pgTable(
             .defaultNow()
             .$onUpdate(() => new Date()),
     },
-    (table) => [uniqueIndex().on(table.userId, table.index)]
+    (table) => [uniqueIndex().on(table.userId, table.parentId, table.index)]
 );
 
 export const labelsRelations = relations(label, ({ one, many }) => ({
