@@ -1,10 +1,10 @@
-import { FlattenedItem } from '@/components/sortable-tree/types';
+import { FlattenedItem, FlattenedTreeItemBase } from '@/components/sortable-tree/types';
 
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 
-type DropProjectionArgs = {
-    items: FlattenedItem[];
+type DropProjectionArgs<D extends FlattenedTreeItemBase> = {
+    items: FlattenedItem<D>[];
     activeId: UniqueIdentifier | null;
     overId: UniqueIdentifier | null;
     dragOffset: number;
@@ -19,13 +19,13 @@ type DropProjectionArgs = {
  * @param dragOffset - The drag offset
  * @returns The projected depth or null if invalid
  */
-export function getProjectedDepth({
+export function getProjectedDepth<D extends FlattenedTreeItemBase>({
     items,
     activeId,
     overId,
     dragOffset,
     indentationWidth,
-}: DropProjectionArgs): number | null {
+}: DropProjectionArgs<D>): number | null {
     // If no active or over item, exit early
     if (!activeId || !overId) {
         return null;
@@ -67,7 +67,7 @@ export function getProjectedDepth({
  * @param previousItem - The previous item
  * @returns The maximum depth
  */
-const getMaxDepth = ({ previousItem }: { previousItem: FlattenedItem }) => {
+const getMaxDepth = <D extends FlattenedTreeItemBase>({ previousItem }: { previousItem: FlattenedItem<D> | null }) => {
     if (previousItem) {
         return previousItem.depth + 1;
     }
@@ -80,7 +80,7 @@ const getMaxDepth = ({ previousItem }: { previousItem: FlattenedItem }) => {
  * @param nextItem - The next item
  * @returns The minimum depth
  */
-const getMinDepth = ({ nextItem }: { nextItem: FlattenedItem }) => {
+const getMinDepth = <D extends FlattenedTreeItemBase>({ nextItem }: { nextItem: FlattenedItem<D> | null }) => {
     if (nextItem) {
         return nextItem.depth;
     }

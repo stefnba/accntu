@@ -1,30 +1,22 @@
 import { useSortableTreeUIStore } from '@/components/sortable-tree/store';
-import { FlattenedItem, TreeItem } from '@/components/sortable-tree/types';
 import {
-    buildTreeFromFlattenedItems,
-    DropIntent,
-    flattenTree,
-    moveTreeItemWithIntent,
-} from '@/components/sortable-tree/utils';
-import { UniqueIdentifier } from '@dnd-kit/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+    FlattenedItem,
+    FlattenedTreeItemBase,
+    SortableTreeOptions,
+} from '@/components/sortable-tree/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
-export interface SortableTreeOptions<T extends TreeItem> {
-    queryKey: readonly string[];
-    queryFn: () => Promise<T[]>;
-    mutateFn: (data: { activeId: UniqueIdentifier; intent: DropIntent }) => Promise<T[]>;
-    indentationWidth?: number;
-}
-
-export const useSortableTree = <T extends TreeItem>(options: SortableTreeOptions<T>) => {
+export const useSortableTree = <D extends FlattenedTreeItemBase>(
+    options: SortableTreeOptions<D>
+) => {
     const { queryKey, queryFn, mutateFn, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(queryKey);
 
-    // Server state - React Query manages this
+    // Server state - React Query manages this (already flattened)
     const {
-        data: items = [],
+        data: rawItems = [],
         isLoading,
         error,
     } = useQuery({
@@ -32,83 +24,63 @@ export const useSortableTree = <T extends TreeItem>(options: SortableTreeOptions
         queryFn,
     });
 
-    // Computed state - derived from server state + client state
-    const flattenedItems = useMemo(() => flattenTree(items, expandedIds), [items, expandedIds]);
+    // Enhance raw server data with client-side fields and filter by expanded state
+    const treeItems = useMemo(() => {
+        // Create parent map for ancestry lookups
+        const parentMap = new Map<string, D>();
+        rawItems.forEach((item) => {
+            if (typeof item.id === 'string') {
+                parentMap.set(item.id, item);
+            }
+        });
 
-    // Move mutation with optimistic updates
-    const moveMutation = useMutation({
-        mutationFn: mutateFn,
-        onMutate: async ({ activeId, intent }) => {
-            // Cancel outgoing refetches
-            await queryClient.cancelQueries({ queryKey });
+        const filtered = rawItems.filter((item) => {
+            // Root items (no parent) are always visible
+            if (!item.parentId) return true;
 
-            // Snapshot previous value
-            const previousItems = queryClient.getQueryData<T[]>(queryKey);
-
-            // Optimistically update cache
-            if (previousItems) {
-                const newItems = moveTreeItemWithIntent(previousItems, activeId, intent);
-                queryClient.setQueryData(queryKey, newItems);
+            if (expandedIds.has(item.parentId)) {
+                return true;
             }
 
-            // Return context for rollback
-            return { previousItems };
-        },
-        onError: (err, _variables, context) => {
-            // Rollback on error
-            if (context?.previousItems) {
-                queryClient.setQueryData(queryKey, context.previousItems);
-            }
-            console.error('Move failed, rolling back:', err);
-        },
-        onSuccess: (data) => {
-            // Update with server response if available
-            if (data) {
-                queryClient.setQueryData(queryKey, data);
-            }
-        },
-    });
+            return false;
+        });
+
+        return filtered;
+    }, [rawItems, expandedIds]);
 
     /**
      * Optimistic move handler
-     * @param newItems - The new items to move
+     * @param newItems - The new flattened items after move
      */
     const handleOptimisticMove = useCallback(
-        (newItems: FlattenedItem<T>[]) => {
-            // Build the tree from the new items
-            const tree = buildTreeFromFlattenedItems<T>(newItems);
-
-            // Optimistic update to the cache
-            queryClient.setQueryData(queryKey, tree);
+        (newItems: FlattenedItem<D>[]) => {
+            // For optimistic updates, we need to update with raw server data format
+            // Use the current rawItems as base, since we're just reordering existing items
+            queryClient.setQueryData(queryKey, newItems);
 
             // TODO: Implement actual mutation call here
-            // This would need to be connected to the actual mutation
-            // For now, we're just doing optimistic updates
+            // mutateFn(newItems);
         },
-        [queryClient, queryKey]
+        [queryClient, queryKey, mutateFn]
     );
 
     return {
-        // Server state
-        items,
+        // server data
+        items: rawItems,
         isLoading,
         error,
 
-        // Computed state
-        flattenedItems,
+        // processed items
+        treeItems,
 
-        // Client-only UI state
+        // expanded state
         expandedIds,
 
-        // Actions
+        // actions
         handleOptimisticMove,
         toggleExpandedId,
 
-        // Mutation state
-        isMoving: moveMutation.isPending,
-        moveError: moveMutation.error,
-
-        // Configuration
+        // configuration
         indentationWidth,
     };
 };

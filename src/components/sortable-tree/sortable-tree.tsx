@@ -1,13 +1,13 @@
 'use client';
 
-import { SortableTreeOptions, useSortableTree } from '@/components/sortable-tree/hooks';
+import { useSortableTree } from '@/components/sortable-tree/hooks';
 import { SortableItem } from '@/components/sortable-tree/sortable-item';
-import { FlattenedItem, TreeItem } from '@/components/sortable-tree/types';
 import {
-    getChildCount,
-    getProjectedDepth,
-    removeChildrenOf,
-} from '@/components/sortable-tree/utils';
+    FlattenedItem,
+    FlattenedTreeItemBase,
+    SortableTreeOptions,
+} from '@/components/sortable-tree/types';
+import { getProjectedDepth, removeChildrenOf } from '@/components/sortable-tree/utils';
 import { performMove } from '@/components/sortable-tree/utils/move';
 import { cn } from '@/lib/utils';
 import {
@@ -29,18 +29,18 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-interface SortableTreeProps<T extends TreeItem> {
-    options: SortableTreeOptions<T>;
+interface SortableTreeProps<D extends FlattenedTreeItemBase> {
+    options: SortableTreeOptions<D>;
     className?: string;
-    renderItem: (item: FlattenedItem<T>, dragButton: React.ReactNode) => React.ReactNode;
+    renderItem: (item: FlattenedItem<D>, dragButton: React.ReactNode) => React.ReactNode;
 }
 
-export const SortableTree = <T extends TreeItem>({
+export const SortableTree = <D extends FlattenedTreeItemBase>({
     options,
     className,
     renderItem,
-}: SortableTreeProps<T>) => {
-    const { flattenedItems, items, handleOptimisticMove, toggleExpandedId, indentationWidth } =
+}: SortableTreeProps<D>) => {
+    const { treeItems, handleOptimisticMove, toggleExpandedId, indentationWidth, expandedIds } =
         useSortableTree(options);
 
     // Track the ID of the currently dragged item - useState is best practice here
@@ -59,30 +59,30 @@ export const SortableTree = <T extends TreeItem>({
     // Hide children of items being dragged - OPTIMIZED
     const flattenedAndFilteredItems = useMemo(() => {
         // No filtering needed when not dragging
-        if (!activeId) return flattenedItems;
+        if (!activeId) return treeItems;
 
         // Only calculate collapsed items when dragging
-        const collapsedIds = flattenedItems
-            .filter((item) => item.collapsed && item.hasChildren)
+        const collapsedIds = treeItems
+            .filter((item) => !expandedIds.has(item.id) && item.hasChildren)
             .map((item) => item.id);
 
-        return removeChildrenOf(flattenedItems, [activeId, ...collapsedIds]);
-    }, [activeId, flattenedItems]);
+        return removeChildrenOf(treeItems, [activeId, ...collapsedIds]);
+    }, [activeId, treeItems]);
 
     // Get the full item data for the drag overlay - derived from activeId state
     // This pattern ensures the drag overlay updates reactively when activeId changes
-    const activeItem = activeId ? flattenedItems.find((item) => item.id === activeId) : null;
+    const activeItem = activeId ? treeItems.find((item) => item.id === activeId) : null;
 
     // Memoize child count to avoid double calculation in drag overlay
     const activeItemChildCount = useMemo(
-        () => (activeId ? getChildCount(items, activeId) : 0),
-        [activeId, items]
+        () => (activeId ? activeItem?.countChildren || 0 : 0),
+        [activeId, activeItem]
     );
 
     // Memoize SortableContext items to prevent unnecessary re-renders
     const sortableContextItems = useMemo(
-        () => flattenedItems.map((item) => ({ id: item.id })),
-        [flattenedItems]
+        () => treeItems.map((item) => ({ id: item.id })),
+        [treeItems]
     );
 
     // Memoized sensors configuration
@@ -146,7 +146,7 @@ export const SortableTree = <T extends TreeItem>({
                 if (!moveData || !activeId || !overId) return;
 
                 const newProjectedDepth = getProjectedDepth({
-                    items: flattenedItems,
+                    items: treeItems,
                     activeId,
                     overId,
                     dragOffset: moveData.delta.x,
@@ -164,7 +164,7 @@ export const SortableTree = <T extends TreeItem>({
                 rafIdRef.current = null;
             });
         },
-        [flattenedItems, activeId, overId, indentationWidth]
+        [treeItems, activeId, overId, indentationWidth]
     );
 
     /**
@@ -206,7 +206,8 @@ export const SortableTree = <T extends TreeItem>({
                 active.id,
                 over.id,
                 currentProjectedDepth,
-                flattenedItems,
+                treeItems,
+                expandedIds,
                 toggleExpandedId
             );
 
@@ -222,7 +223,7 @@ export const SortableTree = <T extends TreeItem>({
             // Perform the move using the hook's handleMove function
             handleOptimisticMove(moveResult.items);
         },
-        [flattenedItems, handleOptimisticMove, projectedDepth, toggleExpandedId]
+        [treeItems, handleOptimisticMove, projectedDepth, toggleExpandedId]
     );
 
     /**

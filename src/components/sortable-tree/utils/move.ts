@@ -1,4 +1,4 @@
-import { FlattenedItem, ParentItem } from '@/components/sortable-tree/types';
+import { FlattenedItem, FlattenedTreeItemBase } from '@/components/sortable-tree/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 
@@ -17,8 +17,8 @@ type TMoveOperation =
           activeId: UniqueIdentifier;
       };
 
-interface MoveResult {
-    items: FlattenedItem[];
+interface MoveResult<D extends FlattenedTreeItemBase> {
+    items: FlattenedItem<D>[];
     operation: TMoveOperation;
     changes: {
         depth: {
@@ -30,8 +30,8 @@ interface MoveResult {
             new: number;
         };
         parent: {
-            previous: ParentItem | null;
-            new: ParentItem | null;
+            previous: UniqueIdentifier | null;
+            new: UniqueIdentifier | null;
         };
         currentDepthIndex: {
             previous: number;
@@ -48,13 +48,14 @@ interface MoveResult {
  * @param items - The current flattened items
  * @returns The new items array with the move applied, or null if invalid
  */
-export function performMove(
+export function performMove<D extends FlattenedTreeItemBase>(
     activeId: UniqueIdentifier,
     overId: UniqueIdentifier,
     projectedDepth: number,
-    items: FlattenedItem[],
+    items: FlattenedItem<D>[],
+    expandedIds: Set<UniqueIdentifier>,
     expandItem: (id: UniqueIdentifier) => void
-): MoveResult | null {
+): MoveResult<D> | null {
     // Find indices
     const activeIndex = items.findIndex((item) => item.id === activeId);
     const overIndex = items.findIndex((item) => item.id === overId);
@@ -72,7 +73,7 @@ export function performMove(
 
     // Determine the operation type and calculate new properties
     let operation: TMoveOperation;
-    let newParent: ParentItem | null = null;
+    let newParentId: UniqueIdentifier | null = null;
     let newCurrentDepthIndex = 0;
 
     // Nesting under previous item
@@ -83,13 +84,13 @@ export function performMove(
             parentId: previousItem.id,
             activeId,
         };
-        newParent = previousItem;
+        newParentId = previousItem.parentId;
         // If the previous item has children, we need to set the current depth index to the number of children
         // Otherwise, we set it to 0 (to make it the first child)
-        newCurrentDepthIndex = previousItem.hasChildren ? previousItem.childrenCount : 0;
+        newCurrentDepthIndex = previousItem.hasChildren ? previousItem.countChildren : 0;
 
         // If the previous item is collapsed, expand it
-        if (previousItem.collapsed) {
+        if (!expandedIds.has(previousItem.id)) {
             // Expand the previous item
             expandItem(previousItem.id);
         }
@@ -103,12 +104,12 @@ export function performMove(
         };
         // First item in entire list
         if (!previousItem) {
-            newParent = null;
+            newParentId = null;
             newCurrentDepthIndex = 0;
         }
         // First item at this depth level
         else {
-            newParent = findParentAtDepth(newItems, overIndex, projectedDepth);
+            newParentId = findParentAtDepth(newItems, overIndex, projectedDepth)?.id ?? null;
             newCurrentDepthIndex = 0;
         }
     }
@@ -119,7 +120,7 @@ export function performMove(
         const previousItemAtDepth =
             newItems
                 .filter((item) => item.depth === projectedDepth)
-                .filter((item) => overIndex > item.index)
+                .filter((item) => overIndex > item.currentDepthIndex)
                 .at(-1) || null;
 
         // If there is no item at the same depth as the projection, return null
@@ -131,7 +132,7 @@ export function performMove(
             activeId,
         };
 
-        newParent = previousItemAtDepth.parent;
+        newParentId = previousItemAtDepth.parentId;
         newCurrentDepthIndex = previousItemAtDepth.currentDepthIndex + 1;
     }
     // Insert after (same level as previous item)
@@ -141,27 +142,20 @@ export function performMove(
             targetId: overId,
             activeId,
         };
-        if (previousItem && previousItem.parent) {
+        if (previousItem && previousItem.parentId) {
             // Find the full parent item instead of using the partial reference
-            newParent = items.find((item) => item.id === previousItem.parent!.id) || null;
+            newParentId = previousItem.parentId;
             newCurrentDepthIndex = previousItem.currentDepthIndex + 1;
         }
     }
 
     // Create the updated item with new properties
-    const updatedItem: FlattenedItem = {
+    const updatedItem: FlattenedItem<D> = {
         ...activeItem,
         index: overIndex, // Will be recalculated when flattening
         currentDepthIndex: newCurrentDepthIndex,
         depth: projectedDepth,
-        parent: newParent
-            ? {
-                  id: newParent.id,
-                  index: newParent.index,
-                  depth: newParent.depth,
-                  childrenCount: newParent.childrenCount,
-              }
-            : null,
+        parentId: newParentId,
     };
 
     // Apply the move and update the moved item
@@ -176,12 +170,12 @@ export function performMove(
                 new: projectedDepth,
             },
             index: {
-                previous: activeItem.index,
+                previous: activeItem.currentDepthIndex,
                 new: overIndex,
             },
             parent: {
-                previous: activeItem.parent,
-                new: newParent,
+                previous: activeItem.parentId,
+                new: newParentId,
             },
             currentDepthIndex: {
                 previous: activeItem.currentDepthIndex,
@@ -198,11 +192,11 @@ export function performMove(
  * @param targetDepth - The depth level to find parent for
  * @returns The parent item or null if none found
  */
-function findParentAtDepth(
-    items: FlattenedItem[],
+function findParentAtDepth<D extends FlattenedTreeItemBase>(
+    items: FlattenedItem<D>[],
     currentIndex: number,
     targetDepth: number
-): FlattenedItem | null {
+): FlattenedItem<D> | null {
     if (targetDepth === 0) {
         return null;
     }
@@ -229,10 +223,10 @@ function findParentAtDepth(
  * @param items - The current flattened items
  * @returns Whether the move is valid
  */
-export function canPerformMove(
+export function canPerformMove<D extends FlattenedTreeItemBase>(
     activeId: UniqueIdentifier,
     overId: UniqueIdentifier,
-    items: FlattenedItem[]
+    items: FlattenedItem<D>[]
 ): boolean {
     if (activeId === overId) {
         return false;
@@ -256,13 +250,13 @@ export function canPerformMove(
  * @param items - All items for traversal
  * @returns Whether targetId is a descendant
  */
-function isDescendant(
-    parentItem: FlattenedItem,
+function isDescendant<D extends FlattenedTreeItemBase>(
+    parentItem: FlattenedItem<D>,
     targetId: UniqueIdentifier,
-    items: FlattenedItem[]
+    items: FlattenedItem<D>[]
 ): boolean {
     // Find all children of the parent item
-    const children = items.filter((item) => item.parent?.id === parentItem.id);
+    const children = items.filter((item) => item.parentId === parentItem.id);
 
     for (const child of children) {
         if (child.id === targetId) {
