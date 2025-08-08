@@ -254,27 +254,6 @@ const getAllFlattened = async ({
     withDbQuery({
         operation: 'Get all labels flattened with global index',
         queryFn: async (): Promise<TLabelQuery['selectFlattened'][]> => {
-            // const test = db
-            //     .select({
-            //         id: label.id,
-            //         userId: label.userId,
-            //         name: label.name,
-            //         color: label.color,
-            //         icon: label.icon,
-            //         imageUrl: label.imageUrl,
-            //         parentId: label.parentId,
-            //         index: sql<string>`LPAD(${label.index}::text, 6, '0')`,
-            //     })
-            //     .from(label)
-            //     .where(and(eq(label.userId, userId), eq(label.isActive, true)));
-
-            // const a = await test;
-
-            // const b = sql`WITH RECURSIVE label_hierarchy AS (
-            //     ${test}
-            // )
-            // `;
-
             const withRecursive = sql`
                 WITH RECURSIVE label_hierarchy AS (
                     -- Base case: root labels ordered by index
@@ -321,22 +300,10 @@ const getAllFlattened = async ({
                     JOIN label_hierarchy h ON ${label.parentId} = h.id
                     WHERE ${label.isActive} = true
                         ${filters?.search ? sql`AND ${label.name} ILIKE ${`%${filters.search}%`}` : sql``}
-                )
-            `;
+                ),
 
-            const query = sql<{
-                id: string;
-                userId: string;
-                name: string;
-                color: string;
-                icon: string;
-                imageUrl: string;
-                parentId: string;
-                depth: number;
-                currentDepthIndex: number;
-                globalIndex: number;
-                countChildren: number;
-            }>`
+                -- Add children to root labels and global index
+                base_query AS (
                 SELECT
                     lh.id,
                     lh.user_id AS "userId",
@@ -366,6 +333,24 @@ const getAllFlattened = async ({
                             AND ${label.isActive} = true
                     ) AS "hasChildren"
                 FROM label_hierarchy lh
+            )
+            `;
+
+            const query = sql<{
+                id: string;
+                userId: string;
+                name: string;
+                color: string;
+                icon: string;
+                imageUrl: string;
+                parentId: string;
+                depth: number;
+                currentDepthIndex: number;
+                globalIndex: number;
+                countChildren: number;
+            }>`
+                SELECT * FROM base_query
+                ORDER BY "globalIndex"
             `;
 
             const finalSql: SQL = sql.join([withRecursive, query], sql.raw(' '));

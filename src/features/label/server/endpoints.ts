@@ -10,10 +10,10 @@ const app = new Hono()
     /**
      * GET /labels/flattened - Get all labels flattened
      */
-    .get('/flattened', zValidator('query', labelServiceSchemas.filter), async (c) => {
+    .get('/flattened', zValidator('query', labelServiceSchemas.filter.optional()), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { search, parentId } = c.req.valid('query');
+            const { search, parentId } = c.req.valid('query') ?? {};
             return await labelServices.getAllFlattened({
                 userId: user.id,
                 filters: { search, parentId },
