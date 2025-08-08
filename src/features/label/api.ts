@@ -4,6 +4,7 @@ const LABEL_QUERY_KEYS = {
     LABELS: 'labels',
     LABEL: 'label',
     ROOT_LABELS: 'root_labels',
+    FLATTENED_LABELS: 'flattened_labels',
 } as const;
 
 /**
@@ -14,6 +15,14 @@ export const useLabelEndpoints = {
      * Get all labels for the authenticated user
      */
     getAll: createQuery(apiClient.labels.$get, LABEL_QUERY_KEYS.LABELS),
+
+    /**
+     * Get all labels flattened for the authenticated user
+     */
+    getAllFlattened: createQuery(
+        apiClient.labels.flattened.$get,
+        LABEL_QUERY_KEYS.FLATTENED_LABELS
+    ),
 
     /**
      * Get root labels with nested children

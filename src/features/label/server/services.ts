@@ -20,6 +20,13 @@ export const labelServices = {
     },
 
     /**
+     * Get all labels flattened
+     */
+    async getAllFlattened({ userId, filters }: TQuerySelectUserRecords<TLabelService['filter']>) {
+        return await labelQueries.getAllFlattened({ userId, filters });
+    },
+
+    /**
      * Get root labels (no parent) with nested children for a user
      * @param userId - The user ID to fetch labels for
      * @returns Promise resolving to array of root labels with nested children

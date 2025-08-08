@@ -8,6 +8,20 @@ import { labelServices } from './services';
 
 const app = new Hono()
     /**
+     * GET /labels/flattened - Get all labels flattened
+     */
+    .get('/flattened', zValidator('query', labelServiceSchemas.filter), async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
+            const { search, parentId } = c.req.valid('query');
+            return await labelServices.getAllFlattened({
+                userId: user.id,
+                filters: { search, parentId },
+            });
+        });
+    })
+
+    /**
      * GET /labels - Get all labels for the authenticated user
      */
     .get('/', zValidator('query', labelServiceSchemas.filter), async (c) => {
@@ -105,17 +119,17 @@ const app = new Hono()
             const user = getUser(c);
             const { updates } = c.req.valid('json');
 
-            const updatedLabels = await labelServices.reorder({ 
-                updates, 
-                userId: user.id 
+            const updatedLabels = await labelServices.reorder({
+                updates,
+                userId: user.id,
             });
 
-            return { 
-                success: true, 
+            return {
+                success: true,
                 updatedLabels,
-                count: updatedLabels.length 
+                count: updatedLabels.length,
             };
         });
-    })
+    });
 
 export default app;

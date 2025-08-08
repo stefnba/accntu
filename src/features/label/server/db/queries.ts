@@ -1,4 +1,4 @@
-import { TLabelQuery } from '@/features/label/schemas';
+import { labelQuerySchemas, TLabelQuery } from '@/features/label/schemas';
 import { label } from '@/features/label/server/db/schema';
 import type {
     TQueryDeleteUserRecord,
@@ -8,7 +8,8 @@ import type {
 } from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
-import { and, asc, eq, ilike, isNull, max } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, max, SQL, sql } from 'drizzle-orm';
+import { z } from 'zod';
 
 /**
  * Get all labels for a user with parent/child relationships
@@ -238,8 +239,150 @@ const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: st
         },
     });
 
+/**
+ * Get all labels for a user in flattened order with global index based on hierarchical structure
+ * Uses depth-first traversal to order labels: root first, then all its children recursively
+ * Includes counts of children for each label
+ * @param userId - The user ID to fetch labels for
+ * @param filters - Optional filters for search
+ * @returns Promise resolving to array of labels with global index, child counts, ordered by hierarchical structure
+ */
+const getAllFlattened = async ({
+    userId,
+    filters,
+}: TQuerySelectUserRecords<TLabelQuery['filter']>): Promise<TLabelQuery['selectFlattened'][]> =>
+    withDbQuery({
+        operation: 'Get all labels flattened with global index',
+        queryFn: async (): Promise<TLabelQuery['selectFlattened'][]> => {
+            // const test = db
+            //     .select({
+            //         id: label.id,
+            //         userId: label.userId,
+            //         name: label.name,
+            //         color: label.color,
+            //         icon: label.icon,
+            //         imageUrl: label.imageUrl,
+            //         parentId: label.parentId,
+            //         index: sql<string>`LPAD(${label.index}::text, 6, '0')`,
+            //     })
+            //     .from(label)
+            //     .where(and(eq(label.userId, userId), eq(label.isActive, true)));
+
+            // const a = await test;
+
+            // const b = sql`WITH RECURSIVE label_hierarchy AS (
+            //     ${test}
+            // )
+            // `;
+
+            const withRecursive = sql`
+                WITH RECURSIVE label_hierarchy AS (
+                    -- Base case: root labels ordered by index
+                    SELECT
+                        ${label.id},
+                        ${label.userId},
+                        ${label.name},
+                        ${label.color},
+                        ${label.icon},
+                        ${label.imageUrl},
+                        ${label.parentId},
+                        ${label.createdAt},
+                        ${label.updatedAt},
+                        ${label.isActive},
+                        ${label.firstParentId},
+                        LPAD(${label.index}::text, 6, '0') as sort_path,
+                        ${label.index} as index,
+                        0 as depth
+                    FROM ${label}
+                    WHERE parent_id IS NULL
+                        AND ${label.userId} = ${userId}
+                        AND ${label.isActive} = true
+                        ${filters?.search ? sql`AND ${label.name} ILIKE ${`%${filters.search}%`}` : sql``}
+
+                    UNION ALL
+
+                    -- Recursive case: children ordered by parent's path + their index
+                    SELECT
+                        ${label.id},
+                        ${label.userId},
+                        ${label.name},
+                        ${label.color},
+                        ${label.icon},
+                        ${label.imageUrl},
+                        ${label.parentId},
+                         ${label.createdAt},
+                        ${label.updatedAt},
+                        ${label.isActive},
+                        ${label.firstParentId},
+                        h.sort_path || '.' || LPAD(${label.index}::text, 6, '0') as sort_path,
+                        ${label.index} as index,
+                        h.depth + 1 as depth
+                    FROM ${label}
+                    JOIN label_hierarchy h ON ${label.parentId} = h.id
+                    WHERE ${label.isActive} = true
+                        ${filters?.search ? sql`AND ${label.name} ILIKE ${`%${filters.search}%`}` : sql``}
+                )
+            `;
+
+            const query = sql<{
+                id: string;
+                userId: string;
+                name: string;
+                color: string;
+                icon: string;
+                imageUrl: string;
+                parentId: string;
+                depth: number;
+                currentDepthIndex: number;
+                globalIndex: number;
+                countChildren: number;
+            }>`
+                SELECT
+                    lh.id,
+                    lh.user_id AS "userId",
+                    lh.name,
+                    lh.color,
+                    lh.icon,
+                    lh.image_url AS "imageUrl",
+                    lh.parent_id AS "parentId",
+                    lh.depth,
+                    lh.index AS "currentDepthIndex",
+                    lh.created_at AS "createdAt",
+                    lh.updated_at AS "updatedAt",
+                    lh.is_active AS "isActive",
+                    lh.first_parent_id AS "firstParentId",
+                    lh.sort_path AS "sortPath",
+                    ROW_NUMBER() OVER (ORDER BY lh.sort_path)::integer - 1 AS "globalIndex",
+                    (
+                        SELECT COUNT(*)::integer
+                        FROM ${label}
+                        WHERE ${label.parentId} = lh.id
+                            AND ${label.isActive} = true
+                    ) AS "countChildren",
+                    EXISTS(
+                        SELECT 1
+                        FROM ${label}
+                        WHERE ${label.parentId} = lh.id
+                            AND ${label.isActive} = true
+                    ) AS "hasChildren"
+                FROM label_hierarchy lh
+            `;
+
+            const finalSql: SQL = sql.join([withRecursive, query], sql.raw(' '));
+
+            const result = await db.execute<TLabelQuery['selectFlattened']>(finalSql);
+
+            const schema = z.array(labelQuerySchemas.selectFlattened);
+
+            const parsedResult = schema.parse(result);
+
+            return parsedResult;
+        },
+    });
+
 export const labelQueries = {
     getAll,
+    getAllFlattened,
     getRootLabels,
     getById,
     create,

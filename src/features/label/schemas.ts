@@ -11,6 +11,20 @@ import { z } from 'zod';
 
 export const labelQuerySchemas = {
     select: selectLabelSchema,
+    selectFlattened: selectLabelSchema
+        .extend({
+            globalIndex: z.number().int(),
+            countChildren: z.number().int(),
+            hasChildren: z.boolean(),
+            currentDepthIndex: z.number().int(),
+            depth: z.number().int(),
+            // Transform string dates from raw SQL to Date objects
+            createdAt: z.string().transform((val) => new Date(val)),
+            updatedAt: z.string().transform((val) => new Date(val)),
+        })
+        .omit({
+            index: true,
+        }),
     insert: insertLabelSchema.omit({
         id: true,
         userId: true,
@@ -24,15 +38,14 @@ export const labelQuerySchemas = {
         updatedAt: true,
         id: true,
     }),
-    filter: z
-        .object({
-            search: z.string().optional(),
-            parentId: z.string().optional(),
-        })
-        .optional(),
+    filter: z.object({
+        search: z.string().optional(),
+        parentId: z.string().optional(),
+    }),
 };
 export type TLabelQuery = {
     select: z.infer<typeof labelQuerySchemas.select>;
+    selectFlattened: z.infer<typeof labelQuerySchemas.selectFlattened>;
     insert: z.infer<typeof labelQuerySchemas.insert>;
     update: z.infer<typeof labelQuerySchemas.update>;
     filter: z.infer<typeof labelQuerySchemas.filter>;
