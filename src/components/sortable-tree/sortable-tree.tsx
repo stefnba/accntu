@@ -218,7 +218,15 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
 
             console.log('Move operation:', moveResult.operation);
             console.log('Changes:', moveResult.changes);
-            console.log('New items:', moveResult.items);
+            // console.log(
+            //     'New items:',
+            //     moveResult.items.map((item) => ({
+            //         id: item.id,
+            //         index: item.index,
+            //         parentId: item.parentId,
+            //         globalIndex: item.globalIndex,
+            //     }))
+            // );
 
             // Perform the move using the hook's handleMove function
             handleOptimisticMove(moveResult.items);

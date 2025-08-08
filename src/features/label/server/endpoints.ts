@@ -22,6 +22,27 @@ const app = new Hono()
     })
 
     /**
+     * PUT /labels/reorder - Bulk reorder labels for drag and drop operations
+     */
+    .put('/reorder', zValidator('json', labelServiceSchemas.reorder), async (c) => {
+        return withRoute(c, async () => {
+            const user = getUser(c);
+            const { items } = c.req.valid('json');
+
+            const reorderedLabels = await labelServices.reorder({
+                items,
+                userId: user.id,
+            });
+
+            return {
+                success: true,
+                labels: reorderedLabels,
+                // count: reorderedLabels?.length ?? 0,
+            };
+        });
+    })
+
+    /**
      * GET /labels - Get all labels for the authenticated user
      */
     .get('/', zValidator('query', labelServiceSchemas.filter), async (c) => {
@@ -109,26 +130,6 @@ const app = new Hono()
             }
 
             return { success: true };
-        });
-    })
-    /**
-     * PUT /labels/reorder - Bulk reorder labels for drag and drop operations
-     */
-    .put('/reorder', zValidator('json', labelServiceSchemas.reorder), async (c) => {
-        return withRoute(c, async () => {
-            const user = getUser(c);
-            const { updates } = c.req.valid('json');
-
-            const updatedLabels = await labelServices.reorder({
-                updates,
-                userId: user.id,
-            });
-
-            return {
-                success: true,
-                updatedLabels,
-                count: updatedLabels.length,
-            };
         });
     });
 

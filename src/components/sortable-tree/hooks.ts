@@ -24,42 +24,49 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
         queryFn,
     });
 
-    // Enhance raw server data with client-side fields and filter by expanded state
-    const treeItems = useMemo(() => {
-        // Create parent map for ancestry lookups
-        const parentMap = new Map<string, D>();
-        rawItems.forEach((item) => {
-            if (typeof item.id === 'string') {
-                parentMap.set(item.id, item);
-            }
-        });
+    // Filter out items that are not expanded
+    const treeItems = useMemo(
+        () =>
+            rawItems.filter((item) => {
+                // Root items (no parent) are always visible
+                if (!item.parentId) return true;
 
-        const filtered = rawItems.filter((item) => {
-            // Root items (no parent) are always visible
-            if (!item.parentId) return true;
+                if (expandedIds.has(item.parentId)) {
+                    return true;
+                }
 
-            if (expandedIds.has(item.parentId)) {
-                return true;
-            }
-
-            return false;
-        });
-
-        return filtered;
-    }, [rawItems, expandedIds]);
+                return false;
+            }),
+        [rawItems, expandedIds]
+    );
 
     /**
      * Optimistic move handler
      * @param newItems - The new flattened items after move
      */
     const handleOptimisticMove = useCallback(
-        (newItems: FlattenedItem<D>[]) => {
-            // For optimistic updates, we need to update with raw server data format
-            // Use the current rawItems as base, since we're just reordering existing items
+        async (newItems: FlattenedItem<D>[]) => {
+            // Store current state for potential rollback
+            const previousData = queryClient.getQueryData(queryKey);
+
+            // Optimistic update
             queryClient.setQueryData(queryKey, newItems);
 
-            // TODO: Implement actual mutation call here
-            // mutateFn(newItems);
+            // Execute the actual mutation
+            if (mutateFn) {
+                try {
+                    const result = await mutateFn(newItems);
+                    // Update with fresh server response
+                    // queryClient.setQueryData(queryKey, result);
+                } catch (error) {
+                    console.error('Reorder mutation failed:', error);
+                    // Revert to previous state on failure
+                    // if (previousData) {
+                    //     queryClient.setQueryData(queryKey, previousData);
+                    // }
+                    // throw error;
+                }
+            }
         },
         [queryClient, queryKey, mutateFn]
     );

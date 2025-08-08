@@ -129,7 +129,7 @@ interface TreeItem {
 interface FlattenedItem extends TreeItem {
     parent: ParentItem | null;
     index: number;
-    currentDepthIndex: number;
+    index: number;
     depth: number;
     collapsed: boolean;
     childrenCount: number;

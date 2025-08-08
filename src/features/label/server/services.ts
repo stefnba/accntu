@@ -86,17 +86,14 @@ export const labelServices = {
 
     /**
      * Bulk reorder labels for drag and drop operations
-     * @param updates - Array of label updates with id, index, and optional parentId
+     * @param items - Array of label items with new positions after drag and drop
      * @param userId - The user ID that owns all labels
-     * @returns Promise resolving to array of updated labels
+     * @returns Promise resolving to updated flattened labels
      */
-    async reorder({
-        updates,
-        userId,
-    }: {
-        updates: TLabelService['reorder']['updates'];
-        userId: string;
-    }) {
-        return await labelQueries.reorder({ updates, userId });
+    async reorder({ items, userId }: { items: TLabelService['reorder']['items']; userId: string }) {
+        await labelQueries.reorder({ items, userId });
+
+        // Return fresh flattened data after reorder
+        // return await labelQueries.getAllFlattened({ userId, filters: {} });
     },
 };

@@ -32,17 +32,7 @@ export interface FlattenedTreeItemBase {
     /**
      * The index of the item within its current depth level
      */
-    currentDepthIndex: number;
-}
-
-/**
- * Client-side enhancement fields for flattened tree items after processing server data
- */
-interface ClientSideFields {
-    /**
-     * Whether the item is collapsed (client-side state)
-     */
-    collapsed: boolean;
+    index: number;
 }
 
 /**
@@ -79,6 +69,6 @@ export type DropIntent =
 export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
     queryKey: readonly string[];
     queryFn: () => Promise<D[]>;
-    mutateFn: (data: FlattenedItem<D>[]) => Promise<FlattenedItem<D>[]>;
+    mutateFn: (data: FlattenedItem<D>[]) => Promise<FlattenedItem<D>[] | void>;
     indentationWidth?: number;
 }

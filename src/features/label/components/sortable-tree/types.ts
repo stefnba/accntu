@@ -1,17 +1,8 @@
-import { TreeItem } from '@/components/sortable-tree';
+import { FlattenedTreeItemBase } from '@/components/sortable-tree';
+import { TLabelService } from '@/features/label/schemas';
 
 /**
- * Label-specific tree item extending the base TreeItem
+ * Label-specific flattened item extending the base FlattenedTreeItemBase
+ * This matches the server response from the /flattened endpoint
  */
-export type TLabelTreeItem = TreeItem & {
-    name: string;
-    color?: string | null;
-    icon?: string | null;
-    imageUrl?: string | null;
-    parentId?: string | null;
-    sortOrder: number;
-    userId: string;
-    isActive: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-};
+export type LabelFlattenedItem = FlattenedTreeItemBase & TLabelService['selectFlattened'];

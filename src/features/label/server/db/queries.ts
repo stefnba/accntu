@@ -180,42 +180,48 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
 
 /**
  * Bulk update label orders and parents for drag and drop operations
- * @param updates - Array of label updates with id, index, and optional parentId
+ * Updates all labels in a single transaction for better performance and consistency
+ * @param items - Array of label items with new positions
  * @param userId - The user ID that owns all labels
- * @returns Promise resolving to array of updated label records
+ * @returns Promise resolving to void (use getAllFlattened to get fresh data)
  */
-const reorder = async ({
-    updates,
-    userId,
-}: {
-    updates: Array<{ id: string; index: number; parentId?: string | null }>;
-    userId: string;
-}) =>
+const reorder = async ({ items, userId }: { items: TLabelQuery['reorder']; userId: string }) =>
     withDbQuery({
         operation: 'Bulk reorder labels',
         queryFn: async () => {
-            const updatedLabels = [];
+            // If no items, return early
+            if (items.length === 0) return { success: true, updatedCount: 0 };
 
-            // Update each label individually to ensure proper validation
-            for (const { id, index, parentId } of updates) {
-                const [updatedLabel] = await db
-                    .update(label)
-                    .set({
-                        index,
-                        parentId: parentId ?? null,
-                        updatedAt: new Date(),
-                    })
-                    .where(
-                        and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true))
+            console.table(items);
+
+            return { success: true, updatedCount: 0 };
+
+            const now = new Date();
+
+            // Single bulk update using CASE WHEN for maximum efficiency and safety
+
+            const ids = items.map((item) => item.id);
+            const indexCases = items.map(({ id, index }) => sql`WHEN ${id} THEN ${index}`);
+            const parentCases = items.map(({ id, parentId }) =>
+                parentId ? sql`WHEN ${id} THEN ${parentId}` : sql`WHEN ${id} THEN NULL`
+            );
+
+            await db
+                .update(label)
+                .set({
+                    index: sql`CASE ${label.id} ${sql.join(indexCases, sql` `)} END`,
+                    parentId: sql`CASE ${label.id} ${sql.join(parentCases, sql` `)} END`,
+                    updatedAt: now,
+                })
+                .where(
+                    and(
+                        sql`${label.id} = ANY(${ids})`,
+                        eq(label.userId, userId),
+                        eq(label.isActive, true)
                     )
-                    .returning();
+                );
 
-                if (updatedLabel) {
-                    updatedLabels.push(updatedLabel);
-                }
-            }
-
-            return updatedLabels;
+            return { success: true, updatedCount: items.length };
         },
     });
 
@@ -270,7 +276,7 @@ const getAllFlattened = async ({
                         ${label.isActive},
                         ${label.firstParentId},
                         LPAD(${label.index}::text, 6, '0') as sort_path,
-                        ${label.index} as index,
+                        ${label.index},
                         0 as depth
                     FROM ${label}
                     WHERE parent_id IS NULL
@@ -294,7 +300,7 @@ const getAllFlattened = async ({
                         ${label.isActive},
                         ${label.firstParentId},
                         h.sort_path || '.' || LPAD(${label.index}::text, 6, '0') as sort_path,
-                        ${label.index} as index,
+                        ${label.index},
                         h.depth + 1 as depth
                     FROM ${label}
                     JOIN label_hierarchy h ON ${label.parentId} = h.id
@@ -313,7 +319,7 @@ const getAllFlattened = async ({
                     lh.image_url AS "imageUrl",
                     lh.parent_id AS "parentId",
                     lh.depth,
-                    lh.index AS "currentDepthIndex",
+                    lh.index,
                     lh.created_at AS "createdAt",
                     lh.updated_at AS "updatedAt",
                     lh.is_active AS "isActive",
@@ -345,7 +351,7 @@ const getAllFlattened = async ({
                 imageUrl: string;
                 parentId: string;
                 depth: number;
-                currentDepthIndex: number;
+                index: number;
                 globalIndex: number;
                 countChildren: number;
             }>`
@@ -360,6 +366,14 @@ const getAllFlattened = async ({
             const schema = z.array(labelQuerySchemas.selectFlattened);
 
             const parsedResult = schema.parse(result);
+
+            console.table(
+                parsedResult.map((item) => ({
+                    id: item.id,
+                    index: item.index,
+                    parentId: item.parentId,
+                }))
+            );
 
             return parsedResult;
         },

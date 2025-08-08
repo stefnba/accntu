@@ -11,20 +11,15 @@ import { z } from 'zod';
 
 export const labelQuerySchemas = {
     select: selectLabelSchema,
-    selectFlattened: selectLabelSchema
-        .extend({
-            globalIndex: z.number().int(),
-            countChildren: z.number().int(),
-            hasChildren: z.boolean(),
-            currentDepthIndex: z.number().int(),
-            depth: z.number().int(),
-            // Transform string dates from raw SQL to Date objects
-            createdAt: z.string().transform((val) => new Date(val)),
-            updatedAt: z.string().transform((val) => new Date(val)),
-        })
-        .omit({
-            index: true,
-        }),
+    selectFlattened: selectLabelSchema.extend({
+        globalIndex: z.number().int(),
+        countChildren: z.number().int(),
+        hasChildren: z.boolean(),
+        depth: z.number().int(),
+        // Transform string dates from raw SQL to Date objects
+        createdAt: z.string().transform((val) => new Date(val)),
+        updatedAt: z.string().transform((val) => new Date(val)),
+    }),
     insert: insertLabelSchema.omit({
         id: true,
         userId: true,
@@ -38,6 +33,17 @@ export const labelQuerySchemas = {
         updatedAt: true,
         id: true,
     }),
+    reorder: z.array(
+        insertLabelSchema
+            .pick({
+                id: true,
+                index: true,
+                parentId: true,
+            })
+            .extend({
+                id: z.string(),
+            })
+    ),
     filter: z.object({
         search: z.string().optional(),
         parentId: z.string().optional(),
@@ -49,6 +55,7 @@ export type TLabelQuery = {
     insert: z.infer<typeof labelQuerySchemas.insert>;
     update: z.infer<typeof labelQuerySchemas.update>;
     filter: z.infer<typeof labelQuerySchemas.filter>;
+    reorder: z.infer<typeof labelQuerySchemas.reorder>;
 };
 
 // ====================
@@ -70,17 +77,12 @@ export const labelServiceSchemas = {
     }),
     filter: labelQuerySchemas.filter,
     reorder: z.object({
-        updates: z.array(
-            z.object({
-                id: z.string(),
-                index: z.number().int().min(0),
-                parentId: z.string().nullable().optional(),
-            })
-        ),
+        items: labelQuerySchemas.reorder,
     }),
 };
 export type TLabelService = {
     select: z.infer<typeof labelServiceSchemas.select>;
+    selectFlattened: z.infer<typeof labelQuerySchemas.selectFlattened>;
     insert: z.infer<typeof labelServiceSchemas.insert>;
     update: z.infer<typeof labelServiceSchemas.update>;
     filter: z.infer<typeof labelServiceSchemas.filter>;

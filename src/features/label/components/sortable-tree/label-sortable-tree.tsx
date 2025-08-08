@@ -1,10 +1,9 @@
 'use client';
 
 import { SortableTree, useSortableTreeUIStore } from '@/components/sortable-tree';
-import { TLabelService } from '@/features/label/schemas';
+import { apiClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { LabelTreeItem } from './label-tree-item';
-import { labelsToTree } from './utils';
 
 interface LabelSortableTreeProps {
     className?: string;
@@ -25,20 +24,43 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
                 options={{
                     queryKey: KEY,
                     queryFn: async () => {
-                        const response = await fetch('/api/labels');
-                        const labels: TLabelService['select'][] = await response.json();
-                        return labelsToTree(labels);
-                    },
-                    mutateFn: async ({ activeId, intent }) => {
-                        // TODO: Implement proper mutation based on the intent
-                        // For now, return the same data (this would be the reorder API call)
-                        console.log('Label move:', { activeId, intent });
+                        const response = await apiClient.labels.flattened.$get();
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch labels');
+                        }
 
-                        // This would call the reorder API in a real implementation
-                        // await labelEndpoints.reorder.mutateAsync({ updates: ... });
-                        const response = await fetch('/api/labels');
-                        const labels: TLabelService['select'][] = await response.json();
-                        return labelsToTree(labels);
+                        const labels = await response.json();
+                        return labels;
+                    },
+                    mutateFn: async (reorderedItems) => {
+                        console.log(
+                            'Reordering labels:',
+                            reorderedItems.map((item) => ({
+                                id: item.id,
+                                index: item.index,
+                                parentId: item.parentId,
+                                globalIndex: item.globalIndex,
+                                name: item.name,
+                            }))
+                        );
+
+                        await apiClient.labels.reorder.$put({
+                            json: { items: reorderedItems },
+                        });
+
+                        // if (!response.ok) {
+                        //     throw new Error('Failed to reorder labels');
+                        // }
+
+                        // const result = await response.json();
+                        // return result.labels;
+
+                        // if (!response.ok) {
+                        //     throw new Error('Failed to reorder labels');
+                        // }
+
+                        // const result = await response.json();
+                        // return result.labels;
                     },
                 }}
                 renderItem={(item, dragButton) => (
