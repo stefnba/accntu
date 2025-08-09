@@ -26,17 +26,34 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
 
     // Filter out items that are not expanded
     const treeItems = useMemo(
-        () =>
-            rawItems.filter((item) => {
+        () => {
+            // Create item map once for efficient parent lookups
+            const itemMap = new Map<string, FlattenedItem<D>>();
+            rawItems.forEach(rawItem => {
+                itemMap.set(rawItem.id as string, rawItem);
+            });
+
+            return rawItems.filter((item) => {
                 // Root items (no parent) are always visible
                 if (!item.parentId) return true;
 
-                if (expandedIds.has(item.parentId)) {
-                    return true;
+                // Check that ALL ancestors are expanded
+                let currentParentId: string | null = item.parentId;
+                while (currentParentId) {
+                    // If any ancestor is not expanded, hide this item
+                    if (!expandedIds.has(currentParentId)) {
+                        return false;
+                    }
+                    
+                    // Move up to the next ancestor
+                    const parent = itemMap.get(currentParentId);
+                    currentParentId = parent?.parentId ?? null;
                 }
 
-                return false;
-            }),
+                // All ancestors are expanded
+                return true;
+            });
+        },
         [rawItems, expandedIds]
     );
 
