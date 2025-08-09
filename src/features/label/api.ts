@@ -37,7 +37,10 @@ export const useLabelEndpoints = {
     /**
      * Create a new label
      */
-    create: createMutation(apiClient.labels.$post, LABEL_QUERY_KEYS.LABELS),
+    create: createMutation(apiClient.labels.$post, [
+        LABEL_QUERY_KEYS.LABELS,
+        LABEL_QUERY_KEYS.FLATTENED_LABELS,
+    ]),
 
     /**
      * Update a label
@@ -45,6 +48,7 @@ export const useLabelEndpoints = {
     update: createMutation(apiClient.labels[':id'].$put, [
         LABEL_QUERY_KEYS.LABEL,
         LABEL_QUERY_KEYS.LABELS,
+        LABEL_QUERY_KEYS.FLATTENED_LABELS,
     ]),
 
     /**
@@ -58,5 +62,9 @@ export const useLabelEndpoints = {
     reorder: createMutation(apiClient.labels.reorder.$put, [
         LABEL_QUERY_KEYS.LABELS,
         LABEL_QUERY_KEYS.ROOT_LABELS,
+        LABEL_QUERY_KEYS.FLATTENED_LABELS,
     ]),
 };
+
+// Export query keys for use in other components
+export { LABEL_QUERY_KEYS };
