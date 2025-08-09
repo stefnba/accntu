@@ -1,10 +1,10 @@
 'use client';
 
 import { SortableTree, useSortableTreeUIStore } from '@/components/sortable-tree';
+import { LabelTreeItem } from '@/features/label/components/label-tree-item';
 import { apiClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { LabelTreeItem } from './label-tree-item';
 
 interface LabelSortableTreeProps {
     className?: string;
@@ -34,17 +34,6 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
                         return labels;
                     },
                     mutateFn: async (reorderedItems) => {
-                        // console.log(
-                        //     'Reordering labels:',
-                        //     reorderedItems.map((item) => ({
-                        //         id: item.id,
-                        //         index: item.index,
-                        //         parentId: item.parentId,
-                        //         globalIndex: item.globalIndex,
-                        //         name: item.name,
-                        //     }))
-                        // );
-
                         const response = await apiClient.labels.reorder.$put({
                             json: { items: reorderedItems },
                         });

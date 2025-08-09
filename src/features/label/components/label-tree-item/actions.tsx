@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { memo, useCallback } from 'react';
-import { useLabelTreeData } from './provider';
 
 // Types
 export interface LabelTreeItemActionsProps {
@@ -13,6 +12,7 @@ export interface LabelTreeItemActionsProps {
 }
 
 export interface LabelTreeItemActionProps {
+    labelId: string;
     children?: React.ReactNode;
     onClick?: (labelId: string) => void;
     tooltip?: string;
@@ -33,7 +33,7 @@ export const LabelTreeItemActions = memo(function LabelTreeItemActions({
         <div
             data-slot="label-tree-item-actions"
             className={cn(
-                'flex space-x-1 flex-shrink-0 ml-4 duration-300 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity',
+                'flex space-x-1 flex-shrink-0 duration-300 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto',
                 className
             )}
         >
@@ -53,23 +53,22 @@ export const LabelTreeItemAction = memo(function LabelTreeItemAction({
     className,
     style,
     variant = 'ghost',
+    labelId,
 }: LabelTreeItemActionProps) {
-    const { currentLabel } = useLabelTreeData();
-
-    if (!currentLabel) return null;
+    if (!labelId) return null;
 
     const handleClick = useCallback(() => {
-        onClick?.(currentLabel.id);
-    }, [currentLabel.id, onClick]);
+        onClick?.(labelId);
+    }, [labelId, onClick]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             if ((e.key === 'Enter' || e.key === ' ') && onClick) {
                 e.preventDefault();
-                onClick(currentLabel.id);
+                onClick(labelId);
             }
         },
-        [currentLabel.id, onClick]
+        [labelId, onClick]
     );
 
     const renderButton = () => {
