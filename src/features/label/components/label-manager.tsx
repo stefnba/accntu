@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { LabelSortableTree } from '@/features/label/components/sortable-tree';
 import { Edit2, Eye, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLabelEndpoints } from '../api';
@@ -255,27 +256,12 @@ export const LabelManager = () => {
     const { modalOpen, modalType, labelId, parentId, closeModal } = useLabelModal();
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 my-8">
             <LabelTreeSortable>
                 <ModernEnterpriseVariantA />
             </LabelTreeSortable>
 
-            {/* <OptimizedTreeExample /> */}
-
-            {/* <LabelTree className="space-y-2 w-full">
-                <ModernEnterpriseVariantA2 />
-            </LabelTree> */}
-
-            {/* <div>
-                <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
-                Design 7A: Modern Enterprise - Color-Integrated Title
-            </div>
-            <div>
-                <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
-                <h4 className="text-base font-semibold text-gray-800">
-                    Variation 2: Gradient Background with Left Border
-                </h4>
-            </div> */}
+            <LabelSortableTree />
 
             <ResponsiveModal open={modalOpen} onOpenChange={closeModal}>
                 <DialogHeader>
@@ -283,11 +269,7 @@ export const LabelManager = () => {
                         {modalType === 'create' ? 'Create New Label' : 'Edit Label'}
                     </DialogTitle>
                 </DialogHeader>
-                <LabelForm
-                    labelId={modalType === 'edit' ? labelId : null}
-                    parentId={parentId}
-                    onSuccess={closeModal}
-                />
+                <LabelForm labelId={modalType === 'edit' ? labelId : null} parentId={parentId} />
             </ResponsiveModal>
         </div>
     );
