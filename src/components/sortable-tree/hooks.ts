@@ -56,15 +56,18 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
             if (mutateFn) {
                 try {
                     const result = await mutateFn(newItems);
-                    // Update with fresh server response
-                    // queryClient.setQueryData(queryKey, result);
+
+                    // If the mutation returns new items, update the query data
+                    if (result) {
+                        queryClient.setQueryData(queryKey, result);
+                    }
                 } catch (error) {
                     console.error('Reorder mutation failed:', error);
                     // Revert to previous state on failure
-                    // if (previousData) {
-                    //     queryClient.setQueryData(queryKey, previousData);
-                    // }
-                    // throw error;
+                    if (previousData) {
+                        queryClient.setQueryData(queryKey, previousData);
+                    }
+                    throw error;
                 }
             }
         },

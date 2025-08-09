@@ -8,7 +8,7 @@ import type {
 } from '@/lib/schemas';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
-import { and, asc, eq, ilike, isNull, max, SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 /**
@@ -192,33 +192,37 @@ const reorder = async ({ items, userId }: { items: TLabelQuery['reorder']; userI
             // If no items, return early
             if (items.length === 0) return { success: true, updatedCount: 0 };
 
-            console.table(items);
+            // Build both CASE statements in a single loop for efficiency
+            // see https://orm.drizzle.team/docs/guides/update-many-with-different-value
+            const indexCases: SQL[] = [];
+            const parentCases: SQL[] = [];
+            const ids: string[] = [];
 
-            return { success: true, updatedCount: 0 };
+            // add index and parentId to cases
+            items.forEach((item) => {
+                ids.push(item.id);
+                indexCases.push(sql` when ${label.id} = ${item.id} then ${item.index}::integer`);
 
-            const now = new Date();
+                if (item.parentId) {
+                    parentCases.push(sql` when ${label.id} = ${item.id} then ${item.parentId}`);
+                } else {
+                    parentCases.push(sql` when ${label.id} = ${item.id} then null`);
+                }
+            });
 
-            // Single bulk update using CASE WHEN for maximum efficiency and safety
+            const indexCaseStatement = sql.join([sql`(case`, ...indexCases, sql` end)`], sql``);
+            const parentCaseStatement = sql.join([sql`(case`, ...parentCases, sql` end)`], sql``);
 
-            const ids = items.map((item) => item.id);
-            const indexCases = items.map(({ id, index }) => sql`WHEN ${id} THEN ${index}`);
-            const parentCases = items.map(({ id, parentId }) =>
-                parentId ? sql`WHEN ${id} THEN ${parentId}` : sql`WHEN ${id} THEN NULL`
-            );
-
+            // Execute the bulk update with userId filter
             await db
                 .update(label)
                 .set({
-                    index: sql`CASE ${label.id} ${sql.join(indexCases, sql` `)} END`,
-                    parentId: sql`CASE ${label.id} ${sql.join(parentCases, sql` `)} END`,
-                    updatedAt: now,
+                    index: indexCaseStatement,
+                    parentId: parentCaseStatement,
+                    updatedAt: new Date(),
                 })
                 .where(
-                    and(
-                        sql`${label.id} = ANY(${ids})`,
-                        eq(label.userId, userId),
-                        eq(label.isActive, true)
-                    )
+                    and(inArray(label.id, ids), eq(label.userId, userId), eq(label.isActive, true))
                 );
 
             return { success: true, updatedCount: items.length };
@@ -366,14 +370,6 @@ const getAllFlattened = async ({
             const schema = z.array(labelQuerySchemas.selectFlattened);
 
             const parsedResult = schema.parse(result);
-
-            console.table(
-                parsedResult.map((item) => ({
-                    id: item.id,
-                    index: item.index,
-                    parentId: item.parentId,
-                }))
-            );
 
             return parsedResult;
         },

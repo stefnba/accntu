@@ -94,6 +94,6 @@ export const labelServices = {
         await labelQueries.reorder({ items, userId });
 
         // Return fresh flattened data after reorder
-        // return await labelQueries.getAllFlattened({ userId, filters: {} });
+        return await labelQueries.getAllFlattened({ userId, filters: {} });
     },
 };

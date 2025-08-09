@@ -3,6 +3,7 @@
 import { SortableTree, useSortableTreeUIStore } from '@/components/sortable-tree';
 import { apiClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 import { LabelTreeItem } from './label-tree-item';
 
 interface LabelSortableTreeProps {
@@ -33,34 +34,30 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
                         return labels;
                     },
                     mutateFn: async (reorderedItems) => {
-                        console.log(
-                            'Reordering labels:',
-                            reorderedItems.map((item) => ({
-                                id: item.id,
-                                index: item.index,
-                                parentId: item.parentId,
-                                globalIndex: item.globalIndex,
-                                name: item.name,
-                            }))
-                        );
+                        // console.log(
+                        //     'Reordering labels:',
+                        //     reorderedItems.map((item) => ({
+                        //         id: item.id,
+                        //         index: item.index,
+                        //         parentId: item.parentId,
+                        //         globalIndex: item.globalIndex,
+                        //         name: item.name,
+                        //     }))
+                        // );
 
-                        await apiClient.labels.reorder.$put({
+                        const response = await apiClient.labels.reorder.$put({
                             json: { items: reorderedItems },
                         });
 
-                        // if (!response.ok) {
-                        //     throw new Error('Failed to reorder labels');
-                        // }
+                        if (!response.ok) {
+                            toast.error('Failed to reorder labels');
+                            return;
+                        }
 
-                        // const result = await response.json();
-                        // return result.labels;
+                        toast.success('Labels reordered successfully');
 
-                        // if (!response.ok) {
-                        //     throw new Error('Failed to reorder labels');
-                        // }
-
-                        // const result = await response.json();
-                        // return result.labels;
+                        const result = await response.json();
+                        return result.labels;
                     },
                 }}
                 renderItem={(item, dragButton) => (
