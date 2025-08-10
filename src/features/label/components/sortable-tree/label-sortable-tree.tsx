@@ -16,7 +16,7 @@ interface LabelSortableTreeProps {
 export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
     const { mutate: reorderLabels } = useLabelEndpoints.reorder({
         onSuccess: () => {
-            toast.success('Labels reordered successfully NEW');
+            toast.success('Labels reordered successfully');
         },
         onError: () => {
             toast.error('Failed to reorder labels');
@@ -25,23 +25,12 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
 
     const { data: labels = [], queryKey } = useLabelEndpoints.getAllFlattened({});
 
-    console.log(queryKey, labels);
-
     return (
         <div className={cn('w-full', className)}>
             <SortableTree
                 options={{
                     queryKey,
                     data: labels,
-                    // queryFn: async () => {
-                    //     const response = await apiClient.labels.flattened.$get();
-                    //     if (!response.ok) {
-                    //         throw new Error('Failed to fetch labels');
-                    //     }
-
-                    //     const labels = await response.json();
-                    //     return labels;
-                    // },
                     onDragEnd: async (reorderedItems) => {
                         reorderLabels({
                             json: {
