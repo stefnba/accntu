@@ -1,13 +1,12 @@
 'use client';
 
 import { AUTH_QUERY_KEYS, useAuthEndpoints } from '@/lib/auth/client/api';
-import { auth } from '@/lib/auth/config';
 import { LOGIN_REDIRECT_URL } from '@/lib/routes';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAuthLoadingStore } from './auth-loading-store';
 
-export type TSocialProvider = keyof typeof auth.options.socialProviders;
+import type { TSocialProvider } from '@/lib/auth/client/types';
 
 /**
  * Sign in with email OTP. It provides both the initiate and verify mutations.
