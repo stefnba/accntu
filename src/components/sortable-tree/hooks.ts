@@ -7,25 +7,35 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
+/**
+
+ */
+
+/**
+ * Hook for managing a sortable tree
+ * Options for the sortable tree
+ * @param storeKey - The key for the store
+ * @param queryKey - The key for the query
+ * @param data - The data for the tree, if not provided, the query data will be used
+ * @param onDragEnd - The function to call when the tree is dragged
+ * @param indentationWidth - The width of the indentation
+ * @param queryFn - The function to call to fetch the data, if not provided, the query data will be used
+ */
 export const useSortableTree = <D extends FlattenedTreeItemBase>(
     options: SortableTreeOptions<D>
 ) => {
-    const { storeKey, queryKey, data: rawItems, onDragEnd, indentationWidth = 30 } = options;
+    const { storeKey, queryKey, data: _, onDragEnd, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(storeKey ?? queryKey);
 
-    // Server state - React Query manages this (already flattened)
-    // const {
-    //     data: rawItems = [],
-    //     isLoading,
-    //     error,
-    // } = useQuery({
-    //     queryKey,
-    //     queryFn,
-    // });
+    // Extract the raw items from the query cache
+    // the data props is only used for type safety
+    const rawItems = queryClient.getQueryData<D[]>(queryKey);
 
     // Filter out items that are not expanded
     const treeItems = useMemo(() => {
+        if (!rawItems) return [];
+
         // Create item map once for efficient parent lookups
         const itemMap = new Map<string, FlattenedItem<D>>();
         rawItems.forEach((rawItem) => {
