@@ -72,9 +72,15 @@ export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
     //
     // onDragEnd: (newItems: FlattenedItem<D>[]) => void | Promise<void>;
     // /** Query key for UI state management (expand/collapse) */
-    // queryKey: readonly string[];
-    // /** Indentation width in pixels */
-    // indentationWidth?: number;
+    /**
+     * The key for the store to use for UI state management (expand/collapse)
+     * If not provided, the queryKey will be used.
+     */
+    storeKey?: readonly string[];
+
+    /**
+     * The query key for the query to use for the tree data
+     */
     queryKey: readonly string[];
     queryFn: () => Promise<D[]>;
     /**
@@ -88,3 +94,14 @@ export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
      */
     indentationWidth?: number;
 }
+
+/**
+ * Props for the renderItem function
+ * @param D - The type of the flattened tree item data (must extend FlattenedTreeItemBase)
+ */
+export type TRenderItemProps<D extends FlattenedTreeItemBase> = {
+    item: FlattenedItem<D>;
+    dragButton: React.ReactNode;
+    expandedIds: Set<UniqueIdentifier>;
+    toggleExpandedId: (id: UniqueIdentifier) => void;
+};

@@ -3,9 +3,9 @@
 import { useSortableTree } from '@/components/sortable-tree/hooks';
 import { SortableItem } from '@/components/sortable-tree/sortable-item';
 import {
-    FlattenedItem,
     FlattenedTreeItemBase,
     SortableTreeOptions,
+    TRenderItemProps,
 } from '@/components/sortable-tree/types';
 import { getProjectedDepth, removeChildrenOf } from '@/components/sortable-tree/utils';
 import { performMove } from '@/components/sortable-tree/utils/move';
@@ -32,13 +32,7 @@ import { createPortal } from 'react-dom';
 interface SortableTreeProps<D extends FlattenedTreeItemBase> {
     options: SortableTreeOptions<D>;
     className?: string;
-    renderItem: ({
-        item,
-        dragButton,
-    }: {
-        item: FlattenedItem<D>;
-        dragButton: React.ReactNode;
-    }) => React.ReactNode;
+    renderItem: (props: TRenderItemProps<D>) => React.ReactNode;
 }
 
 export const SortableTree = <D extends FlattenedTreeItemBase>({
@@ -267,6 +261,7 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
                 >
                     <div className="flex flex-col gap-2">
                         {flattenedAndFilteredItems.map((item) => (
+                            // SortableItem is a memoized component that renders a tree item and allows it to be dragged and dropped.
                             <SortableItem
                                 depth={
                                     // If the active item is the same as the item, use the projected depth
@@ -276,18 +271,16 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
                                 }
                                 key={item.id}
                                 item={item}
+                                expandedIds={expandedIds}
+                                toggleExpandedId={toggleExpandedId}
                                 indentationWidth={indentationWidth}
-                                renderItem={(item, dragButton) =>
-                                    renderItem({
-                                        item,
-                                        dragButton,
-                                    })
-                                }
+                                renderItem={renderItem}
                             />
                         ))}
                     </div>
                 </SortableContext>
 
+                {/* Drag overlay */}
                 {typeof window !== 'undefined' &&
                     createPortal(
                         <DragOverlay
@@ -303,6 +296,8 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
                                         dragButton: (
                                             <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
                                         ),
+                                        expandedIds,
+                                        toggleExpandedId,
                                     })}
                                     {activeItemChildCount > 0 && (
                                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">

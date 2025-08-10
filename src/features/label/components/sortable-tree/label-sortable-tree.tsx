@@ -1,6 +1,6 @@
 'use client';
 
-import { SortableTree, useSortableTreeUIStore } from '@/components/sortable-tree';
+import { SortableTree } from '@/components/sortable-tree';
 import { useLabelEndpoints } from '@/features/label/api';
 import { LabelTreeItem } from '@/features/label/components/label-tree-item';
 import { apiClient } from '@/lib/api';
@@ -17,9 +17,6 @@ const KEY = ['labels'];
  * Main sortable tree component for labels with drag & drop functionality
  */
 export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
-    // Get expand state at component level (not inside render function)
-    const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(KEY);
-
     const { mutate: reorderLabels } = useLabelEndpoints.reorder({
         onSuccess: () => {
             toast.success('Labels reordered successfully NEW');
@@ -28,6 +25,8 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
             toast.error('Failed to reorder labels');
         },
     });
+
+    const { data: labels } = useLabelEndpoints.getAllFlattened({});
 
     return (
         <div className={cn('w-full', className)}>
@@ -51,7 +50,7 @@ export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
                         });
                     },
                 }}
-                renderItem={({ item, dragButton }) => (
+                renderItem={({ item, dragButton, expandedIds, toggleExpandedId }) => (
                     <LabelTreeItem
                         item={item}
                         dragButton={dragButton}

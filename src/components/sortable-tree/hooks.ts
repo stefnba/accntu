@@ -10,9 +10,9 @@ import { useCallback, useMemo } from 'react';
 export const useSortableTree = <D extends FlattenedTreeItemBase>(
     options: SortableTreeOptions<D>
 ) => {
-    const { queryKey, queryFn, onDragEnd, indentationWidth = 30 } = options;
+    const { storeKey, queryKey, queryFn, onDragEnd, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
-    const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(queryKey);
+    const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(storeKey ?? queryKey);
 
     // Server state - React Query manages this (already flattened)
     const {
