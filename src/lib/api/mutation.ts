@@ -16,7 +16,7 @@ import { buildQueryKey } from './utils';
 export function createMutation<
     TEndpoint extends (...args: any[]) => Promise<Response>,
     TStatus extends StatusCode = 201 | 204,
->(endpoint: TEndpoint, baseQueryKey?: TQueryKeyString) {
+>(endpoint: TEndpoint, baseQueryKey?: TQueryKeyString | TQueryKeyString[]) {
     type TParams = InferRequestType<typeof endpoint>;
     type TResponse = InferResponseType<typeof endpoint, TStatus>;
     type TResponseError = InferResponseType<
@@ -76,19 +76,19 @@ export function createMutation<
 
                     // Smart invalidation using parameter extraction
                     if (baseQueryKey) {
-                        const queryKey = buildQueryKey({
-                            defaultKey: baseQueryKey,
-                            params: variables,
+                        const baseKeys = Array.isArray(baseQueryKey) ? baseQueryKey : [baseQueryKey];
+                        
+                        // Invalidate each base key
+                        baseKeys.forEach((key) => {
+                            // For mutations, usually just invalidate the base key without mutation params
+                            const queryKey = buildQueryKey({
+                                defaultKey: key,
+                                // Don't include mutation variables in query keys for invalidation
+                            });
+
+                            // TanStack Query will match prefixes automatically
+                            queryClient.invalidateQueries({ queryKey });
                         });
-
-                        // Always invalidate the base query (for lists)
-                        queryClient.invalidateQueries({ queryKey });
-
-                        // // If there are extracted parameters, also invalidate the specific resource
-                        // if (extractedParams.length > 0) {
-                        //     const specificQueryKey = [...baseKey, ...extractedParams];
-                        //     queryClient.invalidateQueries({ queryKey: specificQueryKey });
-                        // }
                     }
 
                     return data;
