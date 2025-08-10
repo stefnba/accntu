@@ -91,9 +91,6 @@ export const labelServices = {
      * @returns Promise resolving to updated flattened labels
      */
     async reorder({ items, userId }: { items: TLabelService['reorder']['items']; userId: string }) {
-        await labelQueries.reorder({ items, userId });
-
-        // Return fresh flattened data after reorder
-        return await labelQueries.getAllFlattened({ userId, filters: {} });
+        return await labelQueries.reorder({ items, userId });
     },
 };
