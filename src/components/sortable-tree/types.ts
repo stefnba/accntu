@@ -1,3 +1,4 @@
+import { TQueryKey } from '@/lib/api/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
 
 /**
@@ -76,12 +77,12 @@ export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
      * The key for the store to use for UI state management (expand/collapse)
      * If not provided, the queryKey will be used.
      */
-    storeKey?: readonly string[];
+    storeKey?: TQueryKey;
 
     /**
      * The query key for the query to use for the tree data
      */
-    queryKey: readonly string[];
+    queryKey: TQueryKey;
     // queryFn: () => Promise<D[]>;
     /**
      * Function to handle reordering mutations

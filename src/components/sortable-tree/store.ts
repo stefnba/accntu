@@ -1,3 +1,4 @@
+import { TQueryKey } from '@/lib/api/types';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { create } from 'zustand';
 
@@ -55,7 +56,7 @@ const useGlobalTreeStore = create<SortableTreeStore>((set, get) => ({
 /**
  * Get tree-specific expand state based on queryKey
  */
-export const useSortableTreeUIStore = (queryKey: readonly string[]) => {
+export const useSortableTreeUIStore = (queryKey: TQueryKey) => {
     const store = useGlobalTreeStore();
     const treeKey = queryKey.join(':');
 
