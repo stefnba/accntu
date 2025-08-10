@@ -10,7 +10,7 @@ import { useCallback, useMemo } from 'react';
 export const useSortableTree = <D extends FlattenedTreeItemBase>(
     options: SortableTreeOptions<D>
 ) => {
-    const { queryKey, queryFn, mutateFn, indentationWidth = 30 } = options;
+    const { queryKey, queryFn, onDragEnd, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(queryKey);
 
@@ -25,37 +25,34 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
     });
 
     // Filter out items that are not expanded
-    const treeItems = useMemo(
-        () => {
-            // Create item map once for efficient parent lookups
-            const itemMap = new Map<string, FlattenedItem<D>>();
-            rawItems.forEach(rawItem => {
-                itemMap.set(rawItem.id as string, rawItem);
-            });
+    const treeItems = useMemo(() => {
+        // Create item map once for efficient parent lookups
+        const itemMap = new Map<string, FlattenedItem<D>>();
+        rawItems.forEach((rawItem) => {
+            itemMap.set(rawItem.id as string, rawItem);
+        });
 
-            return rawItems.filter((item) => {
-                // Root items (no parent) are always visible
-                if (!item.parentId) return true;
+        return rawItems.filter((item) => {
+            // Root items (no parent) are always visible
+            if (!item.parentId) return true;
 
-                // Check that ALL ancestors are expanded
-                let currentParentId: string | null = item.parentId;
-                while (currentParentId) {
-                    // If any ancestor is not expanded, hide this item
-                    if (!expandedIds.has(currentParentId)) {
-                        return false;
-                    }
-                    
-                    // Move up to the next ancestor
-                    const parent = itemMap.get(currentParentId);
-                    currentParentId = parent?.parentId ?? null;
+            // Check that ALL ancestors are expanded
+            let currentParentId: string | null = item.parentId;
+            while (currentParentId) {
+                // If any ancestor is not expanded, hide this item
+                if (!expandedIds.has(currentParentId)) {
+                    return false;
                 }
 
-                // All ancestors are expanded
-                return true;
-            });
-        },
-        [rawItems, expandedIds]
-    );
+                // Move up to the next ancestor
+                const parent = itemMap.get(currentParentId);
+                currentParentId = parent?.parentId ?? null;
+            }
+
+            // All ancestors are expanded
+            return true;
+        });
+    }, [rawItems, expandedIds]);
 
     /**
      * Optimistic move handler
@@ -70,9 +67,9 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
             queryClient.setQueryData(queryKey, newItems);
 
             // Execute the actual mutation
-            if (mutateFn) {
+            if (onDragEnd) {
                 try {
-                    const result = await mutateFn(newItems);
+                    const result = await onDragEnd(newItems);
 
                     // If the mutation returns new items, update the query data
                     if (result) {
@@ -88,7 +85,7 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
                 }
             }
         },
-        [queryClient, queryKey, mutateFn]
+        [queryClient, queryKey, onDragEnd]
     );
 
     return {

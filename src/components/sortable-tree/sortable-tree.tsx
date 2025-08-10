@@ -32,7 +32,13 @@ import { createPortal } from 'react-dom';
 interface SortableTreeProps<D extends FlattenedTreeItemBase> {
     options: SortableTreeOptions<D>;
     className?: string;
-    renderItem: (item: FlattenedItem<D>, dragButton: React.ReactNode) => React.ReactNode;
+    renderItem: ({
+        item,
+        dragButton,
+    }: {
+        item: FlattenedItem<D>;
+        dragButton: React.ReactNode;
+    }) => React.ReactNode;
 }
 
 export const SortableTree = <D extends FlattenedTreeItemBase>({
@@ -271,7 +277,12 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
                                 key={item.id}
                                 item={item}
                                 indentationWidth={indentationWidth}
-                                renderItem={(item, dragButton) => renderItem(item, dragButton)}
+                                renderItem={(item, dragButton) =>
+                                    renderItem({
+                                        item,
+                                        dragButton,
+                                    })
+                                }
                             />
                         ))}
                     </div>
@@ -287,10 +298,12 @@ export const SortableTree = <D extends FlattenedTreeItemBase>({
                         >
                             {activeId && activeItem ? (
                                 <div className="bg-white border border-gray-200 rounded-md shadow-lg opacity-90">
-                                    {renderItem(
-                                        activeItem,
-                                        <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
-                                    )}
+                                    {renderItem({
+                                        item: activeItem,
+                                        dragButton: (
+                                            <div className="w-4 h-4 bg-gray-400 rounded opacity-50" />
+                                        ),
+                                    })}
                                     {activeItemChildCount > 0 && (
                                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
                                             {activeItemChildCount + 1}

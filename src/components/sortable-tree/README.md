@@ -30,7 +30,7 @@ const options: SortableTreeOptions<MyDataItem> = {
         const response = await fetch('/api/my-data');
         return response.json();
     },
-    mutateFn: async ({ activeId, intent }) => {
+    onDragEnd: async ({ activeId, intent }) => {
         // Handle the move operation
         await fetch('/api/my-data/reorder', {
             method: 'PUT',
@@ -139,7 +139,7 @@ interface FlattenedItem extends TreeItem {
 interface SortableTreeOptions<T extends TreeItem> {
     queryKey: string[];
     queryFn: () => Promise<T[]>;
-    mutateFn: (data: { activeId: UniqueIdentifier; intent: DropIntent }) => Promise<T[]>;
+    onDragEnd: (data: { activeId: UniqueIdentifier; intent: DropIntent }) => Promise<T[]>;
 }
 ```
 
