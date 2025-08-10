@@ -1,10 +1,11 @@
 'use client';
 
+import { TQueryKeyString } from '@/lib/api/types';
 import { ErrorHandler, handleErrorHandlers, normalizeApiError } from '@/lib/error';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import type { InferRequestType, InferResponseType } from 'hono/client';
 import { StatusCode } from 'hono/utils/http-status';
-import { extractQueryKeyParams } from './utils';
+import { buildQueryKey } from './utils';
 
 // Re-export for backward compatibility
 export { previewQueryKey } from './utils';
@@ -21,7 +22,7 @@ export function createQuery<
     TStatus extends StatusCode = 200,
 >(
     endpoint: TEndpoint,
-    defaultQueryKey?: string | readonly (string | undefined)[],
+    defaultQueryKey?: TQueryKeyString,
     keyExtractor?: (params: InferRequestType<typeof endpoint>) => unknown[]
 ) {
     type TParams = InferRequestType<typeof endpoint>;
@@ -41,11 +42,7 @@ export function createQuery<
         }
     ) => {
         // Use custom key extractor or default extraction logic
-        const extractedParams = keyExtractor ? keyExtractor(params) : extractQueryKeyParams(params);
-
-        const queryKey = Array.isArray(defaultQueryKey)
-            ? [...defaultQueryKey, ...extractedParams]
-            : [defaultQueryKey, ...extractedParams];
+        const queryKey = buildQueryKey({ defaultKey: defaultQueryKey, params, keyExtractor });
 
         // Extract errorHandlers from options
         const { errorHandlers, ...queryOptions } = options || {};
