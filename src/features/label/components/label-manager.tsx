@@ -3,10 +3,10 @@
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { LabelForm } from '@/features/label/components/label-form';
 import { LabelSortableTree } from '@/features/label/components/sortable-tree';
+import { useLabelModal } from '@/features/label/hooks';
 import { Plus } from 'lucide-react';
-import { useLabelModal } from '../hooks';
-import { LabelForm } from './label-form';
 
 export const LabelManagerActionBar = () => {
     const { openCreateModal } = useLabelModal();

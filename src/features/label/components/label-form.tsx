@@ -2,11 +2,12 @@
 
 import { Form, FormInput, FormSelect, FormSubmitButton, useUpsertForm } from '@/components/form';
 import { Badge } from '@/components/ui/badge';
+import { useLabelEndpoints } from '@/features/label/api';
 import { IconPicker } from '@/features/label/components/icon-picker';
+import { useLabelModal } from '@/features/label/hooks';
 import { labelColors, labelServiceSchemas } from '@/features/label/schemas';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { useEffect, useState } from 'react';
-import { useLabelEndpoints } from '../api';
 
 interface LabelFormProps {
     labelId?: string | null;
@@ -15,6 +16,8 @@ interface LabelFormProps {
 
 export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
     const isEditMode = Boolean(labelId);
+
+    const { closeModal } = useLabelModal();
 
     const { data: rootLabels } = useLabelEndpoints.getRoots({});
     const { data: labelData } = useLabelEndpoints.getById(
@@ -38,7 +41,14 @@ export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
                 color: '#6B7280',
             },
             onSubmit: async (data) => {
-                await createMutation.mutateAsync({ json: data });
+                await createMutation.mutateAsync(
+                    { json: data },
+                    {
+                        onSuccess: () => {
+                            closeModal();
+                        },
+                    }
+                );
             },
         },
         update: {
@@ -50,7 +60,14 @@ export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
                 parentId: labelData?.parentId || undefined,
             },
             onSubmit: async (data) => {
-                await updateMutation.mutateAsync({ param: { id: labelId! }, json: data });
+                await updateMutation.mutateAsync(
+                    { param: { id: labelId! }, json: data },
+                    {
+                        onSuccess: () => {
+                            closeModal();
+                        },
+                    }
+                );
             },
         },
         isUpdate: isEditMode,
