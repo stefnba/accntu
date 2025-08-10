@@ -4,25 +4,25 @@ import {
     FlattenedTreeItemBase,
     SortableTreeOptions,
 } from '@/components/sortable-tree/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
 export const useSortableTree = <D extends FlattenedTreeItemBase>(
     options: SortableTreeOptions<D>
 ) => {
-    const { storeKey, queryKey, queryFn, onDragEnd, indentationWidth = 30 } = options;
+    const { storeKey, queryKey, data: rawItems, onDragEnd, indentationWidth = 30 } = options;
     const queryClient = useQueryClient();
     const { expandedIds, toggleExpandedId } = useSortableTreeUIStore(storeKey ?? queryKey);
 
     // Server state - React Query manages this (already flattened)
-    const {
-        data: rawItems = [],
-        isLoading,
-        error,
-    } = useQuery({
-        queryKey,
-        queryFn,
-    });
+    // const {
+    //     data: rawItems = [],
+    //     isLoading,
+    //     error,
+    // } = useQuery({
+    //     queryKey,
+    //     queryFn,
+    // });
 
     // Filter out items that are not expanded
     const treeItems = useMemo(() => {
@@ -32,7 +32,7 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
             itemMap.set(rawItem.id as string, rawItem);
         });
 
-        return rawItems.filter((item) => {
+        const _filteredItems = rawItems.filter((item) => {
             // Root items (no parent) are always visible
             if (!item.parentId) return true;
 
@@ -52,6 +52,8 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
             // All ancestors are expanded
             return true;
         });
+
+        return _filteredItems;
     }, [rawItems, expandedIds]);
 
     /**
@@ -66,15 +68,17 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
             // Optimistic update
             queryClient.setQueryData(queryKey, newItems);
 
+            console.log(111, queryKey);
+
             // Execute the actual mutation
             if (onDragEnd) {
                 try {
-                    const result = await onDragEnd(newItems);
+                    await onDragEnd(newItems);
 
                     // If the mutation returns new items, update the query data
-                    if (result) {
-                        queryClient.setQueryData(queryKey, result);
-                    }
+                    // if (result) {
+                    //     queryClient.setQueryData(queryKey, result);
+                    // }
                 } catch (error) {
                     console.error('Reorder mutation failed:', error);
                     // Revert to previous state on failure
@@ -91,8 +95,8 @@ export const useSortableTree = <D extends FlattenedTreeItemBase>(
     return {
         // server data
         items: rawItems,
-        isLoading,
-        error,
+        // isLoading,
+        // error,
 
         // processed items
         treeItems,

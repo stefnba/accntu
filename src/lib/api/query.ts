@@ -57,42 +57,45 @@ export function createQuery<
             ...queryOptions,
         };
 
-        return useQuery<TResponse, TResponseError>({
+        return {
             queryKey,
-            queryFn: async () => {
-                try {
-                    const response = await endpoint(params);
+            ...useQuery<TResponse, TResponseError>({
+                queryKey,
+                queryFn: async () => {
+                    try {
+                        const response = await endpoint(params);
 
-                    if (!response.ok) {
-                        if (response.status === 401) {
-                            window.location.href = '/login';
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                window.location.href = '/login';
+                            }
+
+                            const errorData = await response.json();
+                            // Check if it's our standardized error format
+                            const errorObj = normalizeApiError(errorData);
+
+                            // Handle error handlers
+                            handleErrorHandlers(errorObj, errorHandlers);
+
+                            return Promise.reject(errorObj);
                         }
 
-                        const errorData = await response.json();
-                        // Check if it's our standardized error format
-                        const errorObj = normalizeApiError(errorData);
+                        // Handle empty responses (like 204 No Content)
+                        if (response.status === 204) {
+                            return {} as TResponse;
+                        }
 
-                        // Handle error handlers
-                        handleErrorHandlers(errorObj, errorHandlers);
+                        return response.json();
+                    } catch (error) {
+                        console.error('Query error:', error);
 
+                        // Handle API error responses
+                        const errorObj = normalizeApiError(error);
                         return Promise.reject(errorObj);
                     }
-
-                    // Handle empty responses (like 204 No Content)
-                    if (response.status === 204) {
-                        return {} as TResponse;
-                    }
-
-                    return response.json();
-                } catch (error) {
-                    console.error('Query error:', error);
-
-                    // Handle API error responses
-                    const errorObj = normalizeApiError(error);
-                    return Promise.reject(errorObj);
-                }
-            },
-            ...enhancedOptions,
-        });
+                },
+                ...enhancedOptions,
+            }),
+        };
     };
 }

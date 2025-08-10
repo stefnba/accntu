@@ -67,8 +67,8 @@ export type DropIntent =
  * @param D - The type of the flattened tree item data (must extend FlattenedTreeItemBase)
  */
 export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
-    // /** The flattened tree data */
-    // data: D[];
+    // /** The flattened tree data from the server */
+    data: D[];
     //
     // onDragEnd: (newItems: FlattenedItem<D>[]) => void | Promise<void>;
     // /** Query key for UI state management (expand/collapse) */
@@ -82,7 +82,7 @@ export interface SortableTreeOptions<D extends FlattenedTreeItemBase> {
      * The query key for the query to use for the tree data
      */
     queryKey: readonly string[];
-    queryFn: () => Promise<D[]>;
+    // queryFn: () => Promise<D[]>;
     /**
      * Function to handle reordering mutations
      * @param data - The new items after the drag and drop operation
