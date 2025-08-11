@@ -1,10 +1,10 @@
 'use client';
 
+import { toast } from '@/components/feedback/toast';
 import { SortableTree } from '@/components/sortable-tree';
 import { useLabelEndpoints } from '@/features/label/api';
 import { LabelTreeItem } from '@/features/label/components/label-tree-item';
 import { cn } from '@/lib/utils';
-import toast from 'react-hot-toast';
 
 interface LabelSortableTreeProps {
     className?: string;
@@ -16,10 +16,11 @@ interface LabelSortableTreeProps {
 export const LabelSortableTree = ({ className }: LabelSortableTreeProps) => {
     const { mutate: reorderLabels } = useLabelEndpoints.reorder({
         onSuccess: () => {
+            // toast.success('Labels reordered successfully');
             toast.success('Labels reordered successfully');
         },
         onError: () => {
-            toast.error('Failed to reorder labels');
+            // toast.error('Failed to reorder labels');
         },
     });
 
