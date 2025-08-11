@@ -6,13 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabelEndpoints } from '@/features/label/api';
-import { 
-    LabelTreeItem, 
-    LabelTreeItemProvider, 
-    LabelTreeItemContent, 
-    LabelTreeItemBadge,
-    LabelTreeChildren 
-} from '@/features/label/components/label-tree';
+
 import { useLabelSelectorModal } from '@/features/label/hooks';
 import type { TLabelQuery } from '@/features/label/schemas';
 import { useTransactionEndpoints } from '@/features/transaction/api';
@@ -219,30 +213,7 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
                                     : 'No labels available.'}
                             </div>
                         ) : (
-                            (() => {
-                                const LabelItemTemplate = () => (
-                                    <LabelTreeItem>
-                                        <LabelTreeItemContent>
-                                            <LabelTreeItemBadge />
-                                        </LabelTreeItemContent>
-                                        {!isSearchEnabled && (
-                                            <LabelTreeChildren>
-                                                <LabelItemTemplate />
-                                            </LabelTreeChildren>
-                                        )}
-                                    </LabelTreeItem>
-                                );
-
-                                return labels.map((label) => (
-                                    <LabelTreeItemProvider
-                                        key={label.id}
-                                        label={label}
-                                        onSelect={handleSelect}
-                                    >
-                                        <LabelItemTemplate />
-                                    </LabelTreeItemProvider>
-                                ));
-                            })()
+                            labels.map((label) => <div key={label.id}>{label.name}</div>)
                         )}
                     </div>
                 </ScrollArea>
