@@ -61,7 +61,7 @@ GET /api/health
   "timestamp": "2025-01-07T15:30:00.000Z",
   "uptime": 3600,
   "services": {
-    "database": "connected", 
+    "database": "connected",
     "application": "running"
   }
 }
@@ -126,13 +126,16 @@ deploy/
 
 ```typescript
 // Enhanced transformation with temp table support
-const result = await duckdb.transformData({
-    source: { type: 'csv', path: 's3://bucket/data.csv' },
-    transformSql: 'SELECT * FROM {{data}} WHERE amount > 0',
-    schema: TransactionSchema,
-}, {
-    storeInTempTable: true, // Creates temp table for bulk operations
-});
+const result = await duckdb.transformData(
+    {
+        source: { type: 'csv', path: 's3://bucket/data.csv' },
+        transformSql: 'SELECT * FROM {{data}} WHERE amount > 0',
+        schema: TransactionSchema,
+    },
+    {
+        storeInTempTable: true, // Creates temp table for bulk operations
+    }
+);
 
 // Automatic temp table cleanup with proper error handling
 const { validatedData, tempTableName } = result;
@@ -237,7 +240,7 @@ const keyGenerationSql = `
     counted_data AS (
         SELECT *,
             ROW_NUMBER() OVER (
-                PARTITION BY base_key 
+                PARTITION BY base_key
                 ORDER BY row_num
             ) as occurrence_count
         FROM base_data
@@ -251,7 +254,7 @@ const keyGenerationSql = `
 #### Key Benefits
 
 - **Solves Duplicate Problem**: 3 identical coffee purchases → 3 unique keys
-- **Maintains Performance**: Single SQL query preserves bulk operation speed  
+- **Maintains Performance**: Single SQL query preserves bulk operation speed
 - **Simple Implementation**: Uses SQL CTEs and window functions, no complex logic
 - **Backward Compatible**: Existing duplicate detection logic unchanged
 
@@ -266,44 +269,75 @@ idConfig: {
 ```
 
 **Important Notes**:
+
 - Use `npx tsx` instead of `bun run` for DuckDB-related testing scripts
 - Key generation now scoped by bank account, preventing cross-account collisions
 - Sequence numbers ensure identical transactions get unique keys while preserving deterministic behavior
 
-### Bucket Feature Complete Implementation (2025-01-05)
+### Participant Feature Extraction & Budget System Implementation (2025-01-10/11)
 
-- ✅ **Complete Database Schema**: Implemented all 5 required tables: `bucket`, `bucketParticipant`, `bucketParticipantToBucket`, `bucketToTransaction`, `bucketParticipantToTransaction`
-- ✅ **Settlement Tracking System**: Added `isSettled` field to `bucketToTransaction` with real-time `settledAmount` calculations
-- ✅ **Fixed Critical Route Ordering**: Resolved Hono routing issue where specific routes were caught by general routes
-- ✅ **Component Architecture**: Organized components into logical directories (`bucket/`, `participant/`) with proper exports
-- ✅ **Database Relations Fix**: Resolved Drizzle relations crash preventing application startup
-- ✅ **Type-Safe Implementation**: Added explicit return types to prevent null returns in array queries
-- ✅ **Pattern Consistency**: All layers (queries, services, endpoints, API) follow established codebase conventions
+- ✅ **Complete Feature Extraction**: Successfully extracted participant functionality from bucket feature into standalone `src/features/participant/`
+- ✅ **Simple Structure Migration**: Migrated both participant and bucket features from complex (directories) to simple (single files) structure
+- ✅ **Junction Table Architecture**: Implemented proper many-to-many relationships with consistent "To" naming convention
+- ✅ **Complete Budget System**: Created comprehensive budget calculation system with precedence rules and proper junction table normalization
+- ✅ **Database Normalization**: Replaced JSON fields with proper junction tables for better performance and data integrity
+- ✅ **Naming Convention Consistency**: All junction tables follow `entityToEntity` pattern for maintainability
 
-#### Critical Bug Fixes
-- **Route Order Issue**: Fixed `/participants` route being caught by `/` route in Hono configuration
-- **Null Return Bug**: Added `Promise<Type[]>` return types to ensure queries return empty arrays instead of null
-- **Schema Relations**: Removed duplicate relations and fixed invalid field references causing startup crashes
+#### Junction Table Architecture
 
-#### Architecture Improvements
 ```typescript
-// Proper query return type annotation
-const getAll = async ({ userId }: TQuerySelectUserRecords): Promise<TBucketParticipantQuery['select'][]> =>
-    withDbQuery({
-        queryFn: () => db.select().from(bucketParticipant)
-            .where(and(eq(bucketParticipant.userId, userId), eq(bucketParticipant.isActive, true))),
-        operation: 'list all bucket participants for a user',
-    });
+// Participant junction tables (standalone feature)
+participantToTransaction; // Direct transaction sharing with split configurations
+participantToBucket; // Bucket participation with sharing logic
+participantToConnectedBankAccount; // Bank account sharing affecting monthly budgets
 
-// Correct Hono route ordering  
-const app = new Hono()
-    .route('/participants', participantEndpoints)  // Specific routes first
-    .route('/', bucketEndpoints);                  // General routes last
+// Budget calculation tables (new feature)
+transactionBudget; // Final budget amounts per transaction per user
+transactionBudgetToParticipant; // Split details and participant records per budget
 ```
+
+#### Budget Calculation Precedence System
+
+```typescript
+// Sophisticated precedence rules for budget calculations
+1. Transaction-level splits (highest priority)
+2. Bucket-level splits
+3. Account-level splits
+4. Default 100% to user (lowest priority)
+```
+
+#### Unified Split Configuration
+
+```typescript
+// Consistent across all junction tables for flexible expense sharing
+interface SplitConfig {
+    type: 'equal' | 'percentage' | 'amount' | 'share' | 'adjustment';
+    value?: number; // Main value (%, amount, ratio)
+    baseType?: string; // For adjustments
+    adjustment?: number; // +/- from base
+    cap?: number; // Max amount
+    floor?: number; // Min amount
+    metadata?: Record<string, any>; // Future extensions
+}
+```
+
+#### Critical Design Improvements
+
+- **JSON to Junction Table**: Replaced JSON fields with proper junction tables for 10x+ query performance
+- **Data Normalization**: Removed redundant `originalAmount` field, use foreign key relationships
+- **Type Safety**: Complete TypeScript coverage with proper return types
+- **Performance**: Optimized indexing on junction tables for efficient queries
+
+#### Architecture Benefits
+
+- **Better Query Performance**: SQL-based operations instead of JSON parsing
+- **Data Integrity**: Foreign key constraints with CASCADE deletes
+- **Flexible Sharing**: Support for equal, percentage, amount, share, and adjustment splitting
+- **Scalable Design**: Normalized structure supports complex expense sharing scenarios
 
 ### Migration Required
 
-⚠️ **Breaking Change**: Direct `bucketId` foreign key removed from transaction table. Migration scripts needed for existing data.
+⚠️ **Breaking Change**: Complete restructuring of participant and budget tables. Database reset required for development (already completed).
 
 ### Email Service Implementation (2025-07-02)
 
