@@ -1,8 +1,8 @@
-import * as React from 'react';
-
 import { RoutePath } from '@/lib/routes';
 import { cn } from '@/lib/utils';
+import { cva, VariantProps } from 'class-variance-authority';
 import Link from 'next/link';
+import * as React from 'react';
 import { IconType } from 'react-icons';
 
 function Card({
@@ -33,11 +33,28 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
     );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
+const cardTitleVariants = cva('leading-none ', {
+    variants: {
+        size: {
+            lg: 'text-lg font-semibold',
+            xl: 'text-2xl font-semibold',
+            default: 'font-medium',
+        },
+    },
+    defaultVariants: {
+        size: 'default',
+    },
+});
+
+function CardTitle({
+    className,
+    size,
+    ...props
+}: React.ComponentProps<'div'> & VariantProps<typeof cardTitleVariants>) {
     return (
         <div
             data-slot="card-title"
-            className={cn('leading-none font-medium', className)}
+            className={cn(cardTitleVariants({ size }), className)}
             {...props}
         />
     );
