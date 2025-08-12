@@ -5,9 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from '@/lib/theme/hooks';
 import { useState } from 'react';
 
-interface AppearanceFormProps {}
-
-export function AppearanceForm({}: AppearanceFormProps) {
+export function AppearanceForm() {
     const { theme, setTheme, isLoaded } = useTheme();
     const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'system'>(
         (theme as 'light' | 'dark' | 'system') || 'system'
