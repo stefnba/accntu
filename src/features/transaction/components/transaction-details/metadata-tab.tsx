@@ -1,10 +1,4 @@
-import {
-    SummaryCardContent,
-    SummaryCardLabel,
-    SummaryCardSection,
-    SummaryCardValue,
-} from '@/components/summary-card-content';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoCard } from '@/components/content';
 import { useTransactionEndpoints } from '@/features/transaction/api';
 import { formatDate } from '@/lib/utils/date-formatter';
 
@@ -16,33 +10,20 @@ export const MetadataTab = ({ transactionId }: { transactionId: string }) => {
     if (!transaction) return null;
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Metadata</CardTitle>
-            </CardHeader>
-
-            <SummaryCardContent>
-                <SummaryCardSection>
-                    <SummaryCardLabel>Date Created</SummaryCardLabel>
-                    <SummaryCardValue>
-                        {formatDate(transaction.createdAt).format('SHORT_MONTH_DAY_YEAR_TIME')}
-                    </SummaryCardValue>
-                </SummaryCardSection>
-                <SummaryCardSection>
-                    <SummaryCardLabel>Last Updated</SummaryCardLabel>
-                    <SummaryCardValue>
-                        {formatDate(transaction.updatedAt).format('SHORT_MONTH_DAY_YEAR_TIME')}
-                    </SummaryCardValue>
-                </SummaryCardSection>
-                <SummaryCardSection>
-                    <SummaryCardLabel>Transaction ID</SummaryCardLabel>
-                    <SummaryCardValue>{transaction.id}</SummaryCardValue>
-                </SummaryCardSection>
-                <SummaryCardSection>
-                    <SummaryCardLabel>Import</SummaryCardLabel>
-                    <SummaryCardValue>{transaction.importFileId}</SummaryCardValue>
-                </SummaryCardSection>
-            </SummaryCardContent>
-        </Card>
+        <InfoCard.Auto
+            title="Metadata"
+            items={[
+                {
+                    label: 'Date Created',
+                    value: formatDate(transaction.createdAt).format('SHORT_MONTH_DAY_YEAR_TIME'),
+                },
+                {
+                    label: 'Last Updated',
+                    value: formatDate(transaction.updatedAt).format('SHORT_MONTH_DAY_YEAR_TIME'),
+                },
+                { label: 'Transaction ID', value: transaction.id },
+                { label: 'Import', value: transaction.importFileId },
+            ]}
+        />
     );
 };
