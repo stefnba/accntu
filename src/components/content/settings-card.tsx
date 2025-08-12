@@ -107,7 +107,7 @@ interface SettingsCardLabelProps {
  * Label component for individual setting titles
  */
 const SettingsCardLabel = ({ children, className }: SettingsCardLabelProps) => {
-    return <div className={cn('font-medium', className)}>{children}</div>;
+    return <div className={cn('text-sm font-medium', className)}>{children}</div>;
 };
 
 interface SettingsCardTextProps {
@@ -180,7 +180,7 @@ const SettingsCardAuto = ({ title, description, items, className }: SettingsCard
 
 /**
  * SettingsCard - A flexible component for displaying settings with icons, descriptions, and actions
- * 
+ *
  * @example
  * // Compound Components (Full Flexibility)
  * <SettingsCard>
@@ -201,24 +201,24 @@ const SettingsCardAuto = ({ title, description, items, className }: SettingsCard
  *     </SettingsCard.Item>
  *   </SettingsCard.Content>
  * </SettingsCard>
- * 
+ *
  * @example
  * // Auto-layout API (Convenience)
- * <SettingsCard.Auto 
+ * <SettingsCard.Auto
  *   title="Communication"
  *   description="How you receive updates and messages"
  *   items={[
- *     { 
- *       icon: Mail, 
- *       label: "Email Notifications", 
- *       description: "Receive notifications via email", 
- *       action: <Switch checked={true} /> 
+ *     {
+ *       icon: Mail,
+ *       label: "Email Notifications",
+ *       description: "Receive notifications via email",
+ *       action: <Switch checked={true} />
  *     },
- *     { 
- *       icon: Bell, 
- *       label: "Push Notifications", 
- *       description: "Receive push notifications in your browser", 
- *       action: <Switch checked={false} /> 
+ *     {
+ *       icon: Bell,
+ *       label: "Push Notifications",
+ *       description: "Receive push notifications in your browser",
+ *       action: <Switch checked={false} />
  *     }
  *   ]}
  * />
@@ -238,14 +238,14 @@ export const SettingsCard = Object.assign(SettingsCardRoot, {
 });
 
 export {
-    SettingsCardHeader,
-    SettingsCardTitle,
-    SettingsCardDescription,
-    SettingsCardContent,
-    SettingsCardItem,
-    SettingsCardIcon,
+    SettingsCardAction,
     SettingsCardBody,
+    SettingsCardContent,
+    SettingsCardDescription,
+    SettingsCardHeader,
+    SettingsCardIcon,
+    SettingsCardItem,
     SettingsCardLabel,
     SettingsCardText,
-    SettingsCardAction,
+    SettingsCardTitle,
 };
