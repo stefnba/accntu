@@ -142,7 +142,7 @@ interface SettingsCardAutoItem {
 }
 
 interface SettingsCardAutoProps {
-    title: string;
+    title?: string;
     description?: string;
     items: SettingsCardAutoItem[];
     className?: string;
@@ -154,10 +154,14 @@ interface SettingsCardAutoProps {
 const SettingsCardAuto = ({ title, description, items, className }: SettingsCardAutoProps) => {
     return (
         <SettingsCardRoot className={className}>
-            <SettingsCardHeader>
-                <SettingsCardTitle>{title}</SettingsCardTitle>
-                {description && <SettingsCardDescription>{description}</SettingsCardDescription>}
-            </SettingsCardHeader>
+            {title && (
+                <SettingsCardHeader>
+                    <SettingsCardTitle>{title}</SettingsCardTitle>
+                    {description && (
+                        <SettingsCardDescription>{description}</SettingsCardDescription>
+                    )}
+                </SettingsCardHeader>
+            )}
             <SettingsCardContent>
                 {items.map((item, index) => (
                     <SettingsCardItem key={index}>

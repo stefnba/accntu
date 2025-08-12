@@ -1,8 +1,8 @@
 'use client';
 
+import { SettingsCard } from '@/components/content';
 import { Form, FormSelect, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Calendar, Clock, Languages } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -74,100 +74,72 @@ export const LanguageAndRegionForm = () => {
         <div className="space-y-6">
             <Form form={form} className="space-y-6">
                 {/* Language Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Language</CardTitle>
-                        <CardDescription>Choose your preferred language</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-start space-x-3">
-                                <Languages className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
-                                    <div className="font-medium">Language</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Choose your preferred language
-                                    </div>
-                                </div>
-                            </div>
-
-                            <FormSelect
-                                form={form}
-                                name="language"
-                                placeholder="Select language"
-                                options={languageOptions}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                <SettingsCard.Auto
+                    title="Language"
+                    description="Choose your preferred language"
+                    items={[
+                        {
+                            icon: Languages,
+                            label: 'Language',
+                            description: 'Choose your preferred language',
+                            action: (
+                                <FormSelect
+                                    form={form}
+                                    name="language"
+                                    placeholder="Select language"
+                                    options={languageOptions}
+                                />
+                            ),
+                        },
+                    ]}
+                />
 
                 {/* Region Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Region</CardTitle>
-                        <CardDescription>
-                            Set your timezone and regional preferences
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-start space-x-3">
-                                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
-                                    <div className="font-medium">Timezone</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Select your timezone for accurate time display
-                                    </div>
-                                </div>
-                            </div>
-
-                            <FormSelect
-                                form={form}
-                                name="timezone"
-                                placeholder="Select timezone"
-                                options={timezoneOptions}
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-start space-x-3">
-                                <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
-                                    <div className="font-medium">Date Format</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Choose how dates are displayed
-                                    </div>
-                                </div>
-                            </div>
-
-                            <FormSelect
-                                form={form}
-                                name="dateFormat"
-                                placeholder="Select date format"
-                                options={dateFormatOptions}
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-start space-x-3">
-                                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
-                                    <div className="font-medium">Time Format</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Choose 12-hour or 24-hour time format
-                                    </div>
-                                </div>
-                            </div>
-
-                            <FormSelect
-                                form={form}
-                                name="timeFormat"
-                                placeholder="Select time format"
-                                options={timeFormatOptions}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                <SettingsCard.Auto
+                    title="Region"
+                    description="Set your timezone and regional preferences"
+                    items={[
+                        {
+                            icon: Clock,
+                            label: 'Timezone',
+                            description: 'Select your timezone for accurate time display',
+                            action: (
+                                <FormSelect
+                                    form={form}
+                                    name="timezone"
+                                    placeholder="Select timezone"
+                                    options={timezoneOptions}
+                                />
+                            ),
+                        },
+                        {
+                            icon: Calendar,
+                            label: 'Date Format',
+                            description: 'Choose how dates are displayed',
+                            action: (
+                                <FormSelect
+                                    form={form}
+                                    name="dateFormat"
+                                    placeholder="Select date format"
+                                    options={dateFormatOptions}
+                                />
+                            ),
+                        },
+                        {
+                            icon: Clock,
+                            label: 'Time Format',
+                            description: 'Choose 12-hour or 24-hour time format',
+                            action: (
+                                <FormSelect
+                                    form={form}
+                                    name="timeFormat"
+                                    placeholder="Select time format"
+                                    options={timeFormatOptions}
+                                />
+                            ),
+                        },
+                    ]}
+                />
 
                 {/* Submit Button */}
                 <div className="flex justify-end">
