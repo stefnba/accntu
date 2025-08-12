@@ -1,8 +1,8 @@
 'use client';
 
+import { SettingsCard } from '@/components/content';
 import { Form, FormSwitch, useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Bell, Calendar, FileText, Mail, Megaphone, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -37,106 +37,132 @@ export const NotificationPreferencesForm = () => {
     return (
         <div className="space-y-6">
             <Form form={form} className="space-y-6">
-                {/* Communication Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Communication</CardTitle>
-                        <CardDescription>How you receive updates and messages</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                            <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                <SettingsCard.Auto
+                    title="Communication"
+                    items={[
+                        {
+                            icon: Mail,
+                            label: 'Email Notifications',
+                            description: 'Receive notifications via email',
+                            action: (
                                 <FormSwitch
                                     form={form}
                                     name="email"
                                     label="Email Notifications"
                                     description="Receive notifications via email"
                                 />
-                            </div>
-                        </div>
+                            ),
+                        },
+                    ]}
+                />
 
-                        <div className="flex items-start space-x-3">
-                            <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                {/* Communication Card */}
+                <SettingsCard>
+                    <SettingsCard.Header>
+                        <SettingsCard.Title>Communication</SettingsCard.Title>
+                        <SettingsCard.Description>
+                            How you receive updates and messages
+                        </SettingsCard.Description>
+                    </SettingsCard.Header>
+                    <SettingsCard.Content>
+                        {/* Email Notifications */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={Mail} />
+                            <SettingsCard.Body>
+                                <FormSwitch
+                                    form={form}
+                                    name="email"
+                                    label="Email Notifications"
+                                    description="Receive notifications via email"
+                                />
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                        {/* Push Notifications */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={Bell} />
+                            <SettingsCard.Body>
                                 <FormSwitch
                                     form={form}
                                     name="push"
                                     label="Push Notifications"
                                     description="Receive push notifications in your browser"
                                 />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                    </SettingsCard.Content>
+                </SettingsCard>
 
                 {/* Marketing Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Marketing</CardTitle>
-                        <CardDescription>Marketing and promotional content</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-start space-x-3">
-                            <Megaphone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                <SettingsCard>
+                    <SettingsCard.Header>
+                        <SettingsCard.Title>Marketing</SettingsCard.Title>
+                        <SettingsCard.Description>
+                            Marketing and promotional content
+                        </SettingsCard.Description>
+                    </SettingsCard.Header>
+                    <SettingsCard.Content>
+                        {/* Marketing Communications */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={Megaphone} />
+                            <SettingsCard.Body>
                                 <FormSwitch
                                     form={form}
                                     name="marketing"
                                     label="Marketing Communications"
                                     description="Receive updates about new features and promotions"
                                 />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                    </SettingsCard.Content>
+                </SettingsCard>
 
                 {/* Financial Updates Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Financial Updates</CardTitle>
-                        <CardDescription>
+                <SettingsCard>
+                    <SettingsCard.Header>
+                        <SettingsCard.Title>Financial Updates</SettingsCard.Title>
+                        <SettingsCard.Description>
                             Notifications about your financial activity
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                            <TrendingUp className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                        </SettingsCard.Description>
+                    </SettingsCard.Header>
+                    <SettingsCard.Content>
+                        {/* Transaction Alerts */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={TrendingUp} />
+                            <SettingsCard.Body>
                                 <FormSwitch
                                     form={form}
                                     name="transactionAlerts"
                                     label="Transaction Alerts"
                                     description="Get notified when new transactions are detected"
                                 />
-                            </div>
-                        </div>
-
-                        <div className="flex items-start space-x-3">
-                            <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                        {/* Weekly Reports */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={Calendar} />
+                            <SettingsCard.Body>
                                 <FormSwitch
                                     form={form}
                                     name="weeklyReports"
                                     label="Weekly Reports"
                                     description="Receive weekly summaries of your financial activity"
                                 />
-                            </div>
-                        </div>
-
-                        <div className="flex items-start space-x-3">
-                            <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                        {/* Monthly Reports */}
+                        <SettingsCard.Item>
+                            <SettingsCard.Icon icon={FileText} />
+                            <SettingsCard.Body>
                                 <FormSwitch
                                     form={form}
                                     name="monthlyReports"
                                     label="Monthly Reports"
                                     description="Receive monthly financial reports and insights"
                                 />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </SettingsCard.Body>
+                        </SettingsCard.Item>
+                    </SettingsCard.Content>
+                </SettingsCard>
 
                 {/* Submit Button */}
                 <div className="flex justify-end">
