@@ -1,8 +1,12 @@
 import { QueryStateTabsContent } from '@/components/tabs-query-state';
-import { AmountTab } from '@/features/transaction/components/transaction-details/amount-tab';
-import { BankingTab } from '@/features/transaction/components/transaction-details/banking-tab';
-import { DetailsTab } from '@/features/transaction/components/transaction-details/details-tab';
-import { MetadataTab } from '@/features/transaction/components/transaction-details/metadata-tab';
+
+import {
+    AmountTab,
+    BankingTab,
+    DetailsTab,
+    MetadataTab,
+    OverviewTab,
+} from '@/features/transaction/components/transaction-details/tabs';
 import { useTransactionDetails } from '@/features/transaction/hooks/details';
 
 export const TransactionDetailsTabContent = ({ transactionId }: { transactionId: string }) => {
@@ -16,6 +20,7 @@ export const TransactionDetailsTabContent = ({ transactionId }: { transactionId:
                 amount: <AmountTab transactionId={transactionId} />,
                 banking: <BankingTab transactionId={transactionId} />,
                 details: <DetailsTab transactionId={transactionId} />,
+                overview: <OverviewTab transactionId={transactionId} />,
             }}
         />
     );

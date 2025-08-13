@@ -1,13 +1,12 @@
 'use client';
 
 import { useTransactionEndpoints } from '@/features/transaction/api';
+import { TransactionError } from '@/features/transaction/components/transaction-details/error';
+import { TransactionHeader } from '@/features/transaction/components/transaction-details/header';
+import { TransactionLoading } from '@/features/transaction/components/transaction-details/loading';
 import { TransactionDetailsTabContent } from '@/features/transaction/components/transaction-details/tab-content';
-import { TransactionError } from '@/features/transaction/components/transaction-details/transaction-error';
-import { TransactionHeader } from '@/features/transaction/components/transaction-details/transaction-header';
-import { TransactionLoading } from '@/features/transaction/components/transaction-details/transaction-loading';
+import { TransactionTabs } from '@/features/transaction/components/transaction-details/tab-nav';
 import { TransactionNavigation } from '@/features/transaction/components/transaction-details/transaction-navigation';
-import { TransactionQuickInfo } from '@/features/transaction/components/transaction-details/transaction-quick-info';
-import { TransactionTabs } from '@/features/transaction/components/transaction-details/transaction-tabs';
 
 interface TransactionDetailsViewProps {
     transactionId: string;
@@ -34,7 +33,7 @@ export const TransactionDetailsView = ({ transactionId }: TransactionDetailsView
         <div className="space-y-6">
             <TransactionNavigation />
             <TransactionHeader transactionId={transactionId} />
-            <TransactionQuickInfo transactionId={transactionId} />
+            {/* <TransactionQuickInfo transactionId={transactionId} /> */}
             <TransactionTabs transactionId={transactionId} />
             <TransactionDetailsTabContent transactionId={transactionId} />
         </div>
