@@ -1,6 +1,6 @@
 'use client';
 
-import { LabelSelectorModal } from '@/features/label/components/label-selector-modal';
+import { LabelSelectorModal } from '@/features/label/components/label-selector';
 import { TagSelectorModal } from '@/features/tag/components/tag-selector';
 import { TransactionSelectionBar } from '@/features/transaction/components/transaction-selection-bar';
 import { TransactionTableFilters } from '@/features/transaction/components/transaction-table-filters';

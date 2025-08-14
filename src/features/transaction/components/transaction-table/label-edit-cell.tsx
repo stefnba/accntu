@@ -54,7 +54,7 @@ interface LabelEditCellProps {
 }
 
 export const LabelEditCell = ({ transaction }: LabelEditCellProps) => {
-    const { open } = useLabelSelectorModal();
+    const { openModal } = useLabelSelectorModal();
 
     const currentLabel = transaction.label;
 
@@ -62,7 +62,9 @@ export const LabelEditCell = ({ transaction }: LabelEditCellProps) => {
         <>
             <div
                 className="cursor-pointer hover:bg-muted/30 p-1 rounded min-h-[24px] flex items-center"
-                onClick={() => open({ transactionId: transaction.id, labelId: currentLabel?.id })}
+                onClick={() =>
+                    openModal({ transactionId: transaction.id, labelId: currentLabel?.id })
+                }
                 title="Click to select label"
             >
                 {currentLabel ? (
