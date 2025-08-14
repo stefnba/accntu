@@ -9,7 +9,7 @@ import {
 } from '@/features/label/components/label-tree-item/actions';
 import { LabelTreeItemIcon } from '@/features/label/components/label-tree-item/icon';
 import { type LabelFlattenedItem } from '@/features/label/components/sortable-tree/types';
-import { useLabelModal } from '@/features/label/hooks';
+import { useLabelUpsertModal } from '@/features/label/hooks';
 import { cn } from '@/lib/utils';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { ChevronDown, ChevronRight, Edit2, Eye, Plus, Trash2 } from 'lucide-react';
@@ -33,7 +33,7 @@ export const LabelTreeItem = ({
 }: LabelTreeItemProps) => {
     const { id, name, color, icon, hasChildren, countChildren } = item;
 
-    const { openCreateModal, openEditModal } = useLabelModal();
+    const { openModal } = useLabelUpsertModal();
     const router = useRouter();
 
     // ================================
@@ -54,11 +54,11 @@ export const LabelTreeItem = ({
     };
 
     const handleEdit = (labelId: string) => {
-        openEditModal(labelId);
+        openModal({ view: 'update', labelId });
     };
 
     const handleAddChild = (labelId: string) => {
-        openCreateModal(labelId);
+        openModal({ view: 'create', parentId: labelId });
     };
 
     const handleDelete = async (labelId: string) => {

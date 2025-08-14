@@ -1,61 +1,46 @@
-import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { useQueryStateModal } from '@/hooks';
+import { parseAsString, useQueryState } from 'nuqs';
 import { create } from 'zustand';
-
-const LABEL_MODAL_TYPES = ['create', 'edit'] as const;
-export type TLabelModalType = (typeof LABEL_MODAL_TYPES)[number];
 
 /**
  * Hook to manage the label modal state using URL query parameters
  * @returns The label modal state and actions
  */
-export const useLabelModal = () => {
-    const [modalOpen, setModalOpen] = useQueryState(
-        'labelModal',
-        parseAsBoolean.withDefault(false)
-    );
+export const useLabelUpsertModal = () => {
+    const views = ['create', 'update'] as const;
 
-    const [modalType, setModalType] = useQueryState(
-        'labelModalType',
-        parseAsStringLiteral(LABEL_MODAL_TYPES).withDefault('create')
-    );
-
+    // labelId for update
     const [labelId, setLabelId] = useQueryState('labelId', parseAsString.withDefault(''));
 
+    // parentId for child label
     const [parentId, setParentId] = useQueryState('parentId', parseAsString.withDefault(''));
 
-    const openCreateModal = (parentLabelId?: string) => {
-        setModalType('create');
-        setParentId(parentLabelId || '');
-        setLabelId('');
-        setModalOpen(true);
-    };
-
-    const openEditModal = (editLabelId: string) => {
-        setModalType('edit');
-        setLabelId(editLabelId);
-        setParentId('');
-        setModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setModalOpen(false);
-        setModalType(null);
-        setLabelId(null);
-        setParentId(null);
-    };
+    const modalActions = useQueryStateModal({
+        views,
+        onClose: () => {
+            setLabelId(null);
+            setParentId(null);
+        },
+    });
 
     return {
-        // Modal state
-        modalOpen,
-        modalType,
+        ...modalActions,
+        openModal: ({
+            view,
+            labelId,
+        }: {
+            view: (typeof views)[number];
+            labelId?: string | null;
+            parentId?: string | null;
+        }) => {
+            modalActions.openModal(view);
+            setLabelId(labelId || null);
+            setParentId(parentId || null);
+        },
         labelId: labelId || null,
         parentId: parentId || null,
-
-        // Actions
-        openCreateModal,
-        openEditModal,
-        closeModal,
-        setModalOpen,
+        setLabelId,
+        setParentId,
     };
 };
 
