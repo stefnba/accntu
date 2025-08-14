@@ -21,7 +21,7 @@ import {
 import { useTagEndpoints } from '@/features/tag/api';
 import { TagCard, TagCardSkeleton } from '@/features/tag/components/tag-card';
 import { TagDetailsView } from '@/features/tag/components/tag-details-view';
-import { TagUpsertModal } from '@/features/tag/components/tag-upsert-modal';
+import { TagUpsertModal } from '@/features/tag/components/tag-upsert';
 import { useTagUpsertModal } from '@/features/tag/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';

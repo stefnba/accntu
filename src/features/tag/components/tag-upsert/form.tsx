@@ -9,16 +9,16 @@ import {
     useUpsertForm,
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { useTagEndpoints } from '@/features/tag/api';
 import { useTagUpsertModal } from '@/features/tag/hooks';
 import { tagServiceSchemas } from '@/features/tag/schemas';
 
-export function TagUpsertModal() {
+export const TagUpsertForm = () => {
     // ================================
     // Hooks
     // ================================
-    const { tagId, setTagId, openModal, isModalOpen, closeModal } = useTagUpsertModal();
+
+    const { tagId, closeModal } = useTagUpsertModal();
 
     // ================================
     // Queries
@@ -64,34 +64,27 @@ export function TagUpsertModal() {
         },
         isUpdate: !!tagId,
     });
-
     return (
-        <ResponsiveModal
-            title={tagId ? 'Edit Tag' : 'Create New Tag'}
-            open={isModalOpen}
-            onOpenChange={closeModal}
-        >
-            <Form form={form} className="">
-                <FormInput
-                    form={form}
-                    name="name"
-                    label="Tag Name"
-                    placeholder="Enter tag name"
-                    autoFocus
-                />
-                {tagId && <FormCheckbox form={form} name="isActive" label="Active" />}
+        <Form form={form} className="">
+            <FormInput
+                form={form}
+                name="name"
+                label="Tag Name"
+                placeholder="Enter tag name"
+                autoFocus
+            />
+            {tagId && <FormCheckbox form={form} name="isActive" label="Active" />}
 
-                <FormColorSelect cols={8} form={form} name="color" label="Color" showClear />
+            <FormColorSelect cols={8} form={form} name="color" label="Color" showClear />
 
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={closeModal}>
-                        Cancel
-                    </Button>
-                    <FormSubmitButton form={form}>
-                        {tagId ? 'Update Tag' : 'Create Tag'}
-                    </FormSubmitButton>
-                </div>
-            </Form>
-        </ResponsiveModal>
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={closeModal}>
+                    Cancel
+                </Button>
+                <FormSubmitButton form={form}>
+                    {tagId ? 'Update Tag' : 'Create Tag'}
+                </FormSubmitButton>
+            </div>
+        </Form>
     );
-}
+};
