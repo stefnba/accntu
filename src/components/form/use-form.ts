@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     FieldValues,
     SubmitErrorHandler,
@@ -105,11 +105,43 @@ export function useZodForm<TSchema extends z.ZodType<any, any, any>>({
     const [isSubmitSuccessful, setIsSubmitSuccessful] = useState(false);
     const [submitError, setSubmitError] = useState<Error | null>(null);
 
-    // Initialize the form with Zod resolver
+    // Stabilize defaultValues to prevent unnecessary re-renders from object recreation
+    const { defaultValues, ...restFormOptions } = formOptions;
+    const stableDefaultValues = useMemo(() => {
+        // If we have defaultValues, use them
+        if (defaultValues) {
+            return defaultValues;
+        }
+
+        // If no defaultValues provided, generate them from the schema to ensure controlled inputs
+        return generateDefaultValues(schema);
+    }, [JSON.stringify(defaultValues), schema]);
+
+    // Initialize the form with Zod resolver and stable default values
     const form = useHookForm<FormValues>({
         resolver: zodResolver(schema),
-        ...formOptions,
+        defaultValues: stableDefaultValues,
+        ...restFormOptions,
     });
+
+    // Handle dynamic default values updates
+    const hasInitialized = useRef(false);
+    const previousDefaultValues = useRef(stableDefaultValues);
+
+    useEffect(() => {
+        // Skip the first render to avoid resetting initial values
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
+            previousDefaultValues.current = stableDefaultValues;
+            return;
+        }
+
+        // Only reset if the stable values actually changed
+        if (stableDefaultValues && stableDefaultValues !== previousDefaultValues.current) {
+            form.reset(stableDefaultValues);
+            previousDefaultValues.current = stableDefaultValues;
+        }
+    }, [stableDefaultValues, form]);
 
     // Create an enhanced submit handler
     const handleSubmit = async (e?: React.BaseSyntheticEvent) => {
@@ -235,3 +267,61 @@ export const useUpsertForm = <
     isUpdate: boolean;
 }): UseZodFormReturn<z.infer<TCreateSchema> | z.infer<TUpdateSchema>> =>
     useZodForm<TCreateSchema | TUpdateSchema>(isUpdate ? update : create);
+
+/**
+ * Generate default values for a Zod schema
+ *
+ * @param schema - Zod schema to generate default values for
+ * @returns Default values for the schema
+ */
+const generateDefaultValues = (schema: z.ZodType<any, any, any>) => {
+    console.log('schema', schema._def.shape());
+
+    try {
+        // Get the schema shape to generate default values
+        if (schema._def && schema._def.shape) {
+            const schemaShape = schema._def.shape();
+            const generatedDefaults: any = {};
+
+            Object.keys(schemaShape).forEach((key) => {
+                const field = schemaShape[key];
+
+                // Generate appropriate default values based on field type
+                if (field._def.typeName === 'ZodString') {
+                    generatedDefaults[key] = '';
+                } else if (field._def.typeName === 'ZodNumber') {
+                    generatedDefaults[key] = 0;
+                } else if (field._def.typeName === 'ZodBoolean') {
+                    generatedDefaults[key] = false;
+                } else if (field._def.typeName === 'ZodArray') {
+                    generatedDefaults[key] = [];
+                } else if (
+                    field._def.typeName === 'ZodOptional' ||
+                    field._def.typeName === 'ZodNullable'
+                ) {
+                    // For optional/nullable fields, check the inner type
+                    const innerType = field._def.innerType || field._def.type;
+                    if (innerType._def.typeName === 'ZodString') {
+                        generatedDefaults[key] = '';
+                    } else if (innerType._def.typeName === 'ZodNumber') {
+                        generatedDefaults[key] = 0;
+                    } else if (innerType._def.typeName === 'ZodBoolean') {
+                        generatedDefaults[key] = false;
+                    } else {
+                        generatedDefaults[key] = null;
+                    }
+                } else {
+                    // Default fallback for unknown types
+                    generatedDefaults[key] = null;
+                }
+            });
+
+            return generatedDefaults;
+        }
+    } catch (error) {
+        console.warn('Could not generate default values from schema:', error);
+    }
+
+    // Fallback to undefined if we can't parse the schema
+    return undefined;
+};
