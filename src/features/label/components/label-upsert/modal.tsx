@@ -8,8 +8,6 @@ export const LabelUpsertModal = () => {
     // ================================
     const { isModalOpen, closeModal, labelId } = useLabelUpsertModal();
 
-    console.log('isOpen', isModalOpen);
-
     const isEditMode = Boolean(labelId);
 
     return (
