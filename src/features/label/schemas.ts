@@ -71,10 +71,14 @@ export const labelServiceSchemas = {
         .extend({
             name: z.string().min(1),
         }),
-    update: labelQuerySchemas.update.omit({
-        firstParentId: true,
-        index: true,
-    }),
+    update: labelQuerySchemas.update
+        .omit({
+            firstParentId: true,
+            index: true,
+        })
+        .extend({
+            name: z.string().min(1),
+        }),
     filter: labelQuerySchemas.filter,
     reorder: z.object({
         items: labelQuerySchemas.reorder,

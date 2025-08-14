@@ -21,14 +21,14 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
     // Hooks
     // ================================
 
-    const { labelId, parentId, closeModal } = useLabelUpsertModal();
+    const { labelId, closeModal } = useLabelUpsertModal();
 
     // ================================
     // API calls
     // ================================
     const createMutation = useLabelEndpoints.create();
     const updateMutation = useLabelEndpoints.update();
-    const { data: labelData } = useLabelEndpoints.getById(
+    const { data: labelData, isLoading } = useLabelEndpoints.getById(
         {
             param: { id: labelId || '' },
         },
@@ -78,6 +78,10 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
         },
         isUpdate: !!labelId,
     });
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <Form form={form} className="">
