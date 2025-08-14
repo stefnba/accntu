@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { TLabelQuery } from '@/features/label/schemas';
+import { TLabelService } from '@/features/label/schemas';
 import { cn } from '@/lib/utils';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
+import { RequiredBy } from '@/types/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const labelBadgeVariants = cva('flex-shrink-0 flex items-center gap-2 font-medium', {
@@ -30,7 +31,7 @@ const iconSizeMap = {
 } as const;
 
 interface LabelBadgeProps extends VariantProps<typeof labelBadgeVariants> {
-    label: TLabelQuery['select'] | null;
+    label: RequiredBy<TLabelService['select'], 'id' | 'name' | 'icon' | 'color'> | null;
     className?: string;
 }
 

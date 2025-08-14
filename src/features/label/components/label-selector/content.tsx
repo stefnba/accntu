@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/components/feedback';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -84,6 +85,7 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ clas
             {
                 onSuccess: () => {
                     closeModal();
+                    toast.success('Label selected successfully');
                 },
             }
         );
