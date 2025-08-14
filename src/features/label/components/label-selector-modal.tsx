@@ -8,64 +8,58 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabelEndpoints } from '@/features/label/api';
 
 import { useLabelSelectorModal } from '@/features/label/hooks';
-import type { TLabelQuery } from '@/features/label/schemas';
+import type { TLabelService } from '@/features/label/schemas';
 import { useTransactionEndpoints } from '@/features/transaction/api';
 import { cn } from '@/lib/utils';
 import { renderLabelIcon } from '@/lib/utils/icon-renderer';
+import { IconArrowLeft } from '@tabler/icons-react';
+import { ChevronRightIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface LabelSelectorProps {
     className?: string;
 }
 
-interface LabelHierarchyItemProps {
-    label: TLabelQuery['select'] & { parentPath?: string };
-    selectedLabelId?: string;
+interface LabelItemProps {
+    label: TLabelService['selectFlattened'];
+    selectedLabelId?: string | null;
     onSelect: (labelId: string) => void;
-    searchTerm: string;
+    onExpand?: (parentId: string) => void;
 }
 
-const LabelHierarchyItem = ({
-    label,
-    selectedLabelId,
-    onSelect,
-    searchTerm,
-}: LabelHierarchyItemProps) => {
+const LabelItem = ({ label, selectedLabelId, onSelect, onExpand }: LabelItemProps) => {
     const isSelected = selectedLabelId === label.id;
-    const isHighlighted = searchTerm && label.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const handleExpand = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onExpand?.(label.id);
+    };
 
     return (
         <Button
-            variant={isSelected ? 'default' : 'ghost'}
+            asChild
             onClick={() => onSelect(label.id)}
-            className={cn(
-                'w-full justify-start h-auto p-3 space-y-1',
-                isHighlighted && !isSelected && 'bg-yellow-50 border-yellow-200'
-            )}
+            style={{ backgroundColor: label.color || '#6B7280', color: 'white' }}
+            className={cn('rounded-md w-full justify-start h-10 space-y-1')}
         >
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
                 <div className="flex items-center gap-2">
-                    <Badge
-                        style={{ backgroundColor: label.color || '#6B7280', color: 'white' }}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
-                    >
-                        {renderLabelIcon(label.icon, 'w-4 h-4')}
-                        {label.name}
-                    </Badge>
+                    {renderLabelIcon(label.icon, 'w-4 h-4')}
+                    {label.name}
                 </div>
+                {onExpand && label.hasChildren && (
+                    <Button variant="ghost" size="icon" className="ml-auto" onClick={handleExpand}>
+                        <ChevronRightIcon className="w-4 h-4" />
+                    </Button>
+                )}
             </div>
-
-            {label.parentPath && (
-                <div className="text-xs text-muted-foreground w-full text-left">
-                    {label.parentPath}
-                </div>
-            )}
         </Button>
     );
 };
 
 export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
-    const { isOpen, close, transactionId, labelId, setOpen } = useLabelSelectorModal();
+    const { isOpen, close, transactionId, labelId, setOpen, parentId, setParentId } =
+        useLabelSelectorModal();
 
     const [searchTerm, setSearchTerm] = useState('');
     const SEARCH_TERM_MIN_LENGTH = 2;
@@ -86,72 +80,44 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
         }
     );
 
-    const { data: rootLabels = [] } = useLabelEndpoints.getRoots({});
-    const { data: allLabels = [] } = useLabelEndpoints.getAll(
-        {
-            query: {
-                search: searchTerm,
-            },
+    // const { data: rootLabels = [] } = useLabelEndpoints.getRoots({});
+    const { data: allLabels = [] } = useLabelEndpoints.getAllFlattened({
+        query: {
+            search: searchTerm,
         },
-        {
-            enabled: isSearchEnabled,
-        }
-    );
+    });
+    // const { data: allLabels = [] } = useLabelEndpoints.getAll(
+    //     {
+    //         query: {
+    //             search: searchTerm,
+    //         },
+    //     },
+    //     {
+    //         enabled: isSearchEnabled,
+    //     }
+    // );
 
     // =========================
     // Others
     // =========================
 
     const labels = useMemo(() => {
-        return isSearchEnabled ? allLabels : rootLabels;
-    }, [searchTerm, allLabels, rootLabels]);
+        return isSearchEnabled ? allLabels : allLabels.filter((l) => l.parentId === parentId);
+    }, [searchTerm, allLabels, parentId]);
 
-    const flatLabelsWithHierarchy = useMemo(() => {
-        const buildHierarchy = (
-            allLabels: TLabelQuery['select'][],
-            label: TLabelQuery['select'],
-            path: string[] = []
-        ): TLabelQuery['select'] & { parentPath?: string } => {
-            const newPath = [...path, label.name];
-            const parentPath = path.length > 0 ? path.join(' → ') : undefined;
-
-            return {
-                ...label,
-                parentPath,
-            };
-        };
-
-        const buildFlatList = (
-            allLabels: TLabelQuery['select'][],
-            parentId?: string,
-            path: string[] = []
-        ): (TLabelQuery['select'] & { parentPath?: string })[] => {
-            const childLabels = allLabels.filter((l) => l.parentId === (parentId || null));
-            const result: (TLabelQuery['select'] & { parentPath?: string })[] = [];
-
-            for (const label of childLabels) {
-                const labelWithPath = buildHierarchy(allLabels, label, path);
-                result.push(labelWithPath);
-
-                const children = buildFlatList(allLabels, label.id, [...path, label.name]);
-                result.push(...children);
-            }
-
-            return result;
-        };
-
-        return buildFlatList(labels);
-    }, [labels]);
-
-    if (!transactionId) {
-        return <div>No transaction selected</div>;
-    }
-
-    const selectedLabel = labels.find((l) => l.id === labelId || transaction?.labelId);
+    const selectedLabel = allLabels.find((l) => l.id === labelId || transaction?.labelId);
+    const parentLabel = useMemo(
+        () => allLabels.find((l) => l.id === parentId),
+        [allLabels, parentId]
+    );
 
     // =========================
     // Handlers
     // =========================
+
+    if (!transactionId) {
+        return <div>No transaction selected</div>;
+    }
 
     const handleSelect = (labelId: string | null) => {
         updateTransactionMutation.mutate({
@@ -204,6 +170,25 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
                     </div>
                 )}
 
+                {parentId && (
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <Button
+                            className={cn('cursor-pointer', className)}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setParentId(parentLabel?.parentId || null)}
+                        >
+                            <IconArrowLeft className="h-4 w-4" />
+                            Back
+                        </Button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                                Current: {parentLabel?.name}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 <ScrollArea className="h-96">
                     <div className="space-y-1">
                         {labels.length === 0 ? (
@@ -213,7 +198,15 @@ export const LabelSelectorModal = ({ className }: LabelSelectorProps) => {
                                     : 'No labels available.'}
                             </div>
                         ) : (
-                            labels.map((label) => <div key={label.id}>{label.name}</div>)
+                            labels.map((label) => (
+                                <LabelItem
+                                    key={label.id}
+                                    label={label}
+                                    selectedLabelId={labelId}
+                                    onSelect={handleSelect}
+                                    onExpand={setParentId}
+                                />
+                            ))
                         )}
                     </div>
                 </ScrollArea>

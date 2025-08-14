@@ -59,23 +59,31 @@ export const useLabelModal = () => {
     };
 };
 
+/**
+ * Hook with zustand to manage the label selector modal.
+ * No usage of nuqs here.
+ */
 export const useLabelSelectorModal = create<{
     isOpen: boolean;
     labelId: string | null;
     transactionId: string | null;
+    parentId: string | null;
     open: ({ transactionId, labelId }: { transactionId: string; labelId?: string }) => void;
+    setParentId: (parentId: string | null) => void;
     close: () => void;
     setOpen: (isOpen: boolean) => void;
 }>((set) => ({
     isOpen: false,
     labelId: null,
     transactionId: null,
+    parentId: null,
     open: ({ transactionId, labelId }: { transactionId: string; labelId?: string }) =>
         set({
             isOpen: true,
             transactionId,
             labelId: labelId || null,
         }),
-    close: () => set({ isOpen: false, labelId: null, transactionId: null }),
+    close: () => set({ isOpen: false, labelId: null, transactionId: null, parentId: null }),
+    setParentId: (parentId: string | null) => set({ parentId }),
     setOpen: (isOpen: boolean) => set({ isOpen }),
 }));

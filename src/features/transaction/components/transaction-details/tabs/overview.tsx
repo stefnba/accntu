@@ -7,7 +7,9 @@ import {
     InfoCardTitle,
     InfoCardValue,
 } from '@/components/content/info-card';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { BankLogo } from '@/features/bank/components/shared/logo';
+import { LabelBadge } from '@/features/label/components/label-badge';
 import { useTransactionEndpoints } from '@/features/transaction/api';
 
 interface OverviewTabProps {
@@ -19,8 +21,26 @@ export const OverviewTab = ({ transactionId }: OverviewTabProps) => {
 
     return (
         <div className="grid grid-cols-2 gap-4">
-            <Card>Account</Card>
-            <Card>Label</Card>
+            <Card>
+                <CardContent>
+                    <BankLogo
+                        size="md"
+                        logoUrl={transaction?.account?.connectedBank?.globalBank?.logo}
+                        color={transaction?.account?.connectedBank?.globalBank?.color}
+                    />
+                    {transaction?.account?.connectedBank?.globalBank?.name}
+                    {transaction?.account?.type}
+                    {transaction?.account?.name}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardContent>
+                    {transaction?.label?.name || 'No Label'}
+                    {transaction?.label?.color}
+
+                    <LabelBadge label={transaction?.label} />
+                </CardContent>
+            </Card>
 
             <InfoCard className="col-span-2">
                 <InfoCardHeader>

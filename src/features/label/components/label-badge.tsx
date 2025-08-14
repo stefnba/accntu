@@ -30,11 +30,13 @@ const iconSizeMap = {
 } as const;
 
 interface LabelBadgeProps extends VariantProps<typeof labelBadgeVariants> {
-    label: TLabelQuery['select'];
+    label: TLabelQuery['select'] | null;
     className?: string;
 }
 
 export const LabelBadge = ({ label, className, size, variant }: LabelBadgeProps) => {
+    if (!label) return null;
+
     const badge = (
         <Badge
             style={{ backgroundColor: label.color || undefined, color: 'white' }}
