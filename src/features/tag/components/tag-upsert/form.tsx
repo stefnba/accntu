@@ -1,8 +1,8 @@
 'use client';
 
+import { toast } from '@/components/feedback';
 import {
     Form,
-    FormCheckbox,
     FormColorSelect,
     FormInput,
     FormSubmitButton,
@@ -42,24 +42,35 @@ export const TagUpsertForm = () => {
                 color: '',
             },
             onSubmit: async (data) => {
-                await createMutation.mutateAsync({
-                    json: data,
-                });
-                closeModal();
+                await createMutation.mutateAsync(
+                    {
+                        json: data,
+                    },
+                    {
+                        onSuccess: () => {
+                            closeModal();
+                            toast.success('Tag created successfully');
+                        },
+                    }
+                );
             },
         },
         update: {
             schema: tagServiceSchemas.update,
-            defaultValues: {
-                name: tag?.name || '',
-                color: tag?.color || '',
-                isActive: tag?.isActive || true,
-            },
+            defaultValues: tag,
             onSubmit: async (data) => {
-                await updateMutation.mutateAsync({
-                    param: { id: tagId! },
-                    json: data,
-                });
+                await updateMutation.mutateAsync(
+                    {
+                        param: { id: tagId! },
+                        json: data,
+                    },
+                    {
+                        onSuccess: () => {
+                            closeModal();
+                            toast.success('Tag updated successfully');
+                        },
+                    }
+                );
             },
         },
         isUpdate: !!tagId,
@@ -69,11 +80,10 @@ export const TagUpsertForm = () => {
             <FormInput
                 form={form}
                 name="name"
-                label="Tag Name"
+                label="Name"
                 placeholder="Enter tag name"
                 autoFocus
             />
-            {tagId && <FormCheckbox form={form} name="isActive" label="Active" />}
 
             <FormColorSelect cols={8} form={form} name="color" label="Color" showClear />
 
