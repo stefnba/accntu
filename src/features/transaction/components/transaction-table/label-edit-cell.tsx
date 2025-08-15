@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useLabelSelectorModal } from '@/features/label/hooks';
+import { TagBadge } from '@/features/tag/components/tag-badge';
 import { useTagSelectorModal } from '@/features/tag/hooks';
 import { useTransactionEndpoints } from '@/features/transaction/api';
 import {
@@ -31,17 +32,13 @@ export const TagEditCell = ({ transaction }: TagEditCellProps) => {
 
     return (
         <div
-            className="cursor-pointer hover:bg-muted/30 p-1 rounded min-h-[24px] flex items-center"
+            className="cursor-pointer hover:bg-muted/30 p-1 rounded min-h-[24px] flex items-center gap-1"
             onClick={() =>
                 open({ transactionId: transaction.id, tagsIds: currentTags?.map((tag) => tag.id) })
             }
         >
             {currentTags?.length ? (
-                currentTags?.map((tag) => (
-                    <div key={tag.id} className="text-sm">
-                        {tag.name}
-                    </div>
-                ))
+                currentTags?.map((tag) => <TagBadge key={tag.id} tag={tag} />)
             ) : (
                 <span className="text-muted-foreground italic">Click to select</span>
             )}
