@@ -84,7 +84,12 @@ export function FormColorSelect<
                     <FormControl>
                         <TooltipProvider>
                             <div
-                                className={cn('gap-2', cols ? 'grid' : 'flex flex-wrap')}
+                                className={cn(
+                                    'grid gap-2 max-w-fit',
+                                    cols
+                                        ? ''
+                                        : 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 2xl:grid-cols-15'
+                                )}
                                 style={
                                     cols
                                         ? { gridTemplateColumns: `repeat(${cols}, 1fr)` }
