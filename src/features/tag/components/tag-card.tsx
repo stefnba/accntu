@@ -1,9 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTagUpsertModal } from '@/features/tag/hooks';
 import { TTagQuery } from '@/features/tag/schemas';
 import { cn } from '@/lib/utils';
 import { IconDotsVertical } from '@tabler/icons-react';
+import { Edit, Eye, Link, Trash2 } from 'lucide-react';
 
 interface TagCardProps {
     className?: string;
@@ -34,16 +42,61 @@ export const TagCard: React.FC<TagCardProps> = ({ tag, onClick, className }) => 
                     <div className="font-medium truncate pr-2">{tag.name}</div>
                     <TagCardInfo>{tag.transactionCount || 0} transactions</TagCardInfo>
                     <TagCardActions>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                openModal({ mode: 'update', tagId: tag.id });
-                            }}
-                        >
-                            <IconDotsVertical className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                    }}
+                                >
+                                    <IconDotsVertical className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onClick();
+                                    }}
+                                >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        openModal({ mode: 'update', tagId: tag.id });
+                                    }}
+                                >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement assign transactions functionality
+                                        console.log('Assign transactions to tag:', tag.id);
+                                    }}
+                                >
+                                    <Link className="mr-2 h-4 w-4" />
+                                    Assign Transactions
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implement delete functionality
+                                        console.log('Delete tag:', tag.id);
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </TagCardActions>
                 </div>
             </Card>
