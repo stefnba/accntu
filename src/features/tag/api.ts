@@ -34,4 +34,12 @@ export const useTagEndpoints = {
      * Delete a tag (soft delete)
      */
     delete: createMutation(apiClient.tags[':id'].$delete, TAG_QUERY_KEYS.TAG),
+
+    /**
+     * Assign tags to a transaction
+     */
+    assignToTransaction: createMutation(apiClient.tags.assign.$post, [
+        TAG_QUERY_KEYS.TRANSACTION_TAGS,
+        'transactions', // todo fix
+    ]),
 };

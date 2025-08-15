@@ -1,4 +1,4 @@
-import { tagServiceSchemas } from '@/features/tag/schemas';
+import { tagAssignmentSchema, tagServiceSchemas } from '@/features/tag/schemas';
 import { tagServices } from '@/features/tag/server/services';
 import { getUser } from '@/lib/auth';
 import { endpointSelectSchema } from '@/lib/schemas';
@@ -65,6 +65,19 @@ const app = new Hono()
             const { id } = c.req.valid('param');
             await tagServices.remove({ id, userId: user.id });
             return { success: true };
+        })
+    )
+
+    // Assign tags to a transaction
+    .post('/assign', zValidator('json', tagAssignmentSchema), async (c) =>
+        withRoute(c, async () => {
+            const user = getUser(c);
+            const { transactionId, tagIds } = c.req.valid('json');
+            return await tagServices.assignToTransaction({
+                transactionId,
+                tagIds,
+                userId: user.id,
+            });
         })
     );
 

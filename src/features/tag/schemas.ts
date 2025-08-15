@@ -67,3 +67,13 @@ export type TTagService = {
 // ====================
 // Custom schemas
 // ====================
+
+/**
+ * Schema for assigning tags to a transaction
+ */
+export const tagAssignmentSchema = z.object({
+    transactionId: z.string(),
+    tagIds: z.array(z.string()),
+});
+
+export type TTagAssignment = z.infer<typeof tagAssignmentSchema>;

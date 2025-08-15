@@ -1,4 +1,4 @@
-import { TTagQuery } from '@/features/tag/schemas';
+import { TTagAssignment, TTagQuery } from '@/features/tag/schemas';
 import { tagQueries } from '@/features/tag/server/db/queries';
 import {
     TQueryDeleteUserRecord,
@@ -58,10 +58,26 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
     return await tagQueries.remove({ id, userId });
 };
 
+/**
+ * Assign tags to a transaction
+ * @param transactionId - The ID of the transaction
+ * @param tagIds - Array of tag IDs to assign
+ * @param userId - The user ID
+ * @returns Success confirmation
+ */
+const assignToTransaction = async ({
+    transactionId,
+    tagIds,
+    userId,
+}: TTagAssignment & { userId: string }) => {
+    return await tagQueries.assignToTransaction({ transactionId, tagIds, userId });
+};
+
 export const tagServices = {
     create,
     getAll,
     getById,
     update,
     remove,
+    assignToTransaction,
 };

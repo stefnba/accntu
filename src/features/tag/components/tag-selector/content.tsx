@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from '@/components/feedback';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +12,14 @@ import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 export const TagSelectorContent = () => {
-    const { tagsIds } = useTagSelectorModal();
+    const { tagsIds, transactionId, close } = useTagSelectorModal();
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>(tagsIds || []);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [newTagName, setNewTagName] = useState('');
 
     const { data: tags = [] } = useTagEndpoints.getAll({});
     const createTagMutation = useTagEndpoints.create();
+    const assignTagsMutation = useTagEndpoints.assignToTransaction();
 
     const filteredTags = useMemo(() => {
         if (!searchTerm) return tags;
@@ -25,45 +27,66 @@ export const TagSelectorContent = () => {
     }, [tags, searchTerm]);
 
     const selectedTags = useMemo(() => {
-        return tags.filter((tag) => tagsIds?.includes(tag.id));
-    }, [tags, tagsIds]);
+        return tags.filter((tag) => selectedTagIds.includes(tag.id));
+    }, [tags, selectedTagIds]);
+
+    // Check if search term doesn't match any existing tags
+    const shouldShowCreateOption = useMemo(() => {
+        if (!searchTerm.trim()) return false;
+        return !tags.some((tag) => tag.name.toLowerCase() === searchTerm.toLowerCase());
+    }, [searchTerm, tags]);
 
     // =========================
     // Handlers
     // =========================
 
-    const handleToggle = (_tagId: string) => {
-        // TODO: Implement tag toggle logic
-        // if (value.includes(tagId)) {
-        //     onChange(value.filter((id) => id !== tagId));
-        // } else {
-        //     onChange([...value, tagId]);
-        // }
+    const handleToggle = (tagId: string) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+        );
     };
 
-    const handleCreateTag = async () => {
-        // TODO: Implement tag creation logic
-        // if (!newTagName.trim()) return;
-        // try {
-        //     const newTag = await createTagMutation.mutateAsync({
-        //         json: { name: newTagName.trim() },
-        //     });
-        //     setNewTagName('');
-        //     onChange([...value, newTag.id]);
-        // } catch (error) {
-        //     console.error('Failed to create tag:', error);
-        // }
+    const handleCreateTag = async (tagName: string) => {
+        if (!tagName.trim()) return;
+        try {
+            const newTag = await createTagMutation.mutateAsync({
+                json: { name: tagName.trim(), color: '#6366f1' },
+            });
+            // Add the new tag to selection
+            setSelectedTagIds((prev) => [...prev, newTag.id]);
+            // Clear search term
+            setSearchTerm('');
+            toast.success(`Tag "${tagName}" created successfully`);
+        } catch {
+            toast.error('Failed to create tag');
+        }
+    };
+
+    const handleSave = async () => {
+        if (!transactionId) return;
+
+        try {
+            await assignTagsMutation.mutateAsync({
+                json: {
+                    transactionId,
+                    tagIds: selectedTagIds,
+                },
+            });
+            toast.success('Tags updated successfully');
+            close();
+        } catch (error) {
+            console.error('Failed to update transaction tags:', error);
+            toast.error('Failed to update tags');
+        }
     };
 
     const handleClearAll = () => {
-        // TODO: Implement clear all logic
-        // onChange([]);
+        setSelectedTagIds([]);
     };
 
     const handleSelectAll = () => {
-        // TODO: Implement select all logic
-        // const allTagIds = filteredTags.map((tag) => tag.id);
-        // onChange([...new Set([...value, ...allTagIds])]);
+        const allTagIds = filteredTags.map((tag) => tag.id);
+        setSelectedTagIds((prev) => [...new Set([...prev, ...allTagIds])]);
     };
 
     return (
@@ -75,23 +98,6 @@ export const TagSelectorContent = () => {
                 className="w-full"
                 autoFocus
             />
-
-            <div className="flex items-center gap-2">
-                <Input
-                    placeholder="Create new tag..."
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                    className="flex-1"
-                />
-                <Button
-                    onClick={handleCreateTag}
-                    disabled={!newTagName.trim() || createTagMutation.isPending}
-                    size="sm"
-                >
-                    <Plus className="w-4 h-4" />
-                </Button>
-            </div>
 
             {selectedTags.length > 0 && (
                 <div className="space-y-2">
@@ -129,7 +135,26 @@ export const TagSelectorContent = () => {
 
             <ScrollArea className="h-72">
                 <div className="space-y-1">
-                    {filteredTags.length === 0 ? (
+                    {/* Show create option when searching and no exact match */}
+                    {shouldShowCreateOption && (
+                        <div
+                            className="flex items-center space-x-3 p-3 rounded-lg border border-dashed border-primary cursor-pointer hover:bg-primary/5"
+                            onClick={() => handleCreateTag(searchTerm)}
+                        >
+                            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
+                                <Plus className="w-3 h-3" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">
+                                        Create "{searchTerm}"
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {filteredTags.length === 0 && !shouldShowCreateOption ? (
                         <div className="text-center py-8 text-muted-foreground">
                             {searchTerm
                                 ? 'No tags found matching your search.'
@@ -140,7 +165,7 @@ export const TagSelectorContent = () => {
                             <TagListItem
                                 key={tag.id}
                                 tag={tag}
-                                isSelected={tagsIds?.includes(tag.id) || false}
+                                isSelected={selectedTagIds.includes(tag.id)}
                                 onToggle={handleToggle}
                                 searchTerm={searchTerm}
                             />
@@ -148,6 +173,16 @@ export const TagSelectorContent = () => {
                     )}
                 </div>
             </ScrollArea>
+
+            {/* Save/Cancel buttons */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={close}>
+                    Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={assignTagsMutation.isPending}>
+                    {assignTagsMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+            </div>
         </div>
     );
 };
