@@ -91,14 +91,6 @@ export const TagSelectorContent = () => {
 
     return (
         <div className="space-y-4">
-            <Input
-                placeholder="Search tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-                autoFocus
-            />
-
             {selectedTags.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -113,8 +105,9 @@ export const TagSelectorContent = () => {
                         {selectedTags.map((tag) => (
                             <Badge
                                 key={tag.id}
-                                variant="default"
-                                className="cursor-pointer"
+                                variant="outline"
+                                style={{ backgroundColor: tag.color }}
+                                className="cursor-pointer text-white border-none"
                                 onClick={() => handleToggle(tag.id)}
                             >
                                 {tag.name} ×
@@ -132,6 +125,14 @@ export const TagSelectorContent = () => {
                     </Button>
                 )}
             </div>
+
+            <Input
+                placeholder="Search tags..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+                autoFocus
+            />
 
             <ScrollArea className="h-72">
                 <div className="space-y-1">

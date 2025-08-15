@@ -31,7 +31,11 @@ export const TagListItem = ({ tag, isSelected, onToggle, searchTerm }: TagListIt
             />
             <div className="flex-1">
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-sm">
+                    <Badge
+                        variant="outline"
+                        className="text-sm text-white border-none"
+                        style={{ backgroundColor: tag.color }}
+                    >
                         {tag.name}
                     </Badge>
                 </div>
