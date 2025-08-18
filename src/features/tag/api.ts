@@ -1,3 +1,4 @@
+import { TRANSACTION_QUERY_KEYS } from '@/features/transaction/api';
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
 const TAG_QUERY_KEYS = {
@@ -38,8 +39,9 @@ export const useTagEndpoints = {
     /**
      * Assign tags to a transaction
      */
-    assignToTransaction: createMutation(apiClient.tags.assign.$post, [
+    assignToTransaction: createMutation(apiClient.tags.assign[':id'].$put, [
         TAG_QUERY_KEYS.TRANSACTION_TAGS,
-        'transactions', // todo fix
+        TRANSACTION_QUERY_KEYS.TRANSACTION,
+        TRANSACTION_QUERY_KEYS.TRANSACTIONS,
     ]),
 };

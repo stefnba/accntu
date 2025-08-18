@@ -72,7 +72,7 @@ export type TTagService = {
  * Schema for assigning tags to a transaction
  */
 export const tagAssignmentSchema = z.object({
-    transactionId: z.string(),
+    // transactionId: z.string(),
     tagIds: z.array(z.string()),
 });
 

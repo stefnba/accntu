@@ -1,6 +1,6 @@
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
-const TRANSACTION_QUERY_KEYS = {
+export const TRANSACTION_QUERY_KEYS = {
     TRANSACTIONS: 'transactions',
     TRANSACTION: 'transaction',
     FILTER_OPTIONS: 'transaction_filter_options',
@@ -31,10 +31,10 @@ export const useTransactionEndpoints = {
     /**
      * Update transaction
      */
-    update: createMutation(
-        apiClient.transactions[':id'].$patch,
-        TRANSACTION_QUERY_KEYS.TRANSACTIONS
-    ),
+    update: createMutation(apiClient.transactions[':id'].$patch, [
+        TRANSACTION_QUERY_KEYS.TRANSACTIONS,
+        TRANSACTION_QUERY_KEYS.TRANSACTION,
+    ]),
 
     /**
      * Import transactions

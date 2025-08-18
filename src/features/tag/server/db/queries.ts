@@ -1,4 +1,5 @@
 import { TTagAssignment, TTagQuery } from '@/features/tag/schemas';
+import { transactionServices } from '@/features/transaction/server/services';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -107,26 +108,27 @@ export const remove = async ({ id, userId }: TQueryDeleteUserRecord): Promise<vo
  * @returns Success confirmation
  */
 const assignToTransaction = async ({
-    transactionId,
-    tagIds,
+    id,
+    data: { tagIds },
     userId,
-}: TTagAssignment & { userId: string }) =>
+}: TQueryUpdateUserRecord<TTagAssignment>) =>
     withDbQuery({
         operation: 'assign tags to transaction',
         queryFn: async () => {
             // Verify user owns the transaction (security check)
-            // Note: We'll import transaction schema for this check
+            const transaction = await transactionServices.getById({ id, userId });
+            if (!transaction) {
+                throw new Error('Transaction not found');
+            }
 
             // First, remove existing tags for this transaction
-            await db
-                .delete(tagToTransaction)
-                .where(eq(tagToTransaction.transactionId, transactionId));
+            await db.delete(tagToTransaction).where(eq(tagToTransaction.transactionId, id));
 
             // Then add new tags if any
-            if (tagIds.length > 0) {
+            if (tagIds && tagIds.length > 0) {
                 await db.insert(tagToTransaction).values(
                     tagIds.map((tagId) => ({
-                        transactionId,
+                        transactionId: id,
                         tagId,
                     }))
                 );

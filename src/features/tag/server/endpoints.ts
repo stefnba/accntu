@@ -69,16 +69,24 @@ const app = new Hono()
     )
 
     // Assign tags to a transaction
-    .post('/assign', zValidator('json', tagAssignmentSchema), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { transactionId, tagIds } = c.req.valid('json');
-            return await tagServices.assignToTransaction({
-                transactionId,
-                tagIds,
-                userId: user.id,
-            });
-        })
+    .put(
+        '/assign/:id',
+        zValidator('param', endpointSelectSchema),
+        zValidator('json', tagAssignmentSchema),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { tagIds } = c.req.valid('json');
+                const { id } = c.req.valid('param');
+
+                console.log('assigning tags to transaction', id, tagIds);
+
+                return await tagServices.assignToTransaction({
+                    id,
+                    data: { tagIds },
+                    userId: user.id,
+                });
+            })
     );
 
 export default app;

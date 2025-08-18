@@ -66,11 +66,11 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
  * @returns Success confirmation
  */
 const assignToTransaction = async ({
-    transactionId,
-    tagIds,
+    id,
+    data: { tagIds },
     userId,
-}: TTagAssignment & { userId: string }) => {
-    return await tagQueries.assignToTransaction({ transactionId, tagIds, userId });
+}: TQueryUpdateUserRecord<TTagAssignment>) => {
+    return await tagQueries.assignToTransaction({ id, data: { tagIds }, userId });
 };
 
 export const tagServices = {

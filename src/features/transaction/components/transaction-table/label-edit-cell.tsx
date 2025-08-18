@@ -38,7 +38,7 @@ export const TagEditCell = ({ transaction }: TagEditCellProps) => {
             }
         >
             {currentTags?.length ? (
-                currentTags?.map((tag) => <TagBadge key={tag.id} tag={tag} />)
+                currentTags?.map((tag) => <TagBadge size="sm" key={tag.id} tag={tag} />)
             ) : (
                 <span className="text-muted-foreground italic">Click to select</span>
             )}

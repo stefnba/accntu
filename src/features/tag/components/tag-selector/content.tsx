@@ -1,11 +1,11 @@
 'use client';
 
 import { toast } from '@/components/feedback';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTagEndpoints } from '@/features/tag/api';
+import { TagBadge } from '@/features/tag/components/tag-badge';
 import { TagListItem } from '@/features/tag/components/tag-selector/tag-list-item';
 import { useTagSelectorModal } from '@/features/tag/hooks';
 import { Plus } from 'lucide-react';
@@ -67,10 +67,8 @@ export const TagSelectorContent = () => {
 
         try {
             await assignTagsMutation.mutateAsync({
-                json: {
-                    transactionId,
-                    tagIds: selectedTagIds,
-                },
+                json: { tagIds: selectedTagIds },
+                param: { id: transactionId },
             });
             toast.success('Tags updated successfully');
             close();
@@ -103,27 +101,19 @@ export const TagSelectorContent = () => {
                     </div>
                     <div className="flex flex-wrap gap-1">
                         {selectedTags.map((tag) => (
-                            <Badge
+                            <TagBadge
+                                size="md"
                                 key={tag.id}
-                                variant="outline"
-                                style={{ backgroundColor: tag.color }}
-                                className="cursor-pointer text-white border-none"
-                                onClick={() => handleToggle(tag.id)}
-                            >
-                                {tag.name} ×
-                            </Badge>
+                                tag={tag}
+                                onDelete={() => handleToggle(tag.id)}
+                            />
                         ))}
                     </div>
                 </div>
             )}
 
             <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Available Tags ({filteredTags.length})</span>
-                {filteredTags.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={handleSelectAll}>
-                        Select All
-                    </Button>
-                )}
+                <span className="text-sm font-medium">Available Tags</span>
             </div>
 
             <Input
