@@ -14,7 +14,7 @@ The system provides two distinct type categories:
 
 ### Input Types (from Zod Schemas)
 
-- **Input validation schemas** for different operation types:
+    - **Input validation schemas** for different operation types:
     - **Query inputs** - WHERE conditions, filters, select field parameters
     - **Service inputs** - Data payloads for CREATE/UPDATE operations
     - **Custom inputs** - Any other operation-specific input data
