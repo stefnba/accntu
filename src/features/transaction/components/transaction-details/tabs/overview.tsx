@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { BankLogo } from '@/features/bank/components/logo';
+import { BankLogo } from '@/features/bank/components/bank-logo';
 import { LabelBadge } from '@/features/label/components/label-badge';
 import { TagBadge, tagBadgeVariants } from '@/features/tag/components/tag-badge';
 import { TagSelectorModal } from '@/features/tag/components/tag-selector';

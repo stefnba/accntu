@@ -4,12 +4,13 @@ import { CardHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConnectedBankEndpoints } from '@/features/bank/api';
+import { AccountCount } from '@/features/bank/components/account-count';
 import { BankBreadcrumb } from '@/features/bank/components/bank-breadcrumb';
 import { BankDetailsTabNavigation } from '@/features/bank/components/bank-details/tab-navigation';
+import { BankLogo } from '@/features/bank/components/bank-logo';
 import { IntegrationTypeBadge } from '@/features/bank/components/integration-type';
-import { BankLogo } from '@/features/bank/components/logo';
 import { useBankDetailsView } from '@/features/bank/hooks';
-import { ArrowLeft, Building2, CreditCard, FileText, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Building2, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BankDetailsAnalytics } from './analytics';
 import { BankDetailsOverview } from './overview';
@@ -114,10 +115,7 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
                     <div className="flex items-center gap-3">
                         <IntegrationTypeBadge integrationType={integrationTypes} />
                         <span className="text-gray-300">•</span>
-                        <span className="flex items-center gap-1">
-                            <CreditCard className="h-4 w-4" />
-                            {connectedBankAccounts?.length || 0} accounts
-                        </span>
+                        <AccountCount count={connectedBankAccounts?.length} />
                         <span className="text-gray-300">•</span>
                         <span className="uppercase">{country}</span>
                     </div>
