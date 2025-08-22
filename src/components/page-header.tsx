@@ -56,7 +56,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
                         </div>
                     </div>
 
-                    {ActionBar && <div className="ml-auto">{ActionBar} </div>}
+                    {ActionBar && <div className="ml-auto">{ActionBar}</div>}
                 </div>
             </div>
         </div>
