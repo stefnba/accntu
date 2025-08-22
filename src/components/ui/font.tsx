@@ -23,7 +23,7 @@ export const Subtitle = ({
     children: React.ReactNode;
     className?: string;
 }) => {
-    return <h2 className={cn('text-lg font-medium', className)}>{children}</h2>;
+    return <h2 className={cn('text-xl font-medium', className)}>{children}</h2>;
 };
 
 /**
