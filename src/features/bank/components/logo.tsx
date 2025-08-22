@@ -5,9 +5,15 @@ interface BankLogoProps {
     color?: string | null;
     logoUrl?: string | null;
     size?: 'sm' | 'md' | 'lg';
+    className?: string;
 }
 
-export const BankLogo = ({ color, logoUrl, size = 'md' }: BankLogoProps) => {
+/**
+ * Display a bank logo with a fallback icon.
+ * Logo is provided via a URL and/or a color.
+ * Different sizes are supported.
+ */
+export const BankLogo = ({ color, logoUrl, size = 'md', className }: BankLogoProps) => {
     const sizeClass = {
         sm: 'size-8',
         md: 'size-12',
@@ -25,7 +31,8 @@ export const BankLogo = ({ color, logoUrl, size = 'md' }: BankLogoProps) => {
             <div
                 className={cn(
                     'rounded-2xl bg-gray-50 flex items-center justify-center shadow-sm border',
-                    sizeClass
+                    sizeClass,
+                    className
                 )}
             >
                 <Building2 className={cn('text-gray-600', sizeClassIcon)} />
@@ -37,7 +44,8 @@ export const BankLogo = ({ color, logoUrl, size = 'md' }: BankLogoProps) => {
         <div
             className={cn(
                 'rounded-2xl flex items-center justify-center shadow-sm border',
-                sizeClass
+                sizeClass,
+                className
             )}
             style={{
                 backgroundColor: color || '#f8fafc',

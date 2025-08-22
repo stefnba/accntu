@@ -5,19 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConnectedBankEndpoints } from '@/features/bank/api';
 import { BankBreadcrumb } from '@/features/bank/components/bank-breadcrumb';
-import {
-    BankDetailsAnalytics,
-    BankDetailsTabNavigation,
-} from '@/features/bank/components/bank-details';
+import { BankDetailsTabNavigation } from '@/features/bank/components/bank-details/tab-navigation';
+import { IntegrationTypeBadge } from '@/features/bank/components/integration-type';
+import { BankLogo } from '@/features/bank/components/logo';
 import { useBankDetailsView } from '@/features/bank/hooks';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { ArrowLeft, Building2, CreditCard, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import {
-    BankDetailsHeader,
-    BankDetailsOverview,
-    BankDetailsRecentActivity,
-    BankDetailsSettings,
-} from './bank-details';
+import { BankDetailsAnalytics } from './analytics';
+import { BankDetailsOverview } from './overview';
+import { BankDetailsRecentActivity } from './recent-activity';
+import { BankDetailsSettings } from './settings';
 
 interface BankDetailsViewProps {
     bankId: string;
@@ -98,6 +95,10 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
         );
     }
 
+    const { globalBank, connectedBankAccounts, id, apiCredentials } = bank;
+
+    const { name, logo, color, country, integrationTypes } = globalBank;
+
     // ===============
     // CONTENT
     // ===============
@@ -107,12 +108,44 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
             <BankBreadcrumb className="" bankId={bankId} />
 
             {/* Header */}
-            <BankDetailsHeader bank={bank} />
-
             <CardHeader
-                title="Bank Details"
-                description="View and manage your bank details"
-                icon={<Building2 className="h-10 w-10 text-gray-600" />}
+                title={bank.globalBank?.name || 'Unknown Bank'}
+                description={
+                    <div className="flex items-center gap-3">
+                        <IntegrationTypeBadge integrationType={integrationTypes} />
+                        <span className="text-gray-300">•</span>
+                        <span className="flex items-center gap-1">
+                            <CreditCard className="h-4 w-4" />
+                            {connectedBankAccounts?.length || 0} accounts
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="uppercase">{country}</span>
+                    </div>
+                }
+                icon={
+                    <BankLogo
+                        logoUrl={bank.globalBank?.logo}
+                        color={bank.globalBank?.color}
+                        size="lg"
+                        className="border-none"
+                    />
+                }
+                actionBar={
+                    <>
+                        {integrationTypes === 'api' && (
+                            <Button variant="outline" size="sm" className="gap-2">
+                                <RefreshCw className="h-4 w-4" />
+                                Sync
+                            </Button>
+                        )}
+                        {integrationTypes === 'csv' && (
+                            <Button variant="outline" size="sm" className="gap-2">
+                                <FileText className="h-4 w-4" />
+                                Upload
+                            </Button>
+                        )}
+                    </>
+                }
             />
 
             {/* Tab Navigation */}

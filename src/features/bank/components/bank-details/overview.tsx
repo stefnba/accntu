@@ -2,7 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowUpRight, CreditCard, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
+import { Description, Subtitle } from '@/components/ui/font';
+import { CreditCard } from 'lucide-react';
 import { AccountCard } from '../bank-cards';
 
 interface BankDetailsOverviewProps {
@@ -21,7 +22,7 @@ export const BankDetailsOverview = ({ bank, bankId }: BankDetailsOverviewProps) 
     return (
         <div className="space-y-8">
             {/* Overview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
@@ -93,21 +94,21 @@ export const BankDetailsOverview = ({ bank, bankId }: BankDetailsOverviewProps) 
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+            </div> */}
 
             {/* Connected Accounts */}
             <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-900">Connected Accounts</h2>
-                        <p className="text-muted-foreground text-sm">
+                        <Subtitle>Connected Accounts</Subtitle>
+                        <Description>
                             Manage your connected bank accounts and view their details
-                        </p>
+                        </Description>
                     </div>
-                    <Button className="gap-2">
+                    {/* <Button className="gap-2">
                         <CreditCard className="h-4 w-4" />
                         Add Account
-                    </Button>
+                    </Button> */}
                 </div>
 
                 {bank.connectedBankAccounts && bank.connectedBankAccounts.length > 0 ? (

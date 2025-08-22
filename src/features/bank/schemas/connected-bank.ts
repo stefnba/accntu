@@ -56,11 +56,13 @@ export type TConnectedBankQuerySchemas = {
 export const connectedBankServiceSchemas = {
     create: connectedBankQuerySchemas.insert.omit({ userId: true }),
     update: connectedBankQuerySchemas.update.partial(),
+    select: connectedBankQuerySchemas.select,
 };
 
 export type TConnectedBankServiceSchemas = {
     create: z.infer<typeof connectedBankServiceSchemas.create>;
     update: z.infer<typeof connectedBankServiceSchemas.update>;
+    select: z.infer<typeof connectedBankServiceSchemas.select>;
 };
 
 // ====================
