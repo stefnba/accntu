@@ -12,4 +12,8 @@ export {
 } from './crud-types';
 export { endpointSelectSchema } from './endpoint';
 export { createFeatureSchemas } from './factory';
-export { type InferSchemaTypes } from './types';
+export {
+    type InferSchemaTypes,
+    type InferSelectReturnTypes,
+    type InferZodSchemaTypes,
+} from './types';
