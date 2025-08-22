@@ -1,19 +1,5 @@
-/*
-Include some basic CRUD type and schemas for use in queries.
-*/
-
-import { z } from 'zod';
-
 // ===========================
-// Zod Schemas
-// ===========================
-
-export const endpointSelectSchema = z.object({
-    id: z.string(),
-});
-
-// ===========================
-// Types
+// Type generics for CRUD operations
 // ===========================
 
 type WithUserId = {
