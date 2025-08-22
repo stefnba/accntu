@@ -7,13 +7,18 @@ export type TFeatureSchemaConfig<
     TQueries extends TCustomQueries,
     TTable extends Table,
     TSchema extends BuildSchema<'select', TTable['_']['columns'], undefined>,
+    TParamsSchemas extends {
+        query?: Partial<Record<keyof TQueries, z.ZodTypeAny>>;
+        service?: Record<string, z.ZodTypeAny>;
+        custom?: Record<string, z.ZodTypeAny>;
+    } = {
+        query?: Partial<Record<keyof TQueries, z.ZodTypeAny>>;
+        service?: Record<string, z.ZodTypeAny>;
+        custom?: Record<string, z.ZodTypeAny>;
+    },
 > = {
     feature: string;
     queries: TQueries;
     table: TTable;
-    paramsSchemas: (schema: TSchema) => {
-        query?: Partial<Record<keyof TQueries, z.ZodTypeAny>>;
-        service?: Record<string, z.ZodTypeAny>;
-        custom?: Record<string, z.ZodTypeAny>;
-    };
+    paramsSchemas: (schema: TSchema) => TParamsSchemas;
 };
