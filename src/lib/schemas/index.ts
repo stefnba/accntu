@@ -12,6 +12,7 @@ export {
 } from './crud-types';
 export { endpointSelectSchema } from './endpoint';
 export { createFeatureSchemas } from './factory';
+export { withZodOmitFields } from './helpers';
 export {
     type InferSchemaTypes,
     type InferSelectReturnTypes,
