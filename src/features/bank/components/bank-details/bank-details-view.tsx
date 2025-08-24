@@ -124,7 +124,7 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
                     <BankLogo
                         logoUrl={bank.globalBank?.logo}
                         color={bank.globalBank?.color}
-                        size="lg"
+                        size="xl"
                         className="border-none"
                     />
                 }

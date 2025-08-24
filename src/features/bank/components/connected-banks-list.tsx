@@ -12,22 +12,26 @@ const AddBankCard = () => {
 
     return (
         <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-gray-100 border-2 border-dashed border-gray-300 hover:border-gray-400">
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center min-h-[240px]">
-                <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-gray-100 transition-colors">
-                    <Plus className="h-6 w-6 text-gray-400 group-hover:text-gray-600" />
+            <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
+                        <Plus className="h-6 w-6 text-gray-400 group-hover:text-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">Add New Bank</h3>
+                        <p className="text-sm text-gray-500">
+                            Connect another bank account to manage all your finances in one place
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="group-hover:bg-gray-50"
+                        onClick={() => openModal()}
+                    >
+                        Connect Bank
+                    </Button>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Add New Bank</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                    Connect another bank account to manage all your finances in one place
-                </p>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="group-hover:bg-gray-50"
-                    onClick={() => openModal()}
-                >
-                    Connect Bank
-                </Button>
             </CardContent>
         </Card>
     );
@@ -38,23 +42,26 @@ export const ConnectedBanksList = () => {
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => (
+            <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
                     <Card key={i} className="animate-pulse">
                         <CardContent className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                                <div className="space-y-2">
-                                    <div className="h-4 bg-gray-200 rounded w-32" />
-                                    <div className="h-3 bg-gray-200 rounded w-24" />
+                            <div className="flex items-start justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                                    <div className="space-y-2">
+                                        <div className="h-5 bg-gray-200 rounded w-40" />
+                                        <div className="h-4 bg-gray-200 rounded w-48" />
+                                    </div>
                                 </div>
+                                <div className="w-6 h-6 bg-gray-200 rounded" />
                             </div>
                             <div className="space-y-3">
-                                <div className="flex gap-2">
-                                    <div className="h-6 bg-gray-200 rounded-full w-20" />
-                                    <div className="h-6 bg-gray-200 rounded-full w-16" />
+                                <div className="h-4 bg-gray-200 rounded w-32" />
+                                <div className="flex gap-3">
+                                    <div className="h-10 bg-gray-200 rounded-lg w-28" />
+                                    <div className="h-10 bg-gray-200 rounded-lg w-24" />
                                 </div>
-                                <div className="h-8 bg-gray-200 rounded w-28" />
                             </div>
                         </CardContent>
                     </Card>
@@ -82,18 +89,17 @@ export const ConnectedBanksList = () => {
 
     if (!banks || banks.length === 0) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
                 <AddBankCard />
             </div>
         );
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
             {banks.map((bank) => (
                 <ConnectedBankCard key={bank.id} bank={bank} />
             ))}
-            <AddBankCard />
         </div>
     );
 };

@@ -4,7 +4,7 @@ import { Building2 } from 'lucide-react';
 interface BankLogoProps {
     color?: string | null;
     logoUrl?: string | null;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
     className?: string;
 }
 
@@ -17,16 +17,17 @@ export const BankLogo = ({ color, logoUrl, size = 'md', className }: BankLogoPro
     const sizeClass = {
         sm: 'size-8',
         md: 'size-12',
-        lg: 'size-20',
+        lg: 'size-14',
+        xl: 'size-20',
+    }[size];
+    const sizeClassIcon = {
+        sm: 'size-4',
+        md: 'size-6',
+        lg: 'size-9',
+        xl: 'size-12',
     }[size];
 
     if (!logoUrl) {
-        const sizeClassIcon = {
-            sm: 'size-4',
-            md: 'size-6',
-            lg: 'size-10',
-        }[size];
-
         return (
             <div
                 className={cn(
@@ -51,7 +52,7 @@ export const BankLogo = ({ color, logoUrl, size = 'md', className }: BankLogoPro
                 backgroundColor: color || '#f8fafc',
             }}
         >
-            <img src={logoUrl} alt="Bank Logo" className="size-12 object-contain" />
+            <img src={logoUrl} alt="Bank Logo" className={cn(sizeClassIcon, 'object-contain')} />
         </div>
     );
 };

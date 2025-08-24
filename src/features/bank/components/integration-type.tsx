@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { TGlobalBank } from '@/features/bank/server/db/schemas';
 
 interface IntegrationTypeBadgeProps {
-    integrationType: TGlobalBank['integrationTypes'];
+    integrationType: TGlobalBank['integrationTypes'] | null | undefined;
 }
 
 const integrationTypeMapping: Record<TGlobalBank['integrationTypes'], string> = {
@@ -14,6 +14,10 @@ const integrationTypeMapping: Record<TGlobalBank['integrationTypes'], string> = 
  * Display a badge with the integration type (e.g. API, Upload, etc.).
  */
 export const IntegrationTypeBadge: React.FC<IntegrationTypeBadgeProps> = ({ integrationType }) => {
+    if (!integrationType) {
+        return null;
+    }
+
     const integrationTypeLabel = integrationTypeMapping[integrationType];
 
     if (!integrationTypeLabel) {

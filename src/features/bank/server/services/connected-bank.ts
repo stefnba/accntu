@@ -119,3 +119,8 @@ export const connectedBankServices = {
     update,
     remove,
 };
+
+export type TReturnConnectedBankServices = {
+    getAll: ReturnType<typeof getAll>;
+    getById: ReturnType<typeof getById>;
+};

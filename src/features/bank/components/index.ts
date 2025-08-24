@@ -10,10 +10,6 @@ export { AccountCard, ConnectedBankCard } from './bank-cards';
 // Account Details Components
 export { AccountHeader, AccountQuickStats, TransactionRow } from './account-details';
 
-// Legacy components (keeping for backward compatibility)
-export { AddBankCard } from './add-bank-card';
-export { BankCard } from './bank-card';
-export { BankList } from './bank-list';
-
 // Add Bank Modal
+export { AddBankButton } from './add-bank-button';
 export { AddBankModal } from './add-bank-modal';

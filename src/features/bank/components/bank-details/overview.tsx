@@ -5,20 +5,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Description, Subtitle } from '@/components/ui/font';
 import { CreditCard } from 'lucide-react';
 import { AccountCard } from '../bank-cards';
+// import { TConnectedBankWithRelations } from '@/features/bank/server/db/schemas';
 
 interface BankDetailsOverviewProps {
-    bank: any;
+    bank: TConnectedBankWithRelations;
     bankId: string;
 }
 
 export const BankDetailsOverview = ({ bank, bankId }: BankDetailsOverviewProps) => {
-    const totalBalance =
-        bank.connectedBankAccounts?.reduce(
-            (sum: number, account: any) =>
-                sum + (account.currentBalance ? parseFloat(account.currentBalance.toString()) : 0),
-            0
-        ) || 0;
-
     return (
         <div className="space-y-8">
             {/* Overview Stats */}
@@ -113,7 +107,7 @@ export const BankDetailsOverview = ({ bank, bankId }: BankDetailsOverviewProps) 
 
                 {bank.connectedBankAccounts && bank.connectedBankAccounts.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {bank.connectedBankAccounts.map((account: any) => (
+                        {bank.connectedBankAccounts.map((account) => (
                             <AccountCard key={account.id} account={account} bankId={bankId} />
                         ))}
                     </div>
