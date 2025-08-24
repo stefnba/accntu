@@ -2,6 +2,8 @@
 // Core Query
 // ============================================================================
 
+import { CORE_CRUD_QUERIES_KEYS } from '@/server/lib/db/query/factory/config';
+
 /**
  * Base type for any feature query function
  */
@@ -78,15 +80,18 @@ export type InferFeatureQueryParamTypes<T extends TCustomQueries, K extends keyo
 // CRUD Query
 // ============================================================================
 
+export type TCoreCrudQueryKeys = (typeof CORE_CRUD_QUERIES_KEYS)[number];
 /**
  * Standard CRUD query shape
  */
-export type TCoreCrudQueries = {
-    getAll: TFeatureQuery;
-    getById: TFeatureQuery;
-    create: TFeatureQuery;
-    update: TFeatureQuery;
-    remove: TFeatureQuery;
-};
+export type TCoreCrudQueries = Record<TCoreCrudQueryKeys, TFeatureQuery>;
 
-export type TCoreCrudQueryNames = keyof TCoreCrudQueries;
+/**
+ * Filter type to extract only core CRUD query keys
+ */
+export type FilterCoreCrudQueries<T> = Pick<T, Extract<keyof T, TCoreCrudQueryKeys>>;
+
+/**
+ * Filter type to extract only custom (non-CRUD) query keys
+ */
+export type FilterCustomQueries<T> = Omit<T, TCoreCrudQueryKeys>;

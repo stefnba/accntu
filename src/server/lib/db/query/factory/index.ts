@@ -1,2 +1,15 @@
-import { createFeatureQueryObject } from './feature-factory';
-export { createFeatureQueryObject as createFeatureQueries, createFeatureQueryObject };
+export type {
+    FilterCoreCrudQueries,
+    FilterCustomQueries,
+    InferFeatureQueryParamTypes,
+    InferFeatureQueryReturnTypes,
+    InferFeatureQueryTypes,
+    TCoreCrudQueries,
+    TCustomQueries,
+    TFeatureQuery,
+} from './types';
+
+export {
+    createFeatureQueryObject as createFeatureQueries,
+    createFeatureQueryObject,
+} from './feature';
