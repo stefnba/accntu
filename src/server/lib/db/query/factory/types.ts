@@ -1,97 +1,83 @@
-// ============================================================================
-// Core Query
-// ============================================================================
+import { InferInsertModel, InferSelectModel, Table } from 'drizzle-orm';
 
-import { CORE_CRUD_QUERIES_KEYS } from '@/server/lib/db/query/factory/config';
-
+// ================================
+// Input types for core CRUD operations
+// ================================
 /**
- * Base type for any feature query function
+ * Create input type
  */
-export type TFeatureQuery = (...args: any[]) => Promise<any>;
-
-/**
- * Extract the return type from a query function (unwraps Promise)
- * - If the return type is an array, it will be unwrapped to the item type
- * - If the return type is an object, it will be returned as is
- * - If the return type is null or undefined, it will be never
- * - If the return type is a primitive, it will be returned as is
- */
-export type InferQueryReturn<T extends TFeatureQuery> = T extends (
-    ...args: any[]
-) => Promise<infer R>
-    ? R extends Array<infer AR>
-        ? AR
-        : R extends object
-          ? R
-          : R extends null | undefined
-            ? never
-            : R
-    : never;
-
-/**
- * Extract parameter types from a query function
- */
-export type InferQueryParams<T extends TFeatureQuery> = T extends (...args: infer P) => any
-    ? P[0] // Get first parameter (usually the main params object)
-    : never;
-
-// ============================================================================
-// Feature Query
-// ============================================================================
-
-/**
- * Custom queries are any queries that are not part of the core CRUD queries
- */
-export type TCustomQueries = Record<string, TFeatureQuery>;
-
-/**
- * Infer params and return types from feature query object
- * @template T - The feature query object
- * @template K - Optional keys to pick from T (defaults to all keys)
- */
-export type InferFeatureQueryTypes<T extends TCustomQueries, K extends keyof T = keyof T> = {
-    [Key in K]: T[Key] extends TFeatureQuery
-        ? {
-              params: InferQueryParams<T[Key]>;
-              return: InferQueryReturn<T[Key]>;
-          }
-        : never;
+export type CreateInput<T extends Table> = {
+    data: Omit<InferInsertModel<T>, 'id' | 'userId'>;
+    userId: string;
 };
 
 /**
- * Infer return types from feature query object
- * @template T - The feature query object
- * @template K - Optional keys to pick from T (defaults to all keys)
+ * Get by id input type
  */
-export type InferFeatureQueryReturnTypes<T extends TCustomQueries, K extends keyof T = keyof T> = {
-    [Key in K]: InferQueryReturn<T[Key]>;
+export type GetByIdInput<T extends Table> = { id: Required<InferSelectModel<T>>['id'] };
+
+/**
+ * Update input type
+ */
+export type UpdateByIdInput<T extends Table> = {
+    id: Required<InferSelectModel<T>>['id'];
+    data: Partial<Omit<InferInsertModel<T>, 'id' | 'userId'>>;
 };
 
 /**
- * Infer param types from feature query object
- * @template T - The feature query object
- * @template K - Optional keys to pick from T (defaults to all keys)
+ * Remove by id input type
  */
-export type InferFeatureQueryParamTypes<T extends TCustomQueries, K extends keyof T = keyof T> = {
-    [Key in K]: InferQueryParams<T[Key]>;
+export type RemoveByIdInput<T extends Table> = {
+    id: Required<InferSelectModel<T>>['id'];
 };
 
-// ============================================================================
-// CRUD Query
-// ============================================================================
-
-export type TCoreCrudQueryKeys = (typeof CORE_CRUD_QUERIES_KEYS)[number];
 /**
- * Standard CRUD query shape
+ * Get many input type
  */
-export type TCoreCrudQueries = Record<TCoreCrudQueryKeys, TFeatureQuery>;
+export type GetManyInput<T extends Table> = any;
+// ================================
+// Core operations
+// ================================
 
 /**
- * Filter type to extract only core CRUD query keys
+ * Standard CRUD operations
  */
-export type FilterCoreCrudQueries<T> = Pick<T, Extract<keyof T, TCoreCrudQueryKeys>>;
+export type CoreOperations<T extends Table> = {
+    create?: QueryConfigObject<CreateInput<T>>;
+    getById?: QueryConfigObject<GetByIdInput<T>>;
+    updateById?: QueryConfigObject<UpdateByIdInput<T>>;
+    removeById?: QueryConfigObject<RemoveByIdInput<T>>;
+    getMany?: QueryConfigObject<GetManyInput<T>>;
+};
 
 /**
- * Filter type to extract only custom (non-CRUD) query keys
+ * Custom operations can be any string key
  */
-export type FilterCustomQueries<T> = Omit<T, TCoreCrudQueryKeys>;
+export type CustomOperations = Record<string, QueryConfigObject<any, any>>;
+
+/**
+ * Combined queries config with standard operations + custom keys
+ */
+export type QueriesConfig<T extends Table> = CoreOperations<T> & CustomOperations;
+
+/**
+ * Extract the query functions from the query config object
+ */
+export type ExtractQueryFns<T extends Table, C extends QueriesConfig<T>> = {
+    [K in keyof C]: C[K]['fn'];
+};
+
+/**
+ * The function signature of the query function
+ */
+export type QueryFn<Input = unknown, Output = unknown> = (args: Input) => Promise<Output>;
+
+export type QueryConfigObject<Input = unknown, Output = unknown> = {
+    fn: QueryFn<Input, Output>;
+    operation: string;
+};
+
+/**
+ * Query handler with table support
+ */
+export type QueryHandlerResult<T extends Table, C extends QueriesConfig<T>> = ExtractQueryFns<T, C>;
