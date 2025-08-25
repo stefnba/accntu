@@ -1,1 +1,1 @@
-export * from './core';
+export { createQueryCollection } from './core';

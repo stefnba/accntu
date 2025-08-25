@@ -1,1 +1,1 @@
-export * from './query/factory';
+export { createQueryCollection } from './query';

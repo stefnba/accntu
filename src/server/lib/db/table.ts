@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2';
-import { boolean, text, timestamp } from 'drizzle-orm/pg-core';
+import { InferSelectModel } from 'drizzle-orm';
+import { boolean, PgTable, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 /**
  * Common table fields
@@ -14,6 +15,22 @@ export const COMMON_FIELDS = {
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
 } as const;
+
+// ================================
+// Types
+// ================================
+
+export type CommonTableFieldKeys = keyof typeof COMMON_FIELDS;
+
+export type CommonTable = PgTable;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _ = pgTable('common_table', COMMON_FIELDS);
+export type CommonTableField = InferSelectModel<typeof _>;
+
+// ================================
+// Utility functions
+// ================================
 
 export function commonTableFields<K extends keyof typeof COMMON_FIELDS>(options: {
     exclude: K[];

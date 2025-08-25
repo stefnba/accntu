@@ -2,8 +2,8 @@ import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
 import { tag, tagToTransaction } from '@/server/db/schemas';
 import { queryFnHandler } from '@/server/lib/db/query/handler/core';
-import { Table } from 'drizzle-orm';
-import type { ExtractQueryFns, QueriesConfig, QueryHandlerResult } from './types';
+import { eq, getTableName, Table } from 'drizzle-orm';
+import type { ExtractQueryFns, HasColumn, QueriesConfig, QueryHandlerResult } from './types';
 
 /**
  * Create a query collection for a given table and query objects.
@@ -12,7 +12,7 @@ import type { ExtractQueryFns, QueriesConfig, QueryHandlerResult } from './types
  * @param config - The config for the query collection
  * @returns The query collection
  */
-function createQueryCollection<T extends Table, C extends QueriesConfig<T>>(
+export function createQueryCollection<T extends Table, C extends QueriesConfig<T>>(
     table: T,
     config: C
 ): QueryHandlerResult<T, C> {
@@ -20,13 +20,20 @@ function createQueryCollection<T extends Table, C extends QueriesConfig<T>>(
 
     typedKeys(config).forEach((key) => {
         const queryConfig = config[key];
+
+        const operation = queryConfig.operation || `${String(key)} on ${getTableName(table)} table`;
+
         // const fn = queryConfig.fn;
 
         // queries[key] = (params: Parameters<typeof fn>[0]) => {
         //     console.log(queryConfig.operation, key);
         //     return fn(params);
         // };
-        queries[key] = queryFnHandler(table, queryConfig.fn, queryConfig.operation, key);
+        queries[key] = queryFnHandler({
+            fn: queryConfig.fn,
+            operation,
+            table,
+        });
     });
 
     return queries;
@@ -74,8 +81,12 @@ const tagQueries = createQueryCollection(tag, {
 
 // Standard CRUD operations - now with object args!
 // const createResult = await queries.create({ data: { name: 'New Item' }, userId: '1' });
-const getByIdResult = await tagQueries.getById({ id: '1' });
-const updateResult = await tagQueries.updateById({ id: '1', data: { name: 'Updated' } });
+const getByIdResult = await tagQueries.getById({ id: '1', userId: '1' });
+const updateResult = await tagQueries.updateById({
+    id: '1',
+    data: { name: 'Updated' },
+    userId: '1',
+});
 const customResult = await tagQueries.custom({ success: true });
 const getManyResult = await tagQueries.getMany();
 
@@ -94,7 +105,7 @@ console.log(getManyResult); // ✅ TypeScript knows this is boolean
 
 const tagToTransactionQueries = createQueryCollection(tagToTransaction, {
     create: {
-        fn: async ({ data, userId }) => {
+        fn: async ({ data }) => {
             const { transactionId, tagId } = data;
             const re = await db
                 .insert(tagToTransaction)
@@ -104,11 +115,24 @@ const tagToTransactionQueries = createQueryCollection(tagToTransaction, {
         },
         operation: 'create',
     },
+    updateById: {
+        fn: async ({ id, data }) => {
+            const re = await db
+                .update(tagToTransaction)
+                .set(data)
+                .where(eq(tagToTransaction.transactionId, 'id'))
+                .returning();
+            return re[0];
+        },
+        operation: 'update',
+    },
 });
 
 const tagToTransactionResult = await tagToTransactionQueries.create({
     data: { transactionId: '1', tagId: '1' },
-    userId: '1',
 });
 
 console.log(tagToTransactionResult);
+
+type t = HasColumn<typeof tag, 'userId'>;
+type t2 = HasColumn<typeof tagToTransaction, 'userId'>;

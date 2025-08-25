@@ -1,25 +1,82 @@
 import type { QueryFn } from '@/server/lib/db/query/factory/types';
-import { Table, getTableName } from 'drizzle-orm';
+import { errorFactory } from '@/server/lib/error';
+import { BaseError } from '@/server/lib/error/base';
+import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';
+import { Table } from 'drizzle-orm';
+import { z } from 'zod';
+
+interface QueryFnHandlerParams<T extends Table, TInput, TOutput> {
+    table: T;
+    fn: QueryFn<TInput, TOutput>;
+    operation?: string;
+    inputSchema?: z.ZodSchema<TInput, any, any>;
+}
 
 /**
  * Wrapper function that adds logging and error handling to a query function
  */
 export function queryFnHandler<T extends Table, TInput, TOutput>(
-    table: T,
-    fn: QueryFn<TInput, TOutput>,
-    operation: string,
-    key: string | number | symbol
+    params: QueryFnHandlerParams<T, TInput, TOutput>
 ): QueryFn<TInput, TOutput> {
-    return async (params: TInput) => {
-        console.log('table', getTableName(table));
-        console.log(`[${operation.toUpperCase()}] ${String(key)} - Starting`);
+    const { table, fn, operation = 'database operation', inputSchema } = params;
+
+    return async (inputData: TInput) => {
+        let data = inputData;
+
+        // Validate input data if schema is provided
+        if (inputSchema) {
+            const validatedInput = inputSchema.safeParse(data);
+            if (!validatedInput.success) {
+                throw errorFactory.createDatabaseError({
+                    message: `Invalid input data for ${operation}`,
+                    code: 'INVALID_INPUT',
+                    cause: validatedInput.error,
+                    details: { zodErrors: validatedInput.error.errors },
+                });
+            }
+
+            data = validatedInput.data;
+        }
+
         try {
-            const result = await fn(params);
-            console.log(`[${operation.toUpperCase()}] ${String(key)} - Success`);
+            // Execute the query
+            const result = await fn(data);
+
             return result;
         } catch (error) {
-            console.error(`[${operation.toUpperCase()}] ${String(key)} - Error:`, error);
-            throw error; // Re-throw to maintain error handling contract
+            if (error instanceof BaseError) {
+                throw error;
+            }
+
+            let dbError: BaseError;
+
+            // Check if it's a database error (PostgreSQL error codes start with numbers)
+            if (error instanceof Error && 'code' in error && /^\d/.test(String(error.code))) {
+                dbError = errorFactory.createDatabaseError({
+                    message: `Database error in '${operation}': ${error.message}`,
+                    code: 'OPERATION_FAILED',
+                    cause: error,
+                });
+            } else if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
+                dbError = errorFactory.createDatabaseError({
+                    message: `Database connection refused in '${operation}'`,
+                    code: 'CONNECTION_ERROR',
+                    cause: error,
+                });
+            } else {
+                dbError = errorFactory.createDatabaseError({
+                    message: `Unknown error in '${operation}'`,
+                    code: 'OPERATION_FAILED',
+                    cause: error instanceof Error ? error : undefined,
+                });
+            }
+
+            // Log immediately in development for better debugging
+            if (shouldUseDevFormatting()) {
+                logDevError(dbError);
+            }
+
+            throw dbError;
         }
     };
 }
