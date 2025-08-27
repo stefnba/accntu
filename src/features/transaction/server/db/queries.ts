@@ -14,6 +14,7 @@ import {
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
 import { db } from '@/server/db';
+import { createFeatureQueries } from '@/server/lib/db/query/factory';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { transaction } from './schema';
@@ -429,14 +430,21 @@ export const getDuplicates = async ({ userId, keys }: { userId: string; keys: st
         },
     });
 
-export const transactionQueries = {
-    getAll,
-    getById,
-    getByKeys,
-    getFilterOptions,
-    create,
-    createMany,
-    update,
-    remove,
-    getDuplicates,
-};
+export const transactionQueries = createFeatureQueries(transaction, {
+    /**
+     * Create a new transaction
+     */
+    create: {
+        fn: async ({ data, userId }) => {
+            const [newTransaction] = await db
+                .insert(transaction)
+                .values({
+                    ...data,
+                    userId,
+                })
+                .returning();
+
+            return newTransaction;
+        },
+    },
+});

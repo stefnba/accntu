@@ -19,11 +19,18 @@ export type HasColumn<
 export type IncludeColumn<T extends Table, C extends string, O extends Record<C, any>> =
     HasColumn<T, C> extends true ? O : object;
 
+/**
+ * Include userId in the input type if it exists.
+ */
 type IncludeUserId<T extends Table> = IncludeColumn<
     T,
     'userId',
     { userId: Required<InferSelectModel<T>>['userId'] }
 >;
+
+/**
+ * Include id in the input type if it exists.
+ */
 type IncludeId<T extends Table> = IncludeColumn<
     T,
     'id',
@@ -147,3 +154,19 @@ export type ExtractQueryFns<T extends Table, C extends QueriesConfig<T>> = {
  * Query handler result
  */
 export type QueryHandlerResult<T extends Table, C extends QueriesConfig<T>> = ExtractQueryFns<T, C>;
+
+// ================================
+// Infer feature type
+// ================================
+
+/**
+ * Infer feature type from query handler result. By default, it will infer the type from the getById query.
+ */
+export type InferFeatureType<
+    R extends QueryHandlerResult<Table, QueriesConfig<Table>>,
+    Q extends keyof R = 'getById',
+> = R[Q] extends (...args: any) => any
+    ? Awaited<ReturnType<R[Q]>> extends (infer U)[]
+        ? U
+        : Awaited<ReturnType<R[Q]>>
+    : never;

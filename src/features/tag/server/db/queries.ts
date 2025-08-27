@@ -1,61 +1,41 @@
-import { TTagAssignment, TTagQuery } from '@/features/tag/schemas';
 import { transactionServices } from '@/features/transaction/server/services';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
 import { db } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 import { tag, tagToTransaction } from './schema';
 
-/**
- * Create a new tag
- * @param data - The tag data to create
- * @param userId - The user ID of the tag
- * @returns The created tag
- */
-const create = async ({ data, userId }: TQueryInsertUserRecord<TTagQuery['insert']>) =>
-    withDbQuery({
-        operation: 'create tag',
-        queryFn: async () => {
+export const tagQueries = createFeatureQueries(tag, {
+    /**
+     * Get all tags for a user
+     */
+    getMany: {
+        operation: 'get tags by user ID',
+        fn: async ({ userId }) => {
+            return await db
+                .select()
+                .from(tag)
+                .where(and(eq(tag.userId, userId), eq(tag.isActive, true)));
+        },
+    },
+    /**
+     * Create a tag
+     */
+    create: {
+        fn: async ({ data, userId }) => {
             const [newTag] = await db
                 .insert(tag)
                 .values({ ...data, userId })
                 .returning();
             return newTag;
         },
-    });
-
-/**
- * Get all tags for a user
- * @param userId - The user ID to get tags for
- * @returns The tags for the user
- */
-const getAll = async ({ userId }: TQuerySelectUserRecords): Promise<TTagQuery['select'][]> =>
-    withDbQuery({
-        operation: 'get tags by user ID',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(tag)
-                .where(and(eq(tag.userId, userId), eq(tag.isActive, true)));
-        },
-    });
-
-/**
- * Get a tag by ID
- * @param id - The ID of the tag to get
- * @param userId - The user ID of the tag
- * @returns The tag
- */
-const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
-    withDbQuery({
+        operation: 'create tag',
+    },
+    /**
+     * Get a tag by ID
+     */
+    getById: {
         operation: 'get tag by ID',
-        queryFn: async () => {
+        fn: async ({ id, userId }) => {
             const [result] = await db
                 .select()
                 .from(tag)
@@ -63,18 +43,25 @@ const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
                 .limit(1);
             return result || null;
         },
-    });
-
-/**
- * Update a tag
- * @param id - The ID of the tag to update
- * @param data - The data to update the tag with
- * @returns The updated tag
- */
-export const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TTagQuery['update']>) =>
-    withDbQuery({
+    },
+    /**
+     * Soft delete a tag
+     */
+    removeById: {
+        operation: 'delete tag',
+        fn: async ({ id, userId }) => {
+            await db
+                .update(tag)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(and(eq(tag.id, id), eq(tag.userId, userId)));
+        },
+    },
+    /**
+     * Update a tag
+     */
+    updateById: {
         operation: 'update tag',
-        queryFn: async () => {
+        fn: async ({ id, data, userId }) => {
             const [updated] = await db
                 .update(tag)
                 .set({ ...data, updatedAt: new Date() })
@@ -82,39 +69,13 @@ export const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TTagQu
                 .returning();
             return updated || null;
         },
-    });
-
-/**
- * Remove a tag
- * @param id - The ID of the tag to remove
- * @returns The removed tag
- */
-export const remove = async ({ id, userId }: TQueryDeleteUserRecord): Promise<void> =>
-    withDbQuery({
-        operation: 'delete tag',
-        queryFn: async () => {
-            await db
-                .update(tag)
-                .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(tag.id, id), eq(tag.userId, userId)));
-        },
-    });
-
-/**
- * Assign tags to a transaction
- * @param transactionId - The ID of the transaction
- * @param tagIds - Array of tag IDs to assign
- * @param userId - The user ID for authorization
- * @returns Success confirmation
- */
-const assignToTransaction = async ({
-    id,
-    data: { tagIds },
-    userId,
-}: TQueryUpdateUserRecord<TTagAssignment>) =>
-    withDbQuery({
+    },
+    /**
+     * Assign a tag to a transaction
+     */
+    assignToTransaction: {
         operation: 'assign tags to transaction',
-        queryFn: async () => {
+        fn: async ({ id, userId, tagIds }: { id: string; userId: string; tagIds: string[] }) => {
             // Verify user owns the transaction (security check)
             const transaction = await transactionServices.getById({ id, userId });
             if (!transaction) {
@@ -136,13 +97,7 @@ const assignToTransaction = async ({
 
             return { success: true };
         },
-    });
+    },
+});
 
-export const tagQueries = {
-    create,
-    getAll,
-    remove,
-    update,
-    getById,
-    assignToTransaction,
-};
+export type TTag = InferFeatureType<typeof tagQueries>;

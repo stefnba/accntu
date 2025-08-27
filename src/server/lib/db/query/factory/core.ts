@@ -12,7 +12,7 @@ import type { ExtractQueryFns, HasColumn, QueriesConfig, QueryHandlerResult } fr
  * @param config - The config for the query collection
  * @returns The query collection
  */
-export function createQueryCollection<T extends Table, C extends QueriesConfig<T>>(
+export function createFeatureQueries<T extends Table, C extends QueriesConfig<T>>(
     table: T,
     config: C
 ): QueryHandlerResult<T, C> {
@@ -43,7 +43,7 @@ export function createQueryCollection<T extends Table, C extends QueriesConfig<T
 // Usage
 // ================================
 
-const tagQueries = createQueryCollection(tag, {
+const tagQueries = createFeatureQueries(tag, {
     // Standard CRUD operations with proper typing
     create: {
         fn: async ({ data, userId }) => {
@@ -103,7 +103,7 @@ console.log(getManyResult); // ✅ TypeScript knows this is boolean
 // console.log(findResult[0].id); // ✅ TypeScript knows this is number
 // console.log(deleteResult.deleted); // ✅ TypeScript knows this is number
 
-const tagToTransactionQueries = createQueryCollection(tagToTransaction, {
+const tagToTransactionQueries = createFeatureQueries(tagToTransaction, {
     create: {
         fn: async ({ data }) => {
             const { transactionId, tagId } = data;

@@ -1,1 +1,3 @@
-export { createQueryCollection } from './core';
+export { createFeatureQueries } from './core';
+
+export type { InferFeatureType } from './types';
