@@ -1,83 +1,46 @@
-import { TTagAssignment, TTagQuery } from '@/features/tag/schemas';
+import { tagSchemas } from '@/features/tag/schemas';
 import { tagQueries } from '@/features/tag/server/db/queries';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { createFeatureServices } from '@/server/lib/service/';
 
-/**
- * Create a new tag
- * @param data - The tag data to create
- * @param userId - The user ID of the tag
- * @returns The created tag
- */
-const create = async ({ data, userId }: TQueryInsertUserRecord<TTagQuery['insert']>) => {
-    return await tagQueries.create({ data, userId });
-};
-
-/**
- * Get all tags for a user
- * @param userId - The user ID to get tags for
- * @returns The tags for the user
- */
-const getAll = async ({ userId }: TQuerySelectUserRecords) => {
-    return await tagQueries.getAll({ userId: userId });
-};
-
-/**
- * Get a tag by ID
- * @param id - The ID of the tag to get
- * @param userId - The user ID of the tag
- * @returns The tag
- */
-const getById = async ({ id, userId }: TQuerySelectUserRecordById) => {
-    return await tagQueries.getById({ id, userId });
-};
-
-/**
- * Update a tag
- * @param id - The ID of the tag to update
- * @param data - The data to update the tag with
- * @param userId - The user ID of the tag
- * @returns The updated tag
- */
-const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TTagQuery['update']>) => {
-    return await tagQueries.update({ id, data, userId });
-};
-
-/**
- * Remove a tag
- * @param id - The ID of the tag to remove
- * @param userId - The user ID of the tag
- * @returns The removed tag
- */
-const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
-    return await tagQueries.remove({ id, userId });
-};
-
-/**
- * Assign tags to a transaction
- * @param transactionId - The ID of the transaction
- * @param tagIds - Array of tag IDs to assign
- * @param userId - The user ID
- * @returns Success confirmation
- */
-const assignToTransaction = async ({
-    id,
-    data: { tagIds },
-    userId,
-}: TQueryUpdateUserRecord<TTagAssignment>) => {
-    return await tagQueries.assignToTransaction({ id, data: { tagIds }, userId });
-};
-
-export const tagServices = {
-    create,
-    getAll,
-    getById,
-    update,
-    remove,
-    assignToTransaction,
-};
+export const tagServices = createFeatureServices({
+    queries: tagQueries,
+    schemas: tagSchemas,
+    services: ({ queries }) => ({
+        /**
+         * Create a new tag
+         */
+        create: async (input) => queries.create({ data: input.data, userId: input.userId }),
+        /**
+         * Get many tags
+         */
+        getMany: async (input) => queries.getMany({ userId: input.userId }),
+        /**
+         * Get a tag by ID
+         */
+        getById: async (input) => queries.getById({ id: input.id, userId: input.userId }),
+        /**
+         * Update a tag by ID
+         */
+        updateById: async (input) =>
+            queries.updateById({ id: input.id, data: input.data, userId: input.userId }),
+        /**
+         * Remove a tag by ID
+         */
+        removeById: async (input) => queries.removeById({ id: input.id, userId: input.userId }),
+        /**
+         * Assign tags to a transaction
+         */
+        assignToTransaction: async (input) =>
+            queries.assignToTransaction({
+                id: input.transactionId,
+                userId: input.userId,
+                tagIds: input.tagIds,
+            }),
+        customService: async (input: { name: string }) => {
+            return {
+                ...input,
+                processed: true,
+            };
+        },
+    }),
+});

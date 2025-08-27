@@ -1,16 +1,7 @@
 import { transaction } from '@/features/transaction/server/db/schema';
-import { createId } from '@paralleldrive/cuid2';
+import { commonTableFields } from '@/server/lib/db/table';
 import { relations } from 'drizzle-orm';
-import {
-    boolean,
-    integer,
-    pgTable,
-    primaryKey,
-    text,
-    timestamp,
-    uniqueIndex,
-} from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { integer, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // ====================
 // Tables
@@ -18,20 +9,11 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 export const tag = pgTable(
     'tag',
     {
-        id: text()
-            .primaryKey()
-            .notNull()
-            .$defaultFn(() => createId()),
-        userId: text().notNull(),
-
+        ...commonTableFields(),
         name: text().notNull(),
         description: text(),
         color: text().notNull().default('#6366f1'), // Hex color for UI
-
         transactionCount: integer().default(0),
-        isActive: boolean().notNull().default(true),
-        createdAt: timestamp().notNull().defaultNow(),
-        updatedAt: timestamp().notNull().defaultNow(),
     },
     (table) => [uniqueIndex('tag_user_name_unique').on(table.userId, table.name)]
 );
@@ -45,9 +27,7 @@ export const tagToTransaction = pgTable(
         tagId: text()
             .notNull()
             .references(() => tag.id, { onDelete: 'cascade' }),
-
-        createdAt: timestamp().notNull().defaultNow(),
-        updatedAt: timestamp().notNull().defaultNow(),
+        ...commonTableFields({ include: ['createdAt', 'updatedAt'] }),
     },
     (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })]
 );
@@ -69,16 +49,3 @@ export const transactionTagRelations = relations(tagToTransaction, ({ one }) => 
         references: [tag.id],
     }),
 }));
-
-// ====================
-// Base Zod schemas
-// ====================
-
-// tag
-export const selectTagSchema = createSelectSchema(tag);
-export const insertTagSchema = createInsertSchema(tag);
-export const updateTagSchema = createUpdateSchema(tag);
-
-// transaction to tag
-export const selectTransactionToTagSchema = createSelectSchema(tagToTransaction);
-export const insertTransactionToTagSchema = createInsertSchema(tagToTransaction);

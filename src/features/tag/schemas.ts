@@ -1,79 +1,60 @@
-import { insertTagSchema, selectTagSchema, updateTagSchema } from '@/features/tag/server/db/schema';
+import { tag } from '@/features/tag/server/db/schema';
+import { FeatureSchema, InferSchemas } from '@/lib/schemas';
+
 import z from 'zod';
 
-// ====================
-// Query Layer
-// ====================
+const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
-export const tagQuerySchemas = {
-    select: selectTagSchema,
-    insert: insertTagSchema
-        .omit({
-            updatedAt: true,
-            createdAt: true,
-            id: true,
-            userId: true,
-        })
-        .extend({
-            color: z
-                .string()
-                .regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format')
-                .default('#6366f1'),
+// ====================
+// Schemas
+// ====================
+export const tagSchemas = FeatureSchema.fromTable({
+    table: tag,
+    omitFields: ['createdAt', 'updatedAt', 'isActive', 'id', 'userId', 'transactionCount'],
+}).forOperations(({ base }) => {
+    const baseWithColor = base.extend({
+        color: colorSchema,
+    });
+
+    return {
+        create: {
+            service: FeatureSchema.default.create(baseWithColor),
+            endpoint: baseWithColor,
+        },
+        getById: {
+            service: FeatureSchema.default.getById,
+            endpoint: baseWithColor,
+        },
+        removeById: {
+            service: FeatureSchema.default.removeById,
+            endpoint: baseWithColor,
+        },
+        updateById: {
+            service: FeatureSchema.default.updateById(baseWithColor),
+            endpoint: baseWithColor,
+        },
+        getMany: {
+            service: FeatureSchema.default.getMany(),
+            endpoint: baseWithColor,
+        },
+        assignToTransaction: FeatureSchema.helpers.operation(() => {
+            const shared = z.object({
+                transactionId: z.string(),
+                tagIds: z.array(z.string()),
+                userId: z.string(),
+            });
+            return {
+                service: shared,
+                endpoint: shared,
+            };
         }),
-    update: updateTagSchema
-        .pick({
-            name: true,
-            description: true,
-            color: true,
-            isActive: true,
-        })
-        .extend({
-            color: z
-                .string()
-                .regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format')
-                .default('#6366f1'),
-        }),
-};
-
-export type TTagQuery = {
-    select: z.infer<typeof tagQuerySchemas.select>;
-    insert: z.infer<typeof tagQuerySchemas.insert>;
-    update: z.infer<typeof tagQuerySchemas.update>;
-};
-
-// ====================
-// Service/Endpoint Layer
-// ====================
-
-export const tagServiceSchemas = {
-    create: tagQuerySchemas.insert.pick({
-        name: true,
-        color: true,
-        description: true,
-    }),
-    update: tagQuerySchemas.update.pick({
-        name: true,
-        color: true,
-        description: true,
-        isActive: true,
-    }),
-};
-
-export type TTagService = {
-    create: z.infer<typeof tagServiceSchemas.create>;
-    update: z.infer<typeof tagServiceSchemas.update>;
-};
-
-// ====================
-// Custom schemas
-// ====================
-
-/**
- * Schema for assigning tags to a transaction
- */
-export const tagAssignmentSchema = z.object({
-    // transactionId: z.string(),
-    tagIds: z.array(z.string()),
+    };
 });
 
-export type TTagAssignment = z.infer<typeof tagAssignmentSchema>;
+// ====================
+// Types
+// ====================
+export type TTagSchemas = InferSchemas<typeof tagSchemas>;
+type AAA = TTagSchemas['operations']['getMany']['service'];
+
+export { type TTag } from '@/features/tag/server/db/queries';
