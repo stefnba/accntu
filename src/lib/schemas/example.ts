@@ -6,11 +6,10 @@ import { z } from 'zod';
 // Example usage
 export const tagSchemas = FeatureSchema.fromTable({
     table: tag,
-    // omitFields: ['color', 'description'],
     pickFields: ['name', 'id'],
 })
-    .createQuerySchema((s) => ({
-        create: s
+    .createQuerySchema(({ base, raw }) => ({
+        create: base
             .omit({
                 name: true,
             })
@@ -18,7 +17,7 @@ export const tagSchemas = FeatureSchema.fromTable({
                 hallo: z.string(),
                 man: z.number(),
             }),
-        get: s.omit({
+        get: raw.omit({
             name: true,
         }),
     }))
@@ -43,5 +42,5 @@ export const tagSchemas = FeatureSchema.fromTable({
 // Examples of the InferSchemas type helper:
 
 type TTagSchemas = InferSchemas<typeof tagSchemas>;
-type TBaseSchema = TTagSchemas['baseSchema'];
-type TServiceSchema = TTagSchemas['serviceSchemas'];
+type TBaseSchema = TTagSchemas['base'];
+type TServiceSchema = TTagSchemas['service'];

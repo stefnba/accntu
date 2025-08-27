@@ -13,12 +13,13 @@ import { TLayerSchemas, TZodSchema } from '@/lib/schemas/types';
  */
 export class QueryFeatureSchema<
     TBaseSchema extends TZodSchema,
+    TRawSchema extends TZodSchema,
     TQuerySchemas extends TLayerSchemas,
-> extends BaseFeatureSchema<TBaseSchema> {
+> extends BaseFeatureSchema<TBaseSchema, TRawSchema> {
     querySchemas: TQuerySchemas;
 
-    constructor(baseSchema: TBaseSchema, querySchemas: TQuerySchemas) {
-        super(baseSchema);
+    constructor(baseSchema: TBaseSchema, rawSchema: TRawSchema, querySchemas: TQuerySchemas) {
+        super(baseSchema, rawSchema);
         this.querySchemas = querySchemas;
     }
 
@@ -32,9 +33,10 @@ export class QueryFeatureSchema<
         TServiceSchemas extends TLayerSchemas<TServiceSchemasKeys>,
     >(
         serviceSchemaFn: (querySchemas: TQuerySchemas) => TServiceSchemas
-    ): ServiceFeatureSchema<TBaseSchema, TQuerySchemas, TServiceSchemas> {
+    ): ServiceFeatureSchema<TBaseSchema, TRawSchema, TQuerySchemas, TServiceSchemas> {
         return new ServiceFeatureSchema(
             this.baseSchema,
+            this.rawSchema,
             this.querySchemas,
             serviceSchemaFn(this.querySchemas)
         );
@@ -48,8 +50,9 @@ export class QueryFeatureSchema<
     /** Builds the final schema object containing base + query layers */
     build() {
         return {
-            baseSchema: this.baseSchema,
-            querySchemas: this.querySchemas,
+            base: this.baseSchema,
+            raw: this.rawSchema,
+            query: this.querySchemas,
         } as const;
     }
 }

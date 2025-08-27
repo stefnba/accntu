@@ -32,12 +32,18 @@ export class FeatureSchema {
      */
     static fromTable<TTable extends Table>(
         table: TTable
-    ): BaseFeatureSchema<ReturnType<typeof createInsertSchema<TTable>>>;
+    ): BaseFeatureSchema<
+        ReturnType<typeof createInsertSchema<TTable>>,
+        ReturnType<typeof createInsertSchema<TTable>>
+    >;
     static fromTable<TTable extends Table>({
         table,
     }: {
         table: TTable;
-    }): BaseFeatureSchema<ReturnType<typeof createInsertSchema<TTable>>>;
+    }): BaseFeatureSchema<
+        ReturnType<typeof createInsertSchema<TTable>>,
+        ReturnType<typeof createInsertSchema<TTable>>
+    >;
     static fromTable<
         TTable extends Table,
         TOmitFields extends readonly (keyof TTable['_']['columns'])[],
@@ -47,7 +53,10 @@ export class FeatureSchema {
     }: {
         table: TTable;
         omitFields: TOmitFields;
-    }): BaseFeatureSchema<CreateOmittedSchema<TTable, TOmitFields>>;
+    }): BaseFeatureSchema<
+        CreateOmittedSchema<TTable, TOmitFields>,
+        ReturnType<typeof createInsertSchema<TTable>>
+    >;
     static fromTable<
         TTable extends Table,
         TPickFields extends readonly (keyof TTable['_']['columns'])[],
@@ -57,31 +66,35 @@ export class FeatureSchema {
     }: {
         table: TTable;
         pickFields: TPickFields;
-    }): BaseFeatureSchema<CreatePickedSchema<TTable, TPickFields>>;
+    }): BaseFeatureSchema<
+        CreatePickedSchema<TTable, TPickFields>,
+        ReturnType<typeof createInsertSchema<TTable>>
+    >;
     static fromTable<
         TTable extends Table,
         TOmitFields extends readonly (keyof TTable['_']['columns'])[],
         TPickFields extends readonly (keyof TTable['_']['columns'])[],
     >(input: TTable | { table: TTable; omitFields?: TOmitFields; pickFields?: TPickFields }) {
         if (typeof input === 'object' && 'table' in input) {
+            const rawSchema = createBaseSchemaFromTable(input.table);
             if (input.omitFields) {
                 const omitFields = input.omitFields;
                 return new BaseFeatureSchema(
-                    createBaseSchemaFromTable(input.table).omit(
-                        omitFields.length > 0 ? createTrueRecord(omitFields) : {}
-                    )
+                    rawSchema.omit(omitFields.length > 0 ? createTrueRecord(omitFields) : {}),
+                    rawSchema
                 );
             }
             if (input.pickFields) {
                 const pickFields = input.pickFields;
                 return new BaseFeatureSchema(
-                    createBaseSchemaFromTable(input.table).pick(
-                        pickFields.length > 0 ? createTrueRecord(pickFields) : {}
-                    )
+                    rawSchema.pick(pickFields.length > 0 ? createTrueRecord(pickFields) : {}),
+                    rawSchema
                 );
             }
+            return new BaseFeatureSchema(rawSchema, rawSchema);
         } else {
-            return new BaseFeatureSchema(createBaseSchemaFromTable(input));
+            const rawSchema = createBaseSchemaFromTable(input);
+            return new BaseFeatureSchema(rawSchema, rawSchema);
         }
     }
 
@@ -91,7 +104,9 @@ export class FeatureSchema {
      * @param schema - The custom Zod schema to wrap
      * @returns BaseFeatureSchema ready for layer building
      */
-    static fromSchema<TSchema extends TZodSchema>(schema: TSchema): BaseFeatureSchema<TSchema> {
-        return new BaseFeatureSchema(schema);
+    static fromSchema<TSchema extends TZodSchema>(
+        schema: TSchema
+    ): BaseFeatureSchema<TSchema, TSchema> {
+        return new BaseFeatureSchema(schema, schema);
     }
 }

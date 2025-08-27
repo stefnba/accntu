@@ -16,7 +16,7 @@ export type QueriesConfig = Record<string, (...args: any[]) => Promise<any>>;
 export type ServiceInputFromSchema<
     TSchemas,
     K extends string | number | symbol,
-> = TSchemas extends { serviceSchemas: infer TServiceSchemas }
+> = TSchemas extends { service: infer TServiceSchemas }
     ? TServiceSchemas extends Record<K, infer TSchema>
         ? TSchema extends z.ZodType<infer T>
             ? T
@@ -28,7 +28,7 @@ export type ServiceInputFromSchema<
  * Check if a service schema exists for a given key
  */
 export type HasServiceSchema<TSchemas, K extends string | number | symbol> = TSchemas extends {
-    serviceSchemas: infer TServiceSchemas;
+    service: infer TServiceSchemas;
 }
     ? K extends keyof TServiceSchemas
         ? true
