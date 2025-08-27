@@ -5,19 +5,30 @@ import { Table } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 
 /**
- * Factory class for creating feature schemas
+ * Factory class for creating layered feature schemas with full type safety
+ *
+ * Features:
+ * - Builds schemas from Drizzle tables or custom Zod schemas
+ * - Supports field omission/picking for flexible schema creation
+ * - Enables fluent API for progressive layer building
+ * - Maintains type safety across all layers
+ *
  * @example
- * const tagSchemas = FeatureSchema.fromTable(tag, ['name', 'userId', 'id', 'id', 'isActive'])
- *     .createQuerySchema((baseSchema) => ({
- *         get: baseSchema.omit({
+ * ```typescript
+ * const userSchemas = FeatureSchema.fromTable(userTable)
+ *   .createQuerySchema((base) => ({ get: base.pick({ id: true }) }))
+ *   .createServiceSchema((query) => ({ create: query.get.extend({ password: z.string() }) }))
+ *   .build();
+ * ```
  */
 export class FeatureSchema {
     /**
-     * Create a base feature schema from a Drizzle table
-     * @param table - The Drizzle table to create the schema from
-     * @param omitFields - Optional fields to omit from the schema
-     * @param pickFields - Optional fields to pick from the schema
-     * @returns A base feature schema
+     * Creates a base feature schema from a Drizzle table with optional field filtering
+     * Supports multiple overloads for different use cases:
+     * - Direct table input
+     * - Object input with omitFields for excluding specific columns
+     * - Object input with pickFields for including only specific columns
+     * @returns BaseFeatureSchema ready for layer building
      */
     static fromTable<TTable extends Table>(
         table: TTable
@@ -75,9 +86,10 @@ export class FeatureSchema {
     }
 
     /**
-     * Create a base feature schema from a custom Zod schema
-     * @param schema - The custom Zod schema to create the schema from
-     * @returns A base feature schema
+     * Creates a base feature schema from a custom Zod schema
+     * Useful when you need schemas not derived from database tables
+     * @param schema - The custom Zod schema to wrap
+     * @returns BaseFeatureSchema ready for layer building
      */
     static fromSchema<TSchema extends TZodSchema>(schema: TSchema): BaseFeatureSchema<TSchema> {
         return new BaseFeatureSchema(schema);

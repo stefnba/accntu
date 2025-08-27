@@ -1,6 +1,15 @@
 import { ServiceFeatureSchema } from '@/lib/schemas/layers/service';
 import { TLayerSchemas, TZodSchema } from '@/lib/schemas/types';
 
+/**
+ * Endpoint layer of the feature schema system - handles API request/response validation
+ *
+ * Features:
+ * - Final layer that extends service schema with HTTP endpoint validation
+ * - Validates API requests and responses at the network boundary
+ * - Provides complete schema stack for full-stack type safety
+ * - Ensures consistent validation across all application layers
+ */
 export class EndpointFeatureSchema<
     TBaseSchema extends TZodSchema,
     TQuerySchemas extends TLayerSchemas,
@@ -19,11 +28,12 @@ export class EndpointFeatureSchema<
         this.endpointSchemas = endpointSchemas;
     }
 
+    /** Returns the endpoint schemas for direct access */
     getEndpointSchemas(): TEndpointSchemas {
         return this.endpointSchemas;
     }
 
-    // Build final schema with all layers
+    /** Builds the final schema object containing all four layers (base + query + service + endpoint) */
     build() {
         return {
             baseSchema: this.baseSchema,
