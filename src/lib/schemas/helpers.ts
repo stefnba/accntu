@@ -1,3 +1,4 @@
+import { TOperationSchemaDefinition, TZodSchema } from '@/lib/schemas/types';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -55,4 +56,194 @@ export function createBaseSchemaFromTable<
     }
 
     return baseSchema.omit(defaultOmitFields.length > 0 ? createTrueRecord(defaultOmitFields) : {});
+}
+
+/**
+ * Standalone helper for dynamic operation schema creation with perfect intellisense.
+ * Alternative to FeatureSchema.helpers.operation() for direct imports.
+ *
+ * Executes the function immediately to return a plain object that TypeScript can infer.
+ * Use when you need to share schemas or add conditional logic within operations.
+ *
+ * @param fn - Function that returns an operation schema definition
+ * @returns The resolved operation schema with full type support
+ *
+ * @example
+ * ```typescript
+ * import { operation } from '@/lib/schemas';
+ *
+ * assignToTransaction: operation(() => {
+ *   const shared = z.object({ transactionId: z.string(), tagIds: z.array(z.string()) });
+ *   return { service: shared, endpoint: shared };
+ * })
+ * ```
+ */
+export const operation = <T extends TOperationSchemaDefinition>(fn: () => T): T => fn();
+
+/**
+ * Builds a CRUD operation schema with optional fields - overloaded for exact type inference
+ */
+// With data and filters
+export function buildCrudOpSchema<
+    const TData extends TZodSchema,
+    const TFilters extends TZodSchema,
+>(input: {
+    userId: true;
+    id: true;
+    data: TData;
+    filters: TFilters;
+}): z.ZodObject<{ userId: z.ZodString; id: z.ZodString; data: TData; filters: TFilters }>;
+
+export function buildCrudOpSchema<
+    const TData extends TZodSchema,
+    const TFilters extends TZodSchema,
+>(input: {
+    userId: true;
+    id?: false;
+    data: TData;
+    filters: TFilters;
+}): z.ZodObject<{ userId: z.ZodString; data: TData; filters: TFilters }>;
+
+export function buildCrudOpSchema<
+    const TData extends TZodSchema,
+    const TFilters extends TZodSchema,
+>(input: {
+    userId?: false;
+    id: true;
+    data: TData;
+    filters: TFilters;
+}): z.ZodObject<{ id: z.ZodString; data: TData; filters: TFilters }>;
+
+export function buildCrudOpSchema<
+    const TData extends TZodSchema,
+    const TFilters extends TZodSchema,
+>(input: {
+    userId?: false;
+    id?: false;
+    data: TData;
+    filters: TFilters;
+}): z.ZodObject<{ data: TData; filters: TFilters }>;
+
+// With data only
+export function buildCrudOpSchema<const TData extends TZodSchema>(input: {
+    userId: true;
+    id: true;
+    data: TData;
+    filters?: undefined;
+}): z.ZodObject<{ userId: z.ZodString; id: z.ZodString; data: TData }>;
+
+export function buildCrudOpSchema<const TData extends TZodSchema>(input: {
+    userId: true;
+    id?: false;
+    data: TData;
+    filters?: undefined;
+}): z.ZodObject<{ userId: z.ZodString; data: TData }>;
+
+export function buildCrudOpSchema<const TData extends TZodSchema>(input: {
+    userId?: false;
+    id: true;
+    data: TData;
+    filters?: undefined;
+}): z.ZodObject<{ id: z.ZodString; data: TData }>;
+
+export function buildCrudOpSchema<const TData extends TZodSchema>(input: {
+    userId?: false;
+    id?: false;
+    data: TData;
+    filters?: undefined;
+}): z.ZodObject<{ data: TData }>;
+
+// With filters only
+export function buildCrudOpSchema<const TFilters extends TZodSchema>(input: {
+    userId: true;
+    id: true;
+    data?: undefined;
+    filters: TFilters;
+}): z.ZodObject<{ userId: z.ZodString; id: z.ZodString; filters: TFilters }>;
+
+export function buildCrudOpSchema<const TFilters extends TZodSchema>(input: {
+    userId: true;
+    id?: false;
+    data?: undefined;
+    filters: TFilters;
+}): z.ZodObject<{ userId: z.ZodString; filters: TFilters }>;
+
+export function buildCrudOpSchema(input: {
+    userId: true;
+    id?: false;
+    data?: undefined;
+    filters?: undefined;
+}): z.ZodObject<{ userId: z.ZodString }>;
+
+export function buildCrudOpSchema<const TFilters extends TZodSchema>(input: {
+    userId?: false;
+    id: true;
+    data?: undefined;
+    filters: TFilters;
+}): z.ZodObject<{ id: z.ZodString; filters: TFilters }>;
+
+export function buildCrudOpSchema<const TFilters extends TZodSchema>(input: {
+    userId?: false;
+    id?: false;
+    data?: undefined;
+    filters: TFilters;
+}): z.ZodObject<{ filters: TFilters }>;
+
+// Without data or filters
+export function buildCrudOpSchema(input: {
+    userId: true;
+    id: true;
+    data?: undefined;
+    filters?: undefined;
+}): z.ZodObject<{ userId: z.ZodString; id: z.ZodString }>;
+
+export function buildCrudOpSchema(input: {
+    userId: true;
+    id?: false;
+    data?: undefined;
+    filters?: undefined;
+}): z.ZodObject<{ userId: z.ZodString }>;
+
+export function buildCrudOpSchema(input: {
+    userId?: false;
+    id: true;
+    data?: undefined;
+    filters?: undefined;
+}): z.ZodObject<{ id: z.ZodString }>;
+
+export function buildCrudOpSchema(input: {
+    userId?: false;
+    id?: false;
+    data?: undefined;
+    filters?: undefined;
+}): void;
+
+/**
+ * Implementation that builds the schema based on input configuration
+ */
+export function buildCrudOpSchema(input: {
+    userId?: boolean;
+    id?: boolean;
+    filters?: TZodSchema;
+    data?: TZodSchema;
+}): TZodSchema {
+    const shape: any = {};
+
+    if (input.userId) {
+        shape.userId = z.string();
+    }
+
+    if (input.id) {
+        shape.id = z.string();
+    }
+
+    if (input.data) {
+        shape.data = input.data;
+    }
+
+    if (input.filters) {
+        shape.filters = input.filters;
+    }
+
+    return z.object(shape);
 }

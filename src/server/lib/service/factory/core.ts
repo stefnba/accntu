@@ -1,3 +1,4 @@
+import type { TOperationSchemasObject } from '@/lib/schemas/types';
 import type { QueriesConfig, ServiceHandlerResult, ServicesConfig } from './types';
 
 /**
@@ -24,7 +25,7 @@ import type { QueriesConfig, ServiceHandlerResult, ServicesConfig } from './type
  * ```
  */
 export const createFeatureServices = <
-    TSchemas extends Record<string, unknown>,
+    TSchemas extends TOperationSchemasObject,
     TQueries extends QueriesConfig,
     TServices extends ServicesConfig<TQueries, TSchemas>,
 >({

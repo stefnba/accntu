@@ -1,6 +1,7 @@
 import { createTrueRecord } from '@/lib/schemas/helpers';
 import { typedKeys } from '@/lib/utils';
 import { COMMON_FIELDS } from '@/server/lib/db/table';
+import { z } from 'zod';
 
 /**
  * Default drizzle fields to omit from upsert schemas. These will be set in the query itself.
@@ -14,3 +15,10 @@ export const DEFAULT_UPSERT_OMIT_FIELDSOld = {
 } as const;
 
 export const DEFAULT_UPSERT_OMIT_FIELDS = createTrueRecord(typedKeys(COMMON_FIELDS));
+
+export const DEFAULT_SCHEMAS_CRUD_OPERATIONs = {
+    find: z.object({
+        id: z.string(),
+        userId: z.string(),
+    }),
+};

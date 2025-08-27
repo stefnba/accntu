@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import type { InferServiceSchemas, TOperationSchemasObject } from '@/lib/schemas/types';
 
 /**
  * Service function signature
@@ -11,44 +11,22 @@ export type ServiceFn<Input = unknown, Output = unknown> = (args: Input) => Prom
 export type QueriesConfig = Record<string, (...args: any[]) => Promise<any>>;
 
 /**
- * Extract input type from schemas for a specific service key and infer the Zod type
+ * Services config using the convenience InferServiceSchemas type
  */
-export type ServiceInputFromSchema<
-    TSchemas,
-    K extends string | number | symbol,
-> = TSchemas extends { service: infer TServiceSchemas }
-    ? TServiceSchemas extends Record<K, infer TSchema>
-        ? TSchema extends z.ZodType<infer T>
-            ? T
-            : unknown
-        : unknown
-    : unknown;
-
-/**
- * Check if a service schema exists for a given key
- */
-export type HasServiceSchema<TSchemas, K extends string | number | symbol> = TSchemas extends {
-    service: infer TServiceSchemas;
-}
-    ? K extends keyof TServiceSchemas
-        ? true
-        : false
-    : false;
-
-/**
- * Services config - combines query-derived services + custom services with schema-based typing
- */
-export type ServicesConfig<TQueries extends QueriesConfig, TSchemas = any> =
-    // Services derived from queries (same keys as queries) - allow custom input when no schema
-    {
-        [K in keyof TQueries]?: HasServiceSchema<TSchemas, K> extends true
-            ? ServiceFn<ServiceInputFromSchema<TSchemas, K>, any>
-            : ServiceFn<any, any>;
-    } & Record<string, ServiceFn<any, any>>; // Custom services - use schema if available, otherwise any
+export type ServicesConfig<
+    TQueries extends QueriesConfig,
+    TSchemas extends TOperationSchemasObject,
+> = {
+    [K in keyof InferServiceSchemas<TSchemas>]: ServiceFn<
+        InferServiceSchemas<TSchemas>[K],
+        unknown
+    >;
+};
 
 /**
  * Service handler result
  */
+
 export type ServiceHandlerResult<
     TQueries extends QueriesConfig,
     TServices extends ServicesConfig<TQueries, any>,
