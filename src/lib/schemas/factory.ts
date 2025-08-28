@@ -78,17 +78,34 @@ export class FeatureSchema {
      * }));
      */
     static default = {
+        /**
+         * Create record schema with data input
+         * @param data - The data to create the record with
+         */
         create: <const TData extends TZodSchema>(data: TData) =>
             buildCrudOpSchema({
                 userId: true,
                 id: false,
                 data,
             }),
+        /**
+         * Get record schema by id
+         */
         getById: buildCrudOpSchema({ userId: true, id: true }),
+        /**
+         * Remove record schema
+         */
         removeById: buildCrudOpSchema({ userId: true, id: true }),
+        /**
+         * Update record schema with data input
+         * @param data - The data to update the record with
+         */
         updateById: <const TData extends TZodSchema>(data: TData) =>
             buildCrudOpSchema({ userId: true, id: true, data }),
-
+        /**
+         * Get many records schema with optional filters input
+         * @param filters - The filters to apply to the records
+         */
         getMany: Object.assign(
             <const TFilters extends TZodSchema>(filters: TFilters) =>
                 buildCrudOpSchema({ userId: true, id: false, filters }),
