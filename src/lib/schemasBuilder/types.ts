@@ -1,5 +1,6 @@
 import { Table } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
+import { type ValidationTargets } from 'hono';
 import { z } from 'zod';
 
 // ====================
@@ -7,9 +8,11 @@ import { z } from 'zod';
 // ====================
 
 /**
- * Base type constraint for all Zod object schemas used in the layer system
+ * Base type constraint for all Zod schemas used in the layer system
+ * Includes objects, optionals, and other Zod types for flexibility
  */
-export type TZodSchema = z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TZodSchema = z.ZodType<any, any, any>;
 
 /**
  * Core CRUD operation keys - these get IntelliSense priority
@@ -25,8 +28,9 @@ export type OperationKeys = CoreOperationKeys | string;
  * Helper type to get remaining operation keys that haven't been used yet
  * Shows unused core operations first, then allows any string for custom operations
  */
-export type AvailableOperationKeys<TUsedKeys extends string> = 
-    Exclude<CoreOperationKeys, TUsedKeys> | (string & {});
+export type AvailableOperationKeys<TUsedKeys extends string> =
+    | Exclude<CoreOperationKeys, TUsedKeys>
+    | (string & {});
 
 /**
  * Layer keys
@@ -34,19 +38,33 @@ export type AvailableOperationKeys<TUsedKeys extends string> =
 export type LayerKeys = 'query' | 'service' | 'endpoint';
 
 /**
+ * Endpoint schema object supporting Hono validation targets
+ * Each target is optional to allow flexible endpoint definitions
+ */
+export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodSchema>>;
+
+/**
  * Object with schemas for query, service, and endpoint layers.
+ * The endpoint layer supports Hono validation targets (json, query, param, etc.)
  *
  * @example
  * ```typescript
  * const createOperation: TOperationSchemaObject = {
  *   service: z.object({ name: z.string() }),
- *   endpoint: z.object({ name: z.string() })
+ *   endpoint: {
+ *     json: z.object({ name: z.string() }),
+ *     param: z.object({ id: z.string() })
+ *   }
  * };
  * ```
  *
  * @returns Object with schemas for query, service, and endpoint layers
  */
-export type TOperationSchemaObject = Partial<Record<LayerKeys, TZodSchema>>;
+export type TOperationSchemaObject = {
+    query?: TZodSchema;
+    service?: TZodSchema;
+    endpoint?: TEndpointSchemaObject;
+};
 
 /**
  * Function that returns an object with schemas for query, service, and endpoint layers.
@@ -132,6 +150,7 @@ export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
 /**
  * Infers TypeScript types for all operations with their query, service, and endpoint schemas.
  * Creates a mapped type where each operation contains inferred types for the layers that were defined.
+ * For endpoint layer, creates nested object with inferred types for each Hono validation target.
  *
  * @template T - The operation schemas object from forOperations()
  * @returns Mapped type with inferred types for each operation's layers
@@ -140,20 +159,31 @@ export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
  * ```typescript
  * type TagOperations = InferSchemasByOperation<typeof tagSchemas>;
  * type CreateService = TagOperations['create']['service']; // Inferred service type
- * type UpdateEndpoint = TagOperations['updateById']['endpoint']; // Inferred endpoint type
+ * type CreateEndpointJson = TagOperations['create']['endpoint']['json']; // Inferred endpoint json type
  * ```
  */
 export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObject>> = {
     [K in keyof T]: {
-        [L in keyof T[K]]: T[K][L] extends TZodSchema ? z.infer<T[K][L]> : never;
+        [L in keyof T[K]]: L extends 'endpoint'
+            ? T[K][L] extends TEndpointSchemaObject
+                ? {
+                      [Target in keyof T[K][L]]: T[K][L][Target] extends TZodSchema
+                          ? z.infer<T[K][L][Target]>
+                          : never;
+                  }
+                : never
+            : T[K][L] extends TZodSchema
+              ? z.infer<T[K][L]>
+              : never;
     };
 };
 
 /**
  * Generic helper for inferring types from a specific layer across all operations.
- * Extracts and infers types for either database, service, or endpoint layer.
+ * Extracts and infers types for either query, service, or endpoint layer.
+ * For endpoint layer, creates nested object with inferred types for each Hono validation target.
  *
- * @template TLayer - Which layer to extract ('database' | 'service' | 'endpoint')
+ * @template TLayer - Which layer to extract ('query' | 'service' | 'endpoint')
  * @template T - The operation schemas object from forOperations()
  * @returns Mapped type with inferred types for the specified layer only
  *
@@ -161,11 +191,23 @@ export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObj
  * ```typescript
  * type TagServices = InferSchemasByLayer<'service', typeof tagSchemas>;
  * type CreateService = TagServices['create']; // z.infer<service schema>
+ * type TagEndpoints = InferSchemasByLayer<'endpoint', typeof tagSchemas>;
+ * type CreateEndpointJson = TagEndpoints['create']['json']; // z.infer<endpoint json schema>
  * ```
  */
 export type InferSchemasByLayer<
     TLayer extends LayerKeys,
     T extends Record<string, TOperationSchemaObject>,
 > = {
-    [K in keyof T]: T[K][TLayer] extends TZodSchema ? z.infer<T[K][TLayer]> : never;
+    [K in keyof T]: TLayer extends 'endpoint'
+        ? T[K][TLayer] extends TEndpointSchemaObject
+            ? {
+                  [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodSchema
+                      ? z.infer<T[K][TLayer][Target]>
+                      : never;
+              }
+            : never
+        : T[K][TLayer] extends TZodSchema
+          ? z.infer<T[K][TLayer]>
+          : never;
 };

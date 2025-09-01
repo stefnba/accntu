@@ -12,55 +12,98 @@ const tagSchemas = FeatureSchema.fromTable(tag, {
     pickFields: ['name', 'id'],
 }).withOperationBuilder((builder) =>
     builder
-        // Core CRUD operation - 'create' will no longer appear in subsequent IntelliSense
+        // Core CRUD operation with Hono validation targets
         .addOperation('create', ({ baseSchema }) => ({
             query: baseSchema.pick({ name: true, id: true }),
-            endpoint: baseSchema.omit({ id: true }),
+            endpoint: {
+                json: baseSchema.omit({ id: true }), // Request body validation
+                query: z.object({
+                    returnId: z.boolean().optional(),
+                }), // Query parameters
+            },
         }))
-        // Core CRUD operation - 'updateById' will no longer appear in subsequent IntelliSense
+        // Update operation with parameter validation
         .addOperation('updateById', ({ baseSchema }) => ({
-            endpoint: baseSchema.omit({ id: true }),
+            endpoint: {
+                param: z.object({ id: z.string() }), // Route parameters
+                json: baseSchema.omit({ id: true }), // Request body
+            },
         }))
-        // Core CRUD operation - 'getById' will no longer appear in subsequent IntelliSense
+        // Get by ID operation
         .addOperation('getById', ({ baseSchema }) => ({
             query: baseSchema.pick({ id: true }).required(),
+            endpoint: {
+                param: z.object({ id: z.string() }), // Route parameters
+                query: z
+                    .object({
+                        include: z.array(z.string()).optional(),
+                    })
+                    .optional(), // Query parameters
+            },
         }))
-        // Custom operation - this shows you can add operations beyond core CRUD
+        // Custom operation with comprehensive validation
         .addOperation('assignToCategory', ({ baseSchema }) => ({
             service: z.object({
                 tagIds: z.array(z.string()),
                 categoryId: z.string(),
             }),
-            endpoint: z.object({
-                tagIds: z.array(z.string()),
-                categoryId: z.string(),
-            }),
+            endpoint: {
+                param: z.object({
+                    id: z.string(),
+                }),
+            },
         }))
         // Another custom operation
         .addOperation('getMany', ({ baseSchema }) => ({
             service: z.object({
                 tags: z.array(baseSchema.partial().extend({ id: z.string() })),
             }),
-            endpoint: z.object({
-                tags: z.array(baseSchema.partial().extend({ id: z.string() })),
-            }),
+            endpoint: {
+                json: z.object({
+                    tags: z.array(baseSchema.partial().extend({ id: z.string() })),
+                }),
+                param: z.object({
+                    id: z.string(),
+                }),
+            },
         }))
 );
 
-export const createQuery = tagSchemas.create.endpoint;
+// Test new endpoint structure access
+export const createEndpoint = tagSchemas.assignToCategory.endpoint.param;
+export const createEndpointJson = tagSchemas.create.endpoint.json;
+export const createEndpointQuery = tagSchemas.create.endpoint.query;
 
-type SASAS = z.infer<typeof createQuery>;
+export const updateByIdParam = tagSchemas.updateById.endpoint.param;
+export const updateByIdJson = tagSchemas.updateById.endpoint.json;
 
-const ddd: SASAS = {
-    name: 'ddd',
-    // id: 'ddd', /
+export const getManyService = tagSchemas.getMany.service;
+export const getManyEndpointJson = tagSchemas.getMany.endpoint.json;
+
+// Test type inference for new endpoint structure
+type CreateEndpointJson = z.infer<typeof createEndpointJson>;
+type CreateEndpointQuery = z.infer<typeof createEndpointQuery>;
+type UpdateByIdParam = z.infer<typeof updateByIdParam>;
+
+// Test actual data types
+const createJsonData: CreateEndpointJson = {
+    name: 'New Tag',
+    // id is omitted as expected
+};
+
+const createQueryData: CreateEndpointQuery = {
+    returnId: true,
+};
+
+const updateParamData: UpdateByIdParam = {
+    id: 'tag-123',
 };
 
 type TagOperations = InferSchemasByOperation<typeof tagSchemas>;
 
-type TagServices = InferSchemasByLayer<'service', typeof tagSchemas>;
+type TagServices = InferSchemasByLayer<'endpoint', typeof tagSchemas>;
 
-type adfa = TagServices['create'];
+type adfa = TagServices['assignToCategory']['param'];
 
 type TagSchemas = InferSchemas<typeof tagSchemas>;
 
