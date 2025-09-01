@@ -1,0 +1,1 @@
+export { FeatureSchema } from './factory';
