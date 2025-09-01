@@ -1,5 +1,5 @@
 import {
-    OperationKeys,
+    AvailableOperationKeys,
     OperationSchemaDefinitionFn,
     TOperationSchemaObject,
     TZodSchema,
@@ -11,6 +11,7 @@ export class SchemaObjectBuilder<
         string,
         TOperationSchemaObject
     >,
+    TUsedKeys extends string = never,
 > {
     private schemas: TOutputSchemas;
     private baseSchema: TBaseSchema;
@@ -18,7 +19,13 @@ export class SchemaObjectBuilder<
     //     endpoint: defineEndpointSchema,
     // };
 
-    constructor({ schemas, baseSchema }: { schemas: TOutputSchemas; baseSchema: TBaseSchema }) {
+    constructor({ 
+        schemas, 
+        baseSchema 
+    }: { 
+        schemas: TOutputSchemas; 
+        baseSchema: TBaseSchema;
+    }) {
         this.baseSchema = baseSchema;
         this.schemas = schemas;
     }
@@ -31,28 +38,37 @@ export class SchemaObjectBuilder<
      */
 
     // Overload 1: Function input with baseSchema parameter
-    addOperation<K extends OperationKeys, S extends TOperationSchemaObject>(
+    addOperation<
+        K extends AvailableOperationKeys<TUsedKeys>,
+        S extends TOperationSchemaObject
+    >(
         key: K,
         schemaFn: OperationSchemaDefinitionFn<TBaseSchema, S>
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>>;
+    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>;
 
     // Overload 2: Direct schema input
-    addOperation<K extends OperationKeys, S extends TOperationSchemaObject>(
+    addOperation<
+        K extends AvailableOperationKeys<TUsedKeys>,
+        S extends TOperationSchemaObject
+    >(
         key: K,
         schema: S
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>>;
+    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>;
 
     // Implementation
-    addOperation<K extends OperationKeys, S extends TOperationSchemaObject>(
+    addOperation<
+        K extends AvailableOperationKeys<TUsedKeys>,
+        S extends TOperationSchemaObject
+    >(
         key: K,
         schemaOrFn: S | OperationSchemaDefinitionFn<TBaseSchema, S>
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>> {
+    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K> {
         const resolvedSchema =
             typeof schemaOrFn === 'function'
                 ? schemaOrFn({ baseSchema: this.baseSchema })
                 : schemaOrFn;
 
-        return new SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>>({
+        return new SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>({
             schemas: {
                 ...this.schemas,
                 [key]: resolvedSchema,

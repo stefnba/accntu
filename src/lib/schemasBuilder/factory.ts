@@ -19,10 +19,13 @@ const createSchemaBuilder = <T extends TZodSchema>(baseSchema: T) => ({
      */
     withOperationBuilder: <TSchemas extends Record<string, TOperationSchemaObject>>(
         builderCallback: (
-            builder: SchemaObjectBuilder<T, Record<string, TOperationSchemaObject>>
-        ) => SchemaObjectBuilder<T, TSchemas>
+            builder: SchemaObjectBuilder<T, Record<string, TOperationSchemaObject>, never>
+        ) => SchemaObjectBuilder<T, TSchemas, string>
     ): TSchemas => {
-        const initialBuilder = new SchemaObjectBuilder({ schemas: {}, baseSchema });
+        const initialBuilder = new SchemaObjectBuilder<T, Record<string, TOperationSchemaObject>, never>({ 
+            schemas: {}, 
+            baseSchema 
+        });
         return builderCallback(initialBuilder).build();
     },
     /**

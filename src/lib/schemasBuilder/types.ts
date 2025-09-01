@@ -12,9 +12,21 @@ import { z } from 'zod';
 export type TZodSchema = z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny>;
 
 /**
- * Operation keys
+ * Core CRUD operation keys - these get IntelliSense priority
  */
-export type OperationKeys = 'getById' | 'getMany' | 'create' | 'updateById' | 'removeById';
+export type CoreOperationKeys = 'getById' | 'getMany' | 'create' | 'updateById' | 'removeById';
+
+/**
+ * All operation keys - includes core CRUD operations plus any custom string
+ */
+export type OperationKeys = CoreOperationKeys | string;
+
+/**
+ * Helper type to get remaining operation keys that haven't been used yet
+ * Shows unused core operations first, then allows any string for custom operations
+ */
+export type AvailableOperationKeys<TUsedKeys extends string> = 
+    Exclude<CoreOperationKeys, TUsedKeys> | (string & {});
 
 /**
  * Layer keys
