@@ -10,8 +10,8 @@ import { errorFactory } from '../factory';
  */
 export const handleZodError = (error: ZodError, c?: Context) => {
     // Extract field errors into a more readable format
-    const fieldErrors = error.errors.reduce(
-        (acc, curr) => {
+    const fieldErrors = error.issues.reduce(
+        (acc: any, curr: any) => {
             const path = curr.path.join('.');
             acc[path] = curr.message;
             return acc;

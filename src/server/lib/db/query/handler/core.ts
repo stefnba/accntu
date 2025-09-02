@@ -31,7 +31,7 @@ export function queryFnHandler<T extends Table, TInput, TOutput>(
                     message: `Invalid input data for ${operation}`,
                     code: 'INVALID_INPUT',
                     cause: validatedInput.error,
-                    details: { zodErrors: validatedInput.error.errors },
+                    details: { zodErrors: validatedInput.error.issues },
                 });
             }
 
