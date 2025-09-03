@@ -1,1 +1,2 @@
-export { FeatureSchema } from './factory';
+export { createFeatureSchemas, FeatureSchema } from './schema-factory';
+

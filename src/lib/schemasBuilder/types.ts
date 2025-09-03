@@ -1,18 +1,24 @@
 import { Table } from 'drizzle-orm';
-import { createInsertSchema } from 'drizzle-zod';
+import { BuildSchema } from 'drizzle-zod';
 import { type ValidationTargets } from 'hono';
 import { z } from 'zod';
 
-// ====================
-// Operation Schema
-// ====================
+/**
+ * Type constraint for all Zod objects used in the layer system
+ */
+export type TZodObject = z.ZodObject<z.ZodRawShape>;
+
 
 /**
- * Base type constraint for all Zod schemas used in the layer system
- * Includes objects, optionals, and other Zod types for flexibility
+ * Type constraint for all Zod shapes used in the layer system. This is more flexible than TZodObject.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type TZodSchema = z.ZodType<any, any, any>;
+export type TZodShape = z.core.$ZodShape;
+
+// ========================================
+//
+// Operation Schema
+//
+// ========================================
 
 /**
  * Core CRUD operation keys - these get IntelliSense priority
@@ -41,7 +47,7 @@ export type LayerKeys = 'query' | 'service' | 'endpoint';
  * Endpoint schema object supporting Hono validation targets
  * Each target is optional to allow flexible endpoint definitions
  */
-export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodSchema>>;
+export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodObject>>;
 
 /**
  * Object with schemas for query, service, and endpoint layers.
@@ -61,8 +67,8 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
  * @returns Object with schemas for query, service, and endpoint layers
  */
 export type TOperationSchemaObject = {
-    query?: TZodSchema;
-    service?: TZodSchema;
+    query?: TZodObject;
+    service?: TZodObject;
     endpoint?: TEndpointSchemaObject;
 };
 
@@ -70,50 +76,15 @@ export type TOperationSchemaObject = {
  * Function that returns an object with schemas for query, service, and endpoint layers.
  */
 export type OperationSchemaDefinitionFn<
-    TBaseSchema extends TZodSchema,
+    TBaseSchema extends TZodObject,
     TSchemasObject extends TOperationSchemaObject,
 > = ({ baseSchema }: { baseSchema: TBaseSchema }) => TSchemasObject;
 
-// ====================
-// Drizzle table helpers
-// ====================
-
-/**
- * Creates a Zod schema by omitting specified fields from a Drizzle table schema
- * @template TTable - The source Drizzle table
- * @template TOmitFields - Array of field names to exclude from the schema
- */
-export type CreateOmittedSchema<
-    TTable extends Table,
-    TOmitFields extends readonly (keyof TTable['_']['columns'])[],
-> = z.ZodObject<
-    Omit<ReturnType<typeof createInsertSchema<TTable>>['shape'], TOmitFields[number]>,
-    ReturnType<typeof createInsertSchema<TTable>>['_def']['unknownKeys'],
-    ReturnType<typeof createInsertSchema<TTable>>['_def']['catchall']
->;
-
-/**
- * Creates a Zod schema by picking only specified fields from a Drizzle table schema
- * @template TTable - The source Drizzle table
- * @template TPickFields - Array of field names to include in the schema
- */
-export type CreatePickedSchema<
-    TTable extends Table,
-    TPickFields extends readonly (keyof TTable['_']['columns'])[],
-> = z.ZodObject<
-    Pick<
-        ReturnType<typeof createInsertSchema<TTable>>['shape'],
-        TPickFields[number] extends keyof ReturnType<typeof createInsertSchema<TTable>>['shape']
-            ? TPickFields[number]
-            : never
-    >,
-    ReturnType<typeof createInsertSchema<TTable>>['_def']['unknownKeys'],
-    ReturnType<typeof createInsertSchema<TTable>>['_def']['catchall']
->;
-
-// ====================
+// ========================================
+//
 // Infer Schemas
-// ====================
+//
+// ========================================
 
 /**
  * Comprehensive type inference for feature operation schemas.
@@ -165,16 +136,16 @@ export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
 export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObject>> = {
     [K in keyof T]: {
         [L in keyof T[K]]: L extends 'endpoint'
-            ? T[K][L] extends TEndpointSchemaObject
-                ? {
-                      [Target in keyof T[K][L]]: T[K][L][Target] extends TZodSchema
-                          ? z.infer<T[K][L][Target]>
-                          : never;
-                  }
-                : never
-            : T[K][L] extends TZodSchema
-              ? z.infer<T[K][L]>
-              : never;
+        ? T[K][L] extends TEndpointSchemaObject
+        ? {
+            [Target in keyof T[K][L]]: T[K][L][Target] extends TZodObject
+            ? z.infer<T[K][L][Target]>
+            : never;
+        }
+        : never
+        : T[K][L] extends TZodObject
+        ? z.infer<T[K][L]>
+        : never;
     };
 };
 
@@ -199,15 +170,43 @@ export type InferSchemasByLayer<
     TLayer extends LayerKeys,
     T extends Record<string, TOperationSchemaObject>,
 > = {
-    [K in keyof T]: TLayer extends 'endpoint'
+        [K in keyof T]: TLayer extends 'endpoint'
         ? T[K][TLayer] extends TEndpointSchemaObject
-            ? {
-                  [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodSchema
-                      ? z.infer<T[K][TLayer][Target]>
-                      : never;
-              }
-            : never
-        : T[K][TLayer] extends TZodSchema
-          ? z.infer<T[K][TLayer]>
-          : never;
-};
+        ? {
+            [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodObject
+            ? z.infer<T[K][TLayer][Target]>
+            : never;
+        }
+        : never
+        : T[K][TLayer] extends TZodObject
+        ? z.infer<T[K][TLayer]>
+        : never;
+    };
+
+
+
+// ========================================
+//
+// Drizzle table helpers
+//
+// ========================================
+
+/**
+* Build a schema from a Drizzle table
+* @template TTable - The source Drizzle table
+* @template TType - The type of schema to build
+* @returns The schema
+*/
+export type BuildSchemaFromTable<
+    TTable extends Table,
+    TType extends 'insert' | 'select' | 'update' = 'insert',
+> = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
+
+/**
+* Infer the columns of a Drizzle table
+* @template TTable - The source Drizzle table
+* @returns The columns of the Drizzle table
+*/
+export type InferTableColumns<TTable extends Table> = readonly (keyof TTable['_']['columns'])[];
+
+

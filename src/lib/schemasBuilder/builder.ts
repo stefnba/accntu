@@ -1,99 +1,91 @@
-import {
-    AvailableOperationKeys,
-    OperationSchemaDefinitionFn,
-    TOperationSchemaObject,
-    TZodSchema,
-} from '@/lib/schemasBuilder/types';
+import { AvailableOperationKeys, TOperationSchemaObject, TZodShape } from '@/lib/schemasBuilder/types';
+import z from 'zod';
 
-export class SchemaObjectBuilder<
-    TBaseSchema extends TZodSchema,
-    TOutputSchemas extends Record<string, TOperationSchemaObject> = Record<
-        string,
-        TOperationSchemaObject
-    >,
-    TUsedKeys extends string = never,
-> {
-    private schemas: TOutputSchemas;
-    private baseSchema: TBaseSchema;
-    // defineSchema = {
-    //     endpoint: defineEndpointSchema,
-    // };
 
-    constructor({ 
-        schemas, 
-        baseSchema 
-    }: { 
-        schemas: TOutputSchemas; 
-        baseSchema: TBaseSchema;
-    }) {
-        this.baseSchema = baseSchema;
+/**
+ * Generic config for the schema builder
+ */
+export interface SchemaBuilderConfig {
+    base: TZodShape;
+    raw: TZodShape;
+    id: TZodShape;
+    user: TZodShape;
+}
+
+
+/**
+ * Parameters for the operation schema definition function
+ */
+export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
+    baseSchema: z.ZodObject<C['base']>;
+    rawSchema: z.ZodObject<C['raw']>;
+    idFieldsSchema: z.ZodObject<C['id']>;
+    userFieldsSchema: z.ZodObject<C['user']>;
+}
+
+
+/**
+ * Function that returns an object with schemas for query, service, and endpoint layers.
+ */
+export type OperationSchemaDefinitionFn<
+    C extends SchemaBuilderConfig,
+    TSchemasObject extends TOperationSchemaObject = TOperationSchemaObject,
+> = (params: SchemaObjectFnParams<C>) => TSchemasObject;
+
+
+/**
+ * Builder class for operation schemas
+ * @template C - The config
+ * @template O - The output object with feature schemas
+ */
+export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Record<string, TOperationSchemaObject> = Record<string, TOperationSchemaObject>, TUsedKeys extends string = never,> {
+    schemas: O;
+    private baseSchema: z.ZodObject<C['base']>;
+    private rawSchema: z.ZodObject<C['raw']>;
+    private idFieldsSchema: z.ZodObject<C['id']>;
+    private userFieldsSchema: z.ZodObject<C['user']>;
+
+
+
+    constructor({ schemas, baseSchema, rawSchema, idFieldsSchema, userFieldsSchema }: { schemas: O, baseSchema: C['base'], rawSchema: C['raw'], idFieldsSchema: C['id'], userFieldsSchema: C['user'] }) {
         this.schemas = schemas;
+        this.baseSchema = z.object(baseSchema);
+        this.rawSchema = z.object(rawSchema);
+        this.idFieldsSchema = z.object(idFieldsSchema);
+        this.userFieldsSchema = z.object(userFieldsSchema);
     }
+
 
     /**
      * Adds an operation to the schemas object
      * @param key - The key of the operation
-     * @param schemaOrFn - The schema or function that returns the schema
+     * @param schemaObjectFn - The function that returns the schema object
      * @returns The updated schemas object
      */
+    addOperation<K extends AvailableOperationKeys<TUsedKeys>, S extends TOperationSchemaObject>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K> {
 
-    // Overload 1: Function input with baseSchema parameter
-    addOperation<
-        K extends AvailableOperationKeys<TUsedKeys>,
-        S extends TOperationSchemaObject
-    >(
-        key: K,
-        schemaFn: OperationSchemaDefinitionFn<TBaseSchema, S>
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>;
+        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema });
 
-    // Overload 2: Direct schema input
-    addOperation<
-        K extends AvailableOperationKeys<TUsedKeys>,
-        S extends TOperationSchemaObject
-    >(
-        key: K,
-        schema: S
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>;
 
-    // Implementation
-    addOperation<
-        K extends AvailableOperationKeys<TUsedKeys>,
-        S extends TOperationSchemaObject
-    >(
-        key: K,
-        schemaOrFn: S | OperationSchemaDefinitionFn<TBaseSchema, S>
-    ): SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K> {
-        const resolvedSchema =
-            typeof schemaOrFn === 'function'
-                ? schemaOrFn({ baseSchema: this.baseSchema })
-                : schemaOrFn;
-
-        return new SchemaObjectBuilder<TBaseSchema, TOutputSchemas & Record<K, S>, TUsedKeys | K>({
+        return new OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K>({
             schemas: {
                 ...this.schemas,
-                [key]: resolvedSchema,
+                [key]: resultingOpSchema,
             },
-            baseSchema: this.baseSchema,
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idFieldsSchema: this.idFieldsSchema.shape,
+            userFieldsSchema: this.userFieldsSchema.shape,
         });
     }
 
-    test() {}
-
-    /**
-     * Builds the final schemas object
-     * @returns The final schemas object
-     */
-    build(): TOutputSchemas {
+    build(): O {
         return this.schemas;
     }
 }
 
-// const defineEndpointSchema = ({
-//     id,
-// }: {
-//     id: TZodSchema;
-// }): Record<keyof ValidationTargets, TZodSchema> => {
-//     return {
-//         json: id,
-//     };
-// };
+
+
+
+
+
