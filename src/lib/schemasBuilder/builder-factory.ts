@@ -1,5 +1,5 @@
 import { OperationSchemaBuilder } from '@/lib/schemasBuilder/builder';
-import { TZodShape } from '@/lib/schemasBuilder/types';
+import { TOperationSchemaObject, TZodShape } from '@/lib/schemasBuilder/types';
 import z, { util } from 'zod';
 
 
@@ -80,7 +80,9 @@ export class BaseSchemaBuilderFactory<B extends TZodShape, R extends TZodShape =
         });
     }
 
-    buildOpsSchemas(builderCallback: (builder: OperationSchemaBuilder<{ base: B, raw: R, id: I, user: U }>) => OperationSchemaBuilder<{ base: B, raw: R, id: I, user: U }>) {
+    buildOpSchemas<TSchemas extends Record<string, TOperationSchemaObject>>(
+        builderCallback: (builder: OperationSchemaBuilder<{ base: B, raw: R, id: I, user: U }>) => OperationSchemaBuilder<{ base: B, raw: R, id: I, user: U }, TSchemas, string>
+    ) {
         const initialBuilder = new OperationSchemaBuilder<{ base: B, raw: R, id: I, user: U }>({
             schemas: {},
             baseSchema: this.baseSchema.shape,
@@ -91,6 +93,10 @@ export class BaseSchemaBuilderFactory<B extends TZodShape, R extends TZodShape =
 
         return builderCallback(initialBuilder).build()
     }
+
+
+
+
 
 
 }

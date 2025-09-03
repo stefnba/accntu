@@ -6,14 +6,14 @@ import z from "zod";
 
 
 
-const schemas = FeatureSchema.fromTable(tag)
+const { opSchemas: tagSchemas, baseSchema } = FeatureSchema.fromTable(tag)
     .pick({
         description: true, name: true, color: true
     }).idFields({ id: true, })
     .userFields({ userId: true })
-    .buildOpsSchemas(builder => builder.addOperation('create', ({ baseSchema, rawSchema, idFieldsSchema, userFieldsSchema }) => {
+    .buildOpSchemas(builder => builder.addOperation('create', ({ baseSchema, rawSchema, idFieldsSchema, userFieldsSchema, serviceInputBuilder }) => {
         return {
-            service: rawSchema,
+            service: serviceInputBuilder.create(baseSchema),
             endpoint: {
                 json: rawSchema,
                 params: idFieldsSchema,
@@ -22,10 +22,10 @@ const schemas = FeatureSchema.fromTable(tag)
     }))
 
 
-const aa = schemas
+const aa = tagSchemas.create.
 // const bb = schemas.userSchema
 
-type Schemas = z.infer<typeof schemas.baseSchema>;
+type Schemas = z.infer<typeof baseSchema>;
 
 
 

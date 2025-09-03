@@ -1,4 +1,4 @@
-import { AvailableOperationKeys, TOperationSchemaObject, TZodShape } from '@/lib/schemasBuilder/types';
+import { AvailableOperationKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
 import z from 'zod';
 
 
@@ -21,6 +21,11 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
     rawSchema: z.ZodObject<C['raw']>;
     idFieldsSchema: z.ZodObject<C['id']>;
     userFieldsSchema: z.ZodObject<C['user']>;
+    serviceInputBuilder: {
+        create: <S extends TZodObject>(schema: S) => { data: S, idFields: z.ZodObject<C['id']> }
+        getById: () => { idFields: z.ZodObject<C['id']> }
+        findMany: <S extends TZodObject>(filters: S) => { filters: S, idFields: z.ZodObject<C['id']> }
+    }
 }
 
 
@@ -55,6 +60,26 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
         this.userFieldsSchema = z.object(userFieldsSchema);
     }
 
+    private serviceInputBuilder = {
+        create: <S extends TZodObject>(schema: S) => {
+            return {
+                data: schema,
+                idFields: this.idFieldsSchema
+            }
+        },
+        getById: () => {
+            return {
+                idFields: this.idFieldsSchema,
+            }
+        },
+        findMany: <S extends TZodObject>(filters: S) => {
+            return {
+                filters: filters,
+                idFields: this.idFieldsSchema
+            }
+        }
+    }
+
 
     /**
      * Adds an operation to the schemas object
@@ -64,7 +89,7 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
      */
     addOperation<K extends AvailableOperationKeys<TUsedKeys>, S extends TOperationSchemaObject>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K> {
 
-        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema });
+        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 
 
         return new OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K>({
@@ -79,8 +104,12 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
         });
     }
 
-    build(): O {
-        return this.schemas;
+    /**
+     * Builds the operation schemas
+     * @returns The operation schemas
+     */
+    build(): { baseSchema: z.ZodObject<C['base']>, rawSchema: z.ZodObject<C['raw']>, idFieldsSchema: z.ZodObject<C['id']>, userFieldsSchema: z.ZodObject<C['user']>, opSchemas: O } {
+        return { baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema, opSchemas: this.schemas };
     }
 }
 

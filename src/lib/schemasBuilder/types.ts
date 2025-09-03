@@ -66,19 +66,22 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
  *
  * @returns Object with schemas for query, service, and endpoint layers
  */
-export type TOperationSchemaObject = {
+export type TOperationSchemaObject<K extends CoreOperationKeys = CoreOperationKeys> = {
     query?: TZodObject;
-    service?: TZodObject;
+    service?: TZodObject | K extends 'create' ? {
+        data: TZodObject;
+        idFields: TZodObject;
+    } : never;
     endpoint?: TEndpointSchemaObject;
 };
 
-/**
- * Function that returns an object with schemas for query, service, and endpoint layers.
- */
-export type OperationSchemaDefinitionFn<
-    TBaseSchema extends TZodObject,
-    TSchemasObject extends TOperationSchemaObject,
-> = ({ baseSchema }: { baseSchema: TBaseSchema }) => TSchemasObject;
+// /**
+//  * Function that returns an object with schemas for query, service, and endpoint layers.
+//  */
+// export type OperationSchemaDefinitionFn<
+//     TBaseSchema extends TZodObject,
+//     TSchemasObject extends TOperationSchemaObject,
+// > = ({ baseSchema }: { baseSchema: TBaseSchema }) => TSchemasObject;
 
 // ========================================
 //
