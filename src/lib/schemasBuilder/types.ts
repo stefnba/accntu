@@ -66,12 +66,45 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
  *
  * @returns Object with schemas for query, service, and endpoint layers
  */
-export type TOperationSchemaObject<K extends CoreOperationKeys = CoreOperationKeys> = {
+// Operation-specific service schema types
+export type CreateServiceSchema = {
+    data: TZodObject;
+    idFields?: TZodObject;
+    userFields?: TZodObject;
+};
+
+export type UpdateByIdServiceSchema = {
+    data: TZodObject;
+    idFields: TZodObject;
+    userFields?: TZodObject;
+};
+
+export type GetByIdServiceSchema = {
+    idFields: TZodObject;
+    userFields?: TZodObject;
+};
+
+export type GetManyServiceSchema = {
+    filters?: TZodObject;
+    pagination?: TZodObject;
+    userFields?: TZodObject;
+};
+
+export type RemoveByIdServiceSchema = {
+    idFields: TZodObject;
+    userFields?: TZodObject;
+};
+
+export type TOperationSchemaObject<K extends string = string> = {
     query?: TZodObject;
-    service?: TZodObject | K extends 'create' ? {
-        data: TZodObject;
-        idFields: TZodObject;
-    } : never;
+    service?: (
+        K extends 'create' ? CreateServiceSchema :
+        K extends 'updateById' ? UpdateByIdServiceSchema :
+        K extends 'getById' ? GetByIdServiceSchema :
+        K extends 'getMany' ? GetManyServiceSchema :
+        K extends 'removeById' ? RemoveByIdServiceSchema :
+        Record<string, TZodObject>
+    );
     endpoint?: TEndpointSchemaObject;
 };
 
