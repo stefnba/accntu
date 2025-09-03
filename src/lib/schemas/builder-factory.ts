@@ -2,23 +2,38 @@ import { OperationSchemaBuilder } from '@/lib/schemas/builder';
 import { TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
 import z, { util } from 'zod';
 
-
-
-
-
-export class BaseSchemaBuilderFactory<B extends TZodShape, R extends TZodShape = B, I extends TZodShape = TZodShape> {
+export class BaseSchemaBuilderFactory<
+    B extends TZodShape,
+    R extends TZodShape = B,
+    I extends TZodShape = TZodShape,
+> {
     baseSchema: z.ZodObject<B>;
     rawSchema: z.ZodObject<R>;
     idSchema: z.ZodObject<I>;
 
-    constructor({ baseSchema, rawSchema, idSchema }: { baseSchema: B, rawSchema?: B, idSchema?: I })
-    constructor({ baseSchema, rawSchema, idSchema }: { baseSchema: B, rawSchema: R, idSchema?: I })
-    constructor({ baseSchema, rawSchema, idSchema }: { baseSchema: B, rawSchema?: R, idSchema?: I }) {
+    constructor({
+        baseSchema,
+        rawSchema,
+        idSchema,
+    }: {
+        baseSchema: B;
+        rawSchema?: B;
+        idSchema?: I;
+    });
+    constructor({ baseSchema, rawSchema, idSchema }: { baseSchema: B; rawSchema: R; idSchema?: I });
+    constructor({
+        baseSchema,
+        rawSchema,
+        idSchema,
+    }: {
+        baseSchema: B;
+        rawSchema?: R;
+        idSchema?: I;
+    }) {
         this.baseSchema = z.object(baseSchema);
         this.rawSchema = z.object(rawSchema);
         this.idSchema = z.object(idSchema);
     }
-
 
     /**
      * Transform the schema
@@ -63,26 +78,18 @@ export class BaseSchemaBuilderFactory<B extends TZodShape, R extends TZodShape =
         });
     }
 
-
     buildOpSchemas<TSchemas extends Record<string, TOperationSchemaObject>>(
-        builderCallback: (builder: OperationSchemaBuilder<{ base: B, raw: R, id: I }>) => OperationSchemaBuilder<{ base: B, raw: R, id: I }, TSchemas>
+        builderCallback: (
+            builder: OperationSchemaBuilder<{ base: B; raw: R; id: I }>
+        ) => OperationSchemaBuilder<{ base: B; raw: R; id: I }, TSchemas>
     ) {
-        const initialBuilder = new OperationSchemaBuilder<{ base: B, raw: R, id: I }>({
+        const initialBuilder = new OperationSchemaBuilder<{ base: B; raw: R; id: I }>({
             schemas: {},
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idFieldsSchema: this.idSchema.shape,
         });
 
-        return builderCallback(initialBuilder).build()
+        return builderCallback(initialBuilder).build();
     }
-
-
-
-
-
-
 }
-
-
-

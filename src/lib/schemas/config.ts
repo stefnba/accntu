@@ -1,4 +1,3 @@
-
 /**
  * Default drizzle fields to omit from upsert schemas. These will be set in the query itself.
  */
@@ -10,11 +9,10 @@ export const DEFAULT_UPSERT_OMIT_FIELDSOld = {
     isActive: true,
 } as const;
 
-
-
 export const CORE_CRUD_OPERATIONS = [
     // retrieve
-    'getById', 'getMany',
+    'getById',
+    'getMany',
     // create
     'create',
     'createMany',

@@ -9,7 +9,6 @@ import { z } from 'zod';
  */
 export type TZodObject = z.ZodObject<z.ZodRawShape>;
 
-
 /**
  * Type constraint for all Zod shapes used in the layer system. This is more flexible than TZodObject.
  */
@@ -24,17 +23,12 @@ export type TZodShape = z.core.$ZodShape;
 /**
  * Core CRUD operation keys - these get IntelliSense priority
  */
-export type CoreOperationKeys = typeof CORE_CRUD_OPERATIONS[number];
-
+export type CoreOperationKeys = (typeof CORE_CRUD_OPERATIONS)[number];
 
 /**
  * Helper type to exclude core operation keys from a record
  */
-export type ExcludeRecordKeys<R> =
-    Exclude<CoreOperationKeys, Extract<keyof R, CoreOperationKeys>>;
-
-
-
+export type ExcludeRecordKeys<R> = Exclude<CoreOperationKeys, Extract<keyof R, CoreOperationKeys>>;
 
 /**
  * Endpoint schema object supporting Hono validation targets
@@ -42,12 +36,11 @@ export type ExcludeRecordKeys<R> =
  */
 export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodObject>>;
 
-
 // Operation-specific service schema types
 export interface CreateServiceSchema {
     data: TZodObject;
     idFields?: TZodObject;
-};
+}
 
 export type UpdateByIdServiceSchema = {
     data: TZodObject;
@@ -68,14 +61,22 @@ export type RemoveByIdServiceSchema = {
     idFields: TZodObject;
 };
 
-
-export interface CoreServiceMapping extends Record<CoreOperationKeys, TZodObject | CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema> {
-    create: CreateServiceSchema,
-    createMany: CreateServiceSchema,
-    updateById: UpdateByIdServiceSchema,
-    getById: GetByIdServiceSchema,
-    getMany: GetManyServiceSchema,
-    removeById: RemoveByIdServiceSchema,
+export interface CoreServiceMapping
+    extends Record<
+        CoreOperationKeys,
+        | TZodObject
+        | CreateServiceSchema
+        | UpdateByIdServiceSchema
+        | GetByIdServiceSchema
+        | GetManyServiceSchema
+        | RemoveByIdServiceSchema
+    > {
+    create: CreateServiceSchema;
+    createMany: CreateServiceSchema;
+    updateById: UpdateByIdServiceSchema;
+    getById: GetByIdServiceSchema;
+    getMany: GetManyServiceSchema;
+    removeById: RemoveByIdServiceSchema;
 }
 
 /**
@@ -98,21 +99,16 @@ export interface CoreServiceMapping extends Record<CoreOperationKeys, TZodObject
 export type TOperationSchemaObject = {
     query?: TZodObject;
     service?: TZodObject | Record<string, TZodObject>;
-    // service?: K extends 'create' ? boolean
-    // : K extends 'updateById' ? UpdateByIdServiceSchema
-    // : K extends 'getById' ? GetByIdServiceSchema
-    // : K extends 'getMany' ? GetManyServiceSchema
-    // : K extends 'removeById' ? RemoveByIdServiceSchema
-    // : TZodObject
     endpoint?: TEndpointSchemaObject;
 };
 
-export type TCoreOperationSchemaObject<K extends keyof CoreServiceMapping = keyof CoreServiceMapping> = {
+export type TCoreOperationSchemaObject<
+    K extends keyof CoreServiceMapping = keyof CoreServiceMapping,
+> = {
     query?: TZodObject;
     service?: CoreServiceMapping[K];
     endpoint?: TEndpointSchemaObject;
 };
-
 
 // ========================================
 //
@@ -169,17 +165,16 @@ export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
 export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObject>> = {
     [K in keyof T]: {
         [L in keyof T[K]]: L extends 'endpoint'
-        ? T[K][L] extends TEndpointSchemaObject
-        ? {
-            [Target in keyof T[K][L]]: T[K][L][Target] extends TZodObject
-            ? z.infer<T[K][L][Target]>
-            : never;
-        }
-        : never
-        : L extends 'service'
-        ? InferSchemabject<T[K][L]>
-
-        : never;
+            ? T[K][L] extends TEndpointSchemaObject
+                ? {
+                      [Target in keyof T[K][L]]: T[K][L][Target] extends TZodObject
+                          ? z.infer<T[K][L][Target]>
+                          : never;
+                  }
+                : never
+            : L extends 'service'
+              ? InferSchemabject<T[K][L]>
+              : never;
     };
 };
 
@@ -204,15 +199,17 @@ export type InferSchemasByLayer<
     TLayer extends keyof TOperationSchemaObject,
     T extends Record<string, TOperationSchemaObject>,
 > = {
-        [K in keyof T]: InferSchemabject<T[K][TLayer]>
-    };
+    [K in keyof T]: InferSchemabject<T[K][TLayer]>;
+};
 
+export type InferSchemabject<T> = T extends z.ZodObject
+    ? z.infer<T>
+    : T extends object
+      ? { [key in keyof T]: InferSchemabject<T[key]> }
+      : never;
 
-export type InferSchemabject<T> = T extends z.ZodObject ? z.infer<T> : T extends object ? { [key in keyof T]: InferSchemabject<T[key]> } : never;
-
-export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> = InferSchemasByLayer<'service', T>;
-
-
+export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> =
+    InferSchemasByLayer<'service', T>;
 
 // ========================================
 //
@@ -221,21 +218,19 @@ export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>
 // ========================================
 
 /**
-* Build a schema from a Drizzle table
-* @template TTable - The source Drizzle table
-* @template TType - The type of schema to build
-* @returns The schema
-*/
+ * Build a schema from a Drizzle table
+ * @template TTable - The source Drizzle table
+ * @template TType - The type of schema to build
+ * @returns The schema
+ */
 export type BuildSchemaFromTable<
     TTable extends Table,
     TType extends 'insert' | 'select' | 'update' = 'insert',
 > = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
 
 /**
-* Infer the columns of a Drizzle table
-* @template TTable - The source Drizzle table
-* @returns The columns of the Drizzle table
-*/
+ * Infer the columns of a Drizzle table
+ * @template TTable - The source Drizzle table
+ * @returns The columns of the Drizzle table
+ */
 export type InferTableColumns<TTable extends Table> = readonly (keyof TTable['_']['columns'])[];
-
-
