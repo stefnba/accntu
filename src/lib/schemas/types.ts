@@ -44,7 +44,7 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
 
 
 // Operation-specific service schema types
-export type CreateServiceSchema = {
+export interface CreateServiceSchema {
     data: TZodObject;
     idFields?: TZodObject;
 };
@@ -68,6 +68,16 @@ export type RemoveByIdServiceSchema = {
     idFields: TZodObject;
 };
 
+
+export interface CoreServiceMapping extends Record<CoreOperationKeys, TZodObject | CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema> {
+    create: CreateServiceSchema,
+    createMany: CreateServiceSchema,
+    updateById: UpdateByIdServiceSchema,
+    getById: GetByIdServiceSchema,
+    getMany: GetManyServiceSchema,
+    removeById: RemoveByIdServiceSchema,
+}
+
 /**
  * Object with schemas for query, service, and endpoint layers.
  * The endpoint layer supports Hono validation targets (json, query, param, etc.)
@@ -85,16 +95,21 @@ export type RemoveByIdServiceSchema = {
  *
  * @returns Object with schemas for query, service, and endpoint layers
  */
-export type TOperationSchemaObject<K extends string = string> = {
+export type TOperationSchemaObject = {
     query?: TZodObject;
-    service?: (
-        K extends 'create' ? CreateServiceSchema :
-        K extends 'updateById' ? UpdateByIdServiceSchema :
-        K extends 'getById' ? GetByIdServiceSchema :
-        K extends 'getMany' ? GetManyServiceSchema :
-        K extends 'removeById' ? RemoveByIdServiceSchema :
-        Record<string, TZodObject>
-    );
+    service?: TZodObject | Record<string, TZodObject>;
+    // service?: K extends 'create' ? boolean
+    // : K extends 'updateById' ? UpdateByIdServiceSchema
+    // : K extends 'getById' ? GetByIdServiceSchema
+    // : K extends 'getMany' ? GetManyServiceSchema
+    // : K extends 'removeById' ? RemoveByIdServiceSchema
+    // : TZodObject
+    endpoint?: TEndpointSchemaObject;
+};
+
+export type TCoreOperationSchemaObject<K extends keyof CoreServiceMapping = keyof CoreServiceMapping> = {
+    query?: TZodObject;
+    service?: CoreServiceMapping[K];
     endpoint?: TEndpointSchemaObject;
 };
 
@@ -162,15 +177,8 @@ export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObj
         }
         : never
         : L extends 'service'
-        ? T[K][L] extends infer S
-        ? S extends TZodObject
-        ? z.infer<S>
-        : S extends CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema
-        ? S
-        : never
-        : never
-        : T[K][L] extends TZodObject
-        ? z.infer<T[K][L]>
+        ? InferSchemabject<T[K][L]>
+
         : never;
     };
 };
@@ -196,26 +204,13 @@ export type InferSchemasByLayer<
     TLayer extends keyof TOperationSchemaObject,
     T extends Record<string, TOperationSchemaObject>,
 > = {
-        [K in keyof T]: TLayer extends 'endpoint'
-        ? T[K][TLayer] extends TEndpointSchemaObject
-        ? {
-            [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodObject
-            ? z.infer<T[K][TLayer][Target]>
-            : never;
-        }
-        : never
-        : TLayer extends 'service'
-        ? T[K][TLayer] extends infer S
-        ? S extends TZodObject
-        ? z.infer<S>
-        : S extends CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema
-        ? S
-        : never
-        : never
-        : T[K][TLayer] extends TZodObject
-        ? z.infer<T[K][TLayer]>
-        : never;
+        [K in keyof T]: InferSchemabject<T[K][TLayer]>
     };
+
+
+export type InferSchemabject<T> = T extends z.ZodObject ? z.infer<T> : T extends object ? { [key in keyof T]: InferSchemabject<T[key]> } : never;
+
+export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> = InferSchemasByLayer<'service', T>;
 
 
 

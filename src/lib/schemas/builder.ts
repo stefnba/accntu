@@ -1,4 +1,4 @@
-import { ExcludeRecordKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemas/types';
+import { CoreServiceMapping, TCoreOperationSchemaObject, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemas/types';
 import z from 'zod';
 
 
@@ -34,7 +34,7 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
  */
 export type OperationSchemaDefinitionFn<
     C extends SchemaBuilderConfig,
-    TSchemasObject extends TOperationSchemaObject<string> = TOperationSchemaObject<string>,
+    TSchemasObject extends TOperationSchemaObject | TCoreOperationSchemaObject = TOperationSchemaObject,
 > = (params: SchemaObjectFnParams<C>) => TSchemasObject;
 
 
@@ -94,16 +94,45 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
 
 
 
-    /**
-     * Adds an operation to the schemas object
-     * @param key - The key of the operation
-     * @param schemaObjectFn - The function that returns the schema object
-     * @returns The updated schemas object
-     */
-    addOperation<K extends ExcludeRecordKeys<O> | (string & {}), S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
+    // /**
+    //  * Adds an operation to the schemas object
+    //  * @param key - The key of the operation
+    //  * @param schemaObjectFn - The function that returns the schema object
+    //  * @returns The updated schemas object
+    //  */
+    // addOperation<const K extends ExcludeRecordKeys<O> | (string & {}), S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
 
+    //     const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
+
+
+    //     return new OperationSchemaBuilder<C, O & Record<K, S>>({
+    //         schemas: {
+    //             ...this.schemas,
+    //             [key]: resultingOpSchema,
+    //         },
+    //         baseSchema: this.baseSchema.shape,
+    //         rawSchema: this.rawSchema.shape,
+    //         idFieldsSchema: this.idFieldsSchema.shape,
+    //     });
+    // }
+
+
+    addCustom<const K extends string, S extends TOperationSchemaObject>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
         const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 
+        return new OperationSchemaBuilder<C, O & Record<K, S>>({
+            schemas: {
+                ...this.schemas,
+                [key]: resultingOpSchema,
+            },
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idFieldsSchema: this.idFieldsSchema.shape,
+        });
+    }
+
+    addCore<const K extends keyof CoreServiceMapping, S extends TCoreOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
+        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 
         return new OperationSchemaBuilder<C, O & Record<K, S>>({
             schemas: {
