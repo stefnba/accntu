@@ -1,4 +1,4 @@
-import { CoreOperationKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
+import { ExcludeRecordKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
 import z from 'zod';
 
 
@@ -34,7 +34,7 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
  */
 export type OperationSchemaDefinitionFn<
     C extends SchemaBuilderConfig,
-    TSchemasObject extends TOperationSchemaObject = TOperationSchemaObject,
+    TSchemasObject extends TOperationSchemaObject<string> = TOperationSchemaObject<string>,
 > = (params: SchemaObjectFnParams<C>) => TSchemasObject;
 
 
@@ -43,7 +43,8 @@ export type OperationSchemaDefinitionFn<
  * @template C - The config
  * @template O - The output object with feature schemas
  */
-export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Record<string, TOperationSchemaObject> = Record<string, TOperationSchemaObject>, TUsedKeys extends string = never> {
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Record<string, TOperationSchemaObject> = {}> {
     schemas: O;
     private baseSchema: z.ZodObject<C['base']>;
     private rawSchema: z.ZodObject<C['raw']>;
@@ -91,13 +92,15 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
     }
 
 
+
+
     /**
      * Adds an operation to the schemas object
      * @param key - The key of the operation
      * @param schemaObjectFn - The function that returns the schema object
      * @returns The updated schemas object
      */
-    addOperation<K extends CoreOperationKeys | (string & {}), S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
+    addOperation<K extends ExcludeRecordKeys<O> | (string & {}), S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
 
         const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 

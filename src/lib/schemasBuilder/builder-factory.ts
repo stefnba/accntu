@@ -65,7 +65,7 @@ export class BaseSchemaBuilderFactory<B extends TZodShape, R extends TZodShape =
 
 
     buildOpSchemas<TSchemas extends Record<string, TOperationSchemaObject>>(
-        builderCallback: (builder: OperationSchemaBuilder<{ base: B, raw: R, id: I }>) => OperationSchemaBuilder<{ base: B, raw: R, id: I }, TSchemas, string>
+        builderCallback: (builder: OperationSchemaBuilder<{ base: B, raw: R, id: I }>) => OperationSchemaBuilder<{ base: B, raw: R, id: I }, TSchemas>
     ) {
         const initialBuilder = new OperationSchemaBuilder<{ base: B, raw: R, id: I }>({
             schemas: {},
