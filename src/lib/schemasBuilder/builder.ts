@@ -1,4 +1,4 @@
-import { AvailableOperationKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
+import { CoreOperationKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
 import z from 'zod';
 
 
@@ -34,7 +34,6 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
  */
 export type OperationSchemaDefinitionFn<
     C extends SchemaBuilderConfig,
-    K extends string = string,
     TSchemasObject extends TOperationSchemaObject = TOperationSchemaObject,
 > = (params: SchemaObjectFnParams<C>) => TSchemasObject;
 
@@ -44,7 +43,7 @@ export type OperationSchemaDefinitionFn<
  * @template C - The config
  * @template O - The output object with feature schemas
  */
-export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Record<string, TOperationSchemaObject> = Record<string, TOperationSchemaObject>, TUsedKeys extends string = never,> {
+export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Record<string, TOperationSchemaObject> = Record<string, TOperationSchemaObject>, TUsedKeys extends string = never> {
     schemas: O;
     private baseSchema: z.ZodObject<C['base']>;
     private rawSchema: z.ZodObject<C['raw']>;
@@ -98,12 +97,12 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
      * @param schemaObjectFn - The function that returns the schema object
      * @returns The updated schemas object
      */
-    addOperation<K extends AvailableOperationKeys<TUsedKeys>, S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, K, S>): OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K> {
+    addOperation<K extends CoreOperationKeys | (string & {}), S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, S>): OperationSchemaBuilder<C, O & Record<K, S>> {
 
         const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 
 
-        return new OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K>({
+        return new OperationSchemaBuilder<C, O & Record<K, S>>({
             schemas: {
                 ...this.schemas,
                 [key]: resultingOpSchema,

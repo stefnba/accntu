@@ -35,9 +35,10 @@ export type OperationKeys = CoreOperationKeys | string;
  * Helper type to get remaining operation keys that haven't been used yet
  * Shows unused core operations first, then allows any string for custom operations
  */
-export type AvailableOperationKeys<TUsedKeys extends string> =
-    | Exclude<CoreOperationKeys, TUsedKeys>
-    | (string & {});
+export type AvailableOperationKeys<TUsedKeys extends string = never> = 
+    TUsedKeys extends never 
+        ? CoreOperationKeys | string
+        : Exclude<CoreOperationKeys, TUsedKeys> | string;
 
 
 
@@ -114,7 +115,7 @@ export type TOperationSchemaObject<K extends string = string> = {
  * Comprehensive type inference for feature operation schemas.
  * Provides multiple ways to access inferred types from operation schemas.
  *
- * @template T - The operation schemas object from forOperations()
+ * @template T - The operation schemas object from buildOpSchemas()
  * @returns Object with different views of the inferred types
  *
  * @example
@@ -128,7 +129,6 @@ export type TOperationSchemaObject<K extends string = string> = {
  * // Access by layer (all operations)
  * type AllServices = TTagSchemas['services']; // { create: Type, update: Type, ... }
  * type AllEndpoints = TTagSchemas['endpoints'];
- * type AllDatabases = TTagSchemas['databases'];
  * ```
  */
 export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
@@ -160,16 +160,24 @@ export type InferSchemas<T extends Record<string, TOperationSchemaObject>> = {
 export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObject>> = {
     [K in keyof T]: {
         [L in keyof T[K]]: L extends 'endpoint'
-        ? T[K][L] extends TEndpointSchemaObject
-        ? {
-            [Target in keyof T[K][L]]: T[K][L][Target] extends TZodObject
-            ? z.infer<T[K][L][Target]>
+            ? T[K][L] extends TEndpointSchemaObject
+                ? {
+                    [Target in keyof T[K][L]]: T[K][L][Target] extends TZodObject
+                        ? z.infer<T[K][L][Target]>
+                        : never;
+                }
+                : never
+            : L extends 'service'
+            ? T[K][L] extends infer S
+                ? S extends TZodObject
+                    ? z.infer<S>
+                    : S extends CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema
+                    ? S
+                    : never
+                : never
+            : T[K][L] extends TZodObject
+            ? z.infer<T[K][L]>
             : never;
-        }
-        : never
-        : T[K][L] extends TZodObject
-        ? z.infer<T[K][L]>
-        : never;
     };
 };
 
@@ -194,18 +202,26 @@ export type InferSchemasByLayer<
     TLayer extends keyof TOperationSchemaObject,
     T extends Record<string, TOperationSchemaObject>,
 > = {
-        [K in keyof T]: TLayer extends 'endpoint'
+    [K in keyof T]: TLayer extends 'endpoint'
         ? T[K][TLayer] extends TEndpointSchemaObject
-        ? {
-            [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodObject
-            ? z.infer<T[K][TLayer][Target]>
-            : never;
-        }
-        : never
+            ? {
+                [Target in keyof T[K][TLayer]]: T[K][TLayer][Target] extends TZodObject
+                    ? z.infer<T[K][TLayer][Target]>
+                    : never;
+            }
+            : never
+        : TLayer extends 'service'
+        ? T[K][TLayer] extends infer S
+            ? S extends TZodObject
+                ? z.infer<S>
+                : S extends CreateServiceSchema | UpdateByIdServiceSchema | GetByIdServiceSchema | GetManyServiceSchema | RemoveByIdServiceSchema
+                ? S
+                : never
+            : never
         : T[K][TLayer] extends TZodObject
         ? z.infer<T[K][TLayer]>
         : never;
-    };
+};
 
 
 
