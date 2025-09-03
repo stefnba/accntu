@@ -1,3 +1,4 @@
+import { CORE_CRUD_OPERATIONS } from '@/lib/schemasBuilder/config';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import { type ValidationTargets } from 'hono';
@@ -23,7 +24,7 @@ export type TZodShape = z.core.$ZodShape;
 /**
  * Core CRUD operation keys - these get IntelliSense priority
  */
-export type CoreOperationKeys = 'getById' | 'getMany' | 'create' | 'updateById' | 'removeById';
+export type CoreOperationKeys = typeof CORE_CRUD_OPERATIONS[number];
 
 /**
  * All operation keys - includes core CRUD operations plus any custom string
@@ -38,16 +39,39 @@ export type AvailableOperationKeys<TUsedKeys extends string> =
     | Exclude<CoreOperationKeys, TUsedKeys>
     | (string & {});
 
-/**
- * Layer keys
- */
-export type LayerKeys = 'query' | 'service' | 'endpoint';
+
 
 /**
  * Endpoint schema object supporting Hono validation targets
  * Each target is optional to allow flexible endpoint definitions
  */
 export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodObject>>;
+
+
+// Operation-specific service schema types
+export type CreateServiceSchema = {
+    data: TZodObject;
+    idFields?: TZodObject;
+};
+
+export type UpdateByIdServiceSchema = {
+    data: TZodObject;
+    idFields: TZodObject;
+};
+
+export type GetByIdServiceSchema = {
+    idFields: TZodObject;
+};
+
+export type GetManyServiceSchema = {
+    filters?: TZodObject;
+    pagination?: TZodObject;
+    idFields?: TZodObject;
+};
+
+export type RemoveByIdServiceSchema = {
+    idFields: TZodObject;
+};
 
 /**
  * Object with schemas for query, service, and endpoint layers.
@@ -66,35 +90,6 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
  *
  * @returns Object with schemas for query, service, and endpoint layers
  */
-// Operation-specific service schema types
-export type CreateServiceSchema = {
-    data: TZodObject;
-    idFields?: TZodObject;
-    userFields?: TZodObject;
-};
-
-export type UpdateByIdServiceSchema = {
-    data: TZodObject;
-    idFields: TZodObject;
-    userFields?: TZodObject;
-};
-
-export type GetByIdServiceSchema = {
-    idFields: TZodObject;
-    userFields?: TZodObject;
-};
-
-export type GetManyServiceSchema = {
-    filters?: TZodObject;
-    pagination?: TZodObject;
-    userFields?: TZodObject;
-};
-
-export type RemoveByIdServiceSchema = {
-    idFields: TZodObject;
-    userFields?: TZodObject;
-};
-
 export type TOperationSchemaObject<K extends string = string> = {
     query?: TZodObject;
     service?: (
@@ -108,13 +103,6 @@ export type TOperationSchemaObject<K extends string = string> = {
     endpoint?: TEndpointSchemaObject;
 };
 
-// /**
-//  * Function that returns an object with schemas for query, service, and endpoint layers.
-//  */
-// export type OperationSchemaDefinitionFn<
-//     TBaseSchema extends TZodObject,
-//     TSchemasObject extends TOperationSchemaObject,
-// > = ({ baseSchema }: { baseSchema: TBaseSchema }) => TSchemasObject;
 
 // ========================================
 //
@@ -203,7 +191,7 @@ export type InferSchemasByOperation<T extends Record<string, TOperationSchemaObj
  * ```
  */
 export type InferSchemasByLayer<
-    TLayer extends LayerKeys,
+    TLayer extends keyof TOperationSchemaObject,
     T extends Record<string, TOperationSchemaObject>,
 > = {
         [K in keyof T]: TLayer extends 'endpoint'

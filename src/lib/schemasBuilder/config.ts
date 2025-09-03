@@ -12,4 +12,19 @@ export const DEFAULT_UPSERT_OMIT_FIELDSOld = {
 
 
 
-export const CORE_CRUD_OPERATIONS = ['getById', 'getMany', 'create', 'updateById', 'removeById'] as const;
+export const CORE_CRUD_OPERATIONS = [
+    // retrieve
+    'getById', 'getMany',
+    // create
+    'create',
+    'createMany',
+    // update
+    'updateById',
+    'updateManyByIds',
+    // remove (soft delete)
+    'removeById',
+    'removeManyByIds',
+    // hard delete (permanent delete)
+    'deleteById',
+    'deleteManyByIds',
+] as const;

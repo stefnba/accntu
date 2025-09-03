@@ -9,7 +9,6 @@ export interface SchemaBuilderConfig {
     base: TZodShape;
     raw: TZodShape;
     id: TZodShape;
-    user: TZodShape;
 }
 
 
@@ -20,11 +19,12 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
     baseSchema: z.ZodObject<C['base']>;
     rawSchema: z.ZodObject<C['raw']>;
     idFieldsSchema: z.ZodObject<C['id']>;
-    userFieldsSchema: z.ZodObject<C['user']>;
     serviceInputBuilder: {
-        create: <S extends TZodObject>(schema: S) => { data: S, idFields: z.ZodObject<C['id']> }
+        create: <S extends TZodObject>(schema: S) => { data: S, idFields?: z.ZodObject<C['id']> }
         getById: () => { idFields: z.ZodObject<C['id']> }
-        findMany: <S extends TZodObject>(filters: S) => { filters: S, idFields: z.ZodObject<C['id']> }
+        updateById: <S extends TZodObject>(schema: S) => { data: S, idFields: z.ZodObject<C['id']> }
+        getMany: <S extends TZodObject>(filters?: S) => { filters?: S, pagination?: TZodObject, idFields?: z.ZodObject<C['id']> }
+        removeById: () => { idFields: z.ZodObject<C['id']> }
     }
 }
 
@@ -49,16 +49,14 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
     private baseSchema: z.ZodObject<C['base']>;
     private rawSchema: z.ZodObject<C['raw']>;
     private idFieldsSchema: z.ZodObject<C['id']>;
-    private userFieldsSchema: z.ZodObject<C['user']>;
 
 
 
-    constructor({ schemas, baseSchema, rawSchema, idFieldsSchema, userFieldsSchema }: { schemas: O, baseSchema: C['base'], rawSchema: C['raw'], idFieldsSchema: C['id'], userFieldsSchema: C['user'] }) {
+    constructor({ schemas, baseSchema, rawSchema, idFieldsSchema }: { schemas: O, baseSchema: C['base'], rawSchema: C['raw'], idFieldsSchema: C['id'] }) {
         this.schemas = schemas;
         this.baseSchema = z.object(baseSchema);
         this.rawSchema = z.object(rawSchema);
         this.idFieldsSchema = z.object(idFieldsSchema);
-        this.userFieldsSchema = z.object(userFieldsSchema);
     }
 
     private serviceInputBuilder = {
@@ -73,10 +71,22 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
                 idFields: this.idFieldsSchema,
             }
         },
-        findMany: <S extends TZodObject>(filters: S) => {
+        updateById: <S extends TZodObject>(schema: S) => {
+            return {
+                data: schema,
+                idFields: this.idFieldsSchema
+            }
+        },
+        getMany: <S extends TZodObject>(filters?: S) => {
             return {
                 filters: filters,
+                pagination: undefined,
                 idFields: this.idFieldsSchema
+            }
+        },
+        removeById: () => {
+            return {
+                idFields: this.idFieldsSchema,
             }
         }
     }
@@ -90,7 +100,7 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
      */
     addOperation<K extends AvailableOperationKeys<TUsedKeys>, S extends TOperationSchemaObject<K>>(key: K, schemaObjectFn: OperationSchemaDefinitionFn<C, K, S>): OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K> {
 
-        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
+        const resultingOpSchema = schemaObjectFn({ baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, serviceInputBuilder: this.serviceInputBuilder });
 
 
         return new OperationSchemaBuilder<C, O & Record<K, S>, TUsedKeys | K>({
@@ -101,7 +111,6 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idFieldsSchema: this.idFieldsSchema.shape,
-            userFieldsSchema: this.userFieldsSchema.shape,
         });
     }
 
@@ -109,8 +118,8 @@ export class OperationSchemaBuilder<C extends SchemaBuilderConfig, O extends Rec
      * Builds the operation schemas
      * @returns The operation schemas
      */
-    build(): { baseSchema: z.ZodObject<C['base']>, rawSchema: z.ZodObject<C['raw']>, idFieldsSchema: z.ZodObject<C['id']>, userFieldsSchema: z.ZodObject<C['user']>, opSchemas: O } {
-        return { baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, userFieldsSchema: this.userFieldsSchema, opSchemas: this.schemas };
+    build(): { baseSchema: z.ZodObject<C['base']>, rawSchema: z.ZodObject<C['raw']>, idFieldsSchema: z.ZodObject<C['id']>, opSchemas: O } {
+        return { baseSchema: this.baseSchema, rawSchema: this.rawSchema, idFieldsSchema: this.idFieldsSchema, opSchemas: this.schemas };
     }
 }
 

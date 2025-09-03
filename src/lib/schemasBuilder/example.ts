@@ -1,4 +1,5 @@
 import { FeatureSchema } from "@/lib/schemasBuilder/schema-factory";
+import { InferSchemas } from "@/lib/schemasBuilder/types";
 import { tag } from "@/server/db/schemas";
 import z from "zod";
 
@@ -9,12 +10,10 @@ import z from "zod";
 const { opSchemas: tagSchemas, baseSchema } = FeatureSchema.fromTable(tag)
     .pick({
         description: true, name: true, color: true
-    }).idFields({ id: true, })
-    .userFields({ userId: true })
+    }).idFields({ id: true, userId: true })
     .buildOpSchemas(builder => {
-        const builderWithCreate = builder.addOperation('create', ({ baseSchema, rawSchema, idFieldsSchema, userFieldsSchema, serviceInputBuilder }) => {
+        const builderWithCreate = builder.addOperation('create', ({ baseSchema, rawSchema, idFieldsSchema, serviceInputBuilder }) => {
             return {
-                // Option 1: Using serviceInputBuilder helper
                 service: serviceInputBuilder.create(baseSchema),
                 endpoint: {
                     json: rawSchema,
@@ -23,23 +22,10 @@ const { opSchemas: tagSchemas, baseSchema } = FeatureSchema.fromTable(tag)
             }
         });
 
-        const builderWithGetMany = builderWithCreate.addOperation('updateById', ({ baseSchema, idFieldsSchema, userFieldsSchema }) => {
+        const builderWithGetById = builderWithCreate.addOperation('getById', ({ idFieldsSchema }) => {
             return {
                 service: {
-                    data: baseSchema,
-                    idFields: baseSchema,
-                },
-                endpoint: {
-                    json: baseSchema,
-                }
-            }
-        });
-
-        const builderWithGetById = builderWithCreate.addOperation('getById', ({ idFieldsSchema, userFieldsSchema, baseSchema }) => {
-            return {
-                // IntelliSense should show: idFields, userFields (no data allowed)
-                service: {
-                    idFields: baseSchema,
+                    idFields: idFieldsSchema,
                 },
                 endpoint: {
                     param: idFieldsSchema,
@@ -47,13 +33,9 @@ const { opSchemas: tagSchemas, baseSchema } = FeatureSchema.fromTable(tag)
             }
         });
 
-        return builderWithGetById.addOperation('updateById', ({ baseSchema, idFieldsSchema, userFieldsSchema }) => {
+        return builderWithGetById.addOperation('updateById', ({ baseSchema, idFieldsSchema, serviceInputBuilder }) => {
             return {
-                // IntelliSense should show: data, idFields, userFields
-                service: {
-                    data: baseSchema.partial(),
-                    idFields: baseSchema,
-                },
+                service: serviceInputBuilder.updateById(baseSchema.partial()),
                 endpoint: {
                     json: baseSchema.partial(),
                     param: idFieldsSchema,
@@ -62,26 +44,15 @@ const { opSchemas: tagSchemas, baseSchema } = FeatureSchema.fromTable(tag)
         });
     })
 
-// Test type inference
-// const createOp = tagSchemas.getById.;
+// Test successful schema creation
+const createOp = tagSchemas.create.service
 const getByIdOp = tagSchemas.getById;
 const updateByIdOp = tagSchemas.updateById;
 
-// Test IntelliSense for service object construction
-const testCreateService = {
-    data: baseSchema,
-    idFields: baseSchema,
-    userFields: baseSchema,
-    // Should show IntelliSense for create operation fields: data, idFields, userFields
-};
-
-const testGetByIdService = {
-    idFields: baseSchema,
-    userFields: baseSchema,
-    // Should show IntelliSense for getById operation fields: idFields, userFields (no data)
-};
-
-type Schemas = z.infer<typeof baseSchema>;
+type Schemas = z.infer<typeof createOp>;
 
 
 
+
+
+type TagSchemas = InferSchemas<typeof tagSchemas>['endpoints'];
