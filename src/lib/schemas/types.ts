@@ -1,4 +1,4 @@
-import { CORE_CRUD_OPERATIONS } from '@/lib/schemasBuilder/config';
+import { CORE_CRUD_OPERATIONS } from '@/lib/schemas/config';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import { type ValidationTargets } from 'hono';

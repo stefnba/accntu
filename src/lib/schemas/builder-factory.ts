@@ -1,5 +1,5 @@
-import { OperationSchemaBuilder } from '@/lib/schemasBuilder/builder';
-import { TOperationSchemaObject, TZodShape } from '@/lib/schemasBuilder/types';
+import { OperationSchemaBuilder } from '@/lib/schemas/builder';
+import { TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
 import z, { util } from 'zod';
 
 

@@ -1,4 +1,4 @@
-import { ExcludeRecordKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemasBuilder/types';
+import { ExcludeRecordKeys, TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemas/types';
 import z from 'zod';
 
 

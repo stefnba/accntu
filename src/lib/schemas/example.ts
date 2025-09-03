@@ -1,4 +1,4 @@
-import { FeatureSchema } from "@/lib/schemasBuilder/schema-factory";
+import { FeatureSchema } from "@/lib/schemas/";
 import { tag } from "@/server/db/schemas";
 import z from "zod";
 
