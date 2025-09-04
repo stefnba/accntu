@@ -3,7 +3,7 @@ export * from '@/features/bucket/server/db/schema';
 export * from '@/features/budget/server/db/schema';
 export * from '@/features/label/server/db/schema';
 export * from '@/features/participant/server/db/schema';
-export * from '@/features/tag/server/db/schema';
+export * from '@/features/tag/server/db/tables';
 export * from '@/features/transaction-fx/server/db/schema';
 export * from '@/features/transaction-import/server/db/schemas';
 export * from '@/features/transaction/server/db/schema';
