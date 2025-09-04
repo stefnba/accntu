@@ -2,11 +2,9 @@ import type { QueryFn } from '@/server/lib/db/query/factory/types';
 import { errorFactory } from '@/server/lib/error';
 import { BaseError } from '@/server/lib/error/base';
 import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';
-import { Table } from 'drizzle-orm';
 import { z } from 'zod';
 
-interface QueryFnHandlerParams<T extends Table, TInput, TOutput> {
-    table: T;
+interface QueryFnHandlerParams<TInput, TOutput> {
     fn: QueryFn<TInput, TOutput>;
     operation?: string;
     inputSchema?: z.ZodSchema<TInput, any, any>;
@@ -15,10 +13,10 @@ interface QueryFnHandlerParams<T extends Table, TInput, TOutput> {
 /**
  * Wrapper function that adds logging and error handling to a query function
  */
-export function queryFnHandler<T extends Table, TInput, TOutput>(
-    params: QueryFnHandlerParams<T, TInput, TOutput>
+export function queryFnHandler<TInput, TOutput>(
+    params: QueryFnHandlerParams<TInput, TOutput>
 ): QueryFn<TInput, TOutput> {
-    const { table, fn, operation = 'database operation', inputSchema } = params;
+    const { fn, operation = 'database operation', inputSchema } = params;
 
     return async (inputData: TInput) => {
         let data = inputData;

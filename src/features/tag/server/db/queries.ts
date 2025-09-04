@@ -5,10 +5,8 @@ import { tag, tagToTransaction } from '@/server/db/schemas';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const { queries: tagQueries } = createFeatureQueries({
-    table: tag,
-    schemas: tagSchemas,
-})
+export const tagQueries = createFeatureQueries
+    .registerSchema(tagSchemas)
     /**
      * Get all tags for a user
      */
@@ -74,10 +72,8 @@ export const { queries: tagQueries } = createFeatureQueries({
         },
     });
 
-export const { queries: tagToTransactionQueries } = createFeatureQueries({
-    table: tagToTransaction,
-    schemas: tagToTransactionSchemas,
-})
+export const { queries: tagToTransactionQueries } = createFeatureQueries
+    .registerSchema(tagToTransactionSchemas)
     /**
      * Assign tags to a transaction
      */

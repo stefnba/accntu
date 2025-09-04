@@ -9,7 +9,7 @@ export type QueryFn<Input = any, Output = any> = (args: Input) => Promise<Output
  * Infer feature type from QueryBuilder. By default, it will infer the type from the getById query.
  */
 export type InferFeatureTypeFromQueryBuilder<
-    TQueryBuilder extends QueryBuilder<any, any, any>,
+    TQueryBuilder extends QueryBuilder<any, any>,
     TKey extends keyof TQueryBuilder['queries'] = 'getById',
 > =
     TQueryBuilder['queries'][TKey] extends QueryFn<any, infer TReturn>
@@ -34,15 +34,14 @@ export type InferFeatureTypeFromRecord<
 /**
  * Infer feature type from QueryBuilder or Record. By default, it will infer the type from the getById query.
  */
-export type InferFeatureType<T, TKey extends string = 'getById'> =
-    T extends QueryBuilder<any, any, any>
-        ? T extends QueryBuilder<any, any, infer TQueries>
-            ? TKey extends keyof TQueries
-                ? InferFeatureTypeFromRecord<TQueries, TKey>
-                : never
+export type InferFeatureType<T, TKey extends string = 'getById'> = T extends QueryBuilder
+    ? T extends QueryBuilder<any, infer TQueries>
+        ? TKey extends keyof TQueries
+            ? InferFeatureTypeFromRecord<TQueries, TKey>
             : never
-        : T extends Record<string, QueryFn>
-          ? TKey extends keyof T
-              ? InferFeatureTypeFromRecord<T, TKey>
-              : never
-          : never;
+        : never
+    : T extends Record<string, QueryFn>
+      ? TKey extends keyof T
+          ? InferFeatureTypeFromRecord<T, TKey>
+          : never
+      : never;
