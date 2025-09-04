@@ -1,5 +1,6 @@
 import type { TOperationSchemaObject } from '@/lib/schemas/types';
-import type { QueriesConfig, ServicesConfig } from './types';
+import { QueryFn } from '@/server/lib/db/query/builder/types';
+import type { ServicesConfig } from './types';
 
 /**
  * Creates a service collection with automatic type inference from schemas and queries.
@@ -61,7 +62,7 @@ import type { QueriesConfig, ServicesConfig } from './types';
  */
 export const createFeatureServices = <
     TSchemas extends Record<string, TOperationSchemaObject>,
-    TQueries extends QueriesConfig,
+    TQueries extends Record<string, QueryFn>,
     TServices extends ServicesConfig<TSchemas>,
 >(config: {
     queries: TQueries;
@@ -71,3 +72,49 @@ export const createFeatureServices = <
     const { queries, schemas, services } = config;
     return services({ schemas, queries });
 };
+
+// class TagService<
+//     TQueries extends Record<string, string | (() => string)> = Record<
+//         string,
+//         string | (() => string)
+//     >,
+// > {
+//     queries: TQueries;
+
+//     constructor({ queries }: { queries: TQueries }) {
+//         this.queries = queries;
+//     }
+// }
+
+// const a = new TagService({ queries: { hi: () => 'sss', best: 'sss' } });
+// const b = new TagService({ queries: { nein: 'sss', what: 'sss' } });
+
+// // helpers
+
+// /**
+//  * Extract the queries from a TagService.
+//  */
+// type ExtractQueries<T> = T extends TagService ? T['queries'] : never;
+
+// /**
+//  * Union to intersection.
+//  * For example, if we have a union of objects, we can use this to merge them into a single object.
+//  */
+// type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+//     ? I
+//     : never;
+
+// /**
+//  * Merge the queries from a TagService.
+//  */
+// type MergeQueries<T extends Record<string, TagService>> = UnionToIntersection<
+//     ExtractQueries<T[keyof T]>
+// >;
+
+// function combineServices<T extends Record<string, TagService>>(services: T): MergeQueries<T> {
+//     return Object.assign({}, ...Object.values(services).map((s) => s.queries));
+// }
+
+// const aaaa = combineServices({ a, b });
+
+// aaaa.hi();
