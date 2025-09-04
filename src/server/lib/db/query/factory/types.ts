@@ -144,7 +144,7 @@ export type QueryConfigObject<Input = unknown, Output = unknown> = {
 };
 
 /**
- * Extract the query functions from the query config object
+ * Extract the query functions for each key in the queries config
  */
 export type ExtractQueryFns<T extends Table, C extends QueriesConfig<T>> = {
     [K in keyof C]: C[K]['fn'];
