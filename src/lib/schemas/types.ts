@@ -103,6 +103,11 @@ export type TOperationSchemaObject = {
     endpoint?: TEndpointSchemaObject;
 };
 
+/**
+ * Result of building operation schemas for a feature
+ */
+export type TOperationSchemasResult = Record<string, TOperationSchemaObject>;
+
 export type TCoreOperationSchemaObject<
     K extends keyof CoreServiceMapping = keyof CoreServiceMapping,
 > = {
@@ -211,6 +216,9 @@ export type InferSchemabject<T> = T extends z.ZodObject
 
 export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> =
     InferSchemasByLayer<'service', T>;
+
+export type InferQuerySchemas<T extends Record<string, TOperationSchemaObject>> =
+    InferSchemasByLayer<'query', T>;
 
 // ========================================
 //

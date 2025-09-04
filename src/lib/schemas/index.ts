@@ -1,3 +1,3 @@
 export { createFeatureSchemas, FeatureSchema } from './schema-factory';
 
-export type { InferSchemas, InferServiceSchemas } from './types';
+export type { InferSchemas, InferServiceSchemas, InferQuerySchemas } from './types';
