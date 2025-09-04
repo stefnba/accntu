@@ -1,5 +1,3 @@
-import { type Tag } from './server/db/schema';
-
 // Tag validation utilities
 export const validateTagName = (
     name: string,

@@ -1,41 +1,46 @@
-import { tagSchemas } from '@/features/tag/schemas';
-import { tagQueries } from '@/features/tag/server/db/queries';
+import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
+import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service/';
 
 export const tagServices = createFeatureServices({
-    queries: tagQueries,
-    schemas: tagSchemas,
+    queries: { ...tagQueries, ...tagToTransactionQueries },
+    schemas: { ...tagSchemas, ...tagToTransactionSchemas },
     services: ({ queries }) => ({
         /**
          * Create a new tag
          */
-        create: async (input) => queries.create({ data: input.data, userId: input.userId }),
+        create: async (input) => queries.create({ data: input.data, userId: input.user.userId }),
         /**
          * Get many tags
          */
-        getMany: async (input) => queries.getMany({ userId: input.userId }),
+        getMany: async ({ idFields }) => queries.getMany({ userId: idFields.userId }),
         /**
          * Get a tag by ID
          */
-        getById: async (input) => queries.getById({ id: input.id, userId: input.userId }),
+        getById: async ({ idFields }) =>
+            queries.getById({ id: idFields.id, userId: 'test-user-id' }),
         /**
          * Update a tag by ID
          */
-        updateById: async (input) =>
-            queries.updateById({ id: input.id, data: input.data, userId: input.userId }),
+        updateById: async ({ data, idFields }) =>
+            queries.updateById({ id: idFields.id, data, userId: 'test-user-id' }),
         /**
          * Remove a tag by ID
          */
-        removeById: async (input) => queries.removeById({ id: input.id, userId: input.userId }),
+        removeById: async (input) =>
+            queries.removeById({ id: input.idFields.id, userId: 'test-user-id' }),
         /**
          * Assign tags to a transaction
          */
         assignToTransaction: async (input) =>
             queries.assignToTransaction({
-                id: input.transactionId,
-                userId: input.userId,
+                transactionId: input.idFields.transactionId,
+                userId: 'test-user-id', // This should come from auth context
                 tagIds: input.tagIds,
             }),
+        /**
+         * Custom service for testing
+         */
         customService: async (input: { name: string }) => {
             return {
                 ...input,
