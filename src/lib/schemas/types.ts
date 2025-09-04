@@ -39,7 +39,8 @@ export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZod
 // Operation-specific service schema types
 export interface CreateServiceSchema {
     data: TZodObject;
-    idFields?: TZodObject;
+    ids?: TZodObject;
+    user?: TZodObject;
 }
 
 export type UpdateByIdServiceSchema = {

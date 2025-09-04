@@ -14,6 +14,7 @@ export interface SchemaBuilderConfig {
     base: TZodShape;
     raw: TZodShape;
     id: TZodShape;
+    user: TZodShape;
 }
 
 /**
@@ -23,6 +24,8 @@ export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
     baseSchema: z.ZodObject<C['base']>;
     rawSchema: z.ZodObject<C['raw']>;
     idFieldsSchema: z.ZodObject<C['id']>;
+    userFieldsSchema: z.ZodObject<C['user']>;
+
     serviceInputBuilder: {
         create: <S extends TZodObject>(schema: S) => { data: S; idFields?: z.ZodObject<C['id']> };
         getById: () => { idFields: z.ZodObject<C['id']> };
@@ -60,22 +63,26 @@ export class OperationSchemaBuilder<
     private baseSchema: z.ZodObject<C['base']>;
     private rawSchema: z.ZodObject<C['raw']>;
     private idFieldsSchema: z.ZodObject<C['id']>;
+    private userFieldsSchema: z.ZodObject<C['user']>;
 
     constructor({
         schemas,
         baseSchema,
         rawSchema,
         idFieldsSchema,
+        userFieldsSchema,
     }: {
         schemas: O;
         baseSchema: C['base'];
         rawSchema: C['raw'];
         idFieldsSchema: C['id'];
+        userFieldsSchema: C['user'];
     }) {
         this.schemas = schemas;
         this.baseSchema = z.object(baseSchema);
         this.rawSchema = z.object(rawSchema);
         this.idFieldsSchema = z.object(idFieldsSchema);
+        this.userFieldsSchema = z.object(userFieldsSchema);
     }
 
     private serviceInputBuilder = {
@@ -118,6 +125,7 @@ export class OperationSchemaBuilder<
             baseSchema: this.baseSchema,
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idFieldsSchema,
+            userFieldsSchema: this.userFieldsSchema,
             serviceInputBuilder: this.serviceInputBuilder,
         });
 
@@ -129,6 +137,7 @@ export class OperationSchemaBuilder<
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idFieldsSchema: this.idFieldsSchema.shape,
+            userFieldsSchema: this.userFieldsSchema.shape,
         });
     }
 
@@ -140,6 +149,7 @@ export class OperationSchemaBuilder<
             baseSchema: this.baseSchema,
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idFieldsSchema,
+            userFieldsSchema: this.userFieldsSchema,
             serviceInputBuilder: this.serviceInputBuilder,
         });
 
@@ -151,6 +161,7 @@ export class OperationSchemaBuilder<
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idFieldsSchema: this.idFieldsSchema.shape,
+            userFieldsSchema: this.userFieldsSchema.shape,
         });
     }
 
