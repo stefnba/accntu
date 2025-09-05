@@ -1,4 +1,4 @@
-import { type TGlobalBankAccount } from '../../../../src/features/bank/server/db/schemas';
+import { type TGlobalBankAccount } from '../../../../src/features/bank/server/db/tables';
 import { globalBankSeedData, type TGlobalBankNames } from './global-bank';
 
 /**
