@@ -1,1 +1,1 @@
-export { createFeatureQueries, type InferFeatureType } from './query/builder';
+export { createFeatureQueries, type InferFeatureType } from './query';
