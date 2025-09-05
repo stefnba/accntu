@@ -1,57 +1,97 @@
-import {
-    insertGlobalBankSchema,
-    selectGlobalBankSchema,
-    updateGlobalBankSchema,
-} from '@/features/bank/server/db/schemas';
-import { z } from 'zod';
+import { globalBank } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import z from 'zod';
 
-// ====================
-// Query Layer
-// ====================
-
-export const globalBankQuerySchemas = {
-    select: selectGlobalBankSchema,
-    insert: insertGlobalBankSchema.omit({
+export const { schemas: globalBankSchemas } = createFeatureSchemas
+    .registerTable(globalBank)
+    .omit({
         createdAt: true,
         updatedAt: true,
+        isActive: true,
         id: true,
-    }),
-    update: updateGlobalBankSchema.omit({
-        createdAt: true,
-        updatedAt: true,
-        id: true,
-    }),
-};
-
-export type TGlobalBankQuerySchemas = {
-    select: z.infer<typeof globalBankQuerySchemas.select>;
-    insert: z.infer<typeof globalBankQuerySchemas.insert>;
-    update: z.infer<typeof globalBankQuerySchemas.update>;
-};
-
-// ====================
-// Service/Endpoint Layer
-// ====================
-
-export const globalBankServiceSchemas = {
-    insert: globalBankQuerySchemas.insert,
-    update: globalBankQuerySchemas.update.partial(),
-};
-
-export type TGlobalBankServiceSchemas = {
-    insert: z.infer<typeof globalBankServiceSchemas.insert>;
-    update: z.infer<typeof globalBankServiceSchemas.update>;
-};
-
-// ====================
-// Custom Schemas
-// ====================
-
-export const searchGlobalBanksSchema = z
-    .object({
-        query: z.string().optional(),
-        country: z.string().length(2).optional(),
     })
-    .optional();
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a global bank
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many global banks
+     */
+    .addCore('getMany', ({ buildServiceInput, baseSchema }) => {
+        const filtersSchema = z.object({
+            query: z.string().optional(),
+            country: z.string().length(2).optional(),
+            integrationTypes: baseSchema.shape.integrationTypes.optional(),
+        });
 
-export type TSearchGlobalBanks = z.infer<typeof searchGlobalBanksSchema>;
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(50),
+        });
+
+        const params = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
+        return {
+            service: params,
+            query: params,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a global bank by ID
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a global bank by ID
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a global bank by ID
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    });
+
+export type TGlobalBankSchemas = InferSchemas<typeof globalBankSchemas>;
+
+export type { TGlobalBank } from '@/features/bank/server/db/queries/global-bank';

@@ -1,13 +1,7 @@
-import {
-    insertConnectedBankSchema,
-    selectConnectedBankSchema,
-    updateConnectedBankSchema,
-} from '@/features/bank/server/db/schemas';
-import { z } from 'zod';
+import { connectedBank } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import z from 'zod';
 
-/**
- * API credentials schema for connected bank, required to add validation since drizzle-zod does not support json
- */
 const apiCredentialsSchema = z
     .object({
         accessToken: z.string().optional(),
@@ -19,64 +13,121 @@ const apiCredentialsSchema = z
     .optional();
 export type TApiCredentials = z.infer<typeof apiCredentialsSchema>;
 
-// ====================
-// Query Layer
-// ====================
-
-export const connectedBankQuerySchemas = {
-    select: selectConnectedBankSchema,
-    insert: insertConnectedBankSchema
-        .pick({
-            userId: true,
-            globalBankId: true,
-            isActive: true,
-        })
-        .extend({
+export const { schemas: connectedBankSchemas } = createFeatureSchemas
+    .registerTable(connectedBank)
+    .omit({
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+        id: true,
+        userId: true,
+    })
+    .transform((base) =>
+        base.extend({
             apiCredentials: apiCredentialsSchema,
-        }),
-    update: updateConnectedBankSchema
-        .pick({
-            isActive: true,
         })
-        .extend({
-            apiCredentials: apiCredentialsSchema,
-        }),
-};
+    )
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a connected bank
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many connected banks
+     */
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const filtersSchema = z.object({
+            globalBankId: z.string().optional(),
+        });
 
-export type TConnectedBankQuerySchemas = {
-    select: z.infer<typeof connectedBankQuerySchemas.select>;
-    insert: z.infer<typeof connectedBankQuerySchemas.insert>;
-    update: z.infer<typeof connectedBankQuerySchemas.update>;
-};
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(20),
+        });
 
-// ====================
-// Service/Endpoint Layer
-// ====================
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
 
-export const connectedBankServiceSchemas = {
-    create: connectedBankQuerySchemas.insert.omit({ userId: true }),
-    update: connectedBankQuerySchemas.update.partial(),
-    select: connectedBankQuerySchemas.select,
-};
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a connected bank by id
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a connected bank by id
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a connected bank by id
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Create a connected bank with accounts
+     */
+    .addCustom('createWithAccounts', ({ baseSchema }) => {
+        const schema = baseSchema.extend({
+            connectedBankAccounts: z.array(
+                z.object({
+                    globalBankAccountId: z.string(),
+                })
+            ),
+        });
 
-export type TConnectedBankServiceSchemas = {
-    create: z.infer<typeof connectedBankServiceSchemas.create>;
-    update: z.infer<typeof connectedBankServiceSchemas.update>;
-    select: z.infer<typeof connectedBankServiceSchemas.select>;
-};
+        return {
+            service: z.object({ data: schema, userId: z.string() }),
+            query: z.object({ data: schema, userId: z.string() }),
+            endpoint: {
+                json: schema,
+            },
+        };
+    });
 
-// ====================
-// Custom Schemas
-// ====================
+export type TConnectedBankSchemas = InferSchemas<typeof connectedBankSchemas>;
 
-export const createConnectedBankWithAccountsSchema = connectedBankServiceSchemas.create.extend({
-    connectedBankAccounts: z.array(
-        z.object({
-            globalBankAccountId: z.string(),
-        })
-    ),
-});
-
-export type TCreateConnectedBankWithAccounts = z.infer<
-    typeof createConnectedBankWithAccountsSchema
->;
+export type { TConnectedBank } from '@/features/bank/server/db/queries/connected-bank';

@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { TGlobalBankAccount } from '@/features/bank/server/db/schemas';
+import { TGlobalBankAccount } from '@/features/bank/server/db/tables';
 import { cn } from '@/lib/utils';
 import { Building2, CreditCard, LucideIcon, TrendingUp, Wallet } from 'lucide-react';
 

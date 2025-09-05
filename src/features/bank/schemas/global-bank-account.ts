@@ -1,13 +1,7 @@
-import {
-    insertGlobalBankAccountSchema,
-    selectGlobalBankAccountSchema,
-    updateGlobalBankAccountSchema,
-} from '@/features/bank/server/db/schemas';
-import { z } from 'zod';
+import { globalBankAccount } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import z from 'zod';
 
-/**
- * Transform config schema for global bank account, required to add validation since drizzle-zod does not support json
- */
 export const transformConfigSchema = z
     .object({
         type: z.enum(['csv', 'excel', 'json']),
@@ -31,72 +25,116 @@ export const transformConfigSchema = z
     .nullable();
 export type TTransformConfig = z.infer<typeof transformConfigSchema>;
 
-// ====================
-// Query Layer
-// ====================
-
-export const globalBankAccountQuerySchemas = {
-    select: selectGlobalBankAccountSchema,
-    insert: insertGlobalBankAccountSchema
-        .pick({
-            globalBankId: true,
-            type: true,
-            name: true,
-            description: true,
-            transformQuery: true,
-
-            sampleTransformData: true,
-            isActive: true,
-        })
-        .extend({
-            transformConfig: transformConfigSchema,
-        }),
-    update: updateGlobalBankAccountSchema
-        .pick({
-            type: true,
-            name: true,
-            description: true,
-            transformQuery: true,
-            sampleTransformData: true,
-            isActive: true,
-        })
-        .extend({
-            transformConfig: transformConfigSchema,
-        })
-        .partial(),
-};
-
-export type TGlobalBankAccountQuery = {
-    select: Omit<z.infer<typeof globalBankAccountQuerySchemas.select>, 'transformConfig'> & {
-        transformConfig: TTransformConfig;
-    };
-    insert: z.infer<typeof globalBankAccountQuerySchemas.insert>;
-    update: z.infer<typeof globalBankAccountQuerySchemas.update>;
-};
-
-// ====================
-// Service/Endpoint Layer
-// ====================
-
-export const globalBankAccountServiceSchemas = {
-    insert: globalBankAccountQuerySchemas.insert,
-    update: globalBankAccountQuerySchemas.update,
-};
-
-export type TGlobalBankAccountService = {
-    insert: z.infer<typeof globalBankAccountServiceSchemas.insert>;
-    update: z.infer<typeof globalBankAccountServiceSchemas.update>;
-};
-
-// ====================
-// Custom Schemas
-// ====================
-
-export const testTransformSchema = z
-    .object({
-        transformQuery: z.string(),
-        sampleTransformData: z.string(),
-        transformConfig: transformConfigSchema.unwrap(),
+export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
+    .registerTable(globalBankAccount)
+    .omit({
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+        id: true,
     })
-    .required();
-export type TTestTransformQuery = z.infer<typeof testTransformSchema>;
+    .transform((base) =>
+        base.extend({
+            transformConfig: transformConfigSchema,
+        })
+    )
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a global bank account
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many global bank accounts
+     */
+    .addCore('getMany', ({ buildServiceInput, baseSchema }) => {
+        const filtersSchema = z.object({
+            globalBankId: z.string().optional(),
+            type: baseSchema.shape.type.optional(),
+        });
+
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(20),
+        });
+
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a global bank account by ID
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a global bank account by ID
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a global bank account by ID
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Test a global bank account transformation query
+     */
+    .addCustom('testTransform', ({ rawSchema }) => {
+        const schema = z.object({
+            transformQuery: rawSchema.shape.transformQuery,
+            sampleTransformData: rawSchema.shape.sampleTransformData,
+            transformConfig: transformConfigSchema.unwrap(),
+        });
+
+        return {
+            service: schema,
+            query: schema,
+            endpoint: {
+                json: schema,
+            },
+        };
+    });
+
+export type TGlobalBankAccountSchemas = InferSchemas<typeof globalBankAccountSchemas>;

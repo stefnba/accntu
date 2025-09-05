@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
-import { participant } from '@/features/participant/server/db/schema';
+import { participant } from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/schema';
 import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -22,10 +22,10 @@ import { createId } from '@paralleldrive/cuid2';
 // ====================
 
 export const splitSourceEnum = pgEnum('split_source', [
-    'transaction',      // Direct transaction split
-    'bucket',          // Bucket-level default
-    'account',         // Account-level default
-    'none'             // No splits configured, 100% to user
+    'transaction', // Direct transaction split
+    'bucket', // Bucket-level default
+    'account', // Account-level default
+    'none', // No splits configured, 100% to user
 ]);
 
 // ====================
@@ -51,11 +51,11 @@ export const transactionBudget = pgTable(
 
         // Split calculation metadata
         splitSource: splitSourceEnum().notNull(),
-        
+
         // Recalculation tracking
         calculatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
         isRecalculationNeeded: boolean().notNull().default(false),
-        
+
         // Standard audit fields
         createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -89,17 +89,17 @@ export const transactionBudgetToParticipant = pgTable(
         participantId: text()
             .notNull()
             .references(() => participant.id, { onDelete: 'cascade' }),
-        
+
         // Resolved amounts for this participant
         resolvedAmount: decimal({ precision: 12, scale: 2 }).notNull(),
         resolvedPercentage: decimal({ precision: 5, scale: 2 }).notNull(),
-        
+
         // Snapshot of split config used for this calculation
         splitConfigUsed: json().notNull(),
-        
+
         // Marks which participant record belongs to the budget owner
         isUserParticipant: boolean().notNull().default(false),
-        
+
         // Standard audit fields
         createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     },
@@ -134,16 +134,19 @@ export const transactionBudgetRelations = relations(transactionBudget, ({ one, m
     participants: many(transactionBudgetToParticipant),
 }));
 
-export const transactionBudgetToParticipantRelations = relations(transactionBudgetToParticipant, ({ one }) => ({
-    transactionBudget: one(transactionBudget, {
-        fields: [transactionBudgetToParticipant.transactionBudgetId],
-        references: [transactionBudget.id],
-    }),
-    participant: one(participant, {
-        fields: [transactionBudgetToParticipant.participantId],
-        references: [participant.id],
-    }),
-}));
+export const transactionBudgetToParticipantRelations = relations(
+    transactionBudgetToParticipant,
+    ({ one }) => ({
+        transactionBudget: one(transactionBudget, {
+            fields: [transactionBudgetToParticipant.transactionBudgetId],
+            references: [transactionBudget.id],
+        }),
+        participant: one(participant, {
+            fields: [transactionBudgetToParticipant.participantId],
+            references: [participant.id],
+        }),
+    })
+);
 
 // ====================
 // Base Zod schemas
@@ -153,6 +156,12 @@ export const selectTransactionBudgetSchema = createSelectSchema(transactionBudge
 export const insertTransactionBudgetSchema = createInsertSchema(transactionBudget);
 export const updateTransactionBudgetSchema = createUpdateSchema(transactionBudget);
 
-export const selectTransactionBudgetToParticipantSchema = createSelectSchema(transactionBudgetToParticipant);
-export const insertTransactionBudgetToParticipantSchema = createInsertSchema(transactionBudgetToParticipant);
-export const updateTransactionBudgetToParticipantSchema = createUpdateSchema(transactionBudgetToParticipant);
+export const selectTransactionBudgetToParticipantSchema = createSelectSchema(
+    transactionBudgetToParticipant
+);
+export const insertTransactionBudgetToParticipantSchema = createInsertSchema(
+    transactionBudgetToParticipant
+);
+export const updateTransactionBudgetToParticipantSchema = createUpdateSchema(
+    transactionBudgetToParticipant
+);

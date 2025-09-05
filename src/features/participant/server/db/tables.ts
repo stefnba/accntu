@@ -1,19 +1,9 @@
 import { relations } from 'drizzle-orm';
-import {
-    boolean,
-    decimal,
-    index,
-    integer,
-    json,
-    pgTable,
-    primaryKey,
-    text,
-    timestamp,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, integer, json, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
 import { bucket } from '@/features/bucket/server/db/schema';
-import { connectedBankAccount } from '@/features/bank/server/db/schemas';
 import { transaction } from '@/features/transaction/server/db/schema';
 import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';
@@ -132,19 +122,16 @@ export const participantRelations = relations(participant, ({ one, many }) => ({
     buckets: many(participantToBucket),
 }));
 
-export const participantToTransactionRelations = relations(
-    participantToTransaction,
-    ({ one }) => ({
-        participant: one(participant, {
-            fields: [participantToTransaction.participantId],
-            references: [participant.id],
-        }),
-        transaction: one(transaction, {
-            fields: [participantToTransaction.transactionId],
-            references: [transaction.id],
-        }),
-    })
-);
+export const participantToTransactionRelations = relations(participantToTransaction, ({ one }) => ({
+    participant: one(participant, {
+        fields: [participantToTransaction.participantId],
+        references: [participant.id],
+    }),
+    transaction: one(transaction, {
+        fields: [participantToTransaction.transactionId],
+        references: [transaction.id],
+    }),
+}));
 
 export const participantToConnectedBankAccountRelations = relations(
     participantToConnectedBankAccount,
@@ -186,9 +173,15 @@ export const insertParticipantToTransactionSchema = createInsertSchema(participa
 export const updateParticipantToTransactionSchema = createUpdateSchema(participantToTransaction);
 
 // participant to connected bank account
-export const selectParticipantToConnectedBankAccountSchema = createSelectSchema(participantToConnectedBankAccount);
-export const insertParticipantToConnectedBankAccountSchema = createInsertSchema(participantToConnectedBankAccount);
-export const updateParticipantToConnectedBankAccountSchema = createUpdateSchema(participantToConnectedBankAccount);
+export const selectParticipantToConnectedBankAccountSchema = createSelectSchema(
+    participantToConnectedBankAccount
+);
+export const insertParticipantToConnectedBankAccountSchema = createInsertSchema(
+    participantToConnectedBankAccount
+);
+export const updateParticipantToConnectedBankAccountSchema = createUpdateSchema(
+    participantToConnectedBankAccount
+);
 
 // participant to bucket
 export const selectParticipantToBucketSchema = createSelectSchema(participantToBucket);

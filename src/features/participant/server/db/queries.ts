@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import { TParticipantQuery } from '@/features/participant/schemas';
-import { participant } from '@/features/participant/server/db/schema';
+import { participant } from '@/features/participant/server/db/tables';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -25,9 +25,7 @@ const getAll = async ({
             db
                 .select()
                 .from(participant)
-                .where(
-                    and(eq(participant.userId, userId), eq(participant.isActive, true))
-                ),
+                .where(and(eq(participant.userId, userId), eq(participant.isActive, true))),
         operation: 'list all participants for a user',
     });
 

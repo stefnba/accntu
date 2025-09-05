@@ -1,10 +1,21 @@
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
-import { participantToTransaction, participantToBucket, participantToConnectedBankAccount } from '@/features/participant/server/db/schema';
 import { bucketToTransaction } from '@/features/bucket/server/db/schema';
+import {
+    TSplitConfig,
+    TSplitParticipant,
+    TTransactionBudgetQuery,
+} from '@/features/budget/schemas';
+import {
+    transactionBudgetQueries,
+    transactionBudgetToParticipantQueries,
+} from '@/features/budget/server/db/queries';
+import {
+    participantToBucket,
+    participantToConnectedBankAccount,
+    participantToTransaction,
+} from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/schema';
-import { TTransactionBudgetQuery, TTransactionBudgetToParticipantQuery, TSplitConfig, TSplitParticipant } from '@/features/budget/schemas';
-import { transactionBudgetQueries, transactionBudgetToParticipantQueries } from '@/features/budget/server/db/queries';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -23,12 +34,12 @@ import { withDbQuery } from '@/server/lib/handler';
  * Calculate budget amount for a transaction and user
  * Applies precedence: Transaction > Bucket > Account > Default (100%)
  */
-const calculateTransactionBudget = async ({ 
-    transactionId, 
-    userId 
-}: { 
-    transactionId: string; 
-    userId: string; 
+const calculateTransactionBudget = async ({
+    transactionId,
+    userId,
+}: {
+    transactionId: string;
+    userId: string;
 }) => {
     return await withDbQuery({
         queryFn: async () => {
@@ -58,7 +69,7 @@ const calculateTransactionBudget = async ({
                     splits: transactionSplits,
                     totalAmount: Number(transactionData.userAmount),
                     userId,
-                    source: 'transaction'
+                    source: 'transaction',
                 });
                 return splitResult;
             }
@@ -90,7 +101,7 @@ const calculateTransactionBudget = async ({
                         splits: bucketSplits,
                         totalAmount: Number(transactionData.userAmount),
                         userId,
-                        source: 'bucket'
+                        source: 'bucket',
                     });
                     return splitResult;
                 }
@@ -102,7 +113,10 @@ const calculateTransactionBudget = async ({
                 .from(participantToConnectedBankAccount)
                 .where(
                     and(
-                        eq(participantToConnectedBankAccount.connectedBankAccountId, transactionData.connectedBankAccountId),
+                        eq(
+                            participantToConnectedBankAccount.connectedBankAccountId,
+                            transactionData.connectedBankAccountId
+                        ),
                         eq(participantToConnectedBankAccount.isActive, true)
                     )
                 );
@@ -112,7 +126,7 @@ const calculateTransactionBudget = async ({
                     splits: accountSplits,
                     totalAmount: Number(transactionData.userAmount),
                     userId,
-                    source: 'account'
+                    source: 'account',
                 });
                 return splitResult;
             }
@@ -120,20 +134,22 @@ const calculateTransactionBudget = async ({
             // 4. Default: User pays 100%
             return {
                 budgetAmount: Number(transactionData.userAmount),
-                budgetPercentage: 100.00,
+                budgetPercentage: 100.0,
                 splitSource: 'none' as const,
-                participantRecords: [{
-                    participantId: userId,
-                    name: 'You',
-                    email: '',
-                    splitConfig: { type: 'percentage', value: 100 },
-                    resolvedAmount: Number(transactionData.userAmount),
-                    resolvedPercentage: 100.00,
-                    isUserParticipant: true
-                }] as (TSplitParticipant & { isUserParticipant: boolean })[]
+                participantRecords: [
+                    {
+                        participantId: userId,
+                        name: 'You',
+                        email: '',
+                        splitConfig: { type: 'percentage', value: 100 },
+                        resolvedAmount: Number(transactionData.userAmount),
+                        resolvedPercentage: 100.0,
+                        isUserParticipant: true,
+                    },
+                ] as (TSplitParticipant & { isUserParticipant: boolean })[],
             };
         },
-        operation: 'calculate transaction budget'
+        operation: 'calculate transaction budget',
     });
 };
 
@@ -144,7 +160,7 @@ const calculateSplitAmount = async ({
     splits,
     totalAmount,
     userId,
-    source
+    source,
 }: {
     splits: any[];
     totalAmount: number;
@@ -158,7 +174,7 @@ const calculateSplitAmount = async ({
     // Process each split configuration
     for (const split of splits) {
         const splitConfig = split.splitConfig as TSplitConfig;
-        
+
         let resolvedAmount = 0;
         let resolvedPercentage = 0;
 
@@ -182,7 +198,7 @@ const calculateSplitAmount = async ({
                 // Calculate share ratio
                 const totalShares = splits.reduce((sum, s) => {
                     const config = s.splitConfig as TSplitConfig;
-                    return sum + (config.type === 'share' ? (config.value || 1) : 1);
+                    return sum + (config.type === 'share' ? config.value || 1 : 1);
                 }, 0);
                 const shareValue = splitConfig.value || 1;
                 resolvedPercentage = (shareValue / totalShares) * 100;
@@ -192,9 +208,9 @@ const calculateSplitAmount = async ({
             case 'adjustment':
                 // Base calculation + adjustment
                 const baseType = splitConfig.baseType || 'equal';
-                const basePercentage = baseType === 'equal' ? (100 / splits.length) : 0;
+                const basePercentage = baseType === 'equal' ? 100 / splits.length : 0;
                 const adjustment = splitConfig.adjustment || 0;
-                resolvedAmount = ((totalAmount * basePercentage) / 100) + adjustment;
+                resolvedAmount = (totalAmount * basePercentage) / 100 + adjustment;
                 resolvedPercentage = (resolvedAmount / totalAmount) * 100;
                 break;
 
@@ -222,7 +238,7 @@ const calculateSplitAmount = async ({
             splitConfig,
             resolvedAmount,
             resolvedPercentage,
-            isUserParticipant
+            isUserParticipant,
         });
 
         // Track user's share
@@ -242,7 +258,7 @@ const calculateSplitAmount = async ({
         budgetAmount: userBudgetAmount,
         budgetPercentage: userBudgetPercentage,
         splitSource: source,
-        participantRecords
+        participantRecords,
     };
 };
 
@@ -270,13 +286,19 @@ export const budgetService = {
     /**
      * Calculate and store budget for a transaction
      */
-    calculateAndStore: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+    calculateAndStore: async ({
+        transactionId,
+        userId,
+    }: {
+        transactionId: string;
+        userId: string;
+    }) => {
         const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
         // Check if budget already exists
-        const existingBudget = await transactionBudgetQueries.getByTransactionAndUser({ 
-            transactionId, 
-            userId 
+        const existingBudget = await transactionBudgetQueries.getByTransactionAndUser({
+            transactionId,
+            userId,
         });
 
         let budgetRecord;
@@ -291,13 +313,13 @@ export const budgetService = {
                     budgetPercentage: calculationResult.budgetPercentage,
                     splitSource: calculationResult.splitSource,
                     calculatedAt: new Date(),
-                    isRecalculationNeeded: false
-                }
+                    isRecalculationNeeded: false,
+                },
             });
 
             // Remove existing participant records
             await transactionBudgetToParticipantQueries.removeParticipantsByBudgetId({
-                transactionBudgetId: existingBudget.id
+                transactionBudgetId: existingBudget.id,
             });
         } else {
             // Create new budget
@@ -307,24 +329,24 @@ export const budgetService = {
                     budgetAmount: calculationResult.budgetAmount,
                     budgetPercentage: calculationResult.budgetPercentage,
                     splitSource: calculationResult.splitSource,
-                    isRecalculationNeeded: false
+                    isRecalculationNeeded: false,
                 },
-                userId
+                userId,
             });
         }
 
         // Create participant records
-        const participantRecords = calculationResult.participantRecords.map(record => ({
+        const participantRecords = calculationResult.participantRecords.map((record) => ({
             transactionBudgetId: budgetRecord.id,
             participantId: record.participantId,
             resolvedAmount: record.resolvedAmount,
             resolvedPercentage: record.resolvedPercentage,
             splitConfigUsed: record.splitConfig,
-            isUserParticipant: record.isUserParticipant
+            isUserParticipant: record.isUserParticipant,
         }));
 
         await transactionBudgetToParticipantQueries.createParticipants({
-            participants: participantRecords
+            participants: participantRecords,
         });
 
         return budgetRecord;
@@ -342,16 +364,16 @@ export const budgetService = {
      */
     processPendingRecalculations: async () => {
         const pendingBudgets = await transactionBudgetQueries.getPendingRecalculation();
-        
+
         const results = [];
         for (const budget of pendingBudgets) {
             const result = await budgetService.calculateAndStore({
                 transactionId: budget.transactionId,
-                userId: budget.userId
+                userId: budget.userId,
             });
             results.push(result);
         }
-        
+
         return results;
     },
 
@@ -365,11 +387,17 @@ export const budgetService = {
     /**
      * Update a transaction budget
      */
-    update: async ({ id, userId, data }: TQueryUpdateUserRecord<TTransactionBudgetQuery['update']>) => {
+    update: async ({
+        id,
+        userId,
+        data,
+    }: TQueryUpdateUserRecord<TTransactionBudgetQuery['update']>) => {
         const updatedBudget = await transactionBudgetQueries.update({ id, userId, data });
 
         if (!updatedBudget) {
-            throw new Error('Transaction budget not found or you do not have permission to update it');
+            throw new Error(
+                'Transaction budget not found or you do not have permission to update it'
+            );
         }
 
         return updatedBudget;
@@ -382,7 +410,9 @@ export const budgetService = {
         const deletedBudget = await transactionBudgetQueries.remove({ id, userId });
 
         if (!deletedBudget) {
-            throw new Error('Transaction budget not found or you do not have permission to delete it');
+            throw new Error(
+                'Transaction budget not found or you do not have permission to delete it'
+            );
         }
 
         return { id };

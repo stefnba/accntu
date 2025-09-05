@@ -12,8 +12,8 @@ export const useGlobalBankAccountEndpoints = {
     /**
      * Get global bank accounts for a specific bank
      */
-    getByBankId: createQuery(
-        apiClient.banks['global-bank-accounts']['by-bank'][':id'].$get,
+    getMany: createQuery(
+        apiClient.banks['global-bank-accounts'].$get,
         GLOBAL_BANK_ACCOUNT_QUERY_KEYS.GLOBAL_BANK_ACCOUNTS
     ),
 

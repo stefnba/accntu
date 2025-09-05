@@ -139,44 +139,43 @@ For new features, use the sophisticated factory system that provides type-safe, 
 ```typescript
 // 1. Schema Definition (schemas.ts)
 export const { schemas: tagSchemas } = createFeatureSchemas
-  .registerTable(tagTable)
-  .omit({ createdAt: true, updatedAt: true, id: true })
-  .userField('userId')
-  .idFields({ id: true })
-  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-    service: buildServiceInput({ data: baseSchema }),
-    query: buildServiceInput({ data: baseSchema }),
-    endpoint: { json: baseSchema }
-  }))
-  .addCore('getMany', ({ buildServiceInput }) => ({
-    service: buildServiceInput({ filters: filtersSchema }),
-    query: buildServiceInput({ filters: filtersSchema }),
-    endpoint: { query: filtersSchema }
-  }));
+    .registerTable(tagTable)
+    .omit({ createdAt: true, updatedAt: true, id: true })
+    .userField('userId')
+    .idFields({ id: true })
+    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
+        service: buildServiceInput({ data: baseSchema }),
+        query: buildServiceInput({ data: baseSchema }),
+        endpoint: { json: baseSchema },
+    }))
+    .addCore('getMany', ({ buildServiceInput }) => ({
+        service: buildServiceInput({ filters: filtersSchema }),
+        query: buildServiceInput({ filters: filtersSchema }),
+        endpoint: { query: filtersSchema },
+    }));
 
 // 2. Query Definition (server/db/queries.ts)
-export const tagQueries = createFeatureQueries
-  .registerSchema(tagSchemas)
-  .addQuery('create', {
+export const tagQueries = createFeatureQueries.registerSchema(tagSchemas).addQuery('create', {
     operation: 'create tag',
     fn: async ({ data, userId }) => {
-      const [newTag] = await db.insert(tagTable)
-        .values({ ...data, userId })
-        .returning();
-      return newTag;
-    }
-  });
+        const [newTag] = await db
+            .insert(tagTable)
+            .values({ ...data, userId })
+            .returning();
+        return newTag;
+    },
+});
 
 // 3. Service Definition (server/services.ts)
 export const tagServices = createFeatureServices
-  .registerSchema(tagSchemas)
-  .registerQuery(tagQueries)
-  .defineServices(({ queries }) => ({
-    create: async (input) => {
-      // Business logic here
-      return await queries.create(input);
-    }
-  }));
+    .registerSchema(tagSchemas)
+    .registerQuery(tagQueries)
+    .defineServices(({ queries }) => ({
+        create: async (input) => {
+            // Business logic here
+            return await queries.create(input);
+        },
+    }));
 ```
 
 ### Factory System Benefits
@@ -286,7 +285,7 @@ export const useFeatureEndpoints = {
 For comprehensive factory system documentation:
 
 - **Schema Factory**: @src/lib/schemas/README.md - Complete guide to schema factory system
-- **Query Factory**: @src/server/lib/db/query/README.md - Database query factory patterns  
+- **Query Factory**: @src/server/lib/db/query/README.md - Database query factory patterns
 - **Service Factory**: @src/server/lib/service/README.md - Business logic service factory patterns
 
 ### Quick Factory Reference

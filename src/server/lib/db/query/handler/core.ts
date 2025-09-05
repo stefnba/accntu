@@ -1,4 +1,4 @@
-import type { QueryFn } from '@/server/lib/db/query/factory/types';
+import type { QueryFn } from '@/server/lib/db/query/builder/types';
 import { errorFactory } from '@/server/lib/error';
 import { BaseError } from '@/server/lib/error/base';
 import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';

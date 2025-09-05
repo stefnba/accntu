@@ -1,16 +1,47 @@
-import {
-    TConnectedBankQuerySchemas,
-    TCreateConnectedBankWithAccounts,
-} from '@/features/bank/schemas/connected-bank';
-import { connectedBankQueries } from '@/features/bank/server/db/queries';
+import { connectedBankSchemas } from '@/features/bank/schemas/connected-bank';
+import { connectedBankQueries } from '@/features/bank/server/db/queries/connected-bank';
 import { connectedBankAccountServices } from '@/features/bank/server/services/connected-bank-account';
+import { createFeatureServices } from '@/server/lib/service';
 
-/**
- * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
- * @param userId - The user ID
- * @param data - The data to create the connected bank with
- * @returns The created connected bank
- */
+export const connectedBankServices = createFeatureServices
+    .registerSchema(connectedBankSchemas)
+    .registerQuery(connectedBankQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
+         * @param userId - The user ID
+         * @param data - The data to create the connected bank with
+         * @returns The created connected bank
+         */
+        createWithAccounts: async (input) => {
+            return await queries.create(input);
+        },
+        /**
+         * Get many connected banks
+         */
+        getMany: async (input) => {
+            return await queries.getMany(input);
+        },
+        /**
+         * Get a connected bank by id
+         */
+        getById: async (input) => {
+            return await queries.getById(input);
+        },
+        /**
+         * Update a connected bank by id
+         */
+        updateById: async (input) => {
+            return await queries.updateById(input);
+        },
+        /**
+         * Remove a connected bank by id
+         */
+        removeById: async (input) => {
+            return await queries.removeById(input);
+        },
+    }));
+
 const createConnectedBankWithAccounts = async ({
     userId,
     data,
@@ -62,65 +93,4 @@ const createConnectedBankWithAccounts = async ({
     return {
         ...connectedBank,
     };
-};
-
-/**
- * Get all connected banks for the current user
- * @param userId - The id of the user
- * @returns All connected banks
- */
-const getAll = async ({ userId }: { userId: string }) => {
-    return await connectedBankQueries.getAll({ userId, filters: undefined });
-};
-
-/**
- * Get a connected bank by id
- * @param id - The id of the connected bank
- * @param userId - The id of the user
- * @returns The connected bank
- */
-const getById = async ({ id, userId }: { id: string; userId: string }) => {
-    return await connectedBankQueries.getById({ id, userId });
-};
-
-/**
- * Update a connected bank
- * @param id - The id of the connected bank
- * @param userId - The id of the user
- * @param data - The data to update the connected bank
- * @returns The updated connected bank
- */
-const update = async ({
-    id,
-    userId,
-    data,
-}: {
-    id: string;
-    userId: string;
-    data: TConnectedBankQuerySchemas['update'];
-}) => {
-    return await connectedBankQueries.update({ id, userId, data });
-};
-
-/**
- * Remove a connected bank
- * @param id - The id of the connected bank
- * @param userId - The id of the user
- * @returns The removed connected bank
- */
-const remove = async ({ id, userId }: { id: string; userId: string }) => {
-    return await connectedBankQueries.remove({ id, userId });
-};
-
-export const connectedBankServices = {
-    create: createConnectedBankWithAccounts,
-    getAll,
-    getById,
-    update,
-    remove,
-};
-
-export type TReturnConnectedBankServices = {
-    getAll: ReturnType<typeof getAll>;
-    getById: ReturnType<typeof getById>;
 };

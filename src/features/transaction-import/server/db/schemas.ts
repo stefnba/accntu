@@ -1,4 +1,4 @@
-import { connectedBankAccount } from '@/features/bank/server/db/schemas';
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
 import { user } from '@/server/db/schemas';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';

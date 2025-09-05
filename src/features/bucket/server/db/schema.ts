@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
-import { participantToBucket } from '@/features/participant/server/db/schema';
+import { participantToBucket } from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/schema';
 import { user } from '@/lib/auth/server/db/schema';
 import { createId } from '@paralleldrive/cuid2';

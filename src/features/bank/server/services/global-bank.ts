@@ -1,66 +1,39 @@
-import { TGlobalBankQuerySchemas, TSearchGlobalBanks } from '@/features/bank/schemas/global-bank';
+import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
 import { globalBankQueries } from '@/features/bank/server/db/queries';
-import {
-    TQueryDeleteRecord,
-    TQueryInsertRecord,
-    TQuerySelectRecordById,
-    TQuerySelectRecords,
-    TQueryUpdateRecord,
-} from '@/lib/schemas';
+import { createFeatureServices } from '@/server/lib/service';
 
-/**
- * Get a global bank by id
- * @param id - The id of the global bank
- * @returns The global bank
- */
-const getById = async ({ id }: TQuerySelectRecordById) => {
-    return await globalBankQueries.getById({ id });
-};
-
-/**
- * Get all global banks
- * @returns All global banks
- */
-const getAll = async ({ filters }: TQuerySelectRecords<TSearchGlobalBanks>) => {
-    return await globalBankQueries.getAll({
-        filters,
-    });
-};
-
-/**
- * Create a global bank
- * @param data - The data to create the global bank
- * @returns The created global bank
- */
-const create = async ({ data }: TQueryInsertRecord<TGlobalBankQuerySchemas['insert']>) => {
-    return await globalBankQueries.create({
-        data,
-    });
-};
-
-/**
- * Update a global bank
- * @param id - The id of the global bank
- * @param data - The data to update the global bank
- * @returns The updated global bank
- */
-const update = async ({ id, data }: TQueryUpdateRecord<TGlobalBankQuerySchemas['update']>) => {
-    return await globalBankQueries.update({ id, data });
-};
-
-/**
- * Delete a global bank
- * @param id - The id of the global bank
- * @returns The deleted global bank
- */
-const remove = async ({ id }: TQueryDeleteRecord) => {
-    return await globalBankQueries.remove({ id });
-};
-
-export const globalBankServices = {
-    create,
-    update,
-    remove,
-    getById,
-    getAll,
-};
+export const globalBankServices = createFeatureServices
+    .registerSchema(globalBankSchemas)
+    .registerQuery(globalBankQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Get a global bank by id
+         */
+        getById: async (input) => {
+            return await queries.getById(input);
+        },
+        /**
+         * Get all global banks
+         */
+        getMany: async (input) => {
+            return await queries.getMany(input);
+        },
+        /**
+         * Create a global bank
+         */
+        create: async (input) => {
+            return await queries.create(input);
+        },
+        /**
+         * Update a global bank
+         */
+        updateById: async (input) => {
+            return await queries.updateById(input);
+        },
+        /**
+         * Delete a global bank
+         */
+        removeById: async (input) => {
+            return await queries.removeById(input);
+        },
+    }));

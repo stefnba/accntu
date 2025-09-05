@@ -1,71 +1,82 @@
-import {
-    insertConnectedBankAccountSchema,
-    selectConnectedBankAccountSchema,
-    updateConnectedBankAccountSchema,
-} from '@/features/bank/server/db/schemas';
-import { z } from 'zod';
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import z from 'zod';
 
-// ====================
-// Query Layer
-// ====================
-
-export const connectedBankAccountQuerySchemas = {
-    select: selectConnectedBankAccountSchema,
-    insert: insertConnectedBankAccountSchema.omit({
-        updatedAt: true,
+export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
+    .registerTable(connectedBankAccount)
+    .omit({
         createdAt: true,
-        id: true,
-    }),
-    update: updateConnectedBankAccountSchema.pick({
-        name: true,
-        description: true,
-        type: true,
-        currency: true,
-        accountNumber: true,
-        iban: true,
-        currentBalance: true,
-        providerAccountId: true,
-        isSharedAccount: true,
+        updatedAt: true,
         isActive: true,
-    }),
-};
+        id: true,
+        userId: true,
+    })
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    .addCore('create', ({ baseSchema }) => {
+        const input = z.object({ data: baseSchema, userId: z.string() });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const filtersSchema = z.object({
+            connectedBankId: z.string().optional(),
+            type: z.enum(['checking', 'savings', 'credit_card', 'investment']).optional(),
+            isSharedAccount: z.boolean().optional(),
+        });
 
-export type TConnectedBankAccountQuerySchemas = {
-    select: z.infer<typeof connectedBankAccountQuerySchemas.select>;
-    insert: z.infer<typeof connectedBankAccountQuerySchemas.insert>;
-    update: z.infer<typeof connectedBankAccountQuerySchemas.update>;
-};
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(20),
+        });
 
-// ====================
-// Service/Endpoint Layer
-// ====================
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
 
-export const connectedBankAccountServiceSchemas = {
-    create: connectedBankAccountQuerySchemas.insert
-        .omit({
-            userId: true,
-        })
-        .partial({
-            name: true,
-        }),
-    update: connectedBankAccountQuerySchemas.update.pick({
-        name: true,
-        description: true,
-    }),
-};
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    });
 
-export type TConnectedBankAccountServiceSchemas = {
-    create: z.infer<typeof connectedBankAccountServiceSchemas.create>;
-    update: z.infer<typeof connectedBankAccountServiceSchemas.update>;
-};
-
-// ====================
-// Custom Schemas
-// ====================
-
-export const balanceUpdateSchema = z.object({
-    currentBalance: z.string().transform((val) => parseFloat(val)),
-    lastSyncAt: z.date().optional(),
-});
-
-export type TBalanceUpdate = z.infer<typeof balanceUpdateSchema>;
+export type TConnectedBankAccountSchemas = InferSchemas<typeof connectedBankAccountSchemas>;

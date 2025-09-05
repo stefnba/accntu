@@ -1,53 +1,61 @@
-import {
-    insertParticipantSchema,
-    selectParticipantSchema,
-    updateParticipantSchema,
-} from '@/features/participant/server/db/schema';
 import { splitConfigSchema } from '@/features/budget/schemas';
+import { participant } from '@/features/participant/server/db/tables';
+import { createFeatureSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
-// ====================
-// Query
-// ====================
-
-export const participantQuerySchemas = {
-    select: selectParticipantSchema,
-    insert: insertParticipantSchema.omit({
-        userId: true,
-        id: true,
+export const { schemas: participantSchemas } = createFeatureSchemas
+    .registerTable(participant)
+    .omit({
         createdAt: true,
         updatedAt: true,
+        id: true,
         isActive: true,
+        userId: true,
         totalTransactions: true,
-    }),
-    update: updateParticipantSchema.omit({
-        userId: true,
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        isActive: true,
-    }),
-};
-
-export type TParticipantQuery = {
-    select: z.infer<typeof participantQuerySchemas.select>;
-    insert: z.infer<typeof participantQuerySchemas.insert>;
-    update: z.infer<typeof participantQuerySchemas.update>;
-};
-
-// ====================
-// Service/Endpoint
-// ====================
-
-export const participantServiceSchemas = {
-    create: participantQuerySchemas.insert,
-    update: participantQuerySchemas.update,
-};
-
-export type TParticipantService = {
-    create: z.infer<typeof participantServiceSchemas.create>;
-    update: z.infer<typeof participantServiceSchemas.update>;
-};
+    })
+    .userField('userId')
+    .idFields({ id: true })
+    /**
+     * Create a participant
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
+        service: buildServiceInput({ data: baseSchema }),
+        query: buildServiceInput({ data: baseSchema }),
+        endpoint: { json: baseSchema },
+    }))
+    /**
+     * Update a participant by id
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema }),
+            query: buildServiceInput({ data: baseSchema }),
+            endpoint: {
+                json: baseSchema,
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a participant by id
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: { param: idFieldsSchema },
+        };
+    })
+    /**
+     * Get a participant by id
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: { param: idFieldsSchema },
+        };
+    });
 
 // ====================
 // Split Config Schemas for Junction Tables
@@ -75,5 +83,7 @@ export const participantToBucketSchema = z.object({
 });
 
 export type TParticipantToTransaction = z.infer<typeof participantToTransactionSchema>;
-export type TParticipantToConnectedBankAccount = z.infer<typeof participantToConnectedBankAccountSchema>;
+export type TParticipantToConnectedBankAccount = z.infer<
+    typeof participantToConnectedBankAccountSchema
+>;
 export type TParticipantToBucket = z.infer<typeof participantToBucketSchema>;
