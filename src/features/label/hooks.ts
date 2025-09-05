@@ -1,5 +1,5 @@
 import { useQueryStateModal } from '@/hooks';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { create } from 'zustand';
 
 /**
@@ -14,6 +14,12 @@ export const useLabelUpsertModal = () => {
 
     // parentId for child label
     const [parentId, setParentId] = useQueryState('parentId', parseAsString.withDefault(''));
+
+    // view: form, parent, icon
+    const [view, setView] = useQueryState(
+        'view',
+        parseAsStringLiteral(['form', 'parent', 'icon']).withDefault('form')
+    );
 
     const modalActions = useQueryStateModal({
         views,
@@ -34,6 +40,7 @@ export const useLabelUpsertModal = () => {
             parentId?: string | null;
         }) => {
             modalActions.openModal(view);
+            setView('form');
             setLabelId(labelId || null);
             setParentId(parentId || null);
         },
@@ -41,6 +48,9 @@ export const useLabelUpsertModal = () => {
         parentId: parentId || null,
         setLabelId,
         setParentId,
+        // view: form, parent, icon
+        view,
+        setView,
     };
 };
 

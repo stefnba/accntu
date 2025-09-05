@@ -1,15 +1,23 @@
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { labelSchema } from '@/features/label/schemas';
+import { labelQueries } from '@/features/label/server/db/queries';
+import { createFeatureServices } from '@/server/lib/service';
 
-import { TLabelService } from '@/features/label/schemas';
-import { labelQueries } from './db/queries';
+export const labelService = createFeatureServices({
+    queries: labelQueries,
+    schemas: labelSchema,
+    services: ({ schemas, queries }) => ({
+        create: async (input) => {
+            const maxIndex = await queries.getMaxIndex({
+                userId: input.userId,
+                parentId: input.parentId ?? undefined,
+            });
 
-export const labelServices = {
+            return maxIndex;
+        },
+    }),
+});
+
+export const labelSerdddvices = {
     /**
      * Get all labels for a user with parent/child relationships
      * @param userId - The user ID to fetch labels for

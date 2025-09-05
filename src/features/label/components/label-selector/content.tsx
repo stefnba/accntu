@@ -1,6 +1,5 @@
 'use client';
 
-import { toast } from '@/components/feedback';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,22 +8,26 @@ import { useLabelEndpoints } from '@/features/label/api';
 import { LabelBadge } from '@/features/label/components/label-badge';
 import { LabelListItem } from '@/features/label/components/label-selector/label-list-item';
 
-import { useLabelSelectorModal } from '@/features/label/hooks';
-import { useTransactionEndpoints } from '@/features/transaction/api';
 import { cn } from '@/lib/utils';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 interface LabelSelectorContentProps {
     className?: string;
+    currentLabelId?: string | null;
+    onSelect: (labelId: string | null) => void;
 }
 
-export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ className }) => {
+export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({
+    className,
+    currentLabelId,
+    onSelect,
+}) => {
     // =========================
-    // Hooks & State
+    // State
     // =========================
     const [searchTerm, setSearchTerm] = useState('');
-    const { transactionId, labelId, parentId, setParentId, closeModal } = useLabelSelectorModal();
+    const [parentId, setParentId] = useState<string | null>(null);
 
     const SEARCH_TERM_MIN_LENGTH = 2;
     const isSearchEnabled = searchTerm.length > SEARCH_TERM_MIN_LENGTH;
@@ -32,17 +35,6 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ clas
     // =========================
     // API calls
     // =========================
-    const updateTransactionMutation = useTransactionEndpoints.update();
-    const { data: transaction } = useTransactionEndpoints.getById(
-        {
-            param: {
-                id: transactionId!,
-            },
-        },
-        {
-            enabled: !!transactionId && !labelId,
-        }
-    );
 
     const { data: allLabels = [] } = useLabelEndpoints.getAllFlattened({
         query: {
@@ -58,7 +50,7 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ clas
         return isSearchEnabled ? allLabels : allLabels.filter((l) => l.parentId === parentId);
     }, [searchTerm, allLabels, parentId]);
 
-    const selectedLabel = allLabels.find((l) => l.id === labelId || transaction?.labelId);
+    const selectedLabel = allLabels.find((l) => l.id === currentLabelId);
     const parentLabel = useMemo(
         () => allLabels.find((l) => l.id === parentId),
         [allLabels, parentId]
@@ -68,27 +60,8 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ clas
     // Handlers
     // =========================
 
-    if (!transactionId) {
-        return <div>No transaction selected</div>;
-    }
-
     const handleSelect = (labelId: string | null) => {
-        updateTransactionMutation.mutate(
-            {
-                param: {
-                    id: transactionId,
-                },
-                json: {
-                    labelId,
-                },
-            },
-            {
-                onSuccess: () => {
-                    closeModal();
-                    toast.success('Label selected successfully');
-                },
-            }
-        );
+        onSelect(labelId);
     };
 
     return (
@@ -161,7 +134,7 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({ clas
                             <LabelListItem
                                 key={label.id}
                                 label={label}
-                                selectedLabelId={labelId}
+                                selectedLabelId={currentLabelId}
                                 onSelect={handleSelect}
                                 onExpand={setParentId}
                             />

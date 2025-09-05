@@ -1,7 +1,7 @@
 'use client';
 
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
-import { LabelSelectorContent } from '@/features/label/components/label-selector/content';
+import { LabelSelectorForTransaction } from '@/features/label/components/label-selector/transaction';
 import { useLabelSelectorModal } from '@/features/label/hooks';
 
 interface LabelSelectorModalProps {
@@ -20,7 +20,7 @@ export const LabelSelectorModal: React.FC<LabelSelectorModalProps> = ({ classNam
             className={className}
             size="lg"
         >
-            <LabelSelectorContent />
+            <LabelSelectorForTransaction />
         </ResponsiveModal>
     );
 };

@@ -1,3 +1,4 @@
+import { toast } from '@/components/feedback';
 import {
     Form,
     FormColorSelect,
@@ -8,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useLabelEndpoints } from '@/features/label/api';
-import { DEFAULT_LABEL_COLOR } from '@/features/label/config';
+import { FormLabelSelect } from '@/features/label/components/label-selector/form';
+import { LabelUpsertParentBadge } from '@/features/label/components/label-upsert/parent';
 import { useLabelUpsertModal } from '@/features/label/hooks';
 import { labelServiceSchemas } from '@/features/label/schemas';
 
@@ -21,7 +23,7 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
     // Hooks
     // ================================
 
-    const { labelId, closeModal } = useLabelUpsertModal();
+    const { labelId, closeModal, parentId } = useLabelUpsertModal();
 
     // ================================
     // API calls
@@ -44,7 +46,8 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
             schema: labelServiceSchemas.insert,
             defaultValues: {
                 name: '',
-                color: DEFAULT_LABEL_COLOR,
+                color: '',
+                parentId: parentId,
             },
             onSubmit: async (data) => {
                 await createMutation.mutateAsync(
@@ -54,6 +57,7 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
                     {
                         onSuccess: () => {
                             closeModal();
+                            toast.success('Label created');
                         },
                     }
                 );
@@ -61,7 +65,10 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
         },
         update: {
             schema: labelServiceSchemas.update,
-            defaultValues: labelData,
+            defaultValues: {
+                ...labelData,
+                parentId: parentId,
+            },
             onSubmit: async (data) => {
                 await updateMutation.mutateAsync(
                     {
@@ -71,6 +78,7 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
                     {
                         onSuccess: () => {
                             closeModal();
+                            toast.success('Label updated');
                         },
                     }
                 );
@@ -98,9 +106,18 @@ export const LabelUpsertForm: React.FC<LabelUpsertFormProps> = () => {
             <div>
                 <Label>Icon</Label>
             </div>
-            <div>
+            <div className="space-y-2">
                 <Label>Parent Label</Label>
+                <LabelUpsertParentBadge
+                    currentParentId={form.watch('parentId')}
+                    setParentId={(p) => {
+                        form.setValue('parentId', p);
+                        form.trigger('parentId'); // Trigger validation/re-render
+                    }}
+                />
             </div>
+
+            <FormLabelSelect form={form} name="parentId" label="Parent Label" />
 
             <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={closeModal}>

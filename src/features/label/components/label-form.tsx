@@ -1,12 +1,14 @@
 'use client';
 
 import { Form, FormInput, FormSelect, FormSubmitButton, useUpsertForm } from '@/components/form';
-import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { useLabelEndpoints } from '@/features/label/api';
 import { IconPicker } from '@/features/label/components/icon-picker';
+import { LabelBadge } from '@/features/label/components/label-badge';
+import { DEFAULT_LABEL_COLOR } from '@/features/label/config';
 import { useLabelModal } from '@/features/label/hooks';
 import { labelColors, labelServiceSchemas } from '@/features/label/schemas';
-import { renderLabelIcon } from '@/lib/utils/icon-renderer';
 import { useEffect, useState } from 'react';
 
 interface LabelFormProps {
@@ -105,7 +107,7 @@ export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
 
     return (
         <Form form={form}>
-            <FormInput form={form} name="name" label="Label Name" placeholder="Enter label name" />
+            <FormInput form={form} name="name" label="Name" placeholder="Enter label name" />
 
             <div className="space-y-4">
                 <div className="space-y-2">
@@ -138,28 +140,35 @@ export const LabelForm = ({ labelId, parentId }: LabelFormProps) => {
                         ))}
                     </div>
                 </div>
+            </div>
 
-                <div className="space-y-2">
-                    <span className="text-sm font-medium">Preview</span>
-                    <div className="flex items-center gap-2">
-                        <Badge
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
-                            style={{ backgroundColor: selectedColor, color: 'white' }}
-                        >
-                            {renderLabelIcon(selectedIcon, 'w-4 h-4')}
-                            {form.watch('name') || 'Label'}
-                        </Badge>
-                    </div>
-                </div>
+            <div>
+                <Label>Parent Label</Label>
             </div>
 
             <FormSelect
                 form={form}
                 name="parentId"
-                label="Parent Label (Optional)"
+                label="Parent Label"
                 placeholder="Select parent label"
                 options={parentOptions}
             />
+
+            <Separator className="my-6" />
+
+            <div className="flex items-center gap-4">
+                <Label>Preview</Label>
+                <LabelBadge
+                    label={{
+                        id: 'new',
+                        color: selectedColor || DEFAULT_LABEL_COLOR,
+                        name: form.watch('name') || 'Label',
+                        icon: selectedIcon,
+                    }}
+                />
+            </div>
+
+            <Separator className="my-6" />
 
             <FormSubmitButton form={form}>
                 {isEditMode ? 'Update Label' : 'Create Label'}

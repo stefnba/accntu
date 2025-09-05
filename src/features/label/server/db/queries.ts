@@ -1,43 +1,12 @@
-import { labelQuerySchemas, TLabelQuery } from '@/features/label/schemas';
+import type { TLabelSchemas } from '@/features/label/schemas';
 import { label } from '@/features/label/server/db/schema';
-import type {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
 import { db } from '@/server/db';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
-/**
- * Get all labels for a user with parent/child relationships
- * @param userId - The user ID to fetch labels for
- * @returns Promise resolving to array of labels with relationships
- */
-const getAll = async ({ userId, filters }: TQuerySelectUserRecords<TLabelQuery['filter']>) =>
-    withDbQuery({
-        operation: 'Get all labels for user',
-        queryFn: async () => {
-            const where = [eq(label.userId, userId), eq(label.isActive, true)];
-
-            if (filters?.search) {
-                where.push(ilike(label.name, `%${filters.search}%`));
-            }
-
-            return await db.query.label.findMany({
-                where: and(...where),
-                with: {
-                    parent: true,
-                    children: {
-                        where: eq(label.isActive, true),
-                    },
-                },
-                orderBy: [asc(label.index), asc(label.name)],
-            });
-        },
-    });
+export type TLabelQuery = TLabelSchemas['databases'];
 
 /**
  * Get root labels (no parent) with nested children for a user
@@ -70,37 +39,40 @@ const getRootLabels = async (userId: string) =>
     });
 
 /**
- * Get a specific label by ID for a user
- * @param id - The label ID to fetch
- * @param userId - The user ID that owns the label
- * @returns Promise resolving to the label or null if not found
+ * Bulk update label orders and parents for drag and drop operations
+ * Updates all labels in a single transaction for better performance and consistency
+ * @param items - Array of label items with new positions
+ * @param userId - The user ID that owns all labels
+ * @returns Promise resolving to void (use getAllFlattened to get fresh data)
  */
-const getById = async (id: string, userId: string) =>
+const reorder = async ({ items, userId }: { items: TLabelQuery['reorder']; userId: string }) =>
     withDbQuery({
-        operation: 'Get label by ID',
+        operation: 'Bulk reorder labels',
+    });
+
+const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: string | null }) =>
+    withDbQuery({
+        operation: 'Get max index for user and parent',
         queryFn: async () => {
-            return await db.query.label.findFirst({
-                where: and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)),
-                with: {
-                    parent: true,
-                    children: {
-                        where: eq(label.isActive, true),
-                    },
-                },
-            });
+            const maxIndex = await db
+                .select({ maxIndex: max(label.index) })
+                .from(label)
+                .where(
+                    and(
+                        eq(label.userId, userId),
+                        eq(label.isActive, true),
+                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
+                    )
+                )
+                .then((results) => results[0]?.maxIndex);
+
+            return { maxIndex: maxIndex ?? 0 };
         },
     });
 
-/**
- * Create a new label in the database
- * @param data - The label data including name, color, parentId, etc.
- * @param userId - The user ID that will own the label
- * @returns Promise resolving to the created label record
- */
-const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['insert']>) =>
-    withDbQuery({
-        operation: 'Create new label',
-        queryFn: async () => {
+export const labelQueries = createFeatureQueries(label, {
+    create: {
+        fn: async ({ data, userId }) => {
             // Get next index for this parent level
             const parentId = data.parentId ?? null;
             const maxindexResult = await db
@@ -127,143 +99,22 @@ const create = async ({ data, userId }: TQueryInsertUserRecord<TLabelQuery['inse
 
             return labelRecord;
         },
-    });
-
-/**
- * Update an existing label in the database
- * @param id - The label ID to update
- * @param data - The updated label data
- * @param userId - The user ID that owns the label
- * @returns Promise resolving to the updated label record
- */
-const update = async ({ id, data, userId }: TQueryUpdateUserRecord<TLabelQuery['update']>) =>
-    withDbQuery({
-        operation: 'Update label',
-        queryFn: async () => {
-            console.log('update', id, data, userId);
-
-            const [labelRecord] = await db
-                .update(label)
-                .set({
-                    ...data,
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(label.id, id), eq(label.userId, userId)))
-                .returning();
-
-            return labelRecord;
-        },
-    });
-
-/**
- * Soft delete a label by setting isActive to false
- * @param id - The label ID to delete
- * @param userId - The user ID that owns the label
- * @returns Promise resolving to the deleted label record
- */
-const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
-    withDbQuery({
-        operation: 'Remove label (soft delete)',
-        queryFn: async () => {
-            const [labelRecord] = await db
-                .update(label)
-                .set({
-                    isActive: false,
-                    updatedAt: new Date(),
-                })
-                .where(and(eq(label.id, id), eq(label.userId, userId)))
-                .returning();
-
-            return labelRecord;
-        },
-    });
-
-/**
- * Bulk update label orders and parents for drag and drop operations
- * Updates all labels in a single transaction for better performance and consistency
- * @param items - Array of label items with new positions
- * @param userId - The user ID that owns all labels
- * @returns Promise resolving to void (use getAllFlattened to get fresh data)
- */
-const reorder = async ({ items, userId }: { items: TLabelQuery['reorder']; userId: string }) =>
-    withDbQuery({
-        operation: 'Bulk reorder labels',
-        queryFn: async () => {
-            // If no items, return early
-            if (items.length === 0) return { success: true, updatedCount: 0 };
-
-            // Build both CASE statements in a single loop for efficiency
-            // see https://orm.drizzle.team/docs/guides/update-many-with-different-value
-            const indexCases: SQL[] = [];
-            const parentCases: SQL[] = [];
-            const ids: string[] = [];
-
-            // add index and parentId to cases
-            items.forEach((item) => {
-                ids.push(item.id);
-                indexCases.push(sql` when ${label.id} = ${item.id} then ${item.index}::integer`);
-
-                if (item.parentId) {
-                    parentCases.push(sql` when ${label.id} = ${item.id} then ${item.parentId}`);
-                } else {
-                    parentCases.push(sql` when ${label.id} = ${item.id} then null`);
-                }
-            });
-
-            const indexCaseStatement = sql.join([sql`(case`, ...indexCases, sql` end)`], sql``);
-            const parentCaseStatement = sql.join([sql`(case`, ...parentCases, sql` end)`], sql``);
-
-            // Execute the bulk update with userId filter
-            await db
-                .update(label)
-                .set({
-                    index: indexCaseStatement,
-                    parentId: parentCaseStatement,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(inArray(label.id, ids), eq(label.userId, userId), eq(label.isActive, true))
-                );
-
-            return { success: true, updatedCount: items.length };
-        },
-    });
-
-const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: string | null }) =>
-    withDbQuery({
-        operation: 'Get max index for user and parent',
-        queryFn: async () => {
-            const maxIndex = await db
-                .select({ maxIndex: max(label.index) })
-                .from(label)
-                .where(
-                    and(
-                        eq(label.userId, userId),
-                        eq(label.isActive, true),
-                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
-                    )
-                )
-                .then((results) => results[0]?.maxIndex);
-
-            return { maxIndex: maxIndex ?? 0 };
-        },
-    });
-
-/**
- * Get all labels for a user in flattened order with global index based on hierarchical structure
- * Uses depth-first traversal to order labels: root first, then all its children recursively
- * Includes counts of children for each label
- * @param userId - The user ID to fetch labels for
- * @param filters - Optional filters for search
- * @returns Promise resolving to array of labels with global index, child counts, ordered by hierarchical structure
- */
-const getAllFlattened = async ({
-    userId,
-    filters,
-}: TQuerySelectUserRecords<TLabelQuery['filter']>): Promise<TLabelQuery['selectFlattened'][]> =>
-    withDbQuery({
-        operation: 'Get all labels flattened with global index',
-        queryFn: async (): Promise<TLabelQuery['selectFlattened'][]> => {
+    },
+    /**
+     * Get all labels for a user in flattened order with global index based on hierarchical structure
+     * Uses depth-first traversal to order labels: root first, then all its children recursively
+     * Includes counts of children for each label
+     * @param userId - The user ID to fetch labels for
+     * @param filters - Optional filters for search
+     * @returns Promise resolving to array of labels with global index, child counts, ordered by hierarchical structure
+     */
+    getFlattened: {
+        fn: async ({
+            userId,
+            filters,
+        }: TQuerySelectUserRecords<TLabelQuery['filter']>): Promise<
+            TLabelQuery['selectFlattened'][]
+        > => {
             const withRecursive = sql`
                 WITH RECURSIVE label_hierarchy AS (
                     -- Base case: root labels ordered by index
@@ -373,16 +224,125 @@ const getAllFlattened = async ({
 
             return parsedResult;
         },
-    });
+    },
+    getMany: {
+        fn: async () => {
+            const where = [eq(label.userId, userId), eq(label.isActive, true)];
 
-export const labelQueries = {
-    getAll,
-    getAllFlattened,
-    getRootLabels,
-    getById,
-    create,
-    update,
-    remove,
-    reorder,
-    getMaxIndex,
-};
+            if (filters?.search) {
+                where.push(ilike(label.name, `%${filters.search}%`));
+            }
+
+            return await db.query.label.findMany({
+                where: and(...where),
+                with: {
+                    parent: true,
+                    children: {
+                        where: eq(label.isActive, true),
+                    },
+                },
+                orderBy: [asc(label.index), asc(label.name)],
+            });
+        },
+    },
+    /**
+     * Bulk update label orders and parents for drag and drop operations
+     * Updates all labels in a single transaction for better performance and consistency
+     * @param items - Array of label items with new positions
+     * @param userId - The user ID that owns all labels
+     * @returns Promise resolving to void (use getAllFlattened to get fresh data)
+     */
+    reorder: {
+        fn: async ({
+            items: { items },
+            userId,
+        }: {
+            items: TLabelQuery['reorder'];
+            userId: string;
+        }) => {
+            // If no items, return early
+            if (items.length === 0) return { success: true, updatedCount: 0 };
+
+            // Build both CASE statements in a single loop for efficiency
+            // see https://orm.drizzle.team/docs/guides/update-many-with-different-value
+            const indexCases: SQL[] = [];
+            const parentCases: SQL[] = [];
+            const ids: string[] = [];
+
+            // add index and parentId to cases
+            items.forEach((item) => {
+                ids.push(item.id);
+                indexCases.push(sql` when ${label.id} = ${item.id} then ${item.index}::integer`);
+
+                if (item.parentId) {
+                    parentCases.push(sql` when ${label.id} = ${item.id} then ${item.parentId}`);
+                } else {
+                    parentCases.push(sql` when ${label.id} = ${item.id} then null`);
+                }
+            });
+
+            const indexCaseStatement = sql.join([sql`(case`, ...indexCases, sql` end)`], sql``);
+            const parentCaseStatement = sql.join([sql`(case`, ...parentCases, sql` end)`], sql``);
+
+            // Execute the bulk update with userId filter
+            await db
+                .update(label)
+                .set({
+                    index: indexCaseStatement,
+                    parentId: parentCaseStatement,
+                    updatedAt: new Date(),
+                })
+                .where(
+                    and(inArray(label.id, ids), eq(label.userId, userId), eq(label.isActive, true))
+                );
+
+            return { success: true, updatedCount: items.length };
+        },
+    },
+    /**
+     * Get a specific label by ID for a user
+     */
+    getById: {
+        fn: async ({ id, userId }) => {
+            return await db.query.label.findFirst({
+                where: and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)),
+                with: {
+                    parent: true,
+                    children: {
+                        where: eq(label.isActive, true),
+                    },
+                },
+            });
+        },
+    },
+    /**
+     * Update an existing label in the database
+     */
+    updateById: {
+        fn: async ({ id, data, userId }) => {
+            return await db
+                .update(label)
+                .set(data)
+                .where(and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)));
+        },
+    },
+    /**
+     * Remove a label from the database (soft delete)
+     */
+    removeById: {
+        fn: async ({ id, userId }) => {
+            const [labelRecord] = await db
+                .update(label)
+                .set({
+                    isActive: false,
+                    updatedAt: new Date(),
+                })
+                .where(and(eq(label.id, id), eq(label.userId, userId)))
+                .returning();
+
+            return labelRecord;
+        },
+    },
+});
+
+export type TLabel = InferFeatureType<typeof labelQueries>;
