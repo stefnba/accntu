@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { TGlobalBankAccount } from '@/server/db';
+import { dbTable } from '@/server/db';
 import { cn } from '@/lib/utils';
 import { Building2, CreditCard, LucideIcon, TrendingUp, Wallet } from 'lucide-react';
 
-type TAccountType = TGlobalBankAccount['type'];
+type TAccountType = typeof dbTable.globalBankAccount.$inferSelect.type;
 
 interface AccountTypeIconProps {
     accountType: TAccountType;

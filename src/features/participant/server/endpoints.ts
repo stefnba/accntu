@@ -1,58 +1,71 @@
+import { participantSchemas } from '@/features/participant/schemas';
+import { participantServices } from '@/features/participant/server/services';
+import { getUser } from '@/lib/auth';
+import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
-import { participantServiceSchemas } from '@/features/participant/schemas';
-import { participantService } from '@/features/participant/server/services';
-import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
-import { z } from 'zod';
-
 const app = new Hono()
-    .get('/', (c) =>
+    .get('/', zValidator('query', participantSchemas.operations.getMany.endpoint.query), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const participants = await participantService.getAll({ userId: user.id });
-            return participants;
-        })
-    )
-    .get('/:id', zValidator('param', z.object({ id: z.string() })), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.param();
-            const participant = await participantService.getById({ id, userId: user.id });
-            return participant;
-        })
-    )
-    .post('/', zValidator('json', participantServiceSchemas.create), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const data = c.req.valid('json');
-            const newParticipant = await participantService.create({
-                data,
+            const query = c.req.valid('query');
+            return await participantServices.getMany({
                 userId: user.id,
+                filters: query,
+                pagination: query,
             });
-            return newParticipant;
         })
     )
-    .patch('/:id', zValidator('json', participantServiceSchemas.update), (c) =>
+    .get('/:id', zValidator('param', participantSchemas.operations.getById.endpoint.param), (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.param();
-            const values = c.req.valid('json');
-            const updatedParticipant = await participantService.update({
-                id,
-                data: values,
-                userId: user.id,
-            });
-            return updatedParticipant;
+            const ids = c.req.valid('param');
+            return await participantServices.getById({ ids, userId: user.id });
         })
     )
-    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-            return await participantService.remove({ id, userId: user.id });
-        })
+    .post(
+        '/',
+        zValidator('json', participantSchemas.operations.create.endpoint.json),
+        (c) =>
+            withRoute(
+                c,
+                async () => {
+                    const user = getUser(c);
+                    const data = c.req.valid('json');
+                    return await participantServices.create({
+                        data,
+                        userId: user.id,
+                    });
+                },
+                201
+            )
+    )
+    .patch(
+        '/:id',
+        zValidator('param', participantSchemas.operations.updateById.endpoint.param),
+        zValidator('json', participantSchemas.operations.updateById.endpoint.json),
+        (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const ids = c.req.valid('param');
+                const data = c.req.valid('json');
+                return await participantServices.updateById({
+                    ids,
+                    data,
+                    userId: user.id,
+                });
+            })
+    )
+    .delete(
+        '/:id',
+        zValidator('param', participantSchemas.operations.removeById.endpoint.param),
+        (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const ids = c.req.valid('param');
+                return await participantServices.removeById({ ids, userId: user.id });
+            })
     );
 
 export default app;

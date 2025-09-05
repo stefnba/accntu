@@ -3,11 +3,15 @@ description: Guidelines for frontend development
 globs:
 alwaysApply: false
 ---
+
 ---
+
 description: Guidelines for frontend development
-globs: src/**
+globs: src/\*\*
 alwaysApply: false
+
 ---
+
 # Frontend Development Rules
 
 This project uses Next.js with React and follows a feature-based organization with clear separation of concerns for frontend development.
@@ -72,10 +76,10 @@ When creating new components:
 
 1. Check if a Shadcn component already exists for your use case
 2. If not, follow the Shadcn pattern:
-   - Use the `cn` utility for class merging
-   - Use Tailwind CSS for styling
-   - Implement proper accessibility features
-   - Follow the established naming conventions
+    - Use the `cn` utility for class merging
+    - Use Tailwind CSS for styling
+    - Implement proper accessibility features
+    - Follow the established naming conventions
 
 ## Forms and Validation
 
@@ -84,8 +88,8 @@ When creating new components:
 Use the enhanced form components from `@/components/form`:
 
 ```typescript
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/form";
-import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/form';
+import { Input } from '@/components/ui/input';
 ```
 
 ### Form Hook and Validation
@@ -98,7 +102,7 @@ import { z } from "zod";
 
 // Define your schema
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -145,21 +149,21 @@ function LoginForm() {
 Use the type-safe query and mutation hooks provided by the API client:
 
 ```typescript
-import { useAuthEndpoints } from "@/features/auth/api";
+import { useAuthEndpoints } from '@/features/auth/api';
 
 function LoginForm() {
-  const { mutate, isLoading } = useAuthEndpoints.login();
+    const { mutate, isLoading } = useAuthEndpoints.login();
 
-  const handleSubmit = (data) => {
-    mutate(data, {
-      onSuccess: (response) => {
-        // Handle success
-      },
-      onError: (error) => {
-        // Handle error
-      },
-    });
-  };
+    const handleSubmit = (data) => {
+        mutate(data, {
+            onSuccess: (response) => {
+                // Handle success
+            },
+            onError: (error) => {
+                // Handle error
+            },
+        });
+    };
 }
 ```
 
@@ -170,6 +174,7 @@ Create feature-specific API hooks following the established patterns:
 @file:.cursor/rules/features.mdc
 
 Key principles:
+
 - Define query keys for consistent caching
 - Use createQuery for GET operations, createMutation for POST/PUT/DELETE
 - Pass only 2 arguments to createMutation (apiMethod, queryKey)
@@ -180,24 +185,25 @@ Key principles:
 Use the error handling utilities for consistent error management:
 
 ```typescript
-import { handleApiError, useErrorHandler } from "@/lib/error";
+import { handleApiError, useErrorHandler } from '@/lib/error';
 
 // Using the error handler hook
 const handleError = useErrorHandler((err) => {
-  toast.error(err.error.message);
+    toast.error(err.error.message);
 });
 
 // In a component
 const mutation = useMutation({
-  mutationFn: api.createUser,
-  onError: (error) => handleError(error, {
-    'VALIDATION.INVALID_INPUT': (err) => {
-      setFormErrors(err.error.details);
-    },
-    'AUTH.EMAIL_EXISTS': () => {
-      setEmailError('This email is already registered');
-    }
-  })
+    mutationFn: api.createUser,
+    onError: (error) =>
+        handleError(error, {
+            'VALIDATION.INVALID_INPUT': (err) => {
+                setFormErrors(err.error.details);
+            },
+            'AUTH.EMAIL_EXISTS': () => {
+                setEmailError('This email is already registered');
+            },
+        }),
 });
 ```
 
@@ -231,20 +237,23 @@ When creating custom hooks:
 
 ```typescript
 // Example custom hook
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
-  // Implementation
-  return [value, setValue];
+    // Implementation
+    return [value, setValue];
 }
 ```
 
 ## State Management
+
 ### **Zustand**
+
 - Use Zustand for feature-based state management.
 - Keep **stores modular**, defining them in `features/[feature]/stores/`.
 
 ### **Nuqs**
+
 - Use Nuqs for **URL-based search params state** (modals, filters, sorting).
 
 ## Best Practices

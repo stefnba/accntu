@@ -7,7 +7,6 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const user = pgTable(
     'user',
@@ -145,32 +144,3 @@ export const authPasskey = pgTable(
         index('auth_passkey_user_created_idx').on(table.userId, table.createdAt),
     ]
 );
-
-// ===============================
-// Base Zod Schemas
-// ===============================
-
-// Session schemas
-export const selectSessionSchema = createSelectSchema(authSession);
-export const insertSessionSchema = createInsertSchema(authSession);
-export const updateSessionSchema = createUpdateSchema(authSession);
-
-// Auth account schemas
-export const selectAuthAccountSchema = createSelectSchema(authAccount);
-export const insertAuthAccountSchema = createInsertSchema(authAccount);
-export const updateAuthAccountSchema = createUpdateSchema(authAccount);
-
-// Auth verification schemas
-export const selectAuthVerificationSchema = createSelectSchema(authVerification);
-export const insertAuthVerificationSchema = createInsertSchema(authVerification);
-export const updateAuthVerificationSchema = createUpdateSchema(authVerification);
-
-// Auth passkey schemas
-export const selectAuthPasskeySchema = createSelectSchema(authPasskey);
-export const insertAuthPasskeySchema = createInsertSchema(authPasskey);
-export const updateAuthPasskeySchema = createUpdateSchema(authPasskey);
-
-// User schemas
-export const selectUserSchema = createSelectSchema(user);
-export const insertUserSchema = createInsertSchema(user);
-export const updateUserSchema = createUpdateSchema(user);

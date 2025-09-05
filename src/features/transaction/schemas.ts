@@ -1,80 +1,163 @@
+import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
-// ====================
-// Query Layer
-// ====================
-
 const numericInputSchema = z.coerce.number();
 
-export const transactionQuerySchemas = {
-    select: dbTable.selectTransactionSchema,
-    insert: dbTable.insertTransactionSchema
-        .omit({
-            id: true,
-            createdAt: true,
-            updatedAt: true,
-            isActive: true,
-            isHidden: true,
-            isNew: true,
-        })
-        .extend({
+export const { schemas: transactionSchemas } = createFeatureSchemas
+    .registerTable(dbTable.transaction)
+    .omit({
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+        isHidden: true,
+        isNew: true,
+        userId: true,
+    })
+    .transform((base) =>
+        base.extend({
             userAmount: numericInputSchema,
             accountAmount: numericInputSchema,
             spendingAmount: numericInputSchema,
             balance: numericInputSchema.optional(),
-        }),
-    update: dbTable.updateTransactionSchema
-        .extend({
-            userAmount: numericInputSchema.optional(),
-            accountAmount: numericInputSchema.optional(),
-            spendingAmount: numericInputSchema.optional(),
-            balance: numericInputSchema.optional(),
         })
-        .partial(),
-};
+    )
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a transaction
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many transactions
+     */
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const paginationSchema = z.object({
+            page: z.coerce.number().min(1).default(1),
+            pageSize: z.coerce.number().min(1).max(100).default(50),
+        });
 
-export type TTransactionQuery = {
-    select: z.infer<typeof transactionQuerySchemas.select>;
-    insert: z.infer<typeof transactionQuerySchemas.insert>;
-    update: z.infer<typeof transactionQuerySchemas.update>;
-};
+        const filtersSchema = z.object({
+            accountIds: z
+                .preprocess(
+                    (value) => (typeof value === 'string' ? [value] : value),
+                    z.array(z.string())
+                )
+                .optional(),
+            labelIds: z
+                .preprocess(
+                    (value) => (typeof value === 'string' ? [value] : value),
+                    z.array(z.string())
+                )
+                .optional(),
+            tagIds: z
+                .preprocess(
+                    (value) => (typeof value === 'string' ? [value] : value),
+                    z.array(z.string())
+                )
+                .optional(),
+            type: z
+                .preprocess(
+                    (value) => (typeof value === 'string' ? [value] : value),
+                    z.array(z.string())
+                )
+                .optional(),
+            currencies: z
+                .preprocess(
+                    (value) => (typeof value === 'string' ? [value] : value),
+                    z.array(z.string())
+                )
+                .optional(),
+            search: z.string().optional(),
+            startDate: z.coerce.date().optional(),
+            endDate: z.coerce.date().optional(),
+        });
+
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a transaction by ID
+     */
+    .addCore('getById', ({ buildServiceInput }) => {
+        const input = buildServiceInput();
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                param: z.object({ id: z.string() }),
+            },
+        };
+    })
+    /**
+     * Update a transaction by ID
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema.partial() });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                param: z.object({ id: z.string() }),
+                json: baseSchema.partial(),
+            },
+        };
+    })
+    /**
+     * Remove a transaction by ID
+     */
+    .addCore('removeById', ({ buildServiceInput }) => {
+        const input = buildServiceInput();
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                param: z.object({ id: z.string() }),
+            },
+        };
+    });
+
+export type TTransactionSchemas = InferSchemas<typeof transactionSchemas>;
+export type TTransactionServices = InferServiceSchemas<typeof transactionSchemas>;
 
 // ====================
-// Service/Endpoint Layer
+// Custom Schemas for backward compatibility
 // ====================
 
-export const transactionServiceSchemas = {
-    create: transactionQuerySchemas.insert
-        .omit({
-            userId: true,
-            userAmount: true,
-            userCurrency: true,
-            originalTitle: true,
-            importFileId: true,
-            connectedBankAccountId: true,
-        })
-        .extend({
-            accountAmount: numericInputSchema,
-            spendingAmount: numericInputSchema,
-            balance: numericInputSchema.optional(),
-        }),
-    update: transactionQuerySchemas.update,
-};
-
-export type TTransactionService = {
-    create: z.infer<typeof transactionServiceSchemas.create>;
-    update: z.infer<typeof transactionServiceSchemas.update>;
-};
-
-// ====================
-// Custom Schemas
-// ====================
+// Legacy types for existing code
+export type TTransactionFilterOptions = z.infer<
+    typeof transactionSchemas.getMany.service
+>['filters'];
+export type TTransactionPagination = z.infer<
+    typeof transactionSchemas.getMany.service
+>['pagination'];
 
 /**
  * Schema for parsing transactions
  */
-export const transactionParseSchema = transactionServiceSchemas.create;
+export const transactionParseSchema = transactionSchemas.create.service.shape.data;
 export type TTransactionParseSchema = z.infer<typeof transactionParseSchema>;
 
 /**
@@ -85,34 +168,3 @@ export const transactionParseDuplicateCheckSchema = transactionParseSchema.exten
     existingTransactionId: z.string().optional().nullable(),
 });
 export type TTransactionParseDuplicateCheck = z.infer<typeof transactionParseDuplicateCheckSchema>;
-
-/**
- * Schema for filtering transactions
- */
-export const transactionFilterOptionsSchema = z.object({
-    accountIds: z
-        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
-        .optional(),
-    labelIds: z
-        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
-        .optional(),
-    tagIds: z
-        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
-        .optional(),
-    type: z
-        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
-        .optional(),
-    currencies: z
-        .preprocess((value) => (typeof value === 'string' ? [value] : value), z.array(z.string()))
-        .optional(),
-    search: z.string().optional(),
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional(),
-});
-export type TTransactionFilterOptions = z.infer<typeof transactionFilterOptionsSchema>;
-
-export const transactionPaginationSchema = z.object({
-    page: z.coerce.number().min(1).default(1),
-    pageSize: z.coerce.number().min(1).max(100).default(50),
-});
-export type TTransactionPagination = z.infer<typeof transactionPaginationSchema>;

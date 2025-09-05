@@ -1,104 +1,74 @@
-import { labelSchema } from '@/features/label/schemas';
+import { labelSchemas } from '@/features/label/schemas';
 import { labelQueries } from '@/features/label/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service';
+import { InferFeatureType } from '@/server/lib/db';
 
-export const labelService = createFeatureServices({
-    queries: labelQueries,
-    schemas: labelSchema,
-    services: ({ schemas, queries }) => ({
+export const labelServices = createFeatureServices
+    .registerSchema(labelSchemas)
+    .registerQuery(labelQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a new label with automatic index assignment
+         */
         create: async (input) => {
-            const maxIndex = await queries.getMaxIndex({
-                userId: input.userId,
-                parentId: input.parentId ?? undefined,
-            });
-
-            return maxIndex;
+            return await queries.create({ data: input.data, userId: input.userId });
         },
-    }),
-});
 
-export const labelSerdddvices = {
-    /**
-     * Get all labels for a user with parent/child relationships
-     * @param userId - The user ID to fetch labels for
-     * @returns Promise resolving to array of labels with relationships
-     */
-    async getAll({ userId, filters }: TQuerySelectUserRecords<TLabelService['filter']>) {
-        return await labelQueries.getAll({ userId, filters });
-    },
+        /**
+         * Get many labels with optional filtering and pagination
+         */
+        getMany: async (input) => {
+            return await queries.getMany({
+                userId: input.userId,
+                filters: input.filters,
+                pagination: input.pagination,
+            });
+        },
 
-    /**
-     * Get all labels flattened
-     */
-    async getAllFlattened({ userId, filters }: TQuerySelectUserRecords<TLabelService['filter']>) {
-        return await labelQueries.getAllFlattened({ userId, filters });
-    },
+        /**
+         * Get a label by ID
+         */
+        getById: async (input) => {
+            return await queries.getById({ ids: input.ids, userId: input.userId });
+        },
 
-    /**
-     * Get root labels (no parent) with nested children for a user
-     * @param userId - The user ID to fetch labels for
-     * @returns Promise resolving to array of root labels with nested children
-     */
-    async getRootLabels({ userId }: TQuerySelectUserRecords) {
-        return await labelQueries.getRootLabels(userId);
-    },
+        /**
+         * Update a label by ID
+         */
+        updateById: async (input) => {
+            return await queries.updateById({
+                ids: input.ids,
+                data: input.data,
+                userId: input.userId,
+            });
+        },
 
-    /**
-     * Get a specific label by ID for a user
-     * @param id - The label ID to fetch
-     * @param userId - The user ID that owns the label
-     * @returns Promise resolving to the label or null if not found
-     */
-    async getById({ id, userId }: TQuerySelectUserRecordById) {
-        return await labelQueries.getById(id, userId);
-    },
+        /**
+         * Remove a label by ID (soft delete)
+         */
+        removeById: async (input) => {
+            return await queries.removeById({ ids: input.ids, userId: input.userId });
+        },
 
-    /**
-     * Create a new label for a user
-     * @param data - The label data to create (name, color, parentId, etc.)
-     * @param userId - The user ID that will own the label
-     * @returns Promise resolving to the created label
-     */
-    async create({ data, userId }: TQueryInsertUserRecord<TLabelService['insert']>) {
-        const maxIndex = await labelQueries.getMaxIndex({
-            userId,
-            parentId: data.parentId ?? undefined,
-        });
+        /**
+         * Get flattened labels with hierarchy information
+         */
+        getFlattened: async (input) => {
+            return await queries.getFlattened({
+                userId: input.userId,
+                filters: input.filters,
+            });
+        },
 
-        return await labelQueries.create({
-            data: { ...data, index: maxIndex.maxIndex + 1 },
-            userId,
-        });
-    },
+        /**
+         * Reorder labels in bulk
+         */
+        reorder: async (input) => {
+            return await queries.reorder({
+                items: input.items,
+                userId: input.userId,
+            });
+        },
+    }));
 
-    /**
-     * Update an existing label for a user
-     * @param id - The label ID to update
-     * @param data - The updated label data
-     * @param userId - The user ID that owns the label
-     * @returns Promise resolving to the updated label or null if not found
-     */
-    async update({ id, data, userId }: TQueryUpdateUserRecord<TLabelService['update']>) {
-        return await labelQueries.update({ id, data, userId });
-    },
-
-    /**
-     * Soft delete a label by setting isActive to false
-     * @param id - The label ID to delete
-     * @param userId - The user ID that owns the label
-     * @returns Promise resolving to the deleted label or null if not found
-     */
-    async remove({ id, userId }: TQueryDeleteUserRecord) {
-        return await labelQueries.remove({ id, userId });
-    },
-
-    /**
-     * Bulk reorder labels for drag and drop operations
-     * @param items - Array of label items with new positions after drag and drop
-     * @param userId - The user ID that owns all labels
-     * @returns Promise resolving to updated flattened labels
-     */
-    async reorder({ items, userId }: { items: TLabelService['reorder']['items']; userId: string }) {
-        return await labelQueries.reorder({ items, userId });
-    },
-};
+export type TLabel = InferFeatureType<typeof labelQueries>;

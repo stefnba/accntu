@@ -1,59 +1,153 @@
-import { FeatureSchema, InferSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
-export type TLabelSchemas = InferSchemas<typeof labelSchema>;
+const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
-export const labelSchema = FeatureSchema.fromTable({ table: dbTable.label }).forOperations(({ base }) => {
-    return {
-        create: {
-            database: base,
-            service: base,
-        },
-        updateById: {
-            service: base,
-        },
-        removeById: {
-            service: base,
-        },
-        getById: {
-            service: base,
-        },
-        getFlattened: {
-            service: base.extend({
-                globalIndex: z.number().int(),
-                countChildren: z.number().int(),
-                hasChildren: z.boolean(),
-                depth: z.number().int(),
-                // Transform string dates from raw SQL to Date objects
-                createdAt: z.string().transform((val) => new Date(val)),
-                updatedAt: z.string().transform((val) => new Date(val)),
-            }),
-        },
-        getMany: {
-            service: FeatureSchema.default.getMany(
+export const { schemas: labelSchemas } = createFeatureSchemas
+    .registerTable(dbTable.label)
+    .omit({
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+        id: true,
+        userId: true,
+        index: true,
+    })
+    .transform((base) =>
+        base.extend({
+            color: colorSchema,
+        })
+    )
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a label
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many labels
+     */
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(20),
+        });
+
+        const filtersSchema = z.object({
+            search: z.string().optional(),
+            parentId: z.string().optional(),
+        });
+
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a label by id
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a label by id
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a label by id
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Get flattened labels with hierarchy info
+     */
+    .addCustom('getFlattened', ({ buildServiceInput }) => {
+        const filtersSchema = z.object({
+            search: z.string().optional(),
+        });
+
+        const input = buildServiceInput({
+            filters: filtersSchema,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: filtersSchema,
+            },
+        };
+    })
+    /**
+     * Reorder labels
+     */
+    .addCustom('reorder', ({ buildServiceInput }) => {
+        const itemsSchema = z.object({
+            items: z.array(
                 z.object({
-                    search: z.string().optional(),
-                    parentId: z.string().optional(),
+                    id: z.string(),
+                    parentId: z.string().nullable(),
+                    index: z.number().int(),
                 })
             ),
-        },
-        reorder: FeatureSchema.helpers.operation(() => {
-            const shared = z.object({
-                items: z.array(
-                    base
-                        .pick({
-                            id: true,
-                            index: true,
-                            parentId: true,
-                        })
-                        .required()
-                ),
-            });
-            return {
-                database: shared,
-                service: shared,
-            };
-        }),
-    };
-});
+        });
+
+        const input = buildServiceInput({ items: itemsSchema });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: itemsSchema,
+            },
+        };
+    });
+
+// ====================
+// Types
+// ====================
+export type TLabelSchemas = InferSchemas<typeof labelSchemas>;
+
+export { type TLabel } from '@/features/label/server/db/queries';

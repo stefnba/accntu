@@ -1,6 +1,6 @@
 import { splitConfigSchema } from '@/features/budget/schemas';
 import { dbTable } from '@/server/db';
-import { createFeatureSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
 export const { schemas: participantSchemas } = createFeatureSchemas
@@ -23,6 +23,32 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         query: buildServiceInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
+    /**
+     * Get many participants
+     */
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(10),
+        });
+
+        const filtersSchema = z.object({
+            search: z.string().optional(),
+        });
+
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
     /**
      * Update a participant by id
      */
@@ -82,8 +108,15 @@ export const participantToBucketSchema = z.object({
     notes: z.string().optional(),
 });
 
+// ====================
+// Types
+// ====================
+export type TParticipantSchemas = InferSchemas<typeof participantSchemas>;
+
 export type TParticipantToTransaction = z.infer<typeof participantToTransactionSchema>;
 export type TParticipantToConnectedBankAccount = z.infer<
     typeof participantToConnectedBankAccountSchema
 >;
 export type TParticipantToBucket = z.infer<typeof participantToBucketSchema>;
+
+export { type TParticipant } from '@/features/participant/server/db/queries';

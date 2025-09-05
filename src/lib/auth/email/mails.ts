@@ -18,7 +18,7 @@ export const welcomeEmailConfig = createEmailConfig({
     schema: z.object({
         user: z.object({
             name: z.string().min(1, 'User name is required.'),
-            email: z.string().email('Invalid email address.'),
+            email: z.email('Invalid email address.'),
         }),
     }),
 });

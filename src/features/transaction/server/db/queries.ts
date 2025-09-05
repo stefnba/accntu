@@ -1,31 +1,18 @@
-import {
-    TTransactionFilterOptions,
-    TTransactionPagination,
-    TTransactionQuery,
-} from '@/features/transaction/schemas';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { transactionSchemas } from '@/features/transaction/schemas';
 import { db, dbTable } from '@/server/db';
-
 import { createFeatureQueries } from '@/server/lib/db/query';
-import { withDbQuery } from '@/server/lib/handler';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
-import { transaction } from './schema';
+import { transaction } from './tables';
 
-const getAll = async ({
-    userId,
-    filters,
-    pagination,
-}: TQuerySelectUserRecords<TTransactionFilterOptions> & { pagination: TTransactionPagination }) =>
-    withDbQuery({
+export const transactionQueries = createFeatureQueries
+    .registerSchema(transactionSchemas)
+    /**
+     * Get many transactions with filters and relations
+     */
+    .addQuery('getMany', {
         operation: 'Get paginated transactions with filters and relations',
-        queryFn: async () => {
-            const offset = (pagination?.page - 1) * pagination?.pageSize;
+        fn: async ({ userId, filters, pagination }) => {
+            const offset = ((pagination?.page || 1) - 1) * (pagination?.pageSize || 50);
 
             // Build where conditions
             const whereConditions = [
@@ -110,7 +97,7 @@ const getAll = async ({
                     },
                 },
                 orderBy: [desc(transaction.date), desc(transaction.createdAt)],
-                limit: pagination?.pageSize,
+                limit: pagination?.pageSize || 50,
                 offset,
             });
 
@@ -152,28 +139,24 @@ const getAll = async ({
                 transactions: transactionsWithRelations,
                 totalCount,
                 pagination: {
-                    page: pagination?.page,
-                    pageSize: pagination?.pageSize,
+                    page: pagination?.page || 1,
+                    pageSize: pagination?.pageSize || 50,
                     totalCount,
-                    totalPages: Math.ceil(totalCount / pagination?.pageSize),
+                    totalPages: Math.ceil(totalCount / (pagination?.pageSize || 50)),
                 },
             };
         },
-    });
+    })
 
-/**
- * Get a transaction by ID
- * @param userId - The user ID
- * @param id - The transaction ID
- * @returns The transaction
- */
-export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
-    withDbQuery({
+    /**
+     * Get a transaction by ID
+     */
+    .addQuery('getById', {
         operation: 'Get single transaction by ID with relations',
-        queryFn: async () => {
+        fn: async ({ ids, userId }) => {
             const result = await db.query.transaction.findFirst({
                 where: and(
-                    eq(transaction.id, id),
+                    eq(transaction.id, ids.id),
                     eq(transaction.userId, userId),
                     eq(transaction.isActive, true)
                 ),
@@ -202,7 +185,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
 
             // Get tags for this transaction
             const transactionTagsData = await db.query.tagToTransaction.findMany({
-                where: eq(dbTable.tagToTransaction.transactionId, id),
+                where: eq(dbTable.tagToTransaction.transactionId, ids.id),
                 with: {
                     tag: true,
                 },
@@ -222,217 +205,12 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
                 bucket: result.bucketTransaction?.bucket || null,
             };
         },
-    });
-
-/**
- * Get filter options for transaction table
- * @param userId - The user ID
- * @returns The filter options
- */
-export const getFilterOptions = async (userId: string) =>
-    withDbQuery({
-        operation: 'Get filter options for transaction table',
-        queryFn: async () => {
-            // Get unique accounts
-            const accounts = await db
-                .selectDistinct({
-                    id: dbTable.connectedBankAccount.id,
-                    name: dbTable.connectedBankAccount.name,
-                    type: dbTable.connectedBankAccount.type,
-                })
-                .from(transaction)
-                .innerJoin(
-                    dbTable.connectedBankAccount,
-                    eq(transaction.connectedBankAccountId, dbTable.connectedBankAccount.id)
-                )
-                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-            // Get unique currencies
-            const currencies = await db
-                .select({
-                    currency: sql<string>`DISTINCT UNNEST(ARRAY[${transaction.spendingCurrency}, ${transaction.accountCurrency}])`,
-                })
-                .from(transaction)
-                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-            // Get unique labels
-            const labels = await db
-                .selectDistinct({ id: dbTable.label.id, name: dbTable.label.name, color: dbTable.label.color })
-                .from(transaction)
-                .innerJoin(dbTable.label, eq(transaction.labelId, dbTable.label.id))
-                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-            // Get user's tags
-            const tags = await db.query.tag.findMany({
-                where: and(eq(dbTable.tag.userId, userId), eq(dbTable.tag.isActive, true)),
-                orderBy: [dbTable.tag.name],
-            });
-
-            return {
-                accounts,
-                currencies: currencies.map((c) => c.currency).filter(Boolean),
-                labels,
-                tags,
-                types: ['transfer', 'credit', 'debit'] as const,
-            };
-        },
-    });
-
-/**
- * Create many transactions
- * @param data - The transaction data
- * @returns The created transactions
- */
-const createMany = async (data: Array<TTransactionQuery['insert']>) =>
-    withDbQuery({
-        operation: 'Create many transactions',
-        queryFn: async () => {
-            const newTransactions = await db.insert(transaction).values(data).returning();
-
-            return newTransactions;
-        },
-    });
-
-/**
- * Create a new transaction
- * @param data - The transaction data
- * @param userId - The user ID
- * @returns The created transaction
- */
-const create = async ({ data, userId }: TQueryInsertUserRecord<TTransactionQuery['insert']>) =>
-    withDbQuery({
-        operation: 'Create a new transaction',
-        queryFn: async () => {
-            const [newTransaction] = await db
-                .insert(transaction)
-                .values({
-                    ...data,
-                    userId,
-                })
-                .returning();
-
-            return newTransaction;
-        },
-    });
-
-/**
- * Update a transaction
- * @param data - The transaction data
- * @param userId - The user ID
- * @returns The updated transaction
- */
-export const update = async ({
-    id,
-    userId,
-    data,
-}: TQueryUpdateUserRecord<TTransactionQuery['update']>) =>
-    withDbQuery({
-        operation: 'Update a transaction',
-        queryFn: async () => {
-            const [updatedTransaction] = await db
-                .update(transaction)
-                .set({
-                    ...data,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(transaction.id, id),
-                        eq(transaction.userId, userId),
-                        eq(transaction.isActive, true)
-                    )
-                )
-                .returning();
-
-            return updatedTransaction;
-        },
-    });
-
-/**
- * Soft delete a transaction
- */
-export const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
-    withDbQuery({
-        operation: 'Soft delete a transaction',
-        queryFn: async () => {
-            const [deletedTransaction] = await db
-                .update(transaction)
-                .set({
-                    isActive: false,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(transaction.id, id),
-                        eq(transaction.userId, userId),
-                        eq(transaction.isActive, true)
-                    )
-                )
-                .returning();
-
-            return deletedTransaction;
-        },
-    });
-
-/**
- * Get transactions by their keys (for duplicate detection)
- * @param userId - The user ID
- * @param keys - Array of transaction keys
- * @returns The transactions
- */
-export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) =>
-    withDbQuery({
-        operation: 'Get transactions by keys',
-        queryFn: async () => {
-            if (keys.length === 0) return [];
-
-            const result = await db.query.transaction.findMany({
-                where: and(
-                    eq(transaction.userId, userId),
-                    eq(transaction.isActive, true),
-                    inArray(transaction.key, keys)
-                ),
-                columns: {
-                    id: true,
-                    key: true,
-                },
-            });
-
-            return result;
-        },
-    });
-
-/**
- * Get existing transactions based on a list of keys for duplicate checking.
- * @param userId - The user ID.
- * @param keys - An array of unique keys to check.
- * @returns A list of transactions that already exist.
- */
-export const getDuplicates = async ({ userId, keys }: { userId: string; keys: string[] }) =>
-    withDbQuery({
-        operation: 'Get duplicate transactions by keys',
-        queryFn: async () => {
-            if (keys.length === 0) {
-                return [];
-            }
-
-            const result = await db
-                .select({
-                    id: transaction.id,
-                    key: transaction.key,
-                })
-                .from(transaction)
-                .where(and(eq(transaction.userId, userId), inArray(transaction.key, keys)));
-
-            return result;
-        },
-    });
-
-export const transactionQueries = createFeatureQueries(transaction, {
+    })
     /**
-     * Create a new transaction
+     * Create a transaction
      */
-    create: {
+    .addQuery('create', {
+        operation: 'Create a transaction',
         fn: async ({ data, userId }) => {
             const [newTransaction] = await db
                 .insert(transaction)
@@ -444,5 +222,164 @@ export const transactionQueries = createFeatureQueries(transaction, {
 
             return newTransaction;
         },
-    },
-});
+    })
+    /**
+     * Update a transaction by ID
+     */
+    .addQuery('updateById', {
+        operation: 'Update a transaction',
+        fn: async ({ ids, userId, data }) => {
+            const [updatedTransaction] = await db
+                .update(transaction)
+                .set({
+                    ...data,
+                    updatedAt: new Date(),
+                })
+                .where(
+                    and(
+                        eq(transaction.id, ids.id),
+                        eq(transaction.userId, userId),
+                        eq(transaction.isActive, true)
+                    )
+                )
+                .returning();
+
+            return updatedTransaction;
+        },
+    })
+    /**
+     * Remove a transaction by ID
+     */
+    .addQuery('removeById', {
+        operation: 'Soft delete a transaction',
+        fn: async ({ ids, userId }) => {
+            const [deletedTransaction] = await db
+                .update(transaction)
+                .set({
+                    isActive: false,
+                    updatedAt: new Date(),
+                })
+                .where(
+                    and(
+                        eq(transaction.id, ids.id),
+                        eq(transaction.userId, userId),
+                        eq(transaction.isActive, true)
+                    )
+                )
+                .returning();
+
+            return deletedTransaction;
+        },
+    });
+
+// Legacy functions that may still be used elsewhere
+
+/**
+ * Get filter options for transaction table
+ * @param userId - The user ID
+ * @returns The filter options
+ */
+export const getFilterOptions = async (userId: string) => {
+    // Get unique accounts
+    const accounts = await db
+        .selectDistinct({
+            id: dbTable.connectedBankAccount.id,
+            name: dbTable.connectedBankAccount.name,
+            type: dbTable.connectedBankAccount.type,
+        })
+        .from(transaction)
+        .innerJoin(
+            dbTable.connectedBankAccount,
+            eq(transaction.connectedBankAccountId, dbTable.connectedBankAccount.id)
+        )
+        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
+
+    // Get unique currencies
+    const currencies = await db
+        .select({
+            currency: sql<string>`DISTINCT UNNEST(ARRAY[${transaction.spendingCurrency}, ${transaction.accountCurrency}])`,
+        })
+        .from(transaction)
+        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
+
+    // Get unique labels
+    const labels = await db
+        .selectDistinct({
+            id: dbTable.label.id,
+            name: dbTable.label.name,
+            color: dbTable.label.color,
+        })
+        .from(transaction)
+        .innerJoin(dbTable.label, eq(transaction.labelId, dbTable.label.id))
+        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
+
+    // Get user's tags
+    const tags = await db.query.tag.findMany({
+        where: and(eq(dbTable.tag.userId, userId), eq(dbTable.tag.isActive, true)),
+        orderBy: [dbTable.tag.name],
+    });
+
+    return {
+        accounts,
+        currencies: currencies.map((c) => c.currency).filter(Boolean),
+        labels,
+        tags,
+        types: ['transfer', 'credit', 'debit'] as const,
+    };
+};
+
+/**
+ * Get transactions by their keys (for duplicate detection)
+ * @param userId - The user ID
+ * @param keys - Array of transaction keys
+ * @returns The transactions
+ */
+export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
+    if (keys.length === 0) return [];
+
+    const result = await db.query.transaction.findMany({
+        where: and(
+            eq(transaction.userId, userId),
+            eq(transaction.isActive, true),
+            inArray(transaction.key, keys)
+        ),
+        columns: {
+            id: true,
+            key: true,
+        },
+    });
+
+    return result;
+};
+
+/**
+ * Get existing transactions based on a list of keys for duplicate checking.
+ * @param userId - The user ID.
+ * @param keys - An array of unique keys to check.
+ * @returns A list of transactions that already exist.
+ */
+export const getDuplicates = async ({ userId, keys }: { userId: string; keys: string[] }) => {
+    if (keys.length === 0) {
+        return [];
+    }
+
+    const result = await db
+        .select({
+            id: transaction.id,
+            key: transaction.key,
+        })
+        .from(transaction)
+        .where(and(eq(transaction.userId, userId), inArray(transaction.key, keys)));
+
+    return result;
+};
+
+/**
+ * Create many transactions
+ * @param data - The transaction data
+ * @returns The created transactions
+ */
+export const createMany = async (data: Array<typeof transaction.$inferInsert>) => {
+    const newTransactions = await db.insert(transaction).values(data).returning();
+    return newTransactions;
+};

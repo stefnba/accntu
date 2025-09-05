@@ -1,12 +1,9 @@
 import {
-    transactionFilterOptionsSchema,
-    transactionPaginationSchema,
-    transactionParseDuplicateCheckSchema,
-    transactionServiceSchemas,
+    transactionSchemas,
+    TTransactionParseDuplicateCheck,
 } from '@/features/transaction/schemas';
-import { transactionServices } from '@/features/transaction/server/services';
+import { transactionServices, getFilterOptions, createMany } from '@/features/transaction/server/services';
 import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
@@ -16,16 +13,14 @@ const app = new Hono()
     // Get transactions with filters and pagination
     .get(
         '/',
-        zValidator(
-            'query',
-            transactionFilterOptionsSchema.extend(transactionPaginationSchema.shape)
-        ),
+        zValidator('query', transactionSchemas.getMany.endpoint.query),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
-                const { page, pageSize, ...filters } = c.req.valid('query');
+                const query = c.req.valid('query');
+                const { page, pageSize, ...filters } = query;
 
-                return await transactionServices.getAll({
+                return await transactionServices.getMany({
                     userId: user.id,
                     filters,
                     pagination: {
@@ -40,19 +35,19 @@ const app = new Hono()
     .get('/filter-options', async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await transactionServices.getFilterOptions(user.id);
+            return await getFilterOptions(user.id);
         })
     )
 
     // Get single transaction by ID
-    .get('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    .get('/:id', zValidator('param', transactionSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.valid('param');
+            const ids = c.req.valid('param');
 
             const transaction = await transactionServices.getById({
                 userId: user.id,
-                id,
+                ids,
             });
 
             return transaction;
@@ -62,16 +57,16 @@ const app = new Hono()
     // update a transaction
     .patch(
         '/:id',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', transactionServiceSchemas.update),
+        zValidator('param', transactionSchemas.updateById.endpoint.param),
+        zValidator('json', transactionSchemas.updateById.endpoint.json),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
-                const { id } = c.req.valid('param');
+                const ids = c.req.valid('param');
                 const data = c.req.valid('json');
 
-                return await transactionServices.update({
-                    id,
+                return await transactionServices.updateById({
+                    ids,
                     data,
                     userId: user.id,
                 });
@@ -79,16 +74,36 @@ const app = new Hono()
     )
 
     // delete a transaction
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    .delete('/:id', zValidator('param', transactionSchemas.removeById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.valid('param');
+            const ids = c.req.valid('param');
 
-            return await transactionServices.remove({
-                id,
+            return await transactionServices.removeById({
+                ids,
                 userId: user.id,
             });
         })
+    )
+
+    // create a new transaction
+    .post(
+        '/',
+        zValidator('json', transactionSchemas.create.endpoint.json),
+        async (c) =>
+            withRoute(
+                c,
+                async () => {
+                    const user = getUser(c);
+                    const data = c.req.valid('json');
+
+                    return await transactionServices.create({
+                        data,
+                        userId: user.id,
+                    });
+                },
+                201
+            )
     )
 
     // import transactions (bulk)
@@ -97,7 +112,7 @@ const app = new Hono()
         zValidator(
             'json',
             z.object({
-                transactions: z.array(transactionParseDuplicateCheckSchema),
+                transactions: z.array(z.any()),
                 importFileId: z.string(),
             })
         ),
@@ -106,7 +121,7 @@ const app = new Hono()
                 const user = getUser(c);
                 const { transactions, importFileId } = c.req.valid('json');
 
-                return await transactionServices.createMany({
+                return await createMany({
                     userId: user.id,
                     transactions,
                     importFileId,

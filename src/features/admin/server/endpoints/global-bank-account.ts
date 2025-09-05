@@ -1,7 +1,4 @@
-import {
-    globalBankAccountServiceSchemas,
-    testTransformSchema,
-} from '@/features/bank/schemas/global-bank-account';
+import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
 import { globalBankAccountServices } from '@/features/bank/server/services/global-bank-account';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
@@ -14,21 +11,24 @@ export const adminGlobalBankAccountEndpoints = new Hono()
         withRoute(c, async () => {
             const bankId = c.req.param('bankId');
 
-            return await globalBankAccountServices.getAll({ filters: { globalBankId: bankId } });
+            return await globalBankAccountServices.getMany({
+                filters: { globalBankId: bankId },
+                pagination: { page: 1, pageSize: 10 },
+            });
         })
     )
 
     // Get a global bank account by id
-    .get('/:id', async (c) =>
+    .get('/:id', zValidator('param', globalBankAccountSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
-            const id = c.req.param('id');
+            const id = c.req.valid('param').id;
 
-            return await globalBankAccountServices.getById({ id });
+            return await globalBankAccountServices.getById({ ids: { id } });
         })
     )
 
     // Create a global bank account
-    .post('/', zValidator('json', globalBankAccountServiceSchemas.insert), async (c) =>
+    .post('/', zValidator('json', globalBankAccountSchemas.create.endpoint.json), async (c) =>
         withRoute(c, async () => {
             const data = c.req.valid('json');
 
@@ -37,31 +37,41 @@ export const adminGlobalBankAccountEndpoints = new Hono()
     )
 
     // Update a global bank account
-    .put('/:id', zValidator('json', globalBankAccountServiceSchemas.update), async (c) =>
-        withRoute(c, async () => {
-            const id = c.req.param('id');
-            const data = c.req.valid('json');
+    .put(
+        '/:id',
+        zValidator('json', globalBankAccountSchemas.updateById.endpoint.json),
+        zValidator('param', globalBankAccountSchemas.updateById.endpoint.param),
+        async (c) =>
+            withRoute(c, async () => {
+                const id = c.req.valid('param').id;
+                const data = c.req.valid('json');
 
-            console.log(data);
+                console.log(data);
 
-            return await globalBankAccountServices.update({ id, data });
-        })
+                return await globalBankAccountServices.updateById({ ids: { id }, data });
+            })
     )
 
     // Delete a global bank account
-    .delete('/:id', async (c) =>
-        withRoute(c, async () => {
-            const id = c.req.param('id');
+    .delete(
+        '/:id',
+        zValidator('param', globalBankAccountSchemas.removeById.endpoint.param),
+        async (c) =>
+            withRoute(c, async () => {
+                const id = c.req.valid('param').id;
 
-            return await globalBankAccountServices.remove({ id });
-        })
+                return await globalBankAccountServices.removeById({ ids: { id } });
+            })
     )
 
     // Test global bank account transformation query
-    .post('/test-transform-query', zValidator('json', testTransformSchema), async (c) =>
-        withRoute(c, async () => {
-            const data = c.req.valid('json');
+    .post(
+        '/test-transform-query',
+        zValidator('json', globalBankAccountSchemas.testTransform.endpoint.json),
+        async (c) =>
+            withRoute(c, async () => {
+                const data = c.req.valid('json');
 
-            return await globalBankAccountServices.testTransformQuery(data);
-        })
+                return await globalBankAccountServices.testTransform(data);
+            })
     );

@@ -1,6 +1,5 @@
-import { labelServiceSchemas } from '@/features/label/schemas';
+import { labelSchemas } from '@/features/label/schemas';
 import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
@@ -10,13 +9,13 @@ const app = new Hono()
     /**
      * GET /labels/flattened - Get all labels flattened
      */
-    .get('/flattened', zValidator('query', labelServiceSchemas.filter.optional()), async (c) => {
+    .get('/flattened', zValidator('query', labelSchemas.getFlattened.endpoint.query), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { search, parentId } = c.req.valid('query') ?? {};
-            return await labelServices.getAllFlattened({
+            const filters = c.req.valid('query');
+            return await labelServices.getFlattened({
                 userId: user.id,
-                filters: { search, parentId },
+                filters,
             });
         });
     })
@@ -24,52 +23,43 @@ const app = new Hono()
     /**
      * PUT /labels/reorder - Bulk reorder labels for drag and drop operations
      */
-    .put('/reorder', zValidator('json', labelServiceSchemas.reorder), async (c) => {
+    .put('/reorder', zValidator('json', labelSchemas.reorder.endpoint.json), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { items } = c.req.valid('json');
+            const items = c.req.valid('json');
 
-            const reorderedLabels = await labelServices.reorder({
+            const result = await labelServices.reorder({
                 items,
                 userId: user.id,
             });
 
-            return {
-                success: true,
-                labels: reorderedLabels,
-                // count: reorderedLabels?.length ?? 0,
-            };
+            return result;
         });
     })
 
     /**
      * GET /labels - Get all labels for the authenticated user
      */
-    .get('/', zValidator('query', labelServiceSchemas.filter), async (c) => {
+    .get('/', zValidator('query', labelSchemas.getMany.endpoint.query), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { search } = c.req.query();
-            return await labelServices.getAll({ userId: user.id, filters: { search } });
+            const query = c.req.valid('query');
+            return await labelServices.getMany({
+                userId: user.id,
+                filters: { search: query.search, parentId: query.parentId },
+                pagination: { page: query.page, pageSize: query.pageSize },
+            });
         });
     })
 
     /**
-     * GET /labels/roots - Get root labels with nested children for the authenticated user
-     */
-    .get('/roots', async (c) => {
-        return withRoute(c, async () => {
-            const user = getUser(c);
-            return await labelServices.getRootLabels({ userId: user.id });
-        });
-    })
-    /**
      * GET /labels/:id - Get a specific label by ID for the authenticated user
      */
-    .get('/:id', zValidator('param', endpointSelectSchema), async (c) => {
+    .get('/:id', zValidator('param', labelSchemas.getById.endpoint.param), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.valid('param');
-            const label = await labelServices.getById({ id, userId: user.id });
+            const ids = c.req.valid('param');
+            const label = await labelServices.getById({ ids, userId: user.id });
 
             if (!label) {
                 throw new Error('Label not found');
@@ -81,7 +71,7 @@ const app = new Hono()
     /**
      * POST /labels - Create a new label for the authenticated user
      */
-    .post('/', zValidator('json', labelServiceSchemas.insert), async (c) => {
+    .post('/', zValidator('json', labelSchemas.create.endpoint.json), async (c) => {
         return withRoute(
             c,
             async () => {
@@ -97,15 +87,15 @@ const app = new Hono()
      */
     .put(
         '/:id',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', labelServiceSchemas.update),
+        zValidator('param', labelSchemas.updateById.endpoint.param),
+        zValidator('json', labelSchemas.updateById.endpoint.json),
         async (c) => {
             return withRoute(c, async () => {
                 const user = getUser(c);
-                const { id } = c.req.valid('param');
+                const ids = c.req.valid('param');
                 const data = c.req.valid('json');
 
-                const label = await labelServices.update({ id, data, userId: user.id });
+                const label = await labelServices.updateById({ ids, data, userId: user.id });
 
                 if (!label) {
                     throw new Error('Label not found');
@@ -118,12 +108,12 @@ const app = new Hono()
     /**
      * DELETE /labels/:id - Soft delete a label for the authenticated user
      */
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) => {
+    .delete('/:id', zValidator('param', labelSchemas.removeById.endpoint.param), async (c) => {
         return withRoute(c, async () => {
             const user = getUser(c);
-            const { id } = c.req.valid('param');
+            const ids = c.req.valid('param');
 
-            const label = await labelServices.remove({ id, userId: user.id });
+            const label = await labelServices.removeById({ ids, userId: user.id });
 
             if (!label) {
                 throw new Error('Label not found');

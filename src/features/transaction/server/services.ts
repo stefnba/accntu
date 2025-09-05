@@ -1,75 +1,81 @@
 import { importFileServices } from '@/features/transaction-import/server/services/import-file';
 import {
-    TTransactionFilterOptions,
-    TTransactionPagination,
+    transactionSchemas,
     TTransactionParseDuplicateCheck,
-    TTransactionService,
 } from '@/features/transaction/schemas';
 import { transactionQueries } from '@/features/transaction/server/db/queries';
-import {
-    TQueryDeleteUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { createFeatureServices } from '@/server/lib/service';
+import { InferFeatureType } from '@/server/lib/db';
 
+export const transactionServices = createFeatureServices
+    .registerSchema(transactionSchemas)
+    .registerQuery(transactionQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a new transaction
+         */
+        create: async (input) => {
+            return await queries.create({ data: input.data, userId: input.userId });
+        },
+
+        /**
+         * Get many transactions with filters and pagination
+         */
+        getMany: async (input) => {
+            return await queries.getMany({
+                userId: input.userId,
+                filters: input.filters,
+                pagination: input.pagination,
+            });
+        },
+
+        /**
+         * Get a transaction by ID
+         */
+        getById: async (input) => {
+            const transaction = await queries.getById({
+                ids: input.ids,
+                userId: input.userId,
+            });
+
+            if (!transaction) {
+                throw new Error('Transaction not found');
+            }
+
+            return transaction;
+        },
+
+        /**
+         * Update a transaction by ID
+         */
+        updateById: async (input) => {
+            return await queries.updateById({
+                ids: input.ids,
+                data: input.data,
+                userId: input.userId,
+            });
+        },
+
+        /**
+         * Remove a transaction by ID
+         */
+        removeById: async (input) => {
+            return await queries.removeById({
+                ids: input.ids,
+                userId: input.userId,
+            });
+        },
+    }));
+
+// Legacy functions for transaction import and other complex operations
 /**
- * Update a transaction
- * @param data - The transaction data
+ * Get transactions by their keys (for duplicate detection)
  * @param userId - The user ID
- * @returns The updated transaction
- */
-const update = async ({
-    data,
-    id,
-    userId,
-}: TQueryUpdateUserRecord<TTransactionService['update']>) => {
-    const transaction = await transactionQueries.update({
-        id,
-        data,
-        userId,
-    });
-
-    return transaction;
-};
-
-/**
- * Get a transaction by ID
- * @param id - The transaction ID
- * @param userId - The user ID
- * @returns The transaction
- */
-const getById = async ({ id, userId }: TQuerySelectUserRecordById) => {
-    const transaction = await transactionQueries.getById({
-        id,
-        userId,
-    });
-
-    // TODO: replace with error factory
-    if (!transaction) {
-        throw new Error('Transaction not found');
-    }
-
-    return transaction;
-};
-
-/**
- * Get all transactions
- * @param userId - The user ID
- * @param filters - The filters
+ * @param keys - Array of transaction keys
  * @returns The transactions
  */
-const getAll = async ({
-    userId,
-    filters,
-    pagination,
-}: TQuerySelectUserRecords<TTransactionFilterOptions> & { pagination: TTransactionPagination }) => {
-    const transactions = await transactionQueries.getAll({
-        userId,
-        filters,
-        pagination,
-    });
-
+export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
+    const transactions = await transactionQueries.getByKeys({ userId, keys });
     return transactions;
 };
 
@@ -78,34 +84,9 @@ const getAll = async ({
  * @param userId - The user ID
  * @returns The filter options
  */
-const getFilterOptions = async (userId: string) => {
+export const getFilterOptions = async (userId: string) => {
     const filterOptions = await transactionQueries.getFilterOptions(userId);
     return filterOptions;
-};
-/**
- * Delete a transaction
- * @param id - The transaction ID
- * @param userId - The user ID
- * @returns The removed transaction
- */
-const remove = async ({ id, userId }: TQueryDeleteUserRecord) => {
-    const transaction = await transactionQueries.remove({
-        id,
-        userId,
-    });
-
-    return transaction;
-};
-
-/**
- * Get transactions by their keys (for duplicate detection)
- * @param userId - The user ID
- * @param keys - Array of transaction keys
- * @returns The transactions
- */
-const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
-    const transactions = await transactionQueries.getByKeys({ userId, keys });
-    return transactions;
 };
 
 /**
@@ -114,7 +95,7 @@ const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) =
  * @param transactions - Array of transaction data
  * @returns The created transactions
  */
-const createMany = async ({
+export const createMany = async ({
     userId,
     transactions,
     importFileId,
@@ -150,21 +131,4 @@ const createMany = async ({
     return createdTransactions;
 };
 
-export const transactionServices = {
-    update,
-    getById,
-    getAll,
-    remove,
-    getFilterOptions,
-    getByKeys,
-    createMany,
-};
-
-export type TTransactionServicesResponse = {
-    getAll: Awaited<ReturnType<typeof getAll>>;
-    getById: Awaited<ReturnType<typeof getById>>;
-    getFilterOptions: Awaited<ReturnType<typeof getFilterOptions>>;
-    remove: Awaited<ReturnType<typeof remove>>;
-    getByKeys: Awaited<ReturnType<typeof getByKeys>>;
-    createMany: Awaited<ReturnType<typeof createMany>>;
-};
+export type TTransaction = InferFeatureType<typeof transactionQueries>;

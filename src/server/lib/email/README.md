@@ -271,17 +271,17 @@ private shouldCache = process.env.NODE_ENV === 'production';
 
 private async getCachedTemplate(config: EmailConfig, data: any) {
     const cacheKey = `${config.id}:${JSON.stringify(data)}`;
-    
+
     if (this.shouldCache && this.templateCache.has(cacheKey)) {
         return this.templateCache.get(cacheKey)!;
     }
-    
+
     const rendered = await this.templateEngine.render(config, data);
-    
+
     if (this.shouldCache) {
         this.templateCache.set(cacheKey, rendered);
     }
-    
+
     return rendered;
 }
 ```
@@ -294,13 +294,13 @@ Pre-load and inline CSS at startup:
 // In EmailTemplateEngine class
 export class EmailTemplateEngine {
     private cssContent?: string;
-    
+
     constructor(config: TemplateEngineConfig) {
         if (process.env.NODE_ENV === 'production') {
             this.preloadCSS();
         }
     }
-    
+
     private async preloadCSS() {
         const cssPath = path.join(process.cwd(), 'src/server/lib/email/styles/email.css');
         this.cssContent = await fs.readFile(cssPath, 'utf-8');
@@ -316,15 +316,15 @@ Enable SMTP connection pooling:
 // In SMTPProvider class
 export class SMTPProvider implements EmailProvider {
     private transporter: nodemailer.Transporter;
-    
+
     constructor(config: SMTPConfig) {
         this.transporter = nodemailer.createTransporter({
             ...config,
-            pool: true,              // Enable connection pooling
-            maxConnections: 5,       // Max concurrent connections
-            maxMessages: 10,         // Max messages per connection
-            rateDelta: 1000,         // Rate limiting
-            rateLimit: 5,            // Max 5 emails per rateDelta
+            pool: true, // Enable connection pooling
+            maxConnections: 5, // Max concurrent connections
+            maxMessages: 10, // Max messages per connection
+            rateDelta: 1000, // Rate limiting
+            rateLimit: 5, // Max 5 emails per rateDelta
         });
     }
 }
@@ -346,7 +346,7 @@ export function createEmailConfig<T extends z.ZodType>(
             throw new Error(`Template file not found: ${config.templatePath}`);
         }
     }
-    
+
     return {
         ...config,
         defaultLocale: config.defaultLocale || 'en',
@@ -364,7 +364,7 @@ private async validateAndRender(config: EmailConfig, data: any) {
     try {
         // Validate data against schema
         const validatedData = config.schema.parse(data);
-        
+
         // Render template
         return await this.templateEngine.render(config, validatedData);
     } catch (error) {
@@ -385,9 +385,9 @@ export interface EmailSendResponse extends EmailSendProviderResponse {
     emailConfigId: string;
     category: TMailCategory;
     timestamp: Date;
-    renderTime?: number;    // Template render duration (ms)
-    sendTime?: number;      // Provider send duration (ms)
-    templateSize?: number;  // Rendered template size (bytes)
+    renderTime?: number; // Template render duration (ms)
+    sendTime?: number; // Provider send duration (ms)
+    templateSize?: number; // Rendered template size (bytes)
 }
 
 // Usage in EmailService

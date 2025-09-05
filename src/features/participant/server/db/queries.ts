@@ -1,114 +1,87 @@
+import { participantSchemas } from '@/features/participant/schemas';
+import { db, dbTable } from '@/server/db';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 import { and, eq } from 'drizzle-orm';
 
-import { TParticipantQuery } from '@/features/participant/schemas';
-
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
-import { db, dbTable } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
-
-/**
- * Get all participants for a user
- * @param userId - The ID of the user to get participants for
- * @returns The participants for the user
- */
-const getAll = async ({
-    userId,
-}: TQuerySelectUserRecords): Promise<TParticipantQuery['select'][]> =>
-    withDbQuery({
-        queryFn: () =>
-            db
-                .select()
-                .from(dbTable.participant)
-                .where(and(eq(participant.userId, userId), eq(participant.isActive, true))),
-        operation: 'list all participants for a user',
-    });
-
-/**
- * Get a participant by ID
- * @param id - The ID of the participant to get
- * @param userId - The user ID of the participant
- * @returns The participant
- */
-const getById = ({ id, userId }: TQuerySelectUserRecordById) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .select()
-                .from(dbTable.participant)
-                .where(and(eq(participant.id, id), eq(participant.userId, userId)));
-            return result;
-        },
-        operation: 'get participant by ID',
-        allowNull: true,
-    });
-
-/**
- * Create a new participant
- * @param data - The data to create the participant with
- * @param userId - The user ID of the participant
- * @returns The created participant
- */
-const create = ({ data, userId }: TQueryInsertUserRecord<TParticipantQuery['insert']>) =>
-    withDbQuery({
-        queryFn: async () => {
+export const participantQueries = createFeatureQueries
+    .registerSchema(participantSchemas)
+    /**
+     * Create a participant
+     */
+    .addQuery('create', {
+        operation: 'create participant',
+        fn: async ({ data, userId }) => {
             const [result] = await db
                 .insert(dbTable.participant)
                 .values({ ...data, userId })
                 .returning();
-            return result;
+            return result || null;
         },
-        operation: 'create participant',
-    });
+    })
+    /**
+     * Get many participants
+     */
+    .addQuery('getMany', {
+        operation: 'get participants with filters',
+        fn: async ({ userId, filters, pagination }) => {
+            const conditions = [
+                eq(dbTable.participant.userId, userId),
+                eq(dbTable.participant.isActive, true),
+            ];
 
-/**
- * Update a participant
- * @param id - The ID of the participant to update
- * @param userId - The user ID of the participant
- * @param data - The data to update the participant with
- * @returns The updated participant
- */
-const update = ({ id, userId, data }: TQueryUpdateUserRecord<TParticipantQuery['update']>) =>
-    withDbQuery({
-        queryFn: async () => {
+            if (filters?.search) {
+                conditions.push(eq(dbTable.participant.name, filters.search));
+            }
+
+            return await db
+                .select()
+                .from(dbTable.participant)
+                .where(and(...conditions))
+                .limit(pagination?.pageSize || 10)
+                .offset(((pagination?.page || 1) - 1) * (pagination?.pageSize || 10));
+        },
+    })
+    /**
+     * Get a participant by ID
+     */
+    .addQuery('getById', {
+        operation: 'get participant by ID',
+        fn: async ({ ids, userId }) => {
+            const [result] = await db
+                .select()
+                .from(dbTable.participant)
+                .where(and(eq(dbTable.participant.id, ids.id), eq(dbTable.participant.userId, userId)))
+                .limit(1);
+            return result || null;
+        },
+    })
+    /**
+     * Update a participant by ID
+     */
+    .addQuery('updateById', {
+        operation: 'update participant',
+        fn: async ({ ids, data, userId }) => {
             const [result] = await db
                 .update(dbTable.participant)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(participant.id, id), eq(participant.userId, userId)))
+                .where(and(eq(dbTable.participant.id, ids.id), eq(dbTable.participant.userId, userId)))
                 .returning();
-            return result;
+            return result || null;
         },
-        operation: 'update participant',
-    });
-
-/**
- * Remove a participant
- * @param id - The ID of the participant to remove
- * @returns The removed participant
- */
-const remove = ({ id }: TQueryDeleteUserRecord) =>
-    withDbQuery({
-        queryFn: async () => {
+    })
+    /**
+     * Remove a participant by ID
+     */
+    .addQuery('removeById', {
+        operation: 'remove participant',
+        fn: async ({ ids, userId }) => {
             const [result] = await db
                 .update(dbTable.participant)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(eq(participant.id, id))
+                .where(and(eq(dbTable.participant.id, ids.id), eq(dbTable.participant.userId, userId)))
                 .returning();
-
-            return result;
+            return result || null;
         },
-        operation: 'remove participant',
     });
 
-export const participantQueries = {
-    getById,
-    create,
-    update,
-    remove,
-    getAll,
-};
+export type TParticipant = InferFeatureType<typeof participantQueries>;

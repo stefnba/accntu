@@ -15,7 +15,7 @@ const apiCredentialsSchema = z
 export type TApiCredentials = z.infer<typeof apiCredentialsSchema>;
 
 export const { schemas: connectedBankSchemas } = createFeatureSchemas
-    .registerTable(connectedBank)
+    .registerTable(dbTable.connectedBank)
     .omit({
         createdAt: true,
         updatedAt: true,

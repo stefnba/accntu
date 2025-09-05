@@ -1,86 +1,47 @@
-import { TParticipantQuery } from '@/features/participant/schemas';
+import { participantSchemas } from '@/features/participant/schemas';
 import { participantQueries } from '@/features/participant/server/db/queries';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { createFeatureServices } from '@/server/lib/service/';
 
-export const participantService = {
-    /**
-     * Get all participants for a user
-     * @param userId - The user ID
-     * @returns The participants
-     */
-    getAll: async ({ userId }: TQuerySelectUserRecords) => {
-        const result = await participantQueries.getAll({ userId });
-        return result;
-    },
-
-    /**
-     * Get a participant by ID
-     * @param id - The participant ID
-     * @param userId - The user ID
-     * @returns The participant
-     */
-    getById: async ({ id, userId }: TQuerySelectUserRecordById) => {
-        const result = await participantQueries.getById({ id, userId });
-
-        if (!result) {
-            return {};
-        }
-
-        return result;
-    },
-
-    /**
-     * Create a participant
-     * @param data - The participant data
-     * @param userId - The user ID
-     * @returns The created participant
-     */
-    create: async ({ data, userId }: TQueryInsertUserRecord<TParticipantQuery['insert']>) => {
-        const newParticipant = await participantQueries.create({ data, userId });
-
-        return newParticipant;
-    },
-
-    /**
-     * Update a participant
-     * @param id - The participant ID
-     * @param data - The participant data
-     * @param userId - The user ID
-     * @returns The updated participant
-     */
-    update: async ({
-        id,
-        userId,
-        data,
-    }: TQueryUpdateUserRecord<TParticipantQuery['update']>) => {
-        const updatedParticipant = await participantQueries.update({ id, userId, data });
-
-        if (!updatedParticipant) {
-            throw new Error('Participant not found or you do not have permission to update it');
-        }
-
-        return updatedParticipant;
-    },
-
-    /**
-     * Delete a participant
-     * @param id - The participant ID
-     * @param userId - The user ID
-     * @returns The deleted participant
-     */
-    remove: async ({ id, userId }: TQueryDeleteUserRecord) => {
-        const deletedParticipant = await participantQueries.remove({ id, userId });
-
-        if (!deletedParticipant) {
-            throw new Error('Participant not found or you do not have permission to delete it');
-        }
-
-        return { id };
-    },
-};
+export const participantServices = createFeatureServices
+    .registerSchema(participantSchemas)
+    .registerQuery(participantQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a participant
+         */
+        create: async (input) => {
+            return await queries.create({ data: input.data, userId: input.userId });
+        },
+        /**
+         * Get participants with filters
+         */
+        getMany: async ({ userId, filters, pagination }) => {
+            return await queries.getMany({ userId, filters, pagination });
+        },
+        /**
+         * Get a participant by ID
+         */
+        getById: async ({ ids, userId }) => {
+            return await queries.getById({ ids, userId });
+        },
+        /**
+         * Update a participant by ID
+         */
+        updateById: async ({ data, ids, userId }) => {
+            const result = await queries.updateById({ ids, data, userId });
+            if (!result) {
+                throw new Error('Participant not found or you do not have permission to update it');
+            }
+            return result;
+        },
+        /**
+         * Remove a participant by ID
+         */
+        removeById: async ({ ids, userId }) => {
+            const result = await queries.removeById({ ids, userId });
+            if (!result) {
+                throw new Error('Participant not found or you do not have permission to delete it');
+            }
+            return result;
+        },
+    }));

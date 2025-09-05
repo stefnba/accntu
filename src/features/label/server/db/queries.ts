@@ -1,88 +1,28 @@
-import type { TLabelSchemas } from '@/features/label/schemas';
-
+import { labelSchemas, type TLabelSchemas } from '@/features/label/schemas';
 import { db, dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
-import { withDbQuery } from '@/server/lib/handler';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
-import { z } from 'zod';
 
 export type TLabelQuery = TLabelSchemas['databases'];
 
-/**
- * Get root labels (no parent) with nested children for a user
- * @param userId - The user ID to fetch labels for
- * @returns Promise resolving to array of root labels with nested children
- */
-const getRootLabels = async (userId: string) =>
-    withDbQuery({
-        operation: 'Get root labels for user',
-        queryFn: async () => {
-            return await db.query.label.findMany({
-                where: and(
-                    eq(label.userId, userId),
-                    eq(label.isActive, true),
-                    isNull(label.parentId)
-                ),
-                with: {
-                    children: {
-                        where: eq(label.isActive, true),
-                        with: {
-                            children: {
-                                where: eq(label.isActive, true),
-                            },
-                        },
-                    },
-                },
-                orderBy: [asc(label.index), asc(label.name)],
-            });
-        },
-    });
-
-/**
- * Bulk update label orders and parents for drag and drop operations
- * Updates all labels in a single transaction for better performance and consistency
- * @param items - Array of label items with new positions
- * @param userId - The user ID that owns all labels
- * @returns Promise resolving to void (use getAllFlattened to get fresh data)
- */
-const reorder = async ({ items, userId }: { items: TLabelQuery['reorder']; userId: string }) =>
-    withDbQuery({
-        operation: 'Bulk reorder labels',
-    });
-
-const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: string | null }) =>
-    withDbQuery({
-        operation: 'Get max index for user and parent',
-        queryFn: async () => {
-            const maxIndex = await db
-                .select({ maxIndex: max(label.index) })
-                .from(dbTable.label)
-                .where(
-                    and(
-                        eq(label.userId, userId),
-                        eq(label.isActive, true),
-                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
-                    )
-                )
-                .then((results) => results[0]?.maxIndex);
-
-            return { maxIndex: maxIndex ?? 0 };
-        },
-    });
-
-export const labelQueries = createFeatureQueries(label, {
-    create: {
+export const labelQueries = createFeatureQueries
+    .registerSchema(labelSchemas)
+    /**
+     * Create a label
+     */
+    .addQuery('create', {
+        operation: 'create label',
         fn: async ({ data, userId }) => {
             // Get next index for this parent level
             const parentId = data.parentId ?? null;
             const maxindexResult = await db
-                .select({ maxSort: max(label.index) })
+                .select({ maxSort: max(dbTable.label.index) })
                 .from(dbTable.label)
                 .where(
                     and(
-                        eq(label.userId, userId),
-                        eq(label.isActive, true),
-                        parentId ? eq(label.parentId, parentId) : isNull(label.parentId)
+                        eq(dbTable.label.userId, userId),
+                        eq(dbTable.label.isActive, true),
+                        parentId ? eq(dbTable.label.parentId, parentId) : isNull(dbTable.label.parentId)
                     )
                 );
 
@@ -97,70 +37,61 @@ export const labelQueries = createFeatureQueries(label, {
                 })
                 .returning();
 
-            return labelRecord;
+            return labelRecord || null;
         },
-    },
+    })
     /**
      * Get all labels for a user in flattened order with global index based on hierarchical structure
-     * Uses depth-first traversal to order labels: root first, then all its children recursively
-     * Includes counts of children for each label
-     * @param userId - The user ID to fetch labels for
-     * @param filters - Optional filters for search
-     * @returns Promise resolving to array of labels with global index, child counts, ordered by hierarchical structure
      */
-    getFlattened: {
-        fn: async ({
-            userId,
-            filters,
-        }: TQuerySelectUserRecords<TLabelQuery['filter']>): Promise<
-            TLabelQuery['selectFlattened'][]
-        > => {
+    .addQuery('getFlattened', {
+        operation: 'get flattened labels with hierarchy',
+        fn: async ({ userId, filters }) => {
             const withRecursive = sql`
                 WITH RECURSIVE label_hierarchy AS (
                     -- Base case: root labels ordered by index
                     SELECT
-                        ${label.id},
-                        ${label.userId},
-                        ${label.name},
-                        ${label.color},
-                        ${label.icon},
-                        ${label.imageUrl},
-                        ${label.parentId},
-                        ${label.createdAt},
-                        ${label.updatedAt},
-                        ${label.isActive},
-                        ${label.firstParentId},
-                        LPAD(${label.index}::text, 6, '0') as sort_path,
-                        ${label.index},
+                        ${dbTable.label.id},
+                        ${dbTable.label.userId},
+                        ${dbTable.label.name},
+                        ${dbTable.label.color},
+                        ${dbTable.label.icon},
+                        ${dbTable.label.imageUrl},
+                        ${dbTable.label.parentId},
+                        ${dbTable.label.createdAt},
+                        ${dbTable.label.updatedAt},
+                        ${dbTable.label.isActive},
+                        ${dbTable.label.firstParentId},
+                        LPAD(${dbTable.label.index}::text, 6, '0') as sort_path,
+                        ${dbTable.label.index},
                         0 as depth
-                    FROM ${label}
+                    FROM ${dbTable.label}
                     WHERE parent_id IS NULL
-                        AND ${label.userId} = ${userId}
-                        AND ${label.isActive} = true
-                        ${filters?.search ? sql`AND ${label.name} ILIKE ${`%${filters.search}%`}` : sql``}
+                        AND ${dbTable.label.userId} = ${userId}
+                        AND ${dbTable.label.isActive} = true
+                        ${filters?.search ? sql`AND ${dbTable.label.name} ILIKE ${`%${filters.search}%`}` : sql``}
 
                     UNION ALL
 
                     -- Recursive case: children ordered by parent's path + their index
                     SELECT
-                        ${label.id},
-                        ${label.userId},
-                        ${label.name},
-                        ${label.color},
-                        ${label.icon},
-                        ${label.imageUrl},
-                        ${label.parentId},
-                         ${label.createdAt},
-                        ${label.updatedAt},
-                        ${label.isActive},
-                        ${label.firstParentId},
-                        h.sort_path || '.' || LPAD(${label.index}::text, 6, '0') as sort_path,
-                        ${label.index},
+                        ${dbTable.label.id},
+                        ${dbTable.label.userId},
+                        ${dbTable.label.name},
+                        ${dbTable.label.color},
+                        ${dbTable.label.icon},
+                        ${dbTable.label.imageUrl},
+                        ${dbTable.label.parentId},
+                        ${dbTable.label.createdAt},
+                        ${dbTable.label.updatedAt},
+                        ${dbTable.label.isActive},
+                        ${dbTable.label.firstParentId},
+                        h.sort_path || '.' || LPAD(${dbTable.label.index}::text, 6, '0') as sort_path,
+                        ${dbTable.label.index},
                         h.depth + 1 as depth
-                    FROM ${label}
-                    JOIN label_hierarchy h ON ${label.parentId} = h.id
-                    WHERE ${label.isActive} = true
-                        ${filters?.search ? sql`AND ${label.name} ILIKE ${`%${filters.search}%`}` : sql``}
+                    FROM ${dbTable.label}
+                    JOIN label_hierarchy h ON ${dbTable.label.parentId} = h.id
+                    WHERE ${dbTable.label.isActive} = true
+                        ${filters?.search ? sql`AND ${dbTable.label.name} ILIKE ${`%${filters.search}%`}` : sql``}
                 ),
 
                 -- Add children to root labels and global index
@@ -183,15 +114,15 @@ export const labelQueries = createFeatureQueries(label, {
                     ROW_NUMBER() OVER (ORDER BY lh.sort_path)::integer - 1 AS "globalIndex",
                     (
                         SELECT COUNT(*)::integer
-                        FROM ${label}
-                        WHERE ${label.parentId} = lh.id
-                            AND ${label.isActive} = true
+                        FROM ${dbTable.label}
+                        WHERE ${dbTable.label.parentId} = lh.id
+                            AND ${dbTable.label.isActive} = true
                     ) AS "countChildren",
                     EXISTS(
                         SELECT 1
-                        FROM ${label}
-                        WHERE ${label.parentId} = lh.id
-                            AND ${label.isActive} = true
+                        FROM ${dbTable.label}
+                        WHERE ${dbTable.label.parentId} = lh.id
+                            AND ${dbTable.label.isActive} = true
                     ) AS "hasChildren"
                 FROM label_hierarchy lh
             )
@@ -209,6 +140,7 @@ export const labelQueries = createFeatureQueries(label, {
                 index: number;
                 globalIndex: number;
                 countChildren: number;
+                hasChildren: boolean;
             }>`
                 SELECT * FROM base_query
                 ORDER BY "globalIndex"
@@ -216,68 +148,67 @@ export const labelQueries = createFeatureQueries(label, {
 
             const finalSql: SQL = sql.join([withRecursive, query], sql.raw(' '));
 
-            const result = await db.execute<TLabelQuery['selectFlattened']>(finalSql);
+            const result = await db.execute(finalSql);
 
-            const schema = z.array(labelQuerySchemas.selectFlattened);
-
-            const parsedResult = schema.parse(result);
-
-            return parsedResult;
+            return result;
         },
-    },
-    getMany: {
-        fn: async () => {
-            const where = [eq(label.userId, userId), eq(label.isActive, true)];
+    })
+    /**
+     * Get many labels
+     */
+    .addQuery('getMany', {
+        operation: 'get labels with filters',
+        fn: async ({ userId, filters, pagination }) => {
+            const conditions = [
+                eq(dbTable.label.userId, userId),
+                eq(dbTable.label.isActive, true),
+            ];
 
             if (filters?.search) {
-                where.push(ilike(label.name, `%${filters.search}%`));
+                conditions.push(ilike(dbTable.label.name, `%${filters.search}%`));
+            }
+
+            if (filters?.parentId) {
+                conditions.push(eq(dbTable.label.parentId, filters.parentId));
             }
 
             return await db.query.label.findMany({
-                where: and(...where),
+                where: and(...conditions),
                 with: {
                     parent: true,
                     children: {
-                        where: eq(label.isActive, true),
+                        where: eq(dbTable.label.isActive, true),
                     },
                 },
-                orderBy: [asc(label.index), asc(label.name)],
+                orderBy: [asc(dbTable.label.index), asc(dbTable.label.name)],
+                limit: pagination?.pageSize || 20,
+                offset: ((pagination?.page || 1) - 1) * (pagination?.pageSize || 20),
             });
         },
-    },
+    })
     /**
      * Bulk update label orders and parents for drag and drop operations
-     * Updates all labels in a single transaction for better performance and consistency
-     * @param items - Array of label items with new positions
-     * @param userId - The user ID that owns all labels
-     * @returns Promise resolving to void (use getAllFlattened to get fresh data)
      */
-    reorder: {
-        fn: async ({
-            items: { items },
-            userId,
-        }: {
-            items: TLabelQuery['reorder'];
-            userId: string;
-        }) => {
+    .addQuery('reorder', {
+        operation: 'bulk reorder labels',
+        fn: async ({ items, userId }) => {
             // If no items, return early
-            if (items.length === 0) return { success: true, updatedCount: 0 };
+            if (items.items.length === 0) return { success: true, updatedCount: 0 };
 
             // Build both CASE statements in a single loop for efficiency
-            // see https://orm.drizzle.team/docs/guides/update-many-with-different-value
             const indexCases: SQL[] = [];
             const parentCases: SQL[] = [];
             const ids: string[] = [];
 
             // add index and parentId to cases
-            items.forEach((item) => {
+            items.items.forEach((item) => {
                 ids.push(item.id);
-                indexCases.push(sql` when ${label.id} = ${item.id} then ${item.index}::integer`);
+                indexCases.push(sql` when ${dbTable.label.id} = ${item.id} then ${item.index}::integer`);
 
                 if (item.parentId) {
-                    parentCases.push(sql` when ${label.id} = ${item.id} then ${item.parentId}`);
+                    parentCases.push(sql` when ${dbTable.label.id} = ${item.id} then ${item.parentId}`);
                 } else {
-                    parentCases.push(sql` when ${label.id} = ${item.id} then null`);
+                    parentCases.push(sql` when ${dbTable.label.id} = ${item.id} then null`);
                 }
             });
 
@@ -293,56 +224,78 @@ export const labelQueries = createFeatureQueries(label, {
                     updatedAt: new Date(),
                 })
                 .where(
-                    and(inArray(label.id, ids), eq(label.userId, userId), eq(label.isActive, true))
+                    and(inArray(dbTable.label.id, ids), eq(dbTable.label.userId, userId), eq(dbTable.label.isActive, true))
                 );
 
-            return { success: true, updatedCount: items.length };
+            return { success: true, updatedCount: items.items.length };
         },
-    },
+    })
     /**
      * Get a specific label by ID for a user
      */
-    getById: {
-        fn: async ({ id, userId }) => {
-            return await db.query.label.findFirst({
-                where: and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)),
+    .addQuery('getById', {
+        operation: 'get label by ID',
+        fn: async ({ ids, userId }) => {
+            const result = await db.query.label.findFirst({
+                where: and(
+                    eq(dbTable.label.id, ids.id),
+                    eq(dbTable.label.userId, userId),
+                    eq(dbTable.label.isActive, true)
+                ),
                 with: {
                     parent: true,
                     children: {
-                        where: eq(label.isActive, true),
+                        where: eq(dbTable.label.isActive, true),
                     },
                 },
             });
+
+            return result || null;
         },
-    },
+    })
     /**
      * Update an existing label in the database
      */
-    updateById: {
-        fn: async ({ id, data, userId }) => {
-            return await db
+    .addQuery('updateById', {
+        operation: 'update label by ID',
+        fn: async ({ ids, data, userId }) => {
+            const [result] = await db
                 .update(dbTable.label)
-                .set(data)
-                .where(and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)));
+                .set({ ...data, updatedAt: new Date() })
+                .where(
+                    and(
+                        eq(dbTable.label.id, ids.id),
+                        eq(dbTable.label.userId, userId),
+                        eq(dbTable.label.isActive, true)
+                    )
+                )
+                .returning();
+
+            return result || null;
         },
-    },
+    })
     /**
      * Remove a label from the database (soft delete)
      */
-    removeById: {
-        fn: async ({ id, userId }) => {
-            const [labelRecord] = await db
+    .addQuery('removeById', {
+        operation: 'remove label by ID',
+        fn: async ({ ids, userId }) => {
+            const [result] = await db
                 .update(dbTable.label)
                 .set({
                     isActive: false,
                     updatedAt: new Date(),
                 })
-                .where(and(eq(label.id, id), eq(label.userId, userId)))
+                .where(
+                    and(
+                        eq(dbTable.label.id, ids.id),
+                        eq(dbTable.label.userId, userId)
+                    )
+                )
                 .returning();
 
-            return labelRecord;
+            return result || null;
         },
-    },
-});
+    });
 
 export type TLabel = InferFeatureType<typeof labelQueries>;

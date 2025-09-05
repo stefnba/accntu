@@ -1,7 +1,4 @@
-import {
-    globalBankServiceSchemas,
-    searchGlobalBanksSchema,
-} from '@/features/bank/schemas/global-bank';
+import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
 import { globalBankServices } from '@/features/bank/server/services/global-bank';
 import { getUser } from '@/lib/auth/server';
 import { withRoute } from '@/server/lib/handler';
@@ -19,13 +16,17 @@ const adminUserValidation = (c: any) => {
 export const adminGlobalBankEndpoints = new Hono()
 
     // Get all global banks
-    .get('/', zValidator('query', searchGlobalBanksSchema.optional()), async (c) =>
+    .get('/', zValidator('query', globalBankSchemas.getMany.endpoint.query), async (c) =>
         withRoute(c, async () => {
             adminUserValidation(c);
             const { query, country } = c.req.valid('query') || {};
 
-            return await globalBankServices.getAll({
+            return await globalBankServices.getMany({
                 filters: { query, country },
+                pagination: {
+                    page: 1,
+                    pageSize: 10,
+                },
             });
         })
     )
@@ -36,12 +37,12 @@ export const adminGlobalBankEndpoints = new Hono()
             adminUserValidation(c);
             const id = c.req.param('id');
 
-            return await globalBankServices.getById({ id });
+            return await globalBankServices.getById({ ids: { id } });
         })
     )
 
     // Create a global bank
-    .post('/', zValidator('json', globalBankServiceSchemas.insert), async (c) =>
+    .post('/', zValidator('json', globalBankSchemas.create.endpoint.json), async (c) =>
         withRoute(c, async () => {
             adminUserValidation(c);
             const data = c.req.valid('json');
@@ -51,13 +52,13 @@ export const adminGlobalBankEndpoints = new Hono()
     )
 
     // Update a global bank
-    .put('/:id', zValidator('json', globalBankServiceSchemas.update), async (c) =>
+    .put('/:id', zValidator('json', globalBankSchemas.updateById.endpoint.json), async (c) =>
         withRoute(c, async () => {
             adminUserValidation(c);
             const id = c.req.param('id');
             const data = c.req.valid('json');
 
-            return await globalBankServices.update({ id, data });
+            return await globalBankServices.updateById({ ids: { id }, data });
         })
     )
 
@@ -67,6 +68,6 @@ export const adminGlobalBankEndpoints = new Hono()
             adminUserValidation(c);
             const id = c.req.param('id');
 
-            return await globalBankServices.remove({ id });
+            return await globalBankServices.removeById({ ids: { id } });
         })
     );

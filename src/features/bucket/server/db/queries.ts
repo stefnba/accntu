@@ -1,124 +1,87 @@
-import { and, eq } from 'drizzle-orm';
-
-import { TBucketQuery } from '@/features/bucket/schemas';
-
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { bucketSchemas } from '@/features/bucket/schemas';
 import { db, dbTable } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
+import { and, eq, ilike } from 'drizzle-orm';
 
-/**
- * Get a bucket by ID
- * @param id - The ID of the bucket to get
- * @param userId - The user ID of the bucket
- * @returns The bucket
- */
-const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .select()
-                .from(dbTable.bucket)
-                .where(
-                    and(eq(bucket.id, id), eq(bucket.userId, userId), eq(bucket.isActive, true))
-                );
-            return result || null;
-        },
-        operation: 'get bucket by id',
-        allowNull: true,
-    });
-
-/**
- * Get all buckets for a user
- * @param userId - The user ID
- * @returns The buckets
- */
-const getAll = async ({
-    userId,
-}: TQuerySelectUserRecords): Promise<TBucketQuery['select'][]> =>
-    withDbQuery({
-        queryFn: () =>
-            db
-                .select()
-                .from(dbTable.bucket)
-                .where(and(eq(bucket.userId, userId), eq(bucket.isActive, true))),
-        operation: 'get all buckets',
-    });
-
-/**
- * Create a bucket
- * @param data - The bucket data
- * @param userId - The user ID
- * @returns The created bucket
- */
-const create = async ({
-    data,
-    userId,
-}: TQueryInsertUserRecord<TBucketQuery['insert']>) =>
-    withDbQuery({
-        queryFn: async () => {
+export const bucketQueries = createFeatureQueries
+    .registerSchema(bucketSchemas)
+    /**
+     * Create a bucket
+     */
+    .addQuery('create', {
+        operation: 'create bucket',
+        fn: async ({ data, userId }) => {
             const [result] = await db
                 .insert(dbTable.bucket)
                 .values({ ...data, userId })
                 .returning();
-            return result;
+            return result || null;
         },
-        operation: 'create bucket',
-    });
+    })
+    /**
+     * Get many buckets
+     */
+    .addQuery('getMany', {
+        operation: 'get buckets with filters',
+        fn: async ({ userId, filters, pagination }) => {
+            const conditions = [
+                eq(dbTable.bucket.userId, userId),
+                eq(dbTable.bucket.isActive, true),
+            ];
 
-/**
- * Update a bucket
- * @param id - The ID of the bucket to update
- * @param data - The bucket data
- * @param userId - The user ID
- * @returns The updated bucket
- */
-const update = async ({
-    id,
-    data,
-    userId,
-}: TQueryUpdateUserRecord<TBucketQuery['update']>) =>
-    withDbQuery({
-        queryFn: async () => {
+            if (filters?.search) {
+                conditions.push(ilike(dbTable.bucket.name, `%${filters.search}%`));
+            }
+
+            return await db
+                .select()
+                .from(dbTable.bucket)
+                .where(and(...conditions))
+                .limit(pagination?.pageSize || 20)
+                .offset(((pagination?.page || 1) - 1) * (pagination?.pageSize || 20));
+        },
+    })
+    /**
+     * Get a bucket by ID
+     */
+    .addQuery('getById', {
+        operation: 'get bucket by ID',
+        fn: async ({ ids, userId }) => {
+            const [result] = await db
+                .select()
+                .from(dbTable.bucket)
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
+                .limit(1);
+            return result || null;
+        },
+    })
+    /**
+     * Update a bucket by ID
+     */
+    .addQuery('updateById', {
+        operation: 'update bucket',
+        fn: async ({ ids, data, userId }) => {
             const [result] = await db
                 .update(dbTable.bucket)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(bucket.id, id), eq(bucket.userId, userId)))
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
                 .returning();
-            return result;
+            return result || null;
         },
-        operation: 'update bucket',
-    });
-
-/**
- * Remove a bucket
- * @param id - The ID of the bucket to remove
- * @param userId - The user ID of the bucket
- * @returns The removed bucket
- */
-const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
-    withDbQuery({
-        queryFn: async () => {
+    })
+    /**
+     * Remove a bucket by ID
+     */
+    .addQuery('removeById', {
+        operation: 'remove bucket',
+        fn: async ({ ids, userId }) => {
             const [result] = await db
                 .update(dbTable.bucket)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(bucket.id, id), eq(bucket.userId, userId)))
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
                 .returning();
-
-            return result;
+            return result || null;
         },
-        operation: 'remove bucket',
     });
 
-export const bucketQueries = {
-    getById,
-    getAll,
-    create,
-    update,
-    remove,
-};
+export type TBucket = InferFeatureType<typeof bucketQueries>;
