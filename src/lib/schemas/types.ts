@@ -59,22 +59,39 @@ export type MappingCoreServiceInput<TUser extends $ZodType, TId extends TZodObje
      * Get many records
      */
     getMany: {
-        <F extends TZodObject, P extends TZodObject>(params: {
+        // <F extends TZodObject, P extends TZodObject>(params: {
+        //     filters: F;
+        //     pagination: P;
+        //     userFields?: TUser;
+        // }): z.ZodObject<{ filters: z.ZodOptional<F>; pagination: z.ZodOptional<P>; userId: TUser }>;
+        // <F extends TZodObject>(params: {
+        //     filters: F;
+        //     userFields?: TUser;
+        // }): z.ZodObject<{ filters: z.ZodOptional<F>; userId: TUser }>;
+        <F extends TZodObject>(params?: {
+            filters: F;
+            userFields?: TUser;
+        }): z.ZodObject<{
+            filters: z.ZodOptional<F | z.ZodUndefined> | z.ZodUndefined;
+            userId: TUser;
+        }>;
+        <P extends TZodObject>(params?: {
+            pagination: P;
+            userFields?: TUser;
+        }): z.ZodObject<{
+            pagination: z.ZodOptional<P | z.ZodUndefined> | z.ZodUndefined;
+            userId: TUser;
+        }>;
+        <F extends TZodObject, P extends TZodObject>(params?: {
             filters: F;
             pagination: P;
             userFields?: TUser;
-        }): z.ZodObject<{ filters: z.ZodOptional<F>; pagination: z.ZodOptional<P>; userId: TUser }>;
-        <F extends TZodObject>(params: {
-            filters: F;
-            userFields?: TUser;
-        }): z.ZodObject<{ filters: z.ZodOptional<F>; userId: TUser }>;
-        <P extends TZodObject>(params: {
-            pagination: P;
-            userFields?: TUser;
-        }): z.ZodObject<{ pagination: z.ZodOptional<P>; userId: TUser }>;
-        (params: {
-            userFields?: TUser;
-        }): z.ZodObject<{ filters: z.ZodNever; pagination: z.ZodNever; userId: TUser }>;
+        }): z.ZodObject<{
+            filters: z.ZodOptional<F | z.ZodUndefined> | z.ZodUndefined;
+            pagination: z.ZodOptional<P | z.ZodUndefined> | z.ZodUndefined;
+            userId: TUser;
+        }>;
+        (params?: { userFields?: TUser }): z.ZodObject<{ userId: TUser }>;
     };
 };
 

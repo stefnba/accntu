@@ -11,7 +11,9 @@ export const tagQueries = createFeatureQueries
      */
     .addQuery('getMany', {
         operation: 'get tags by user ID',
-        fn: async ({ userId }) => {
+        fn: async ({ userId, filters, pagination }) => {
+            // todo: add filters
+
             return await db.query.tag.findMany({
                 where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
             });

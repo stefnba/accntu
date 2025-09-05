@@ -39,12 +39,26 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     /**
      * Get many tags
      */
-    .addCore('getMany', ({ baseSchema, buildServiceInput }) => {
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(10),
+        });
+
+        const filtersSchema = z.object({
+            search: z.string().optional(),
+        });
+
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
+
         return {
-            service: buildServiceInput({}),
-            query: buildServiceInput({}),
+            service: input,
+            query: input,
             endpoint: {
-                query: baseSchema,
+                query: paginationSchema.extend(filtersSchema.shape),
             },
         };
     })

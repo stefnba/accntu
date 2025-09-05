@@ -31,15 +31,15 @@ export const inputHelpers = <U extends $ZodType, I extends TZodObject>(defaults:
         /**
          * Get many records
          */
-        getMany: <F extends TZodObject, P extends TZodObject>(params: {
+        getMany: <F extends TZodObject, P extends TZodObject>(params?: {
             filters?: F;
             pagination?: P;
             userFields?: U;
         }) => {
             return z.object({
-                filters: params.filters ?? z.never(),
-                pagination: params.pagination ?? z.never(),
-                userId: params.userFields ?? defaults.userId,
+                userId: params?.userFields ?? defaults.userId,
+                filters: params?.filters?.optional() || z.undefined(),
+                pagination: params?.pagination?.optional() || z.undefined(),
             });
         },
         /*

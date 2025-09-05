@@ -1,7 +1,9 @@
+import { TTag } from '@/features/tag/schemas';
+
 // Tag validation utilities
 export const validateTagName = (
     name: string,
-    existingTags: Tag[],
+    existingTags: TTag[],
     excludeId?: string
 ): string | null => {
     if (!name.trim()) return 'Tag name is required';
