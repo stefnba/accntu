@@ -1,11 +1,13 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
-import { tagQueries } from '@/features/tag/server/db/queries';
+import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
+import { transactionServices } from '@/features/transaction/server/services';
 import { createFeatureServices } from '@/server/lib/service/';
 
 export const tagServices = createFeatureServices
     .registerSchema(tagSchemas)
     .registerSchema(tagToTransactionSchemas)
     .registerQuery(tagQueries)
+    .registerQuery(tagToTransactionQueries)
     .defineServices(({ queries }) => ({
         /**
          * Create a new tag
@@ -40,19 +42,15 @@ export const tagServices = createFeatureServices
          * Assign tags to a transaction
          */
         assignToTransaction: async ({ tagIds, transactionId, userId }) => {
-            // todo check if user owns the transaction
+            // Verify user owns the transaction (security check)
+            const transaction = await transactionServices.getById({
+                id: transactionId,
+                userId,
+            });
+            if (!transaction) {
+                throw new Error('Transaction not found');
+            }
 
-            // return await queries.assignToTransaction({ tagIds, transactionId, userId });
-            return { success: true };
-        },
-
-        /**
-         * Custom service for testing
-         */
-        customService: async (input: { name: string }) => {
-            return {
-                ...input,
-                processed: true,
-            };
+            return await queries.assignToTransaction({ tagIds, transactionId, userId });
         },
     }));

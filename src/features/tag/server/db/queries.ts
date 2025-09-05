@@ -1,6 +1,6 @@
-import { tagSchemas } from '@/features/tag/schemas';
+import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { db } from '@/server/db';
-import { tag } from '@/server/db/schemas';
+import { tag, tagToTransaction } from '@/server/db/schemas';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
@@ -71,40 +71,31 @@ export const tagQueries = createFeatureQueries
         },
     });
 
-// export const tagToTransactionQueries = createFeatureQueries
-//     .registerSchema(tagToTransactionSchemas)
-//     /**
-//      * Assign tags to a transaction
-//      */
-//     .addQuery('assignToTransaction', {
-//         operation: 'assign tags to transaction',
-//         fn: async ({ tagIds, transactionId, userId }) => {
-//             // Verify user owns the transaction (security check)
-//             const transaction = await transactionServices.getById({
-//                 id: transactionId,
-//                 userId,
-//             });
-//             if (!transaction) {
-//                 throw new Error('Transaction not found');
-//             }
+export const tagToTransactionQueries = createFeatureQueries
+    .registerSchema(tagToTransactionSchemas)
+    /**
+     * Assign tags to a transaction
+     */
+    .addQuery('assignToTransaction', {
+        operation: 'assign tags to transaction',
+        fn: async ({ tagIds, transactionId, userId }) => {
+            // First, remove existing tags for this transaction
+            await db
+                .delete(tagToTransaction)
+                .where(eq(tagToTransaction.transactionId, transactionId));
 
-//             // First, remove existing tags for this transaction
-//             await db
-//                 .delete(tagToTransaction)
-//                 .where(eq(tagToTransaction.transactionId, transactionId));
+            // Then add new tags if any
+            if (tagIds && tagIds.length > 0) {
+                await db.insert(tagToTransaction).values(
+                    tagIds.map((tagId) => ({
+                        transactionId,
+                        tagId,
+                    }))
+                );
+            }
 
-//             // Then add new tags if any
-//             if (tagIds && tagIds.length > 0) {
-//                 await db.insert(tagToTransaction).values(
-//                     tagIds.map((tagId) => ({
-//                         transactionId,
-//                         tagId,
-//                     }))
-//                 );
-//             }
-
-//             return { success: true };
-//         },
-//     });
+            return { success: true };
+        },
+    });
 
 export type TTag = InferFeatureType<typeof tagQueries>;
