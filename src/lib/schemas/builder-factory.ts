@@ -99,6 +99,7 @@ export class BaseSchemaBuilderFactory<
             userSchema: this.userSchema.shape,
         });
     }
+
     /**
      * Add id fields to the schema
      */

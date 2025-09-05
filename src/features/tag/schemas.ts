@@ -1,10 +1,11 @@
 import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
-import { FeatureSchema, InferSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import z from 'zod';
 
 const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
-export const { opSchemas: tagSchemas } = FeatureSchema.fromTable(tag)
+export const { opSchemas: tagSchemas } = createFeatureSchemas
+    .registerTable(tag)
     .omit({
         createdAt: true,
         updatedAt: true,
@@ -102,7 +103,8 @@ export const { opSchemas: tagSchemas } = FeatureSchema.fromTable(tag)
             })
     );
 
-export const { opSchemas: tagToTransactionSchemas } = FeatureSchema.fromTable(tagToTransaction)
+export const { opSchemas: tagToTransactionSchemas } = createFeatureSchemas
+    .registerTable(tagToTransaction)
     .omit({
         createdAt: true,
         updatedAt: true,
