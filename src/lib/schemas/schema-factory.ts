@@ -11,7 +11,11 @@ export const createFeatureSchemas = {
      */
     registerTable: <TTable extends Table>(table: TTable) => {
         const schema = createInsertSchema(table);
-        return new BaseSchemaBuilderFactory({ baseSchema: schema.shape, rawSchema: schema.shape });
+        return new BaseSchemaBuilderFactory({
+            schemas: {},
+            baseSchema: schema.shape,
+            rawSchema: schema.shape,
+        });
     },
 
     /**
@@ -19,44 +23,48 @@ export const createFeatureSchemas = {
      * @param schema - The Zod schema
      */
     registerSchema: <TSchema extends TZodObject>(schema: TSchema) => {
-        return new BaseSchemaBuilderFactory({ baseSchema: schema.shape, rawSchema: schema.shape });
+        return new BaseSchemaBuilderFactory({
+            schemas: {},
+            baseSchema: schema.shape,
+            rawSchema: schema.shape,
+        });
     },
 };
 
-// Overload 1: no config
-export function createSchemasFactory<TTable extends Table>(
-    table: TTable
-): BaseSchemaBuilderFactory<
-    BuildSchemaFromTable<TTable>['shape'],
-    BuildSchemaFromTable<TTable>['shape']
->;
+// // Overload 1: no config
+// export function createSchemasFactory<TTable extends Table>(
+//     table: TTable
+// ): BaseSchemaBuilderFactory<
+//     BuildSchemaFromTable<TTable>['shape'],
+//     BuildSchemaFromTable<TTable>['shape']
+// >;
 
-// Overload 2: omit fields
-export function createSchemasFactory<
-    TTable extends Table,
-    TOmitMask extends util.Mask<keyof BuildSchemaFromTable<TTable>['shape']>,
->(
-    table: TTable,
-    config: { omitFields: TOmitMask; pickFields?: never }
-): BaseSchemaBuilderFactory<
-    Omit<BuildSchemaFromTable<TTable>['shape'], keyof TOmitMask>,
-    BuildSchemaFromTable<TTable>['shape']
->;
+// // Overload 2: omit fields
+// export function createSchemasFactory<
+//     TTable extends Table,
+//     TOmitMask extends util.Mask<keyof BuildSchemaFromTable<TTable>['shape']>,
+// >(
+//     table: TTable,
+//     config: { omitFields: TOmitMask; pickFields?: never }
+// ): BaseSchemaBuilderFactory<
+//     Omit<BuildSchemaFromTable<TTable>['shape'], keyof TOmitMask>,
+//     BuildSchemaFromTable<TTable>['shape']
+// >;
 
-// Overload 3: pick fields
-export function createSchemasFactory<
-    TTable extends Table,
-    TPickMask extends util.Mask<keyof BuildSchemaFromTable<TTable>['shape']>,
->(
-    table: TTable,
-    config: { pickFields: TPickMask; omitFields?: never }
-): BaseSchemaBuilderFactory<
-    Pick<
-        BuildSchemaFromTable<TTable>['shape'],
-        keyof TPickMask & keyof BuildSchemaFromTable<TTable>['shape']
-    >,
-    BuildSchemaFromTable<TTable>['shape']
->;
+// // Overload 3: pick fields
+// export function createSchemasFactory<
+//     TTable extends Table,
+//     TPickMask extends util.Mask<keyof BuildSchemaFromTable<TTable>['shape']>,
+// >(
+//     table: TTable,
+//     config: { pickFields: TPickMask; omitFields?: never }
+// ): BaseSchemaBuilderFactory<
+//     Pick<
+//         BuildSchemaFromTable<TTable>['shape'],
+//         keyof TPickMask & keyof BuildSchemaFromTable<TTable>['shape']
+//     >,
+//     BuildSchemaFromTable<TTable>['shape']
+// >;
 
 /**
  * Factory function to create feature schemas from a Drizzle table
