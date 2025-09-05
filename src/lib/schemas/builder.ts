@@ -1,185 +1,193 @@
-import {
-    CoreServiceMapping,
-    TCoreOperationSchemaObject,
-    TOperationSchemaObject,
-    TZodObject,
-    TZodShape,
-} from '@/lib/schemas/types';
-import z from 'zod';
+import { TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemas/types';
+import z, { util } from 'zod';
+
+type TUserSchema = z.ZodString | z.ZodNumber | never;
+
+type MappingCoreServiceInput = {
+    create: <S extends TZodObject, U extends TUserSchema>(params: {
+        data: S;
+        userFields?: U;
+    }) => z.ZodObject<{ data: S; userId: U | TUserSchema }>;
+    getById: <I extends TZodObject, U extends z.ZodString>(params: {
+        idFields: I;
+        userFields?: U;
+    }) => z.ZodObject<{ id: I; userId: U | TUserSchema }>;
+};
 
 /**
- * Generic config for the schema builder
+ * Input helpers for the core service input
  */
-export interface SchemaBuilderConfig {
-    base: TZodShape;
-    raw: TZodShape;
-    id: TZodShape;
-    user: TZodShape;
-}
+const inputHelpers = <U extends TUserSchema>(defaults: { userId: U }): MappingCoreServiceInput => {
+    return {
+        create: (params) => {
+            return z.object({
+                data: params.data,
+                userId: params.userFields || defaults.userId,
+            });
+        },
+        getById: (params) => {
+            return z.object({
+                id: params.idFields,
+                userId: params.userFields || defaults.userId,
+            });
+        },
+    } as const;
+};
 
-/**
- * Parameters for the operation schema definition function
- */
-export interface SchemaObjectFnParams<C extends SchemaBuilderConfig> {
-    baseSchema: z.ZodObject<C['base']>;
-    rawSchema: z.ZodObject<C['raw']>;
-    idFieldsSchema: z.ZodObject<C['id']>;
-    userFieldsSchema: z.ZodObject<C['user']>;
-
-    serviceInputBuilder: {
-        create: <S extends TZodObject>(schema: S) => { data: S; idFields?: z.ZodObject<C['id']> };
-        getById: () => { idFields: z.ZodObject<C['id']> };
-        updateById: <S extends TZodObject>(
-            schema: S
-        ) => { data: S; idFields: z.ZodObject<C['id']> };
-        getMany: <S extends TZodObject>(
-            filters?: S
-        ) => { filters?: S; pagination?: TZodObject; idFields?: z.ZodObject<C['id']> };
-        removeById: () => { idFields: z.ZodObject<C['id']> };
-    };
-}
-
-/**
- * Function that returns an object with schemas for query, service, and endpoint layers.
- */
-export type OperationSchemaDefinitionFn<
-    C extends SchemaBuilderConfig,
-    TSchemasObject extends
-        | TOperationSchemaObject
-        | TCoreOperationSchemaObject = TOperationSchemaObject,
-> = (params: SchemaObjectFnParams<C>) => TSchemasObject;
-
-/**
- * Builder class for operation schemas
- * @template C - The config
- * @template O - The output object with feature schemas
- */
-export class OperationSchemaBuilder<
-    C extends SchemaBuilderConfig,
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    O extends Record<string, TOperationSchemaObject> = {},
+export class BaseSchemaBuilderFactory<
+    TFeatureSchemas extends Record<string, TOperationSchemaObject>,
+    B extends TZodShape,
+    R extends TZodShape = B,
+    I extends TZodShape = TZodShape,
+    U extends TZodShape = TZodShape,
 > {
-    schemas: O;
-    private baseSchema: z.ZodObject<C['base']>;
-    private rawSchema: z.ZodObject<C['raw']>;
-    private idFieldsSchema: z.ZodObject<C['id']>;
-    private userFieldsSchema: z.ZodObject<C['user']>;
+    schemas: TFeatureSchemas;
+    baseSchema: z.ZodObject<B>;
+    rawSchema: z.ZodObject<R>;
+    idSchema: z.ZodObject<I>;
+    userSchema: z.ZodObject<U>;
 
     constructor({
-        schemas,
         baseSchema,
         rawSchema,
-        idFieldsSchema,
-        userFieldsSchema,
+        idSchema,
+        userSchema,
     }: {
-        schemas: O;
-        baseSchema: C['base'];
-        rawSchema: C['raw'];
-        idFieldsSchema: C['id'];
-        userFieldsSchema: C['user'];
+        schemas: TFeatureSchemas;
+        baseSchema: B;
+        rawSchema?: B;
+        idSchema?: I;
+        userSchema?: U;
+    });
+    // overload 2: schemas
+    constructor({
+        baseSchema,
+        rawSchema,
+        idSchema,
+        userSchema,
+    }: {
+        schemas: TFeatureSchemas;
+        baseSchema: B;
+        rawSchema: R;
+        idSchema?: I;
+        userSchema?: U;
+    });
+    // implement the constructor with all the overloads
+    constructor({
+        baseSchema,
+        rawSchema,
+        idSchema,
+        userSchema,
+        schemas,
+    }: {
+        baseSchema: B;
+        rawSchema?: R;
+        idSchema?: I;
+        userSchema?: U;
+        schemas: TFeatureSchemas;
     }) {
         this.schemas = schemas;
         this.baseSchema = z.object(baseSchema);
         this.rawSchema = z.object(rawSchema);
-        this.idFieldsSchema = z.object(idFieldsSchema);
-        this.userFieldsSchema = z.object(userFieldsSchema);
+        this.idSchema = z.object(idSchema);
+        this.userSchema = z.object(userSchema);
     }
 
-    private serviceInputBuilder = {
-        create: <S extends TZodObject>(schema: S) => {
-            return {
-                data: schema,
-                idFields: this.idFieldsSchema,
-            };
-        },
-        getById: () => {
-            return {
-                idFields: this.idFieldsSchema,
-            };
-        },
-        updateById: <S extends TZodObject>(schema: S) => {
-            return {
-                data: schema,
-                idFields: this.idFieldsSchema,
-            };
-        },
-        getMany: <S extends TZodObject>(filters?: S) => {
-            return {
-                filters: filters,
-                pagination: undefined,
-                idFields: this.idFieldsSchema,
-            };
-        },
-        removeById: () => {
-            return {
-                idFields: this.idFieldsSchema,
-            };
-        },
-    };
-
-    addCustom<const K extends string, S extends TOperationSchemaObject>(
-        key: K,
-        schemaObjectFn: OperationSchemaDefinitionFn<C, S>
-    ): OperationSchemaBuilder<C, O & Record<K, S>> {
-        const resultingOpSchema = schemaObjectFn({
-            baseSchema: this.baseSchema,
-            rawSchema: this.rawSchema,
-            idFieldsSchema: this.idFieldsSchema,
-            userFieldsSchema: this.userFieldsSchema,
-            serviceInputBuilder: this.serviceInputBuilder,
-        });
-
-        return new OperationSchemaBuilder<C, O & Record<K, S>>({
-            schemas: {
-                ...this.schemas,
-                [key]: resultingOpSchema,
-            },
-            baseSchema: this.baseSchema.shape,
-            rawSchema: this.rawSchema.shape,
-            idFieldsSchema: this.idFieldsSchema.shape,
-            userFieldsSchema: this.userFieldsSchema.shape,
-        });
-    }
-
-    addCore<const K extends keyof CoreServiceMapping, S extends TCoreOperationSchemaObject<K>>(
-        key: K,
-        schemaObjectFn: OperationSchemaDefinitionFn<C, S>
-    ): OperationSchemaBuilder<C, O & Record<K, S>> {
-        const resultingOpSchema = schemaObjectFn({
-            baseSchema: this.baseSchema,
-            rawSchema: this.rawSchema,
-            idFieldsSchema: this.idFieldsSchema,
-            userFieldsSchema: this.userFieldsSchema,
-            serviceInputBuilder: this.serviceInputBuilder,
-        });
-
-        return new OperationSchemaBuilder<C, O & Record<K, S>>({
-            schemas: {
-                ...this.schemas,
-                [key]: resultingOpSchema,
-            },
-            baseSchema: this.baseSchema.shape,
-            rawSchema: this.rawSchema.shape,
-            idFieldsSchema: this.idFieldsSchema.shape,
-            userFieldsSchema: this.userFieldsSchema.shape,
+    /**
+     * Transform the schema
+     */
+    transform<TOut extends TZodShape>(transformer: (schema: z.ZodObject<B>) => z.ZodObject<TOut>) {
+        return new BaseSchemaBuilderFactory<TFeatureSchemas, TOut, R, I, U>({
+            schemas: this.schemas,
+            baseSchema: transformer(this.baseSchema).shape,
+            rawSchema: transformer(this.baseSchema).shape,
+            userSchema: this.userSchema.shape,
+            idSchema: this.idSchema.shape,
         });
     }
 
     /**
-     * Builds the operation schemas
-     * @returns The operation schemas
+     * Pick fields from the schema
      */
-    build(): {
-        baseSchema: z.ZodObject<C['base']>;
-        rawSchema: z.ZodObject<C['raw']>;
-        idFieldsSchema: z.ZodObject<C['id']>;
-        opSchemas: O;
-    } {
-        return {
+    pick<const Mask extends util.Mask<keyof B>>(fields: Mask) {
+        return new BaseSchemaBuilderFactory({
+            schemas: this.schemas,
+            baseSchema: this.baseSchema.pick(fields).shape,
+            rawSchema: this.rawSchema.shape,
+            userSchema: this.userSchema.shape,
+            idSchema: this.idSchema.shape,
+        });
+    }
+
+    /**
+     * Omit fields from the schema
+     */
+    omit<const Mask extends util.Mask<keyof B>>(fields: Mask) {
+        return new BaseSchemaBuilderFactory({
+            schemas: this.schemas,
+            baseSchema: this.baseSchema.omit(fields).shape,
+            rawSchema: this.rawSchema.shape,
+            userSchema: this.userSchema.shape,
+            idSchema: this.idSchema.shape,
+        });
+    }
+
+    /**
+     * Add id fields to the schema
+     */
+    idFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
+        return new BaseSchemaBuilderFactory({
+            schemas: this.schemas,
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idSchema: this.rawSchema.pick(fields).required().shape,
+            userSchema: this.userSchema.shape,
+        });
+    }
+
+    /**
+     * Add id fields to the schema
+     */
+    userFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
+        return new BaseSchemaBuilderFactory({
+            schemas: this.schemas,
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idSchema: this.idSchema.shape,
+            userSchema: this.rawSchema.pick(fields).required().shape,
+        });
+    }
+
+    addCore<
+        const K extends Exclude<keyof MappingCoreServiceInput, keyof TFeatureSchemas> & string,
+        S extends TOperationSchemaObject,
+    >(
+        key: K,
+        schemaObjectFn: (params: {
+            baseSchema: z.ZodObject<B>;
+            rawSchema: z.ZodObject<R>;
+            idFieldsSchema: z.ZodObject<I>;
+            userFieldsSchema: z.ZodObject<U>;
+            buildServiceInput: MappingCoreServiceInput[K];
+        }) => S
+    ) {
+        const wrappedSchemaObjectFn = schemaObjectFn({
             baseSchema: this.baseSchema,
             rawSchema: this.rawSchema,
-            idFieldsSchema: this.idFieldsSchema,
-            opSchemas: this.schemas,
-        };
+            idFieldsSchema: this.idSchema,
+            userFieldsSchema: this.userSchema,
+            buildServiceInput: inputHelpers({ userId: z.string() })[key],
+        });
+
+        return new BaseSchemaBuilderFactory<TFeatureSchemas & Record<K, S>, B, R, I, U>({
+            schemas: {
+                ...this.schemas,
+                [key]: wrappedSchemaObjectFn,
+            },
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idSchema: this.idSchema.shape,
+            userSchema: this.userSchema.shape,
+        });
     }
 }
