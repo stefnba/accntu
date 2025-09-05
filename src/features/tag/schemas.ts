@@ -30,8 +30,9 @@ export const { schemas: tagSchemas } = createFeatureSchemas
         const input = buildServiceInput({ data: baseSchema });
         return {
             service: input,
+            query: input,
             endpoint: {
-                json: input,
+                json: baseSchema,
             },
         };
     })
@@ -40,10 +41,8 @@ export const { schemas: tagSchemas } = createFeatureSchemas
      */
     .addCore('getMany', ({ baseSchema, buildServiceInput }) => {
         return {
-            service: buildServiceInput({
-                filters: z.object({ name: z.string() }),
-                pagination: z.object({ page: z.number(), limit: z.number() }),
-            }),
+            service: buildServiceInput({}),
+            query: buildServiceInput({}),
             endpoint: {
                 query: baseSchema,
             },
@@ -55,6 +54,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     .addCore('getById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         return {
             service: buildServiceInput(),
+            query: buildServiceInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -67,6 +67,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         return {
             service: buildServiceInput({ data: baseSchema }),
+            query: buildServiceInput({ data: baseSchema }),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -79,6 +80,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         return {
             service: buildServiceInput(),
+            query: buildServiceInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -91,18 +93,27 @@ export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
     .omit({
         createdAt: true,
         updatedAt: true,
+        tagId: true,
+        transactionId: true,
     })
     .idFields({
         transactionId: true,
     })
-    .addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema }) => {
+    .addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema, rawSchema }) => {
+        const tagsIdsSchema = z.array(rawSchema.pick({ tagId: true }).shape.tagId);
+
+        const schema = baseSchema.extend({
+            tagIds: tagsIdsSchema,
+            transactionId: rawSchema.shape.transactionId,
+            userId: z.string(),
+        });
+
         return {
-            service: z.object({
-                tagIds: z.array(baseSchema.pick({ tagId: true }).shape.tagId),
-            }),
+            service: schema,
+            query: schema,
             endpoint: {
                 param: idFieldsSchema,
-                json: baseSchema,
+                json: schema.pick({ tagIds: true }),
             },
         };
     });

@@ -1,7 +1,6 @@
-import { tagSchemas } from '@/features/tag/schemas';
+import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagServices } from '@/features/tag/server/services';
 import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
@@ -12,16 +11,20 @@ const app = new Hono()
     .get('/', async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await tagServices.getMany({ userId: user.id });
+            return await tagServices.getMany({
+                userId: user.id,
+                filters: undefined as never,
+                pagination: undefined as never,
+            });
         })
     )
 
     // Get tag by ID
-    .get('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    .get('/:id', zValidator('param', tagSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            const tag = await tagServices.getById({ id, userId: user.id });
+            const tag = await tagServices.getById({ ids: { id }, userId: user.id });
 
             if (!tag) {
                 throw new Error('Tag not found');
@@ -32,7 +35,7 @@ const app = new Hono()
     )
 
     // Create a new tag
-    .post('/', zValidator('json', tagSchemas.create.endpoint), async (c) =>
+    .post('/', zValidator('json', tagSchemas.create.endpoint.json), async (c) =>
         withRoute(
             c,
             async () => {
@@ -47,44 +50,44 @@ const app = new Hono()
     // Update a tag
     .put(
         '/:id',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', tagSchemas.updateById.endpoint),
+        zValidator('param', tagSchemas.updateById.endpoint.param),
+        zValidator('json', tagSchemas.updateById.endpoint.json),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
-                return await tagServices.updateById({ id, data, userId: user.id });
+                return await tagServices.updateById({ ids: { id }, data, userId: user.id });
             })
     )
 
     // Delete a tag (soft delete)
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    .delete('/:id', zValidator('param', tagSchemas.removeById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            await tagServices.removeById({ id, userId: user.id });
+            await tagServices.removeById({ ids: { id }, userId: user.id });
             return { success: true };
         })
     )
 
     // Assign tags to a transaction
     .put(
-        '/assign/:id',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', tagSchemas.assignToTransaction.endpoint),
+        '/assign/:transactionId',
+        zValidator('param', tagToTransactionSchemas.assignToTransaction.endpoint.param),
+        zValidator('json', tagToTransactionSchemas.assignToTransaction.endpoint.json),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
                 const { tagIds } = c.req.valid('json');
-                const { id } = c.req.valid('param');
+                const { transactionId } = c.req.valid('param');
 
-                console.log('assigning tags to transaction', id, tagIds);
+                console.log('assigning tags to transaction', transactionId, tagIds);
 
                 return await tagServices.assignToTransaction({
-                    transactionId: id,
-                    tagIds,
+                    transactionId,
                     userId: user.id,
+                    tagIds,
                 });
             })
     );
