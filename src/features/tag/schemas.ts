@@ -1,10 +1,10 @@
 import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
 import z from 'zod';
 
 const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
-export const { opSchemas: tagSchemas } = createFeatureSchemas
+export const { schemas: tagSchemas } = createFeatureSchemas
     .registerTable(tag)
     .omit({
         createdAt: true,
@@ -14,96 +14,79 @@ export const { opSchemas: tagSchemas } = createFeatureSchemas
         userId: true,
         transactionCount: true,
     })
-    .idFields({
-        id: true,
-    })
-    .userFields({
-        userId: true,
-    })
     .transform((base) =>
         base.extend({
             color: colorSchema,
         })
     )
-    .buildOpSchemas((builder) =>
-        builder
-            .addCore('create', ({ baseSchema, userFieldsSchema, idFieldsSchema }) => {
-                return {
-                    query: z.object({
-                        data: baseSchema,
-                        userId: userFieldsSchema.shape.userId,
-                    }),
-                    service: {
-                        data: baseSchema,
-                        user: userFieldsSchema,
-                        ids: idFieldsSchema,
-                        // idFields: idFieldsSchema
-                    },
-                    endpoint: {
-                        json: baseSchema,
-                    },
-                };
-            })
-            .addCore('getById', ({ idFieldsSchema, userFieldsSchema }) => {
-                return {
-                    query: z.object({
-                        id: idFieldsSchema.shape.id,
-                        userId: userFieldsSchema.shape.userId,
-                    }),
-                    service: {
-                        idFields: idFieldsSchema,
-                    },
-                    endpoint: {
-                        param: idFieldsSchema.pick({ id: true }),
-                    },
-                };
-            })
-            .addCore('updateById', ({ baseSchema, idFieldsSchema, userFieldsSchema }) => {
-                return {
-                    query: z.object({
-                        id: idFieldsSchema.shape.id,
-                        data: baseSchema,
-                        userId: userFieldsSchema.shape.userId,
-                    }),
-                    endpoint: {
-                        param: idFieldsSchema.pick({ id: true }),
-                        json: baseSchema,
-                    },
-                    service: {
-                        data: baseSchema,
-                        idFields: idFieldsSchema,
-                    },
-                };
-            })
-            .addCore('removeById', ({ idFieldsSchema, userFieldsSchema }) => {
-                return {
-                    query: z.object({
-                        id: idFieldsSchema.shape.id,
-                        userId: userFieldsSchema.shape.userId,
-                    }),
-                    service: {
-                        idFields: idFieldsSchema,
-                        userFields: userFieldsSchema,
-                    },
-                    endpoint: {
-                        param: idFieldsSchema.pick({ id: true }),
-                    },
-                };
-            })
-            .addCore('getMany', ({ userFieldsSchema }) => {
-                return {
-                    query: userFieldsSchema,
-                    endpoint: {
-                        query: userFieldsSchema,
-                    },
-                    service: {
-                        idFields: userFieldsSchema,
-                    },
-                };
-            })
-    );
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a tag
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            endpoint: {
+                json: input,
+            },
+        };
+    })
+    /**
+     * Get many tags
+     */
+    .addCore('getMany', ({ baseSchema, buildServiceInput }) => {
+        return {
+            service: buildServiceInput({
+                filters: z.object({ name: z.string() }),
+                pagination: z.object({ page: z.number(), limit: z.number() }),
+            }),
+            endpoint: {
+                query: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get a tag by id
+     */
+    .addCore('getById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            endpoint: {
+                json: baseSchema,
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a tag by id
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema }),
+            endpoint: {
+                json: baseSchema,
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a tag by id
+     */
+    .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            endpoint: {
+                json: baseSchema,
+                param: idFieldsSchema,
+            },
+        };
+    });
 
-export const { opSchemas: tagToTransactionSchemas } = createFeatureSchemas
+export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
     .registerTable(tagToTransaction)
     .omit({
         createdAt: true,
@@ -112,32 +95,26 @@ export const { opSchemas: tagToTransactionSchemas } = createFeatureSchemas
     .idFields({
         transactionId: true,
     })
-    .buildOpSchemas((builder) =>
-        builder.addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema }) => {
-            const input = z.object({
+    .addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema }) => {
+        return {
+            service: z.object({
                 tagIds: z.array(baseSchema.pick({ tagId: true }).shape.tagId),
-            });
-
-            return {
-                query: input.extend({
-                    transactionId: idFieldsSchema.shape.transactionId,
-                    userId: z.string(), // Add userId for security
-                }),
-                service: input.extend({
-                    idFields: idFieldsSchema,
-                }),
-                endpoint: {
-                    param: idFieldsSchema,
-                    json: input,
-                },
-            };
-        })
-    );
+            }),
+            endpoint: {
+                param: idFieldsSchema,
+                json: baseSchema,
+            },
+        };
+    });
 
 // ====================
 // Types
 // ====================
 export type TTagSchemas = InferSchemas<typeof tagSchemas>;
 export type TTagToTransactionSchemas = InferSchemas<typeof tagToTransactionSchemas>;
+
+export type TTagServices = InferServiceSchemas<typeof tagSchemas>;
+
+// type AAA = TTagSchemas['operations']['create']
 
 export { type TTag } from '@/features/tag/server/db/queries';

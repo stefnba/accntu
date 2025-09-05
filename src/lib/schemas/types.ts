@@ -1,9 +1,8 @@
-import { CORE_CRUD_OPERATIONS } from '@/lib/schemas/config';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import { type ValidationTargets } from 'hono';
 import { z } from 'zod';
-
+import { $ZodType } from 'zod/v4/core';
 /**
  * Type constraint for all Zod objects used in the layer system
  */
@@ -21,81 +20,67 @@ export type TZodShape = z.core.$ZodShape;
 // ========================================
 
 /**
- * Core CRUD operation keys - these get IntelliSense priority
- */
-export type CoreOperationKeys = (typeof CORE_CRUD_OPERATIONS)[number];
-
-/**
- * Helper type to exclude core operation keys from a record
- */
-export type ExcludeRecordKeys<R> = Exclude<CoreOperationKeys, Extract<keyof R, CoreOperationKeys>>;
-
-/**
  * Endpoint schema object supporting Hono validation targets
  * Each target is optional to allow flexible endpoint definitions
  */
 export type TEndpointSchemaObject = Partial<Record<keyof ValidationTargets, TZodObject>>;
 
-// Operation-specific service schema types
-export interface CreateServiceSchema {
-    data: TZodObject;
-    ids?: TZodObject;
-    user?: TZodObject;
-}
-
-export type UpdateByIdServiceSchema = {
-    data: TZodObject;
-    idFields: TZodObject;
+/**
+ * Mapping of core service input parameters to their respective schemas
+ */
+export type MappingCoreServiceInput<TUser extends $ZodType, TId extends TZodObject = TZodObject> = {
+    /**
+     * Create a record
+     */
+    create: <S extends TZodObject>(params: {
+        data: S;
+        userFields?: TUser;
+    }) => z.ZodObject<{ data: S; userId: TUser }>;
+    /**
+     * Get a record by id
+     */
+    getById: (params?: {
+        idFields?: TId;
+        userFields?: TUser;
+    }) => z.ZodObject<{ ids: TId; userId: TUser }>;
+    /**
+     * Update a record by id
+     */
+    updateById: <D extends TZodObject>(params: {
+        data: D;
+        idFields?: TId;
+        userFields?: TUser;
+    }) => z.ZodObject<{ ids: TId; userId: TUser; data: D }>;
+    /**
+     * Remove a record by id (soft delete)
+     */
+    removeById: MappingCoreServiceInput<TUser, TId>['getById'];
+    /**
+     * Get many records
+     */
+    getMany: {
+        <F extends TZodObject, P extends TZodObject>(params: {
+            filters: F;
+            pagination: P;
+            userFields?: TUser;
+        }): z.ZodObject<{ filters: z.ZodOptional<F>; pagination: z.ZodOptional<P>; userId: TUser }>;
+        <F extends TZodObject>(params: {
+            filters: F;
+            userFields?: TUser;
+        }): z.ZodObject<{ filters: z.ZodOptional<F>; userId: TUser }>;
+        <P extends TZodObject>(params: {
+            pagination: P;
+            userFields?: TUser;
+        }): z.ZodObject<{ pagination: z.ZodOptional<P>; userId: TUser }>;
+        (params: {
+            userFields?: TUser;
+        }): z.ZodObject<{ filters: z.ZodNever; pagination: z.ZodNever; userId: TUser }>;
+    };
 };
-
-export type GetByIdServiceSchema = {
-    idFields: TZodObject;
-};
-
-export type GetManyServiceSchema = {
-    filters?: TZodObject;
-    pagination?: TZodObject;
-    idFields?: TZodObject;
-};
-
-export type RemoveByIdServiceSchema = {
-    idFields: TZodObject;
-};
-
-export interface CoreServiceMapping
-    extends Record<
-        CoreOperationKeys,
-        | TZodObject
-        | CreateServiceSchema
-        | UpdateByIdServiceSchema
-        | GetByIdServiceSchema
-        | GetManyServiceSchema
-        | RemoveByIdServiceSchema
-    > {
-    create: CreateServiceSchema;
-    createMany: CreateServiceSchema;
-    updateById: UpdateByIdServiceSchema;
-    getById: GetByIdServiceSchema;
-    getMany: GetManyServiceSchema;
-    removeById: RemoveByIdServiceSchema;
-}
 
 /**
  * Object with schemas for query, service, and endpoint layers.
  * The endpoint layer supports Hono validation targets (json, query, param, etc.)
- *
- * @example
- * ```typescript
- * const createOperation: TOperationSchemaObject = {
- *   service: z.object({ name: z.string() }),
- *   endpoint: {
- *     json: z.object({ name: z.string() }),
- *     param: z.object({ id: z.string() })
- *   }
- * };
- * ```
- *
- * @returns Object with schemas for query, service, and endpoint layers
  */
 export type TOperationSchemaObject = {
     query?: TZodObject;
@@ -108,13 +93,16 @@ export type TOperationSchemaObject = {
  */
 export type TOperationSchemasResult = Record<string, TOperationSchemaObject>;
 
-export type TCoreOperationSchemaObject<
-    K extends keyof CoreServiceMapping = keyof CoreServiceMapping,
-> = {
-    query?: TZodObject;
-    service?: CoreServiceMapping[K];
-    endpoint?: TEndpointSchemaObject;
-};
+// export type TCoreOperationSchemaObject<
+//     K extends keyof MappingCoreServiceInput<$ZodType, TZodObject> = keyof MappingCoreServiceInput<
+//         $ZodType,
+//         TZodObject
+//     >,
+// > = {
+//     query?: TZodObject;
+//     service?: MappingCoreServiceInput<$ZodType, TZodObject>[K];
+//     endpoint?: TEndpointSchemaObject;
+// };
 
 // ========================================
 //

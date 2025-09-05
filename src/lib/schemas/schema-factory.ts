@@ -1,4 +1,4 @@
-import { BaseSchemaBuilderFactory } from '@/lib/schemas/builder';
+import { BaseSchemaBuilder } from '@/lib/schemas/builder';
 import { BuildSchemaFromTable, TOperationSchemaObject, TZodObject } from '@/lib/schemas/types';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
@@ -11,7 +11,7 @@ export const createFeatureSchemas = {
      */
     registerTable: <TTable extends Table>(table: TTable) => {
         const schema = createInsertSchema(table);
-        return new BaseSchemaBuilderFactory({
+        return new BaseSchemaBuilder({
             schemas: {},
             baseSchema: schema.shape,
             rawSchema: schema.shape,
@@ -23,7 +23,7 @@ export const createFeatureSchemas = {
      * @param schema - The Zod schema
      */
     registerSchema: <TSchema extends TZodObject>(schema: TSchema) => {
-        return new BaseSchemaBuilderFactory({
+        return new BaseSchemaBuilder({
             schemas: {},
             baseSchema: schema.shape,
             rawSchema: schema.shape,
@@ -34,7 +34,7 @@ export const createFeatureSchemas = {
 // Overload 1: no config
 export function createSchemasFactory<TTable extends Table>(
     table: TTable
-): BaseSchemaBuilderFactory<
+): BaseSchemaBuilder<
     Record<string, TOperationSchemaObject>,
     BuildSchemaFromTable<TTable>['shape'],
     BuildSchemaFromTable<TTable>['shape']
@@ -47,7 +47,7 @@ export function createSchemasFactory<
 >(
     table: TTable,
     config: { omitFields: TOmitMask; pickFields?: never }
-): BaseSchemaBuilderFactory<
+): BaseSchemaBuilder<
     Record<string, TOperationSchemaObject>,
     Omit<BuildSchemaFromTable<TTable>['shape'], keyof TOmitMask>,
     BuildSchemaFromTable<TTable>['shape']
@@ -60,7 +60,7 @@ export function createSchemasFactory<
 >(
     table: TTable,
     config: { pickFields: TPickMask; omitFields?: never }
-): BaseSchemaBuilderFactory<
+): BaseSchemaBuilder<
     Record<string, TOperationSchemaObject>,
     Pick<
         BuildSchemaFromTable<TTable>['shape'],

@@ -1,107 +1,75 @@
-import { TOperationSchemaObject, TZodObject, TZodShape } from '@/lib/schemas/types';
+import { inputHelpers } from '@/lib/schemas/helpers';
+import { MappingCoreServiceInput, TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
 import z, { util } from 'zod';
 
-type TUserSchema = z.ZodString | z.ZodNumber | never;
-
-type MappingCoreServiceInput = {
-    create: <S extends TZodObject, U extends TUserSchema>(params: {
-        data: S;
-        userFields?: U;
-    }) => z.ZodObject<{ data: S; userId: U | TUserSchema }>;
-    getById: <I extends TZodObject, U extends z.ZodString>(params: {
-        idFields: I;
-        userFields?: U;
-    }) => z.ZodObject<{ id: I; userId: U | TUserSchema }>;
-};
-
-/**
- * Input helpers for the core service input
- */
-const inputHelpers = <U extends TUserSchema>(defaults: { userId: U }): MappingCoreServiceInput => {
-    return {
-        create: (params) => {
-            return z.object({
-                data: params.data,
-                userId: params.userFields || defaults.userId,
-            });
-        },
-        getById: (params) => {
-            return z.object({
-                id: params.idFields,
-                userId: params.userFields || defaults.userId,
-            });
-        },
-    } as const;
-};
-
-export class BaseSchemaBuilderFactory<
+export class BaseSchemaBuilder<
     TFeatureSchemas extends Record<string, TOperationSchemaObject>,
     B extends TZodShape,
     R extends TZodShape = B,
     I extends TZodShape = TZodShape,
-    U extends TZodShape = TZodShape,
+    const U extends keyof R & string = never,
 > {
     schemas: TFeatureSchemas;
     baseSchema: z.ZodObject<B>;
     rawSchema: z.ZodObject<R>;
     idSchema: z.ZodObject<I>;
-    userSchema: z.ZodObject<U>;
+    userIdField: U;
 
     constructor({
         baseSchema,
         rawSchema,
         idSchema,
-        userSchema,
+        userIdField,
     }: {
         schemas: TFeatureSchemas;
         baseSchema: B;
         rawSchema?: B;
         idSchema?: I;
-        userSchema?: U;
+        userIdField?: U;
     });
     // overload 2: schemas
     constructor({
         baseSchema,
         rawSchema,
         idSchema,
-        userSchema,
+        userIdField,
     }: {
         schemas: TFeatureSchemas;
         baseSchema: B;
         rawSchema: R;
         idSchema?: I;
-        userSchema?: U;
+        userIdField: U;
     });
     // implement the constructor with all the overloads
     constructor({
         baseSchema,
         rawSchema,
         idSchema,
-        userSchema,
+        userIdField,
         schemas,
     }: {
         baseSchema: B;
         rawSchema?: R;
         idSchema?: I;
-        userSchema?: U;
+        userIdField: U;
         schemas: TFeatureSchemas;
     }) {
         this.schemas = schemas;
         this.baseSchema = z.object(baseSchema);
         this.rawSchema = z.object(rawSchema);
         this.idSchema = z.object(idSchema);
-        this.userSchema = z.object(userSchema);
+        this.userIdField = userIdField;
     }
 
     /**
      * Transform the schema
      */
     transform<TOut extends TZodShape>(transformer: (schema: z.ZodObject<B>) => z.ZodObject<TOut>) {
-        return new BaseSchemaBuilderFactory<TFeatureSchemas, TOut, R, I, U>({
+        return new BaseSchemaBuilder<TFeatureSchemas, TOut, R, I, U>({
             schemas: this.schemas,
             baseSchema: transformer(this.baseSchema).shape,
             rawSchema: transformer(this.baseSchema).shape,
-            userSchema: this.userSchema.shape,
+            userIdField: this.userIdField,
             idSchema: this.idSchema.shape,
         });
     }
@@ -110,11 +78,11 @@ export class BaseSchemaBuilderFactory<
      * Pick fields from the schema
      */
     pick<const Mask extends util.Mask<keyof B>>(fields: Mask) {
-        return new BaseSchemaBuilderFactory({
+        return new BaseSchemaBuilder({
             schemas: this.schemas,
             baseSchema: this.baseSchema.pick(fields).shape,
             rawSchema: this.rawSchema.shape,
-            userSchema: this.userSchema.shape,
+            userIdField: this.userIdField,
             idSchema: this.idSchema.shape,
         });
     }
@@ -123,11 +91,11 @@ export class BaseSchemaBuilderFactory<
      * Omit fields from the schema
      */
     omit<const Mask extends util.Mask<keyof B>>(fields: Mask) {
-        return new BaseSchemaBuilderFactory({
+        return new BaseSchemaBuilder({
             schemas: this.schemas,
             baseSchema: this.baseSchema.omit(fields).shape,
             rawSchema: this.rawSchema.shape,
-            userSchema: this.userSchema.shape,
+            userIdField: this.userIdField,
             idSchema: this.idSchema.shape,
         });
     }
@@ -136,30 +104,28 @@ export class BaseSchemaBuilderFactory<
      * Add id fields to the schema
      */
     idFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
-        return new BaseSchemaBuilderFactory({
+        return new BaseSchemaBuilder({
             schemas: this.schemas,
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idSchema: this.rawSchema.pick(fields).required().shape,
-            userSchema: this.userSchema.shape,
+            userIdField: this.userIdField,
         });
     }
 
-    /**
-     * Add id fields to the schema
-     */
-    userFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
-        return new BaseSchemaBuilderFactory({
+    userField<const TKey extends keyof R & string>(field: TKey) {
+        return new BaseSchemaBuilder<TFeatureSchemas, B, R, I, TKey>({
             schemas: this.schemas,
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idSchema: this.idSchema.shape,
-            userSchema: this.rawSchema.pick(fields).required().shape,
+            userIdField: field,
         });
     }
 
     addCore<
-        const K extends Exclude<keyof MappingCoreServiceInput, keyof TFeatureSchemas> & string,
+        const K extends Exclude<keyof MappingCoreServiceInput<R[U]>, keyof TFeatureSchemas> &
+            string,
         S extends TOperationSchemaObject,
     >(
         key: K,
@@ -167,19 +133,21 @@ export class BaseSchemaBuilderFactory<
             baseSchema: z.ZodObject<B>;
             rawSchema: z.ZodObject<R>;
             idFieldsSchema: z.ZodObject<I>;
-            userFieldsSchema: z.ZodObject<U>;
-            buildServiceInput: MappingCoreServiceInput[K];
+            userIdField: R[U];
+            buildServiceInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>[K];
         }) => S
     ) {
+        const userIdField = this.rawSchema.shape[this.userIdField];
+
         const wrappedSchemaObjectFn = schemaObjectFn({
             baseSchema: this.baseSchema,
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idSchema,
-            userFieldsSchema: this.userSchema,
-            buildServiceInput: inputHelpers({ userId: z.string() })[key],
+            userIdField: userIdField,
+            buildServiceInput: inputHelpers({ userId: userIdField, ids: this.idSchema })[key],
         });
 
-        return new BaseSchemaBuilderFactory<TFeatureSchemas & Record<K, S>, B, R, I, U>({
+        return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({
             schemas: {
                 ...this.schemas,
                 [key]: wrappedSchemaObjectFn,
@@ -187,7 +155,36 @@ export class BaseSchemaBuilderFactory<
             baseSchema: this.baseSchema.shape,
             rawSchema: this.rawSchema.shape,
             idSchema: this.idSchema.shape,
-            userSchema: this.userSchema.shape,
+            userIdField: this.userIdField,
+        });
+    }
+
+    addCustom<const K extends string, S extends TOperationSchemaObject>(
+        key: K,
+        schemaObjectFn: (params: {
+            baseSchema: z.ZodObject<B>;
+            rawSchema: z.ZodObject<R>;
+            idFieldsSchema: z.ZodObject<I>;
+            userIdField: R[U];
+        }) => S
+    ) {
+        const userIdField = this.rawSchema.shape[this.userIdField];
+        const wrappedSchemaObjectFn = schemaObjectFn({
+            baseSchema: this.baseSchema,
+            rawSchema: this.rawSchema,
+            idFieldsSchema: this.idSchema,
+            userIdField: userIdField,
+        });
+
+        return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({
+            schemas: {
+                ...this.schemas,
+                [key]: wrappedSchemaObjectFn,
+            },
+            baseSchema: this.baseSchema.shape,
+            rawSchema: this.rawSchema.shape,
+            idSchema: this.idSchema.shape,
+            userIdField: this.userIdField,
         });
     }
 }
