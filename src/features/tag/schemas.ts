@@ -1,11 +1,11 @@
-import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
 import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
+import { dbTable } from '@/server/db';
 import z from 'zod';
 
 const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
 export const { schemas: tagSchemas } = createFeatureSchemas
-    .registerTable(tag)
+    .registerTable(dbTable.tag)
     .omit({
         createdAt: true,
         updatedAt: true,
@@ -103,7 +103,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     });
 
 export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
-    .registerTable(tagToTransaction)
+    .registerTable(dbTable.tagToTransaction)
     .omit({
         createdAt: true,
         updatedAt: true,

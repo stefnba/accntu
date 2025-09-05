@@ -1,4 +1,4 @@
-import { transaction } from '@/features/transaction/server/db/schema';
+import { transaction } from '@/features/transaction/server/db/tables';
 import { commonTableFields } from '@/server/lib/db/table';
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-core';

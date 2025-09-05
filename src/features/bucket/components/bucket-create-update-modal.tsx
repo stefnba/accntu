@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useBucketEndpoints } from '@/features/bucket/api';
 import { useCreateUpdateBucketModal } from '@/features/bucket/hooks';
 import { bucketServiceSchemas } from '@/features/bucket/schemas';
-import { bucketStatusEnum, bucketTypeEnum } from '@/features/bucket/server/db/schema';
+import { bucketStatusEnum, bucketTypeEnum } from '@/server/db';
 import toast from 'react-hot-toast';
 
 export function BucketCreateUpdateModal() {

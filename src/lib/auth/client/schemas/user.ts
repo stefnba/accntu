@@ -1,4 +1,4 @@
-import { updateUserSchema } from '@/lib/auth/server/db/schema';
+import { updateUserSchema } from '@/server/db';
 import { z } from 'zod';
 
 // ====================

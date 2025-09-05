@@ -1,6 +1,6 @@
 import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
-import { globalBankAccount } from '@/features/bank/server/db/tables';
-import { db } from '@/server/db';
+
+import { db, dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 import { and, eq } from 'drizzle-orm';
 
@@ -12,7 +12,7 @@ export const globalBankAccountQueries = createFeatureQueries
     .addQuery('create', {
         operation: 'create global bank account',
         fn: async ({ data }) => {
-            const [result] = await db.insert(globalBankAccount).values(data).returning();
+            const [result] = await db.insert(dbTable.globalBankAccount).values(data).returning();
             return result || null;
         },
     })
@@ -22,15 +22,15 @@ export const globalBankAccountQueries = createFeatureQueries
     .addQuery('getMany', {
         operation: 'get global bank accounts with filters',
         fn: async ({ filters, pagination }) => {
-            const conditions = [eq(globalBankAccount.isActive, true)];
+            const conditions = [eq(dbTable.globalBankAccount.isActive, true)];
 
             if (filters?.globalBankId) {
-                conditions.push(eq(globalBankAccount.globalBankId, filters.globalBankId));
+                conditions.push(eq(dbTable.globalBankAccount.globalBankId, filters.globalBankId));
             }
 
             return await db
                 .select()
-                .from(globalBankAccount)
+                .from(dbTable.globalBankAccount)
                 .where(and(...conditions));
         },
     })
@@ -42,8 +42,8 @@ export const globalBankAccountQueries = createFeatureQueries
         fn: async ({ ids }) => {
             const [result] = await db
                 .select()
-                .from(globalBankAccount)
-                .where(eq(globalBankAccount.id, ids.id))
+                .from(dbTable.globalBankAccount)
+                .where(eq(dbTable.globalBankAccount.id, ids.id))
                 .limit(1);
             return result || null;
         },
@@ -55,9 +55,9 @@ export const globalBankAccountQueries = createFeatureQueries
         operation: 'update global bank account',
         fn: async ({ ids, data }) => {
             const [result] = await db
-                .update(globalBankAccount)
+                .update(dbTable.globalBankAccount)
                 .set(data)
-                .where(eq(globalBankAccount.id, ids.id))
+                .where(eq(dbTable.globalBankAccount.id, ids.id))
                 .returning();
             return result || null;
         },
@@ -69,9 +69,9 @@ export const globalBankAccountQueries = createFeatureQueries
         operation: 'remove global bank account',
         fn: async ({ ids }) => {
             const [result] = await db
-                .update(globalBankAccount)
+                .update(dbTable.globalBankAccount)
                 .set({ isActive: false })
-                .where(eq(globalBankAccount.id, ids.id))
+                .where(eq(dbTable.globalBankAccount.id, ids.id))
                 .returning();
             return result || null;
         },

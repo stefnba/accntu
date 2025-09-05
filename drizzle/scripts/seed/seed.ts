@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '../../../src/server/db/schemas';
+import * as schema from '../../../src/server/db/tables';
 import { globalBankSeedData } from './data/global-bank';
 import { globalBankAccountSeedData } from './data/global-bank-account';
 

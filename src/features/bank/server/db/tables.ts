@@ -1,7 +1,7 @@
 import { type TApiCredentials } from '@/features/bank/schemas/connected-bank';
 import { type TTransformConfig } from '@/features/bank/schemas/global-bank-account';
 import { participantToConnectedBankAccount } from '@/features/participant/server/db/tables';
-import { transactionImport } from '@/features/transaction-import/server/db/schemas';
+import { transactionImport } from '@/features/transaction-import/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {

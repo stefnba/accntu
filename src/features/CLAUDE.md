@@ -57,6 +57,9 @@ src/features/[feature-name]/
 ### Standard Schema Pattern
 
 ```typescript
+// Import tables from other features for foreign keys (NO circular dependency)
+import { relatedTable } from '@/features/other-feature/server/db/tables';
+
 export const [featureName] = pgTable('[feature_name]', {
   id: text()
     .primaryKey()
@@ -65,6 +68,10 @@ export const [featureName] = pgTable('[feature_name]', {
 
   // Feature-specific fields
   name: text().notNull(),
+
+  // Foreign keys reference actual table objects
+  relatedTableId: text()
+    .references(() => relatedTable.id, { onDelete: 'cascade' }),
 
   // Standard audit fields
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -76,7 +83,10 @@ export const [featureName] = pgTable('[feature_name]', {
 
 // Embedded relations (no separate relations file)
 export const [featureName]Relations = relations([featureName], ({ one, many }) => ({
-  // Define relations here
+  relatedTable: one(relatedTable, {
+    fields: [[featureName].relatedTableId],
+    references: [relatedTable.id],
+  }),
 }));
 ```
 
@@ -87,8 +97,24 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 - **Soft deletes** with `isActive` boolean
 - **Timestamps** with timezone for `createdAt`/`updatedAt`
 - **Singular table names** (`tag` not `tags`, `user` not `users`)
-- **Export schemas** from `src/server/db/schemas/index.ts` for relations to work
+- **Export schemas** from `src/server/db/tables.ts` for relations to work
 - **Modern Drizzle**: Use `text()` instead of `text('column_name')`
+
+### Table Import Architecture
+
+**Feature Table Files** (`src/features/*/server/db/tables.ts`):
+- ✅ **CAN import** from other feature table files for foreign keys
+- ❌ **CANNOT import** from central `@/server/db` (would cause circular dependency)
+- **Example**: `import { transaction } from '@/features/transaction/server/db/tables'`
+
+**Central Export** (`src/server/db/tables.ts`):
+- **Exports** all feature tables to central location
+- **Only file allowed** to import from feature table files
+
+**All Other Files** (queries, services, schemas, components):
+- ✅ **MUST import** using: `import { dbTable } from '@/server/db'`
+- ✅ **Access tables** via: `dbTable.tableName`
+- ❌ **NEVER import** directly from feature table files
 
 ## API Endpoint Patterns
 

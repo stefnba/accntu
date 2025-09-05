@@ -1,11 +1,4 @@
-import {
-    insertTransactionBudgetSchema,
-    selectTransactionBudgetSchema,
-    updateTransactionBudgetSchema,
-    insertTransactionBudgetToParticipantSchema,
-    selectTransactionBudgetToParticipantSchema,
-    updateTransactionBudgetToParticipantSchema,
-} from '@/features/budget/server/db/schema';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 // ====================

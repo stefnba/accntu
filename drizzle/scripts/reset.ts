@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 // Import all feature schemas
-import * as schemaImport from '../../src/server/db/schemas';
+import * as schemaImport from '../../src/server/db/tables';
 
 // Handle both default and named exports
 const schema = ('default' in schemaImport ? schemaImport.default : schemaImport) as Record<

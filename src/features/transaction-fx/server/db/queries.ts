@@ -1,7 +1,7 @@
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
+
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, sql } from 'drizzle-orm';
-import { transactionFxRate } from './schema';
 
 export const getRate = async ({
     baseCurrency,
@@ -17,12 +17,12 @@ export const getRate = async ({
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(transactionFxRate)
+                .from(dbTable.transactionFxRate)
                 .where(
                     and(
-                        eq(transactionFxRate.baseCurrency, baseCurrency),
-                        eq(transactionFxRate.targetCurrency, targetCurrency),
-                        eq(transactionFxRate.date, date)
+                        eq(dbTable.transactionFxRate.baseCurrency, baseCurrency),
+                        eq(dbTable.transactionFxRate.targetCurrency, targetCurrency),
+                        eq(dbTable.transactionFxRate.date, date)
                     )
                 )
                 .limit(1);
@@ -37,8 +37,8 @@ export const getRatesForDate = async ({ date }: { date: string }) =>
         queryFn: async () => {
             return await db
                 .select()
-                .from(transactionFxRate)
-                .where(eq(transactionFxRate.date, date));
+                .from(dbTable.transactionFxRate)
+                .where(eq(dbTable.transactionFxRate.date, date));
         },
     });
 
@@ -57,7 +57,7 @@ export const createRate = async ({
         operation: 'create exchange rate',
         queryFn: async () => {
             const [result] = await db
-                .insert(transactionFxRate)
+                .insert(dbTable.transactionFxRate)
                 .values({
                     baseCurrency,
                     targetCurrency,
@@ -85,7 +85,7 @@ export const upsertRate = async ({
         operation: 'upsert exchange rate',
         queryFn: async () => {
             const [result] = await db
-                .insert(transactionFxRate)
+                .insert(dbTable.transactionFxRate)
                 .values({
                     baseCurrency,
                     targetCurrency,
@@ -94,9 +94,9 @@ export const upsertRate = async ({
                 })
                 .onConflictDoUpdate({
                     target: [
-                        transactionFxRate.baseCurrency,
-                        transactionFxRate.targetCurrency,
-                        transactionFxRate.date,
+                        dbTable.transactionFxRate.baseCurrency,
+                        dbTable.transactionFxRate.targetCurrency,
+                        dbTable.transactionFxRate.date,
                     ],
                     set: {
                         exchangeRate: exchangeRate.toString(),
@@ -130,13 +130,13 @@ export const batchUpsertRates = async ({
             }));
 
             return await db
-                .insert(transactionFxRate)
+                .insert(dbTable.transactionFxRate)
                 .values(values)
                 .onConflictDoUpdate({
                     target: [
-                        transactionFxRate.baseCurrency,
-                        transactionFxRate.targetCurrency,
-                        transactionFxRate.date,
+                        dbTable.transactionFxRate.baseCurrency,
+                        dbTable.transactionFxRate.targetCurrency,
+                        dbTable.transactionFxRate.date,
                     ],
                     set: {
                         exchangeRate: sql`excluded.exchange_rate`,

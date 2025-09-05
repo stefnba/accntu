@@ -2,7 +2,7 @@ import { TTransactionImportQuerySchemas } from '@/features/transaction-import/sc
 import {
     transactionImport,
     transactionImportFile,
-} from '@/features/transaction-import/server/db/schemas';
+} from '@/server/db';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -10,7 +10,7 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, lt } from 'drizzle-orm';
 

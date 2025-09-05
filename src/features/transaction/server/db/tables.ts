@@ -1,8 +1,8 @@
-import { connectedBankAccount } from '@/features/bank/server/db/schemas';
-import { bucketToTransaction } from '@/features/bucket/server/db/schema';
-import { label } from '@/features/label/server/db/schema';
-import { participantToTransaction } from '@/features/participant/server/db/schema';
-import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
+import { bucketToTransaction } from '@/features/bucket/server/db/tables';
+import { label } from '@/features/label/server/db/tables';
+import { participantToTransaction } from '@/features/participant/server/db/tables';
+import { transactionImportFile } from '@/features/transaction-import/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {
@@ -41,9 +41,7 @@ export const transaction = pgTable(
             .references(() => connectedBankAccount.id, { onDelete: 'cascade' }),
         importFileId: text()
             .notNull()
-            .references(() => transactionImportFile.id, {
-                onDelete: 'set null',
-            }),
+            .references(() => transactionImportFile.id, { onDelete: 'set null' }),
 
         // Core transaction data
         date: date().notNull(),

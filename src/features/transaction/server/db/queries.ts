@@ -1,6 +1,3 @@
-import { connectedBankAccount } from '@/features/bank/server/db/schemas';
-import { label } from '@/features/label/server/db/schema';
-import { tag, tagToTransaction } from '@/features/tag/server/db/schema';
 import {
     TTransactionFilterOptions,
     TTransactionPagination,
@@ -13,8 +10,9 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
-import { createFeatureQueries } from '@/server/lib/db/query/factory';
+import { db, dbTable } from '@/server/db';
+
+import { createFeatureQueries } from '@/server/lib/db/query';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { transaction } from './schema';
@@ -121,7 +119,7 @@ const getAll = async ({
             const transactionTagsData =
                 transactionIds.length > 0
                     ? await db.query.tagToTransaction.findMany({
-                          where: inArray(tagToTransaction.transactionId, transactionIds),
+                          where: inArray(dbTable.tagToTransaction.transactionId, transactionIds),
                           with: {
                               tag: true,
                           },
@@ -134,7 +132,7 @@ const getAll = async ({
             const labelsData =
                 labelIds.length > 0
                     ? await db.query.label.findMany({
-                          where: inArray(label.id, labelIds),
+                          where: inArray(dbTable.label.id, labelIds),
                       })
                     : [];
 
@@ -204,7 +202,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
 
             // Get tags for this transaction
             const transactionTagsData = await db.query.tagToTransaction.findMany({
-                where: eq(tagToTransaction.transactionId, id),
+                where: eq(dbTable.tagToTransaction.transactionId, id),
                 with: {
                     tag: true,
                 },
@@ -213,7 +211,7 @@ export const getById = async ({ userId, id }: TQuerySelectUserRecordById) =>
             // Get label for this transaction
             const labelData = result.labelId
                 ? await db.query.label.findFirst({
-                      where: eq(label.id, result.labelId),
+                      where: eq(dbTable.label.id, result.labelId),
                   })
                 : null;
 
@@ -238,14 +236,14 @@ export const getFilterOptions = async (userId: string) =>
             // Get unique accounts
             const accounts = await db
                 .selectDistinct({
-                    id: connectedBankAccount.id,
-                    name: connectedBankAccount.name,
-                    type: connectedBankAccount.type,
+                    id: dbTable.connectedBankAccount.id,
+                    name: dbTable.connectedBankAccount.name,
+                    type: dbTable.connectedBankAccount.type,
                 })
                 .from(transaction)
                 .innerJoin(
-                    connectedBankAccount,
-                    eq(transaction.connectedBankAccountId, connectedBankAccount.id)
+                    dbTable.connectedBankAccount,
+                    eq(transaction.connectedBankAccountId, dbTable.connectedBankAccount.id)
                 )
                 .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
@@ -259,15 +257,15 @@ export const getFilterOptions = async (userId: string) =>
 
             // Get unique labels
             const labels = await db
-                .selectDistinct({ id: label.id, name: label.name, color: label.color })
+                .selectDistinct({ id: dbTable.label.id, name: dbTable.label.name, color: dbTable.label.color })
                 .from(transaction)
-                .innerJoin(label, eq(transaction.labelId, label.id))
+                .innerJoin(dbTable.label, eq(transaction.labelId, dbTable.label.id))
                 .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
             // Get user's tags
             const tags = await db.query.tag.findMany({
-                where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
-                orderBy: [tag.name],
+                where: and(eq(dbTable.tag.userId, userId), eq(dbTable.tag.isActive, true)),
+                orderBy: [dbTable.tag.name],
             });
 
             return {

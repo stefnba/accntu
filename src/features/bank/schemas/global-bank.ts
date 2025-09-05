@@ -1,9 +1,9 @@
-import { globalBank } from '@/features/bank/server/db/tables';
+import { dbTable } from '@/server/db';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import z from 'zod';
 
 export const { schemas: globalBankSchemas } = createFeatureSchemas
-    .registerTable(globalBank)
+    .registerTable(dbTable.globalBank)
     .omit({
         createdAt: true,
         updatedAt: true,

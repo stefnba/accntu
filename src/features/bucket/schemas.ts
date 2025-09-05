@@ -2,7 +2,7 @@ import {
     insertBucketSchema,
     selectBucketSchema,
     updateBucketSchema,
-} from '@/features/bucket/server/db/schema';
+} from '@/server/db';
 import { z } from 'zod';
 
 // ====================

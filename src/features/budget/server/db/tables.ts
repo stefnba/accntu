@@ -13,8 +13,8 @@ import {
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 import { participant } from '@/features/participant/server/db/tables';
-import { transaction } from '@/features/transaction/server/db/schema';
-import { user } from '@/lib/auth/server/db/schema';
+import { transaction } from '@/features/transaction/server/db/tables';
+import { user } from '@/lib/auth/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 
 // ====================

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/server/db';
-import { authSession } from '@/server/db/schemas';
+import { authSession } from '@/server/db/tables;
 import { withDbQuery } from '@/server/lib/handler/db';
 
 /**

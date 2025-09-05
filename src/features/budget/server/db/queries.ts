@@ -1,7 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 
 import { TTransactionBudgetQuery, TTransactionBudgetToParticipantQuery } from '@/features/budget/schemas';
-import { transactionBudget, transactionBudgetToParticipant } from '@/features/budget/server/db/schema';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -9,7 +8,7 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 
 /**
@@ -24,9 +23,9 @@ const getAll = async ({
         queryFn: () =>
             db
                 .select()
-                .from(transactionBudget)
+                .from(dbTable.transactionBudget)
                 .where(
-                    and(eq(transactionBudget.userId, userId), eq(transactionBudget.isActive, true))
+                    and(eq(dbTable.transactionBudget.userId, userId), eq(dbTable.transactionBudget.isActive, true))
                 ),
         operation: 'list all transaction budgets for a user',
     });
@@ -42,8 +41,8 @@ const getById = ({ id, userId }: TQuerySelectUserRecordById) =>
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(transactionBudget)
-                .where(and(eq(transactionBudget.id, id), eq(transactionBudget.userId, userId)));
+                .from(dbTable.transactionBudget)
+                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)));
             return result;
         },
         operation: 'get transaction budget by ID',
@@ -67,12 +66,12 @@ const getByTransactionAndUser = async ({
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(transactionBudget)
+                .from(dbTable.transactionBudget)
                 .where(
                     and(
-                        eq(transactionBudget.transactionId, transactionId),
-                        eq(transactionBudget.userId, userId),
-                        eq(transactionBudget.isActive, true)
+                        eq(dbTable.transactionBudget.transactionId, transactionId),
+                        eq(dbTable.transactionBudget.userId, userId),
+                        eq(dbTable.transactionBudget.isActive, true)
                     )
                 );
             return result;
@@ -90,11 +89,11 @@ const getPendingRecalculation = async () =>
         queryFn: () =>
             db
                 .select()
-                .from(transactionBudget)
+                .from(dbTable.transactionBudget)
                 .where(
                     and(
-                        eq(transactionBudget.isRecalculationNeeded, true),
-                        eq(transactionBudget.isActive, true)
+                        eq(dbTable.transactionBudget.isRecalculationNeeded, true),
+                        eq(dbTable.transactionBudget.isActive, true)
                     )
                 ),
         operation: 'get transaction budgets needing recalculation',
@@ -110,7 +109,7 @@ const create = ({ data, userId }: TQueryInsertUserRecord<TTransactionBudgetQuery
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .insert(transactionBudget)
+                .insert(dbTable.transactionBudget)
                 .values({ ...data, userId })
                 .returning();
             return result;
@@ -129,9 +128,9 @@ const update = ({ id, userId, data }: TQueryUpdateUserRecord<TTransactionBudgetQ
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBudget)
+                .update(dbTable.transactionBudget)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(transactionBudget.id, id), eq(transactionBudget.userId, userId)))
+                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)))
                 .returning();
             return result;
         },
@@ -147,15 +146,15 @@ const markForRecalculation = async ({ transactionId }: { transactionId: string }
     withDbQuery({
         queryFn: async () => {
             return await db
-                .update(transactionBudget)
+                .update(dbTable.transactionBudget)
                 .set({ 
                     isRecalculationNeeded: true,
                     updatedAt: new Date() 
                 })
                 .where(
                     and(
-                        eq(transactionBudget.transactionId, transactionId),
-                        eq(transactionBudget.isActive, true)
+                        eq(dbTable.transactionBudget.transactionId, transactionId),
+                        eq(dbTable.transactionBudget.isActive, true)
                     )
                 )
                 .returning();
@@ -173,9 +172,9 @@ const remove = ({ id, userId }: TQueryDeleteUserRecord) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(transactionBudget)
+                .update(dbTable.transactionBudget)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(transactionBudget.id, id), eq(transactionBudget.userId, userId)))
+                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)))
                 .returning();
 
             return result;
@@ -197,8 +196,8 @@ const getParticipantsByBudgetId = async ({ transactionBudgetId }: { transactionB
         queryFn: () =>
             db
                 .select()
-                .from(transactionBudgetToParticipant)
-                .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId)),
+                .from(dbTable.transactionBudgetToParticipant)
+                .where(eq(dbTable.transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId)),
         operation: 'get participants by budget ID',
     });
 
@@ -212,8 +211,8 @@ const getBudgetsByParticipantId = async ({ participantId }: { participantId: str
         queryFn: () =>
             db
                 .select()
-                .from(transactionBudgetToParticipant)
-                .where(eq(transactionBudgetToParticipant.participantId, participantId)),
+                .from(dbTable.transactionBudgetToParticipant)
+                .where(eq(dbTable.transactionBudgetToParticipant.participantId, participantId)),
         operation: 'get budgets by participant ID',
     });
 
@@ -230,7 +229,7 @@ const createParticipants = async ({
     withDbQuery({
         queryFn: async () => {
             return await db
-                .insert(transactionBudgetToParticipant)
+                .insert(dbTable.transactionBudgetToParticipant)
                 .values(participants)
                 .returning();
         },
@@ -246,8 +245,8 @@ const removeParticipantsByBudgetId = async ({ transactionBudgetId }: { transacti
     withDbQuery({
         queryFn: async () => {
             return await db
-                .delete(transactionBudgetToParticipant)
-                .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId))
+                .delete(dbTable.transactionBudgetToParticipant)
+                .where(eq(dbTable.transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId))
                 .returning();
         },
         operation: 'remove participants by budget ID',

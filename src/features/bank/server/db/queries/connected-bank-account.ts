@@ -1,7 +1,6 @@
 import { connectedBankAccountSchemas } from '@/features/bank/schemas/connected-bank-account';
-import { connectedBank, connectedBankAccount } from '@/features/bank/server/db/tables';
+import { db, dbTable } from '@/server/db';
 
-import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
@@ -14,19 +13,21 @@ export const connectedBankAccountQueries = createFeatureQueries
         operation: 'get all connected bank accounts by user id',
         fn: async ({ userId, filters }) => {
             const whereClause = [
-                eq(connectedBankAccount.userId, userId),
-                eq(connectedBankAccount.isActive, true),
+                eq(dbTable.connectedBankAccount.userId, userId),
+                eq(dbTable.connectedBankAccount.isActive, true),
             ];
             if (filters?.connectedBankId) {
-                whereClause.push(eq(connectedBankAccount.connectedBankId, filters.connectedBankId));
+                whereClause.push(
+                    eq(dbTable.connectedBankAccount.connectedBankId, filters.connectedBankId)
+                );
             }
 
             const result = await db
                 .select()
-                .from(connectedBankAccount)
+                .from(dbTable.connectedBankAccount)
                 .innerJoin(
-                    connectedBank,
-                    eq(connectedBankAccount.connectedBankId, connectedBank.id)
+                    dbTable.connectedBank,
+                    eq(dbTable.connectedBankAccount.connectedBankId, dbTable.connectedBank.id)
                 )
                 .where(and(...whereClause));
 
@@ -40,7 +41,7 @@ export const connectedBankAccountQueries = createFeatureQueries
         operation: 'create connected bank account',
         fn: async ({ data, userId }) => {
             const result = await db
-                .insert(connectedBankAccount)
+                .insert(dbTable.connectedBankAccount)
                 .values({ ...data, userId })
                 .returning();
             return result[0];
@@ -54,11 +55,11 @@ export const connectedBankAccountQueries = createFeatureQueries
         fn: async ({ ids, userId }) => {
             const result = await db
                 .select()
-                .from(connectedBankAccount)
+                .from(dbTable.connectedBankAccount)
                 .where(
                     and(
-                        eq(connectedBankAccount.id, ids.id),
-                        eq(connectedBankAccount.userId, userId)
+                        eq(dbTable.connectedBankAccount.id, ids.id),
+                        eq(dbTable.connectedBankAccount.userId, userId)
                     )
                 );
             return result[0] || null;
@@ -71,12 +72,12 @@ export const connectedBankAccountQueries = createFeatureQueries
         operation: 'update connected bank account by id',
         fn: async ({ ids, data, userId }) => {
             const result = await db
-                .update(connectedBankAccount)
+                .update(dbTable.connectedBankAccount)
                 .set(data)
                 .where(
                     and(
-                        eq(connectedBankAccount.id, ids.id),
-                        eq(connectedBankAccount.userId, userId)
+                        eq(dbTable.connectedBankAccount.id, ids.id),
+                        eq(dbTable.connectedBankAccount.userId, userId)
                     )
                 );
             return result[0];
@@ -89,11 +90,11 @@ export const connectedBankAccountQueries = createFeatureQueries
         operation: 'remove connected bank account by id',
         fn: async ({ ids, userId }) => {
             const result = await db
-                .delete(connectedBankAccount)
+                .delete(dbTable.connectedBankAccount)
                 .where(
                     and(
-                        eq(connectedBankAccount.id, ids.id),
-                        eq(connectedBankAccount.userId, userId)
+                        eq(dbTable.connectedBankAccount.id, ids.id),
+                        eq(dbTable.connectedBankAccount.userId, userId)
                     )
                 );
             return result[0];

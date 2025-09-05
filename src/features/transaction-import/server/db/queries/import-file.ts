@@ -1,5 +1,5 @@
 import { TTransactionImportFileQuerySchemas } from '@/features/transaction-import/schemas/import-file';
-import { transactionImportFile } from '@/features/transaction-import/server/db/schemas';
+
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -7,7 +7,7 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq } from 'drizzle-orm';
 
@@ -89,7 +89,7 @@ const create = async ({
         operation: 'create transaction import file',
         queryFn: async () => {
             const [result] = await db
-                .insert(transactionImportFile)
+                .insert(dbTable.transactionImportFile)
                 .values({ ...data, userId })
                 .returning();
             return result;
@@ -107,10 +107,10 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord): Promise<void> =>
         operation: 'delete transaction import file',
         queryFn: async () => {
             await db
-                .update(transactionImportFile)
+                .update(dbTable.transactionImportFile)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(
-                    and(eq(transactionImportFile.id, id), eq(transactionImportFile.userId, userId))
+                    and(eq(dbTable.transactionImportFile.id, id), eq(dbTable.transactionImportFile.userId, userId))
                 );
         },
     });
@@ -125,9 +125,9 @@ const removeAll = async ({ userId }: TQuerySelectUserRecords): Promise<void> =>
         operation: 'delete all transaction import files',
         queryFn: async () => {
             await db
-                .update(transactionImportFile)
+                .update(dbTable.transactionImportFile)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(eq(transactionImportFile.userId, userId));
+                .where(eq(dbTable.transactionImportFile.userId, userId));
         },
     });
 
@@ -149,10 +149,10 @@ const update = async ({
         operation: 'update transaction import file status',
         queryFn: async () => {
             const [updated] = await db
-                .update(transactionImportFile)
+                .update(dbTable.transactionImportFile)
                 .set({ ...data, updatedAt: new Date() })
                 .where(
-                    and(eq(transactionImportFile.id, id), eq(transactionImportFile.userId, userId))
+                    and(eq(dbTable.transactionImportFile.id, id), eq(dbTable.transactionImportFile.userId, userId))
                 )
                 .returning();
             return updated || null;

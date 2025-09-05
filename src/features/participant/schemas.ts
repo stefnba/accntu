@@ -1,10 +1,10 @@
 import { splitConfigSchema } from '@/features/budget/schemas';
-import { participant } from '@/features/participant/server/db/tables';
+import { dbTable } from '@/server/db';
 import { createFeatureSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
 export const { schemas: participantSchemas } = createFeatureSchemas
-    .registerTable(participant)
+    .registerTable(dbTable.participant)
     .omit({
         createdAt: true,
         updatedAt: true,

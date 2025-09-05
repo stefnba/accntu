@@ -1,8 +1,4 @@
-import {
-    insertTransactionSchema,
-    selectTransactionSchema,
-    updateTransactionSchema,
-} from '@/features/transaction/server/db/schema';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 // ====================
@@ -12,8 +8,8 @@ import { z } from 'zod';
 const numericInputSchema = z.coerce.number();
 
 export const transactionQuerySchemas = {
-    select: selectTransactionSchema,
-    insert: insertTransactionSchema
+    select: dbTable.selectTransactionSchema,
+    insert: dbTable.insertTransactionSchema
         .omit({
             id: true,
             createdAt: true,
@@ -28,7 +24,7 @@ export const transactionQuerySchemas = {
             spendingAmount: numericInputSchema,
             balance: numericInputSchema.optional(),
         }),
-    update: updateTransactionSchema
+    update: dbTable.updateTransactionSchema
         .extend({
             userAmount: numericInputSchema.optional(),
             accountAmount: numericInputSchema.optional(),

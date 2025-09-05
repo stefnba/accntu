@@ -2,7 +2,7 @@ import { getEnv } from '@/lib/env';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from './schemas';
+import * as dbTable from './tables';
 
 // Get database connection string from validated environment variables
 const { DATABASE_URL } = getEnv();
@@ -15,10 +15,7 @@ const client = postgres(DATABASE_URL, {
 });
 
 // Create drizzle instance
-export const db = drizzle(client, { schema, casing: 'snake_case' });
-
-// Export schema
-export { schema };
+export const db = drizzle(client, { schema: dbTable, casing: 'snake_case' });
 
 /**
  * Checks the database connection by executing a simple query.
@@ -37,3 +34,5 @@ export async function checkDbConnection() {
         );
     }
 }
+
+export { dbTable };

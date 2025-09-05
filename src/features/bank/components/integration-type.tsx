@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { TGlobalBank } from '@/features/bank/server/db/tables';
+import { TGlobalBank } from '@/server/db';
 
 interface IntegrationTypeBadgeProps {
     integrationType: TGlobalBank['integrationTypes'] | null | undefined;

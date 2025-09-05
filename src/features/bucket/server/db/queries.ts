@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import { TBucketQuery } from '@/features/bucket/schemas';
-import { bucket } from '@/features/bucket/server/db/schema';
+
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -9,7 +9,7 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 
 /**
@@ -23,7 +23,7 @@ const getById = async ({ id, userId }: TQuerySelectUserRecordById) =>
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(bucket)
+                .from(dbTable.bucket)
                 .where(
                     and(eq(bucket.id, id), eq(bucket.userId, userId), eq(bucket.isActive, true))
                 );
@@ -45,7 +45,7 @@ const getAll = async ({
         queryFn: () =>
             db
                 .select()
-                .from(bucket)
+                .from(dbTable.bucket)
                 .where(and(eq(bucket.userId, userId), eq(bucket.isActive, true))),
         operation: 'get all buckets',
     });
@@ -63,7 +63,7 @@ const create = async ({
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .insert(bucket)
+                .insert(dbTable.bucket)
                 .values({ ...data, userId })
                 .returning();
             return result;
@@ -86,7 +86,7 @@ const update = async ({
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(bucket)
+                .update(dbTable.bucket)
                 .set({ ...data, updatedAt: new Date() })
                 .where(and(eq(bucket.id, id), eq(bucket.userId, userId)))
                 .returning();
@@ -105,7 +105,7 @@ const remove = async ({ id, userId }: TQueryDeleteUserRecord) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(bucket)
+                .update(dbTable.bucket)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(and(eq(bucket.id, id), eq(bucket.userId, userId)))
                 .returning();

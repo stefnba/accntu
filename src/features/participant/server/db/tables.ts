@@ -1,11 +1,10 @@
 import { relations } from 'drizzle-orm';
 import { boolean, index, integer, json, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 import { connectedBankAccount } from '@/features/bank/server/db/tables';
-import { bucket } from '@/features/bucket/server/db/schema';
-import { transaction } from '@/features/transaction/server/db/schema';
-import { user } from '@/lib/auth/server/db/schema';
+import { bucket } from '@/features/bucket/server/db/tables';
+import { transaction } from '@/features/transaction/server/db/tables';
+import { user } from '@/lib/auth/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 
 // ====================
@@ -157,33 +156,3 @@ export const participantToBucketRelations = relations(participantToBucket, ({ on
         references: [bucket.id],
     }),
 }));
-
-// ====================
-// Base Zod schemas
-// ====================
-
-// participant
-export const selectParticipantSchema = createSelectSchema(participant);
-export const insertParticipantSchema = createInsertSchema(participant);
-export const updateParticipantSchema = createUpdateSchema(participant);
-
-// participant to transaction
-export const selectParticipantToTransactionSchema = createSelectSchema(participantToTransaction);
-export const insertParticipantToTransactionSchema = createInsertSchema(participantToTransaction);
-export const updateParticipantToTransactionSchema = createUpdateSchema(participantToTransaction);
-
-// participant to connected bank account
-export const selectParticipantToConnectedBankAccountSchema = createSelectSchema(
-    participantToConnectedBankAccount
-);
-export const insertParticipantToConnectedBankAccountSchema = createInsertSchema(
-    participantToConnectedBankAccount
-);
-export const updateParticipantToConnectedBankAccountSchema = createUpdateSchema(
-    participantToConnectedBankAccount
-);
-
-// participant to bucket
-export const selectParticipantToBucketSchema = createSelectSchema(participantToBucket);
-export const insertParticipantToBucketSchema = createInsertSchema(participantToBucket);
-export const updateParticipantToBucketSchema = createUpdateSchema(participantToBucket);

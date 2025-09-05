@@ -1,4 +1,4 @@
-import { user } from '@/lib/auth/server/db/schema';
+import { user } from '@/lib/auth/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
 import {

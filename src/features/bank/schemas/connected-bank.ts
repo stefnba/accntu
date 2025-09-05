@@ -1,4 +1,5 @@
-import { connectedBank } from '@/features/bank/server/db/tables';
+import { dbTable } from '@/server/db';
+
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import z from 'zod';
 

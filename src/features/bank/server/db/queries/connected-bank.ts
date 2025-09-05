@@ -1,9 +1,8 @@
 import { connectedBankSchemas } from '@/features/bank/schemas/connected-bank';
 
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
-import { connectedBank } from '../tables';
 
 export const connectedBankQueries = createFeatureQueries
     .registerSchema(connectedBankSchemas)
@@ -14,12 +13,12 @@ export const connectedBankQueries = createFeatureQueries
         operation: 'get all connected banks by user id',
         fn: async ({ userId, filters }) => {
             const whereClause = [
-                eq(connectedBank.userId, userId),
-                eq(connectedBank.isActive, true),
+                eq(dbTable.connectedBank.userId, userId),
+                eq(dbTable.connectedBank.isActive, true),
             ];
 
             if (filters?.globalBankId) {
-                whereClause.push(eq(connectedBank.globalBankId, filters.globalBankId));
+                whereClause.push(eq(dbTable.connectedBank.globalBankId, filters.globalBankId));
             }
 
             const where = and(...whereClause);
@@ -44,7 +43,10 @@ export const connectedBankQueries = createFeatureQueries
         operation: 'get connected bank by ID',
         fn: async ({ ids, userId }) => {
             const result = await db.query.connectedBank.findFirst({
-                where: and(eq(connectedBank.id, ids.id), eq(connectedBank.userId, userId)),
+                where: and(
+                    eq(dbTable.connectedBank.id, ids.id),
+                    eq(dbTable.connectedBank.userId, userId)
+                ),
                 with: {
                     globalBank: true,
                     connectedBankAccounts: {
@@ -64,7 +66,7 @@ export const connectedBankQueries = createFeatureQueries
         operation: 'create connected bank',
         fn: async ({ data, userId }) => {
             const result = await db
-                .insert(connectedBank)
+                .insert(dbTable.connectedBank)
                 .values({ ...data, userId })
                 .onConflictDoNothing()
                 .returning();
@@ -78,9 +80,14 @@ export const connectedBankQueries = createFeatureQueries
         operation: 'update connected bank',
         fn: async ({ ids, data, userId }) => {
             const result = await db
-                .update(connectedBank)
+                .update(dbTable.connectedBank)
                 .set(data)
-                .where(and(eq(connectedBank.id, ids.id), eq(connectedBank.userId, userId)))
+                .where(
+                    and(
+                        eq(dbTable.connectedBank.id, ids.id),
+                        eq(dbTable.connectedBank.userId, userId)
+                    )
+                )
                 .returning();
             return result[0];
         },
@@ -92,8 +99,13 @@ export const connectedBankQueries = createFeatureQueries
         operation: 'remove connected bank',
         fn: async ({ ids, userId }) => {
             return await db
-                .delete(connectedBank)
-                .where(and(eq(connectedBank.id, ids.id), eq(connectedBank.userId, userId)));
+                .delete(dbTable.connectedBank)
+                .where(
+                    and(
+                        eq(dbTable.connectedBank.id, ids.id),
+                        eq(dbTable.connectedBank.userId, userId)
+                    )
+                );
         },
     });
 

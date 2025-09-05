@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Description, Subtitle } from '@/components/ui/font';
 import { CreditCard } from 'lucide-react';
 import { AccountCard } from '../bank-cards';
-// import { TConnectedBankWithRelations } from '@/features/bank/server/db/schemas';
+// import { TConnectedBankWithRelations } from '@/server/db';
 
 interface BankDetailsOverviewProps {
     bank: TConnectedBankWithRelations;

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import { TParticipantQuery } from '@/features/participant/schemas';
-import { participant } from '@/features/participant/server/db/tables';
+
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,
@@ -9,7 +9,7 @@ import {
     TQuerySelectUserRecords,
     TQueryUpdateUserRecord,
 } from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 
 /**
@@ -24,7 +24,7 @@ const getAll = async ({
         queryFn: () =>
             db
                 .select()
-                .from(participant)
+                .from(dbTable.participant)
                 .where(and(eq(participant.userId, userId), eq(participant.isActive, true))),
         operation: 'list all participants for a user',
     });
@@ -40,7 +40,7 @@ const getById = ({ id, userId }: TQuerySelectUserRecordById) =>
         queryFn: async () => {
             const [result] = await db
                 .select()
-                .from(participant)
+                .from(dbTable.participant)
                 .where(and(eq(participant.id, id), eq(participant.userId, userId)));
             return result;
         },
@@ -58,7 +58,7 @@ const create = ({ data, userId }: TQueryInsertUserRecord<TParticipantQuery['inse
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .insert(participant)
+                .insert(dbTable.participant)
                 .values({ ...data, userId })
                 .returning();
             return result;
@@ -77,7 +77,7 @@ const update = ({ id, userId, data }: TQueryUpdateUserRecord<TParticipantQuery['
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(participant)
+                .update(dbTable.participant)
                 .set({ ...data, updatedAt: new Date() })
                 .where(and(eq(participant.id, id), eq(participant.userId, userId)))
                 .returning();
@@ -95,7 +95,7 @@ const remove = ({ id }: TQueryDeleteUserRecord) =>
     withDbQuery({
         queryFn: async () => {
             const [result] = await db
-                .update(participant)
+                .update(dbTable.participant)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(eq(participant.id, id))
                 .returning();

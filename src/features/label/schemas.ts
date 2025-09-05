@@ -1,10 +1,10 @@
 import { FeatureSchema, InferSchemas } from '@/lib/schemas';
-import { label } from '@/server/db/schemas';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 export type TLabelSchemas = InferSchemas<typeof labelSchema>;
 
-export const labelSchema = FeatureSchema.fromTable({ table: label }).forOperations(({ base }) => {
+export const labelSchema = FeatureSchema.fromTable({ table: dbTable.label }).forOperations(({ base }) => {
     return {
         create: {
             database: base,

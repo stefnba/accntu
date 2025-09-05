@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 
-import { bucketToTransaction } from '@/features/bucket/server/db/schema';
+import { bucketToTransaction } from '@/server/db';
 import {
     TSplitConfig,
     TSplitParticipant,
@@ -14,8 +14,8 @@ import {
     participantToBucket,
     participantToConnectedBankAccount,
     participantToTransaction,
-} from '@/features/participant/server/db/tables';
-import { transaction } from '@/features/transaction/server/db/schema';
+} from '@/server/db';
+import { transaction } from '@/server/db';
 import {
     TQueryDeleteUserRecord,
     TQueryInsertUserRecord,

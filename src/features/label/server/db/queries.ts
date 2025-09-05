@@ -1,6 +1,6 @@
 import type { TLabelSchemas } from '@/features/label/schemas';
-import { label } from '@/features/label/server/db/schema';
-import { db } from '@/server/db';
+
+import { db, dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
@@ -56,7 +56,7 @@ const getMaxIndex = async ({ userId, parentId }: { userId: string; parentId?: st
         queryFn: async () => {
             const maxIndex = await db
                 .select({ maxIndex: max(label.index) })
-                .from(label)
+                .from(dbTable.label)
                 .where(
                     and(
                         eq(label.userId, userId),
@@ -77,7 +77,7 @@ export const labelQueries = createFeatureQueries(label, {
             const parentId = data.parentId ?? null;
             const maxindexResult = await db
                 .select({ maxSort: max(label.index) })
-                .from(label)
+                .from(dbTable.label)
                 .where(
                     and(
                         eq(label.userId, userId),
@@ -89,7 +89,7 @@ export const labelQueries = createFeatureQueries(label, {
             const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
 
             const [labelRecord] = await db
-                .insert(label)
+                .insert(dbTable.label)
                 .values({
                     ...data,
                     userId,
@@ -286,7 +286,7 @@ export const labelQueries = createFeatureQueries(label, {
 
             // Execute the bulk update with userId filter
             await db
-                .update(label)
+                .update(dbTable.label)
                 .set({
                     index: indexCaseStatement,
                     parentId: parentCaseStatement,
@@ -321,7 +321,7 @@ export const labelQueries = createFeatureQueries(label, {
     updateById: {
         fn: async ({ id, data, userId }) => {
             return await db
-                .update(label)
+                .update(dbTable.label)
                 .set(data)
                 .where(and(eq(label.id, id), eq(label.userId, userId), eq(label.isActive, true)));
         },
@@ -332,7 +332,7 @@ export const labelQueries = createFeatureQueries(label, {
     removeById: {
         fn: async ({ id, userId }) => {
             const [labelRecord] = await db
-                .update(label)
+                .update(dbTable.label)
                 .set({
                     isActive: false,
                     updatedAt: new Date(),

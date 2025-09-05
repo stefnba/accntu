@@ -2,7 +2,7 @@ import {
     insertTransactionImportFileSchema,
     selectTransactionImportFileSchema,
     updateTransactionImportFileSchema,
-} from '@/features/transaction-import/server/db/schemas';
+} from '@/server/db';
 import { z } from 'zod';
 
 // ====================

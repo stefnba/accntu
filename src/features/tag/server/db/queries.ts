@@ -1,6 +1,6 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
-import { db } from '@/server/db';
-import { tag, tagToTransaction } from '@/server/db/schemas';
+import { db, dbTable } from '@/server/db';
+import { tag, tagToTransaction } from '@/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
@@ -25,7 +25,7 @@ export const tagQueries = createFeatureQueries
     .addQuery('create', {
         fn: async ({ data, userId }) => {
             const [newTag] = await db
-                .insert(tag)
+                .insert(dbTable.tag)
                 .values({ ...data, userId })
                 .returning();
             return newTag;
@@ -40,7 +40,7 @@ export const tagQueries = createFeatureQueries
         fn: async ({ ids, userId }) => {
             const [result] = await db
                 .select()
-                .from(tag)
+                .from(dbTable.tag)
                 .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)))
                 .limit(1);
             return result || null;
@@ -53,7 +53,7 @@ export const tagQueries = createFeatureQueries
         operation: 'delete tag',
         fn: async ({ ids, userId }) => {
             await db
-                .update(tag)
+                .update(dbTable.tag)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)));
         },
@@ -65,7 +65,7 @@ export const tagQueries = createFeatureQueries
         operation: 'update tag',
         fn: async ({ ids, data, userId }) => {
             const [updated] = await db
-                .update(tag)
+                .update(dbTable.tag)
                 .set({ ...data, updatedAt: new Date() })
                 .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)))
                 .returning();
