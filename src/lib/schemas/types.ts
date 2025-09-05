@@ -110,16 +110,6 @@ export type TOperationSchemaObject = {
  */
 export type TOperationSchemasResult = Record<string, TOperationSchemaObject>;
 
-// export type TCoreOperationSchemaObject<
-//     K extends keyof MappingCoreServiceInput<$ZodType, TZodObject> = keyof MappingCoreServiceInput<
-//         $ZodType,
-//         TZodObject
-//     >,
-// > = {
-//     query?: TZodObject;
-//     service?: MappingCoreServiceInput<$ZodType, TZodObject>[K];
-//     endpoint?: TEndpointSchemaObject;
-// };
 
 // ========================================
 //
@@ -213,15 +203,33 @@ export type InferSchemasByLayer<
     [K in keyof T]: InferSchemabject<T[K][TLayer]>;
 };
 
+/**
+ * Recursively infer types from schema objects or nested structures.
+ * Handles both Zod objects and nested object structures.
+ * 
+ * @template T - The input type to infer from
+ */
 export type InferSchemabject<T> = T extends z.ZodObject
     ? z.infer<T>
     : T extends object
       ? { [key in keyof T]: InferSchemabject<T[key]> }
       : never;
 
+/**
+ * Convenience type for inferring service layer schemas across all operations.
+ * Equivalent to InferSchemasByLayer<'service', T>.
+ * 
+ * @template T - The operation schemas object
+ */
 export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> =
     InferSchemasByLayer<'service', T>;
 
+/**
+ * Convenience type for inferring query layer schemas across all operations.
+ * Equivalent to InferSchemasByLayer<'query', T>.
+ * 
+ * @template T - The operation schemas object
+ */
 export type InferQuerySchemas<T extends Record<string, TOperationSchemaObject>> =
     InferSchemasByLayer<'query', T>;
 

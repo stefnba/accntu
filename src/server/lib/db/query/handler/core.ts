@@ -4,14 +4,43 @@ import { BaseError } from '@/server/lib/error/base';
 import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';
 import { z } from 'zod';
 
+/**
+ * Configuration parameters for the query function handler wrapper.
+ * 
+ * @template TInput - The input type for the query function
+ * @template TOutput - The output type for the query function
+ */
 interface QueryFnHandlerParams<TInput, TOutput> {
+    /** The query function to wrap with error handling and logging */
     fn: QueryFn<TInput, TOutput>;
+    /** Human-readable operation description for logging and error messages */
     operation?: string;
+    /** Optional Zod schema to validate input data before execution */
     inputSchema?: z.ZodSchema<TInput, any, any>;
 }
 
 /**
- * Wrapper function that adds logging and error handling to a query function
+ * Wrapper function that adds comprehensive error handling, logging, and input validation to query functions.
+ * 
+ * This wrapper provides:
+ * - Input validation using optional Zod schema
+ * - Database-specific error handling with proper error codes
+ * - Development-mode error logging for debugging
+ * - Consistent error formatting across all database operations
+ * 
+ * @template TInput - The input type for the query function
+ * @template TOutput - The output type for the query function
+ * @param params - Configuration object for the wrapper
+ * @returns Wrapped query function with enhanced error handling
+ * 
+ * @example
+ * ```typescript
+ * const wrappedQuery = queryFnHandler({
+ *   fn: async ({ userId }) => db.select().from(users).where(eq(users.id, userId)),
+ *   operation: 'get user by ID',
+ *   inputSchema: z.object({ userId: z.string() })
+ * });
+ * ```
  */
 export function queryFnHandler<TInput, TOutput>(
     params: QueryFnHandlerParams<TInput, TOutput>

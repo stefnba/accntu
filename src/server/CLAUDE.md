@@ -1,6 +1,6 @@
 # Server Development Patterns
 
-Guidelines for backend development using Hono framework, Drizzle ORM, and PostgreSQL.
+Guidelines for backend development using Hono framework, Drizzle ORM, PostgreSQL, and the factory system.
 
 ## API Framework - Hono
 
@@ -82,9 +82,52 @@ app.delete('/items/:id', zValidator('param', z.object({ id: z.string() })), asyn
 );
 ```
 
-## Database Operations with Drizzle
+## Database Operations
 
-### Query Wrapper Pattern
+### Modern Factory System (Recommended)
+
+Use the factory system for type-safe, consistent database operations:
+
+```typescript
+// Query factory with automatic error handling
+export const userQueries = createFeatureQueries
+  .registerSchema(userSchemas)
+  .addQuery('create', {
+    operation: 'create user',
+    fn: async ({ data, userId }) => {
+      const [user] = await db.insert(userTable)
+        .values({ ...data, userId })
+        .returning();
+      return user;
+    }
+  })
+  .addQuery('getById', {
+    operation: 'get user by ID',
+    fn: async ({ ids, userId }) => {
+      const [user] = await db.select()
+        .from(userTable)
+        .where(and(eq(userTable.id, ids.id), eq(userTable.userId, userId)))
+        .limit(1);
+      return user || null;
+    }
+  });
+
+// Service factory with business logic
+export const userServices = createFeatureServices
+  .registerSchema(userSchemas)
+  .registerQuery(userQueries)
+  .defineServices(({ queries }) => ({
+    create: async (input) => {
+      // Business logic validation
+      if (input.data.email.includes('spam')) {
+        throw new Error('Invalid email domain');
+      }
+      return await queries.create(input);
+    }
+  }));
+```
+
+### Legacy Query Wrapper Pattern
 
 ```typescript
 import { withDbQuery } from '@/server/lib/handler';
@@ -434,6 +477,18 @@ export const getItemSummaries = async ({ userId }: { userId: string }) =>
 
 ## Best Practices
 
+### Modern Approach (Factory System)
+
+1. **Use Factory System** for all new server-side development
+2. **Schema-first design** with `createFeatureSchemas`
+3. **Query factory** with `createFeatureQueries` for data access
+4. **Service factory** with `createFeatureServices` for business logic
+5. **Automatic type inference** - let TypeScript infer from schemas
+6. **Operation descriptions** for all database queries
+7. **Business logic in services** - keep queries pure
+
+### Legacy Patterns (Existing Code)
+
 1. **Always use Hono framework** (never Next.js server actions)
 2. **Method chaining** for Hono app instantiation
 3. **withRoute wrapper** for all endpoints
@@ -444,6 +499,64 @@ export const getItemSummaries = async ({ userId }: { userId: string }) =>
 8. **Descriptive error messages** with context
 9. **Soft deletes** with isActive flags
 10. **Proper HTTP status codes** (201 for creation, etc.)
+
+## Factory System Documentation
+
+For comprehensive factory system documentation:
+
+- **Schema Factory**: @src/lib/schemas/README.md - Schema definition and validation
+- **Query Factory**: @src/server/lib/db/query/README.md - Database operations  
+- **Service Factory**: @src/server/lib/service/README.md - Business logic layer
+
+### Factory Integration Example
+
+```typescript
+// Complete pipeline from schema to service
+import { createFeatureSchemas } from '@/lib/schemas';
+import { createFeatureQueries } from '@/server/lib/db';
+import { createFeatureServices } from '@/server/lib/service';
+
+// 1. Schema layer
+export const { schemas } = createFeatureSchemas
+  .registerTable(userTable)
+  .userField('userId')
+  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
+    service: buildServiceInput({ data: baseSchema }),
+    query: buildServiceInput({ data: baseSchema }),
+    endpoint: { json: baseSchema }
+  }));
+
+// 2. Query layer
+export const queries = createFeatureQueries
+  .registerSchema(schemas)
+  .addQuery('create', {
+    operation: 'create user',
+    fn: async ({ data, userId }) => {
+      return await db.insert(userTable).values({ ...data, userId }).returning();
+    }
+  });
+
+// 3. Service layer
+export const services = createFeatureServices
+  .registerSchema(schemas)
+  .registerQuery(queries)
+  .defineServices(({ queries }) => ({
+    create: async (input) => {
+      // Business logic here
+      return await queries.create(input);
+    }
+  }));
+
+// 4. Endpoint integration
+const app = new Hono()
+  .post('/', zValidator('json', CreateUserSchema), async (c) =>
+    withRoute(c, async () => {
+      const user = getUser(c);
+      const data = c.req.valid('json');
+      return await services.create({ data, userId: user.id });
+    }, 201)
+  );
+```
 
 For database schema patterns: @src/features/CLAUDE.md
 For API client integration: @src/lib/CLAUDE.md

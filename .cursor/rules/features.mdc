@@ -25,7 +25,7 @@ src/features/[feature-name]/
 │   └── utils.ts               # Feature-specific utility functions
 ├── components/                # Feature-specific React components
 ├── api.ts                     # Client-side API hooks
-└── schemas.ts                 # Shared Zod validation schemas
+└── schemas.ts                 # Factory-generated operation schemas
 ```
 
 ### Complex Features
@@ -51,7 +51,7 @@ src/features/[feature-name]/
 │   └── utils.ts               # Feature-specific utility functions
 ├── components/                # Feature-specific React components
 ├── api.ts                     # Client-side API hooks
-└── schemas.ts                 # Shared Zod validation schemas
+└── schemas.ts                 # Factory-generated operation schemas
 ```
 
 ## Naming Conventions
@@ -565,7 +565,134 @@ When creating a new feature, ensure it's properly integrated:
 - **Import types** from other features when necessary for relationships
 - **Avoid circular dependencies** between features
 
+## Modern Factory System Architecture (Recommended)
+
+For new features, use the sophisticated factory system that provides type-safe, consistent patterns across all layers:
+
+### Schema Factory Pattern
+
+```typescript
+// src/features/[feature]/schemas.ts
+import { createFeatureSchemas } from '@/lib/schemas';
+import { [featureName]Table } from './server/db/schema';
+
+export const { schemas: [featureName]Schemas } = createFeatureSchemas
+  .registerTable([featureName]Table)
+  .omit({ createdAt: true, updatedAt: true, id: true })
+  .userField('userId')
+  .idFields({ id: true })
+  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
+    service: buildServiceInput({ data: baseSchema }),
+    query: buildServiceInput({ data: baseSchema }),
+    endpoint: { json: baseSchema }
+  }))
+  .addCore('getMany', ({ buildServiceInput }) => {
+    const filtersSchema = z.object({ search: z.string().optional() });
+    return {
+      service: buildServiceInput({ filters: filtersSchema }),
+      query: buildServiceInput({ filters: filtersSchema }),
+      endpoint: { query: filtersSchema }
+    };
+  });
+
+// Export inferred types
+export type T[FeatureName]Schemas = InferSchemas<typeof [featureName]Schemas>;
+```
+
+### Query Factory Pattern
+
+```typescript
+// src/features/[feature]/server/db/queries.ts
+import { createFeatureQueries } from '@/server/lib/db';
+import { [featureName]Schemas } from '../../schemas';
+
+export const [featureName]Queries = createFeatureQueries
+  .registerSchema([featureName]Schemas)
+  .addQuery('create', {
+    operation: 'create [feature-name]',
+    fn: async ({ data, userId }) => {
+      const [new[FeatureName]] = await db
+        .insert([featureName]Table)
+        .values({ ...data, userId })
+        .returning();
+      return new[FeatureName];
+    }
+  })
+  .addQuery('getMany', {
+    operation: 'get [feature-name]s by user ID',
+    fn: async ({ userId, filters }) => {
+      return await db.query.[featureName]Table.findMany({
+        where: and(eq([featureName]Table.userId, userId), eq([featureName]Table.isActive, true))
+      });
+    }
+  });
+```
+
+### Service Factory Pattern
+
+```typescript
+// src/features/[feature]/server/services.ts
+import { createFeatureServices } from '@/server/lib/service';
+import { [featureName]Schemas } from '../schemas';
+import { [featureName]Queries } from './db/queries';
+
+export const [featureName]Services = createFeatureServices
+  .registerSchema([featureName]Schemas)
+  .registerQuery([featureName]Queries)
+  .defineServices(({ queries }) => ({
+    /**
+     * Create a new [feature-name] with business logic validation
+     */
+    create: async (input) => {
+      // Business logic validation here
+      if (input.data.name.toLowerCase() === 'spam') {
+        throw new Error('Invalid [feature-name] name');
+      }
+      
+      return await queries.create(input);
+    },
+    
+    /**
+     * Get [feature-name]s - simple pass-through
+     */
+    getMany: async (input) => {
+      return await queries.getMany(input);
+    }
+  }));
+```
+
+### Factory System Benefits
+
+1. **Full Type Safety**: Automatic TypeScript inference across all layers
+2. **Consistent Patterns**: Standardized CRUD operations and input helpers
+3. **Reduced Boilerplate**: Factory-generated schemas eliminate repetitive code
+4. **Schema Integration**: Seamless flow from database to API with validation
+5. **Business Logic Separation**: Clear separation between data access and business rules
+6. **Automatic Error Handling**: Built-in withDbQuery wrapper and operation logging
+
+### When to Use Factory System
+
+- **New Features**: Always use for new feature development
+- **Complex Operations**: Multi-entity operations with business logic
+- **Type Safety Priority**: When strict TypeScript inference is required
+- **Team Consistency**: For standardized patterns across the codebase
+
+## Legacy Patterns (Existing Code)
+
+The following patterns are for maintaining existing features that haven't been migrated to the factory system:
+
 ## Best Practices
+
+### Modern Approach (Factory System)
+
+1. **Use Factory System**: Always use for new feature development
+2. **Schema-first Design**: Start with `createFeatureSchemas` for type-safe operations
+3. **Query Factory**: Use `createFeatureQueries` for consistent database access
+4. **Service Factory**: Use `createFeatureServices` for business logic layer
+5. **Type Inference**: Let TypeScript infer types from schemas
+6. **Operation Descriptions**: Include meaningful descriptions for all queries
+
+### Legacy Patterns (Existing Features)
 
 1. **Consistency**: Follow the exact patterns established in existing features
 2. **Type Safety**: Use TypeScript throughout with proper type definitions
@@ -581,10 +708,28 @@ When creating a new feature, ensure it's properly integrated:
 
 ## Examples
 
-Reference the `bank`, `tag`, and `label` features as complete examples of this architecture:
+### Factory System Examples (Modern)
+
+Reference the `tag` feature as a complete example of the modern factory system architecture:
+
+- `src/features/tag/` - Complete factory system implementation with schemas, queries, and services
+- `src/features/tag/schemas.ts` - Schema factory with core operations and custom operations
+- `src/features/tag/server/db/queries.ts` - Query factory with type-safe database operations
+- `src/features/tag/server/services.ts` - Service factory with business logic coordination
+
+### Legacy Examples (For Maintenance)
+
+Reference these features for legacy pattern examples:
 
 - `src/features/bank/` - Complex feature with multiple related entities
-- `src/features/tag/` - Feature with hierarchical data and transaction relationships
 - `src/features/label/` - Feature with hierarchical structure and validation
 
-These features demonstrate all the patterns and conventions outlined in this document.
+### Factory System Documentation
+
+For comprehensive documentation on the factory system:
+
+- **Schema Factory**: `src/lib/schemas/README.md` - Complete schema factory guide
+- **Query Factory**: `src/server/lib/db/query/README.md` - Database query factory patterns
+- **Service Factory**: `src/server/lib/service/README.md` - Business logic service factory patterns
+
+These examples and documentation demonstrate all the patterns and conventions outlined in this document.

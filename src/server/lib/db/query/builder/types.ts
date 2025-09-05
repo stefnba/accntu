@@ -1,12 +1,21 @@
 import { QueryBuilder } from './core';
 
 /**
- * The function signature of the query function
+ * Standard function signature for all database query functions.
+ * All query functions must be async and return a Promise.
+ * 
+ * @template Input - The input parameter type (defaults to any for flexibility)
+ * @template Output - The return type (defaults to any for flexibility)
  */
 export type QueryFn<Input = any, Output = any> = (args: Input) => Promise<Output>;
 
 /**
- * Infer feature type from QueryBuilder. By default, it will infer the type from the getById query.
+ * Infer the feature entity type from a QueryBuilder instance.
+ * Extracts the return type from a specific query, handling both single items and arrays.
+ * 
+ * @template TQueryBuilder - The QueryBuilder instance type
+ * @template TKey - The query key to infer from (defaults to 'getById')
+ * @example InferFeatureTypeFromQueryBuilder<typeof userQueries, 'getById'> // User
  */
 export type InferFeatureTypeFromQueryBuilder<
     TQueryBuilder extends QueryBuilder<any, any>,
@@ -19,7 +28,12 @@ export type InferFeatureTypeFromQueryBuilder<
         : never;
 
 /**
- * Infer feature type from query object. By default, it will infer the type from the getById query.
+ * Infer the feature entity type from a query functions record.
+ * Extracts the return type from a specific query, handling both single items and arrays.
+ * 
+ * @template TRecord - The query functions record type
+ * @template TKey - The query key to infer from (defaults to 'getById')
+ * @example InferFeatureTypeFromRecord<typeof userQueries, 'getById'> // User
  */
 export type InferFeatureTypeFromRecord<
     TRecord extends Record<string, QueryFn>,
@@ -32,7 +46,14 @@ export type InferFeatureTypeFromRecord<
         : never;
 
 /**
- * Infer feature type from QueryBuilder or Record. By default, it will infer the type from the getById query.
+ * Universal type inference for feature entity types.
+ * Works with both QueryBuilder instances and query function records.
+ * Automatically handles array unwrapping to get the base entity type.
+ * 
+ * @template T - The QueryBuilder or query functions record
+ * @template TKey - The query key to infer from (defaults to 'getById')
+ * @example InferFeatureType<typeof userQueries> // User
+ * @example InferFeatureType<typeof userQueryBuilder, 'getMany'> // User
  */
 export type InferFeatureType<T, TKey extends string = 'getById'> = T extends QueryBuilder
     ? T extends QueryBuilder<any, infer TQueries>

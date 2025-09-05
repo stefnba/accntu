@@ -15,7 +15,7 @@ src/features/[feature-name]/
 │   └── endpoints.ts           # Hono API endpoints
 ├── components/                # Feature-specific React components
 ├── api.ts                     # Client-side API hooks
-├── schemas.ts                 # Zod validation schemas
+├── schemas.ts                 # Factory-generated operation schemas
 ├── store.ts                   # Zustand store (optional)
 └── hooks.ts                   # Feature hooks (optional)
 ```
@@ -43,8 +43,8 @@ src/features/[feature-name]/
 │   ├── entity-two.ts          # Client-side API hooks for entity two
 │   └── index.ts               # Exports all API hooks
 ├── schemas/
-│   ├── entity-one.ts          # Zod validation schemas for entity one
-│   ├── entity-two.ts          # Zod validation schemas for entity two
+│   ├── entity-one.ts          # Factory-generated schemas for entity one
+│   ├── entity-two.ts          # Factory-generated schemas for entity two
 │   └── index.ts               # Exports all schemas
 └── hooks/                     # Feature hooks (optional)
     ├── entity-one.ts
@@ -130,7 +130,71 @@ const app = new Hono()
 - **`zValidator`** for input validation
 - **Proper HTTP status codes** (201 for creation, etc.)
 
-## Database Query Patterns
+## Factory System Architecture (Recommended)
+
+### Modern Factory-Based Pattern
+
+For new features, use the sophisticated factory system that provides type-safe, consistent patterns:
+
+```typescript
+// 1. Schema Definition (schemas.ts)
+export const { schemas: tagSchemas } = createFeatureSchemas
+  .registerTable(tagTable)
+  .omit({ createdAt: true, updatedAt: true, id: true })
+  .userField('userId')
+  .idFields({ id: true })
+  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
+    service: buildServiceInput({ data: baseSchema }),
+    query: buildServiceInput({ data: baseSchema }),
+    endpoint: { json: baseSchema }
+  }))
+  .addCore('getMany', ({ buildServiceInput }) => ({
+    service: buildServiceInput({ filters: filtersSchema }),
+    query: buildServiceInput({ filters: filtersSchema }),
+    endpoint: { query: filtersSchema }
+  }));
+
+// 2. Query Definition (server/db/queries.ts)
+export const tagQueries = createFeatureQueries
+  .registerSchema(tagSchemas)
+  .addQuery('create', {
+    operation: 'create tag',
+    fn: async ({ data, userId }) => {
+      const [newTag] = await db.insert(tagTable)
+        .values({ ...data, userId })
+        .returning();
+      return newTag;
+    }
+  });
+
+// 3. Service Definition (server/services.ts)
+export const tagServices = createFeatureServices
+  .registerSchema(tagSchemas)
+  .registerQuery(tagQueries)
+  .defineServices(({ queries }) => ({
+    create: async (input) => {
+      // Business logic here
+      return await queries.create(input);
+    }
+  }));
+```
+
+### Factory System Benefits
+
+- **Full Type Safety**: Automatic TypeScript inference across all layers
+- **Consistent Patterns**: Standardized CRUD operations and input helpers
+- **Schema Integration**: Seamless flow from database to API with validation
+- **Business Logic Separation**: Clear separation between data access and business rules
+- **Reduced Boilerplate**: Factory-generated schemas eliminate repetitive code
+
+### When to Use Factory System
+
+- **New Features**: Always use for new feature development
+- **Complex Operations**: Multi-entity operations with business logic
+- **Type Safety Priority**: When strict TypeScript inference is required
+- **Team Consistency**: For standardized patterns across the codebase
+
+## Database Query Patterns (Legacy)
 
 ### Query Layer (Pure Data Access)
 
@@ -216,5 +280,37 @@ export const useFeatureEndpoints = {
 - **Use early returns** for readability
 - **Avoid `as` type assertions**
 - **Use consts instead of functions** (`const toggle = () =>`)
+
+## Factory System Documentation
+
+For comprehensive factory system documentation:
+
+- **Schema Factory**: @src/lib/schemas/README.md - Complete guide to schema factory system
+- **Query Factory**: @src/server/lib/db/query/README.md - Database query factory patterns  
+- **Service Factory**: @src/server/lib/service/README.md - Business logic service factory patterns
+
+### Quick Factory Reference
+
+```typescript
+// Import factories
+import { createFeatureSchemas } from '@/lib/schemas';
+import { createFeatureQueries } from '@/server/lib/db';
+import { createFeatureServices } from '@/server/lib/service';
+
+// Complete factory pipeline
+export const { schemas } = createFeatureSchemas
+  .registerTable(table)
+  .userField('userId')
+  .addCore('create', ...);
+
+export const queries = createFeatureQueries
+  .registerSchema(schemas)
+  .addQuery('create', { fn: async () => {...} });
+
+export const services = createFeatureServices
+  .registerSchema(schemas)
+  .registerQuery(queries)
+  .defineServices(({ queries }) => ({ create: async () => {...} }));
+```
 
 For detailed architectural guidance, see @docs/claude/ directory.
