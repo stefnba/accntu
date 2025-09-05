@@ -1,1 +1,1 @@
-export { createFeatureServices } from '@/server/lib/service/factory/core';
+export { createFeatureServices } from '@/server/lib/service/factory';

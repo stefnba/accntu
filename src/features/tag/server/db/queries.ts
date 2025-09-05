@@ -72,7 +72,7 @@ export const tagQueries = createFeatureQueries
         },
     });
 
-export const { queries: tagToTransactionQueries } = createFeatureQueries
+export const tagToTransactionQueries = createFeatureQueries
     .registerSchema(tagToTransactionSchemas)
     /**
      * Assign tags to a transaction

@@ -2,23 +2,33 @@ import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service/';
 
-export const tagServices = createFeatureServices({
-    queries: { ...tagQueries, ...tagToTransactionQueries },
-    schemas: { ...tagSchemas, ...tagToTransactionSchemas },
-    services: ({ queries }) => ({
+export const tagServices = createFeatureServices
+    .registerSchema(tagSchemas)
+    .registerSchema(tagToTransactionSchemas)
+    .registerQuery(tagQueries)
+    .registerQuery(tagToTransactionQueries)
+    .defineServices(({ queries }) => ({
         /**
          * Create a new tag
          */
-        create: async (input) => queries.create({ data: input.data, userId: input.user.userId }),
-        /**
-         * Get many tags
-         */
-        getMany: async ({ idFields }) => queries.getMany({ userId: idFields.userId }),
+        create: async (input) => {
+            return await queries.create({ data: input.data, userId: 'input.user.userId' });
+        },
         /**
          * Get a tag by ID
          */
-        getById: async ({ idFields }) =>
-            queries.getById({ id: idFields.id, userId: 'test-user-id' }),
+        getById: async (input) => {
+            return await queries.getById({
+                id: input.idFields.id,
+                userId: 'input.userFields.userId',
+            });
+        },
+        /**
+         * Get many tags
+         */
+        getMany: async (input) => {
+            return await queries.getMany({ userId: input.idFields.userId });
+        },
         /**
          * Update a tag by ID
          */
@@ -47,5 +57,4 @@ export const tagServices = createFeatureServices({
                 processed: true,
             };
         },
-    }),
-});
+    }));
