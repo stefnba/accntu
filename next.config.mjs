@@ -2,9 +2,8 @@
 const nextConfig = {
     reactStrictMode: true,
     output: 'standalone',
-    experimental: {
-        typedRoutes: true,
-    },
+    typedRoutes: true,
+    experimental: {},
     webpack: (config, { isServer }) => {
         if (isServer) {
             // Handle DuckDB native bindings for server-side only
