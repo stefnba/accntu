@@ -1,12 +1,25 @@
 import { createFeatureSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
+import { z } from 'zod';
 
 export const { schemas: userSchemas } = createFeatureSchemas
     .registerTable(dbTable.user)
     .pick({ name: true, lastName: true, image: true, settings: true })
     .idFields({ id: true })
-    .addCore('updateById', ({ baseSchema, idFieldsSchema }) => ({
-        service: baseSchema,
-        query: baseSchema,
-        endpoint: { json: baseSchema, param: idFieldsSchema },
-    }));
+    .addCore('updateById', ({ baseSchema, idFieldsSchema }) => {
+        // we need to define the fieds so better-auth doesn't complain
+        // when using updateUser
+        const input = baseSchema
+            .extend({
+                name: z.string(),
+                lastName: z.string(),
+                image: z.string(),
+            })
+            .partial();
+
+        return {
+            service: baseSchema,
+            query: baseSchema,
+            endpoint: { json: input, param: idFieldsSchema },
+        };
+    });

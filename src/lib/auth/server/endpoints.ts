@@ -45,7 +45,7 @@ const app = new Hono()
     /**
      * Sign up
      */
-    .post(signUpEmail.path, zValidator('json', signUpEmail.options.body.json), async (c) =>
+    .post(signUpEmail.path, zValidator('json', signUpEmail.options.body), async (c) =>
         withRoute(c, async () => {
             const body = c.req.valid('json');
             const response = await signUpEmail({
