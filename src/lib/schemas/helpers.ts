@@ -1,6 +1,5 @@
-import { MappingCoreServiceInput, TZodObject } from '@/lib/schemas/types';
+import { MappingCoreServiceInput, TZodObject, TZodType } from '@/lib/schemas/types';
 import { z } from 'zod';
-import { $ZodType } from 'zod/v4/core';
 
 /**
  * Creates input schema helpers for core CRUD operations.
@@ -30,7 +29,7 @@ import { $ZodType } from 'zod/v4/core';
  * // Result: { ids: { id: string }, userId: string }
  * ```
  */
-export const inputHelpers = <U extends $ZodType, I extends TZodObject>(defaults: {
+export const inputHelpers = <U extends TZodType, I extends TZodObject>(defaults: {
     userId: U;
     ids: I;
 }): MappingCoreServiceInput<U, I> => {
