@@ -110,7 +110,6 @@ export type TOperationSchemaObject = {
  */
 export type TOperationSchemasResult = Record<string, TOperationSchemaObject>;
 
-
 // ========================================
 //
 // Infer Schemas
@@ -206,7 +205,7 @@ export type InferSchemasByLayer<
 /**
  * Recursively infer types from schema objects or nested structures.
  * Handles both Zod objects and nested object structures.
- * 
+ *
  * @template T - The input type to infer from
  */
 export type InferSchemabject<T> = T extends z.ZodObject
@@ -218,7 +217,7 @@ export type InferSchemabject<T> = T extends z.ZodObject
 /**
  * Convenience type for inferring service layer schemas across all operations.
  * Equivalent to InferSchemasByLayer<'service', T>.
- * 
+ *
  * @template T - The operation schemas object
  */
 export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>> =
@@ -227,7 +226,7 @@ export type InferServiceSchemas<T extends Record<string, TOperationSchemaObject>
 /**
  * Convenience type for inferring query layer schemas across all operations.
  * Equivalent to InferSchemasByLayer<'query', T>.
- * 
+ *
  * @template T - The operation schemas object
  */
 export type InferQuerySchemas<T extends Record<string, TOperationSchemaObject>> =
