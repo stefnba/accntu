@@ -1,37 +1,12 @@
-import { updateUserSchema } from '@/server/db';
-import { z } from 'zod';
+import { createFeatureSchemas } from '@/lib/schemas';
+import { dbTable } from '@/server/db';
 
-// ====================
-// Query Layer
-// ====================
-
-export const userQuerySchemas = {
-    update: updateUserSchema
-        .pick({
-            name: true,
-            lastName: true,
-            image: true,
-            settings: true,
-        })
-        .partial(),
-};
-
-export type TUserQuerySchemas = {
-    update: z.infer<typeof userQuerySchemas.update>;
-};
-
-// ====================
-// Service/Endpoint Layer
-// ====================
-
-export const userServiceSchemas = {
-    update: userQuerySchemas.update,
-};
-
-export type TUserServiceSchemas = {
-    update: z.infer<typeof userServiceSchemas.update>;
-};
-
-// ====================
-// Custom Schemas
-// ====================
+export const { schemas: userSchemas } = createFeatureSchemas
+    .registerTable(dbTable.user)
+    .pick({ name: true, lastName: true, image: true, settings: true })
+    .idFields({ id: true })
+    .addCore('updateById', ({ baseSchema, idFieldsSchema }) => ({
+        service: baseSchema,
+        query: baseSchema,
+        endpoint: { json: baseSchema, param: idFieldsSchema },
+    }));

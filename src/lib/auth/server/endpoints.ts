@@ -1,4 +1,4 @@
-import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
+import { userSchemas } from '@/lib/auth/client/schemas/user';
 import { auth } from '@/lib/auth/config';
 import { protectedServerRoute } from '@/lib/auth/server/validate';
 import { clearCookie, setCookie } from '@/server/lib/cookies';
@@ -45,7 +45,7 @@ const app = new Hono()
     /**
      * Sign up
      */
-    .post(signUpEmail.path, zValidator('json', signUpEmail.options.body), async (c) =>
+    .post(signUpEmail.path, zValidator('json', signUpEmail.options.body.json), async (c) =>
         withRoute(c, async () => {
             const body = c.req.valid('json');
             const response = await signUpEmail({
@@ -149,7 +149,7 @@ const app = new Hono()
     .patch(
         '/user/update',
         protectedServerRoute,
-        zValidator('json', userServiceSchemas.update),
+        zValidator('json', userSchemas.updateById.endpoint.json),
         async (c) =>
             withRoute(c, async () => {
                 const { settings, ...rest } = c.req.valid('json');
