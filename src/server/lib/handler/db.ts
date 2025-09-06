@@ -128,7 +128,7 @@ export async function withDbQuery<
                 message: `Invalid input data for ${operation}`,
                 code: 'INVALID_INPUT',
                 cause: validatedInputParsed.error,
-                details: { zodErrors: validatedInputParsed.error.errors },
+                details: { zodErrors: validatedInputParsed.error.issues },
             });
         }
 
@@ -151,7 +151,7 @@ export async function withDbQuery<
                     message: `Invalid output data from '${operation}'`,
                     code: 'INVALID_OUTPUT',
                     cause: validatedOutputParsed.error,
-                    details: { zodErrors: validatedOutputParsed.error.errors },
+                    details: { zodErrors: validatedOutputParsed.error.issues },
                 });
             }
 

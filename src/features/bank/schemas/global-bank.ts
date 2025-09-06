@@ -1,6 +1,6 @@
 import { dbTable } from '@/server/db';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import z from 'zod';
+import { z } from 'zod';
 
 export const { schemas: globalBankSchemas } = createFeatureSchemas
     .registerTable(dbTable.globalBank)

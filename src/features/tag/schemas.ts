@@ -1,6 +1,6 @@
 import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
-import z from 'zod';
+import { z } from 'zod';
 
 const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 

@@ -10,7 +10,7 @@ export function constructZodErrorMessages(errors: ZodIssue[]): string[] {
 }
 
 export interface FieldError {
-    path: (string | number)[];
+    path: PropertyKey[];
     message: string;
     value: any;
 }
@@ -21,7 +21,7 @@ export interface FieldError {
  * @param path - An array of keys representing the path to the value.
  * @returns The value if found, otherwise undefined.
  */
-function getValueFromPath(obj: any, path: (string | number)[]): any {
+function getValueFromPath(obj: any, path: PropertyKey[]): any {
     return path.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
 }
 

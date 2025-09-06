@@ -1,10 +1,10 @@
 import { dbTable } from '@/server/db';
 
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import z from 'zod';
+import { z } from 'zod';
 
 export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
-    .registerTable(connectedBankAccount)
+    .registerTable(dbTable.connectedBankAccount)
     .omit({
         createdAt: true,
         updatedAt: true,

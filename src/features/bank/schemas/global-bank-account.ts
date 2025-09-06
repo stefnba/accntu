@@ -1,7 +1,7 @@
 import { dbTable } from '@/server/db';
 
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import z from 'zod';
+import { z } from 'zod';
 
 export const transformConfigSchema = z
     .object({
@@ -27,7 +27,7 @@ export const transformConfigSchema = z
 export type TTransformConfig = z.infer<typeof transformConfigSchema>;
 
 export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
-    .registerTable(globalBankAccount)
+    .registerTable(dbTable.globalBankAccount)
     .omit({
         createdAt: true,
         updatedAt: true,

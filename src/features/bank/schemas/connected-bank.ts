@@ -1,7 +1,7 @@
 import { dbTable } from '@/server/db';
 
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import z from 'zod';
+import { z } from 'zod';
 
 const apiCredentialsSchema = z
     .object({

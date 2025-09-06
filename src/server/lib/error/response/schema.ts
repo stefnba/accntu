@@ -6,7 +6,7 @@ export const APIErrorResponseSchema = z.object({
     error: z.object({
         code: PublicErrorCodesSchema,
         message: z.string(),
-        details: z.record(z.unknown()).optional(),
+        details: z.record(z.string(), z.unknown()).optional(),
     }),
     request_id: z.string(),
 });
