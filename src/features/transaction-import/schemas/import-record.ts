@@ -1,55 +1,98 @@
-import { transactionImportFileQuerySchemas } from '@/features/transaction-import/schemas/import-file';
-import {
-    insertTransactionImportSchema,
-    selectTransactionImportSchema,
-    updateTransactionImportSchema,
-} from '@/server/db';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
-// ====================
-// Query Layer
-// ====================
-
-export const transactionImportQuerySchemas = {
-    select: selectTransactionImportSchema.extend({
-        files: z.array(transactionImportFileQuerySchemas.select),
-        // connectedBankAccount: connectedBankAccountQuerySchemas.select,
-    }),
-    insert: insertTransactionImportSchema.pick({
-        connectedBankAccountId: true,
-    }),
-    update: updateTransactionImportSchema.pick({
-        status: true,
-        importedTransactionCount: true,
+export const { schemas: transactionImportSchemas } = createFeatureSchemas
+    .registerTable(dbTable.transactionImport)
+    .omit({
+        createdAt: true,
+        updatedAt: true,
         isActive: true,
-        successAt: true,
-        importedFileCount: true,
-    }),
-};
+        id: true,
+        userId: true,
+    })
+    .userField('userId')
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create a transaction import
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        const input = buildServiceInput({ data: baseSchema });
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                json: baseSchema,
+            },
+        };
+    })
+    /**
+     * Get many transaction imports
+     */
+    .addCore('getMany', ({ buildServiceInput, baseSchema }) => {
+        const filtersSchema = z.object({
+            status: baseSchema.shape.status.optional(),
+            connectedBankAccountId: baseSchema.shape.connectedBankAccountId.optional(),
+        });
 
-export type TTransactionImportQuerySchemas = {
-    select: z.infer<typeof transactionImportQuerySchemas.select>;
-    insert: z.infer<typeof transactionImportQuerySchemas.insert>;
-    update: z.infer<typeof transactionImportQuerySchemas.update>;
-};
+        const paginationSchema = z.object({
+            page: z.number().int().default(1),
+            pageSize: z.number().int().default(20),
+        });
 
-// ====================
-// Service/Endpoint Layer
-// ====================
+        const input = buildServiceInput({
+            pagination: paginationSchema,
+            filters: filtersSchema,
+        });
 
-export const transactionImportServiceSchemas = {
-    create: transactionImportQuerySchemas.insert,
-    update: transactionImportQuerySchemas.update.pick({
-        importedFileCount: true,
-        importedTransactionCount: true,
-    }),
-};
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                query: paginationSchema.extend(filtersSchema.shape),
+            },
+        };
+    })
+    /**
+     * Get a transaction import by id
+     */
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Update a transaction import by id
+     */
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema.partial() }),
+            query: buildServiceInput({ data: baseSchema.partial() }),
+            endpoint: {
+                json: baseSchema.partial(),
+                param: idFieldsSchema,
+            },
+        };
+    })
+    /**
+     * Remove a transaction import by id
+     */
+    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+        return {
+            service: buildServiceInput(),
+            query: buildServiceInput(),
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    });
 
-export type TTransactionImportServiceSchemas = {
-    create: z.infer<typeof transactionImportServiceSchemas.create>;
-    update: z.infer<typeof transactionImportServiceSchemas.update>;
-};
+export type TTransactionImportSchemas = InferSchemas<typeof transactionImportSchemas>;
 
-// ====================
-// Custom Schemas
-// ====================
+export type { TTransactionImport } from '@/features/transaction-import/server/db/queries/import-record';

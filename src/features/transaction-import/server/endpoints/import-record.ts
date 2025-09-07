@@ -1,64 +1,65 @@
-import { transactionImportServiceSchemas } from '@/features/transaction-import/schemas';
+import { transactionImportSchemas } from '@/features/transaction-import/schemas/import-record';
+import { transactionImportServices } from '@/features/transaction-import/server/services/import-record';
 import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
+import { withMutationRoute, withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
-import { z } from 'zod';
-import { TransactionImportCleanupService } from '../services/cleanup';
-import { importRecordServices } from '../services/import-record';
 
 const app = new Hono()
     /**
      * Get all transaction imports for the authenticated user
      */
-    .get('/', async (c) =>
+    .get('/', zValidator('query', transactionImportSchemas.getMany.endpoint.query), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await importRecordServices.getAll({ userId: user.id });
+            const { page, pageSize, ...filters } = c.req.valid('query');
+            return await transactionImportServices.getMany({
+                userId: user.id,
+                filters,
+                pagination: {
+                    page,
+                    pageSize,
+                },
+            });
         })
     )
 
     /**
      * Get transaction import by ID
      */
-    .get('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
+    .get('/:id', zValidator('param', transactionImportSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-
-            return await importRecordServices.getImportById({ id, userId: user.id });
+            return await transactionImportServices.getById({ ids: { id }, userId: user.id });
         })
     )
 
     /**
-     * Create new transaction import (always creates as draft)
+     * Create new transaction import
      */
-    .post('/', zValidator('json', transactionImportServiceSchemas.create), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
+    .post('/', zValidator('json', transactionImportSchemas.create.endpoint.json), async (c) =>
+        withMutationRoute(c, async () => {
+            const user = getUser(c);
+            const data = c.req.valid('json');
 
-                return await importRecordServices.create({
-                    userId: user.id,
-                    data,
-                });
-            },
-            201
-        )
+            return await transactionImportServices.create({
+                userId: user.id,
+                data,
+            });
+        })
     )
 
     /**
      * Activate draft import (change status from draft to pending)
      */
-    .post('/:id/activate', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
+    .post('/:id/activate', zValidator('param', transactionImportSchemas.getById.endpoint.param), async (c) =>
+        withMutationRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            return await importRecordServices.activate({
-                id,
+            return await transactionImportServices.activate({
+                ids: { id },
                 userId: user.id,
             });
         })
@@ -69,16 +70,16 @@ const app = new Hono()
      */
     .put(
         '/:id',
-        zValidator('param', z.object({ id: z.string() })),
-        zValidator('json', transactionImportServiceSchemas.update),
+        zValidator('param', transactionImportSchemas.updateById.endpoint.param),
+        zValidator('json', transactionImportSchemas.updateById.endpoint.json),
         async (c) =>
-            withRoute(c, async () => {
+            withMutationRoute(c, async () => {
                 const user = getUser(c);
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
 
-                return await importRecordServices.update({
-                    id,
+                return await transactionImportServices.updateById({
+                    ids: { id },
                     userId: user.id,
                     data,
                 });
@@ -88,30 +89,15 @@ const app = new Hono()
     /**
      * Delete transaction import
      */
-    .delete('/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-        withRoute(c, async () => {
+    .delete('/:id', zValidator('param', transactionImportSchemas.removeById.endpoint.param), async (c) =>
+        withMutationRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            return await importRecordServices.remove({
-                id,
+            return await transactionImportServices.removeById({
+                ids: { id },
                 userId: user.id,
             });
-        })
-    )
-
-    /**
-     * Cleanup old draft imports (for cron jobs)
-     */
-    .post('/cleanup', async (c) =>
-        withRoute(c, async () => {
-            const cleanedUpCount = await TransactionImportCleanupService.cleanupOldDraftImports();
-
-            return {
-                success: true,
-                cleanedUpCount,
-                message: `Successfully cleaned up ${cleanedUpCount} old draft imports`,
-            };
         })
     );
 

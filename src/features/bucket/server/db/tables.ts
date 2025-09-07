@@ -10,7 +10,6 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 import { participantToBucket } from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/tables';
@@ -113,17 +112,3 @@ export const bucketTransactionRelations = relations(bucketToTransaction, ({ one 
         references: [bucket.id],
     }),
 }));
-
-// ====================
-// Base Zod schemas
-// ====================
-
-// bucket
-export const selectBucketSchema = createSelectSchema(bucket);
-export const insertBucketSchema = createInsertSchema(bucket);
-export const updateBucketSchema = createUpdateSchema(bucket);
-
-// bucket to transaction
-export const selectBucketToTransactionSchema = createSelectSchema(bucketToTransaction);
-export const insertBucketToTransactionSchema = createInsertSchema(bucketToTransaction);
-export const updateBucketToTransactionSchema = createUpdateSchema(bucketToTransaction);

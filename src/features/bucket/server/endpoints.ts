@@ -1,43 +1,51 @@
-import { Hono } from 'hono';
-
-import { bucketServiceSchemas } from '@/features/bucket/schemas';
+import { bucketSchemas } from '@/features/bucket/schemas';
 import { bucketServices } from '@/features/bucket/server/services';
 import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
+import { Hono } from 'hono';
 
+// Create Hono app with proper chaining for RPC type generation
 const app = new Hono()
-
-    // Get all buckets
-    .get('/', async (c) =>
+    // Get all buckets for authenticated user
+    .get('/', zValidator('query', bucketSchemas.getMany.endpoint.query), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            return await bucketServices.getAll({ userId: user.id });
+            const { page, pageSize, ...filters } = c.req.valid('query');
+            return await bucketServices.getMany({
+                pagination: {
+                    page,
+                    pageSize,
+                },
+                filters,
+                userId: user.id,
+            });
         })
     )
 
-    // Get a bucket by ID
-    .get('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    // Get bucket by ID
+    .get('/:id', zValidator('param', bucketSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            const bucket = await bucketServices.getById({ id, userId: user.id });
+            const bucket = await bucketServices.getById({ ids: { id }, userId: user.id });
+
+            if (!bucket) {
+                throw new Error('Bucket not found');
+            }
+
             return bucket;
         })
     )
 
-    // Create a bucket
-    .post('/', zValidator('json', bucketServiceSchemas.create), async (c) =>
+    // Create a new bucket
+    .post('/', zValidator('json', bucketSchemas.create.endpoint.json), async (c) =>
         withRoute(
             c,
             async () => {
                 const user = getUser(c);
                 const data = c.req.valid('json');
-                return await bucketServices.create({
-                    userId: user.id,
-                    data,
-                });
+                return await bucketServices.create({ data, userId: user.id });
             },
             201
         )
@@ -46,28 +54,24 @@ const app = new Hono()
     // Update a bucket
     .put(
         '/:id',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', bucketServiceSchemas.update),
+        zValidator('param', bucketSchemas.updateById.endpoint.param),
+        zValidator('json', bucketSchemas.updateById.endpoint.json),
         async (c) =>
             withRoute(c, async () => {
                 const user = getUser(c);
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
-
-                return await bucketServices.update({
-                    id,
-                    userId: user.id,
-                    data,
-                });
+                return await bucketServices.updateById({ ids: { id }, data, userId: user.id });
             })
     )
 
-    // Delete a bucket
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    // Delete a bucket (soft delete)
+    .delete('/:id', zValidator('param', bucketSchemas.removeById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            return await bucketServices.remove({ id, userId: user.id });
+            await bucketServices.removeById({ ids: { id }, userId: user.id });
+            return { success: true };
         })
     );
 

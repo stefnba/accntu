@@ -1,7 +1,10 @@
-import { importFileServices } from './import-file';
-import { importRecordServices } from './import-record';
+import { transactionImportFileServices } from './import-file';
+import { transactionImportServices } from './import-record';
+
+export * from './import-file';
+export * from './import-record';
 
 export const importServices = {
-    importFile: importFileServices,
-    importRecord: importRecordServices,
+    importFile: transactionImportFileServices,
+    importRecord: transactionImportServices,
 };

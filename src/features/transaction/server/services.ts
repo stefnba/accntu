@@ -1,11 +1,16 @@
-import { importFileServices } from '@/features/transaction-import/server/services/import-file';
+import { importServices } from '@/features/transaction-import/server/services';
 import {
     transactionSchemas,
     TTransactionParseDuplicateCheck,
 } from '@/features/transaction/schemas';
-import { transactionQueries } from '@/features/transaction/server/db/queries';
-import { createFeatureServices } from '@/server/lib/service';
+import {
+    createMany as createManyQuery,
+    getByKeys as getByKeysQuery,
+    getFilterOptions as getFilterOptionsQuery,
+    transactionQueries,
+} from '@/features/transaction/server/db/queries';
 import { InferFeatureType } from '@/server/lib/db';
+import { createFeatureServices } from '@/server/lib/service';
 
 export const transactionServices = createFeatureServices
     .registerSchema(transactionSchemas)
@@ -75,7 +80,7 @@ export const transactionServices = createFeatureServices
  * @returns The transactions
  */
 export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
-    const transactions = await transactionQueries.getByKeys({ userId, keys });
+    const transactions = await getByKeysQuery({ userId, keys });
     return transactions;
 };
 
@@ -85,7 +90,7 @@ export const getByKeys = async ({ userId, keys }: { userId: string; keys: string
  * @returns The filter options
  */
 export const getFilterOptions = async (userId: string) => {
-    const filterOptions = await transactionQueries.getFilterOptions(userId);
+    const filterOptions = await getFilterOptionsQuery(userId);
     return filterOptions;
 };
 
@@ -104,8 +109,8 @@ export const createMany = async ({
     transactions: Array<TTransactionParseDuplicateCheck>;
     importFileId: string;
 }) => {
-    const importFile = await importFileServices.getById({
-        id: importFileId,
+    const importFile = await importServices.importFile.getById({
+        ids: { id: importFileId },
         userId,
     });
 
@@ -127,7 +132,7 @@ export const createMany = async ({
     // 2. Add currency conversion
 
     // 3. Import
-    const createdTransactions = await transactionQueries.createMany(transactionsToCreate);
+    const createdTransactions = await createManyQuery(transactionsToCreate);
     return createdTransactions;
 };
 

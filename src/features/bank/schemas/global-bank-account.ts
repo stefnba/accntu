@@ -96,13 +96,19 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     })
     /**
      * Update a global bank account by ID
+     * Only done by admin
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, rawSchema, buildServiceInput, idFieldsSchema }) => {
+        const adminSchema = baseSchema.extend({
+            isActive: rawSchema.shape.isActive,
+        });
+
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildServiceInput({ data: adminSchema.partial() }),
+            query: buildServiceInput({ data: adminSchema.partial() }),
+            form: adminSchema.partial(),
             endpoint: {
-                json: baseSchema.partial(),
+                json: adminSchema.partial(),
                 param: idFieldsSchema,
             },
         };

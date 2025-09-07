@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { QueryResultView } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/query-result-view';
 import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sql-editor';
-import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
+import { globalBankAccountSchemas } from '@/features/bank/schemas';
 import { Code2, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
@@ -25,7 +25,7 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
     const testTransformQuery = useAdminGlobalBankAccountEndpoints.testTransformQuery();
 
     const form = useForm({
-        schema: globalBankAccountServiceSchemas.update.pick({
+        schema: globalBankAccountSchemas.testTransform.service.pick({
             transformQuery: true,
         }),
         defaultValues: {

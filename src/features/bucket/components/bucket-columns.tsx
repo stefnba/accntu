@@ -8,14 +8,12 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { selectBucketSchema } from '@/server/db';
+import { TBucket } from '@/features/bucket/server/db/queries';
 import { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 
-type Bucket = typeof selectBucketSchema._type;
-
-export const columns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<Bucket>[] => [
+export const columns = ({ onDelete }: { onDelete: (id: string) => void }): ColumnDef<TBucket>[] => [
     {
         accessorKey: 'title',
         header: 'Title',

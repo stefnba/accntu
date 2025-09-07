@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
-import { globalBankServiceSchemas } from '@/features/bank/schemas/global-bank';
+import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
 import { Building2, X } from 'lucide-react';
 import { z } from 'zod';
 

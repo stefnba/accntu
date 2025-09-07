@@ -1,8 +1,9 @@
+import { transactionSchemas } from '@/features/transaction/schemas';
 import {
-    transactionSchemas,
-    TTransactionParseDuplicateCheck,
-} from '@/features/transaction/schemas';
-import { transactionServices, getFilterOptions, createMany } from '@/features/transaction/server/services';
+    createMany,
+    getFilterOptions,
+    transactionServices,
+} from '@/features/transaction/server/services';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
@@ -11,24 +12,21 @@ import { z } from 'zod';
 
 const app = new Hono()
     // Get transactions with filters and pagination
-    .get(
-        '/',
-        zValidator('query', transactionSchemas.getMany.endpoint.query),
-        async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const query = c.req.valid('query');
-                const { page, pageSize, ...filters } = query;
+    .get('/', zValidator('query', transactionSchemas.getMany.endpoint.query), async (c) =>
+        withRoute(c, async () => {
+            const user = getUser(c);
+            const query = c.req.valid('query');
+            const { page, pageSize, ...filters } = query;
 
-                return await transactionServices.getMany({
-                    userId: user.id,
-                    filters,
-                    pagination: {
-                        page,
-                        pageSize,
-                    },
-                });
-            })
+            return await transactionServices.getMany({
+                userId: user.id,
+                filters,
+                pagination: {
+                    page,
+                    pageSize,
+                },
+            });
+        })
     )
 
     // Get filter options for transaction table
@@ -87,23 +85,20 @@ const app = new Hono()
     )
 
     // create a new transaction
-    .post(
-        '/',
-        zValidator('json', transactionSchemas.create.endpoint.json),
-        async (c) =>
-            withRoute(
-                c,
-                async () => {
-                    const user = getUser(c);
-                    const data = c.req.valid('json');
+    .post('/', zValidator('json', transactionSchemas.create.endpoint.json), async (c) =>
+        withRoute(
+            c,
+            async () => {
+                const user = getUser(c);
+                const data = c.req.valid('json');
 
-                    return await transactionServices.create({
-                        data,
-                        userId: user.id,
-                    });
-                },
-                201
-            )
+                return await transactionServices.create({
+                    data,
+                    userId: user.id,
+                });
+            },
+            201
+        )
     )
 
     // import transactions (bulk)

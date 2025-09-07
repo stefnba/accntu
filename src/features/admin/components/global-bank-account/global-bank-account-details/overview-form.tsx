@@ -11,7 +11,7 @@ import {
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { globalBankAccountServiceSchemas } from '@/features/bank/schemas/global-bank-account';
+import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
 
 interface GlobalBankAccountFormProps {
     accountId?: string;
@@ -22,7 +22,7 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
     const form = useForm({
-        schema: globalBankAccountServiceSchemas.update,
+        schema: globalBankAccountSchemas.updateById.form,
 
         onSubmit: async (data) => {
             if (accountId) {

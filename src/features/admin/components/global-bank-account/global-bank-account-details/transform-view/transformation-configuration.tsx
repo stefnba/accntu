@@ -3,7 +3,7 @@
 import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
+import { globalBankAccountSchemas } from '@/features/bank/schemas';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
@@ -21,10 +21,7 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
     const form = useForm({
-        schema: globalBankAccountServiceSchemas.update.shape.transformConfig
-            .unwrap()
-            .unwrap()
-            .unwrap(),
+        schema: globalBankAccountSchemas.testTransform.service.shape.transformConfig.unwrap(),
         defaultValues: {
             type: 'csv',
             skipRows: 1,

@@ -1,4 +1,4 @@
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
@@ -71,10 +71,10 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
      */
     .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildServiceInput({ data: baseSchema }),
+            query: buildServiceInput({ data: baseSchema }),
             endpoint: {
-                json: baseSchema.partial(),
+                json: baseSchema,
                 param: idFieldsSchema,
             },
         };
@@ -82,11 +82,12 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
     /**
      * Remove a bucket by id
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         return {
             service: buildServiceInput(),
             query: buildServiceInput(),
             endpoint: {
+                json: baseSchema,
                 param: idFieldsSchema,
             },
         };
@@ -96,5 +97,7 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
 // Types
 // ====================
 export type TBucketSchemas = InferSchemas<typeof bucketSchemas>;
+
+export type TBucketServices = InferServiceSchemas<typeof bucketSchemas>;
 
 export { type TBucket } from '@/features/bucket/server/db/queries';

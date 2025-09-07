@@ -9,7 +9,6 @@ import {
     timestamp,
     uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
 export const transactionFxRate = pgTable(
     'transaction_fx_rate',
@@ -35,11 +34,3 @@ export const transactionFxRate = pgTable(
         index('fx_rate_currencies_idx').on(table.baseCurrency, table.targetCurrency),
     ]
 );
-
-// ===============================
-// Base Zod Schemas
-// ===============================
-
-export const selectTransactionFxRateSchema = createSelectSchema(transactionFxRate);
-export const insertTransactionFxRateSchema = createInsertSchema(transactionFxRate);
-export const updateTransactionFxRateSchema = createUpdateSchema(transactionFxRate);

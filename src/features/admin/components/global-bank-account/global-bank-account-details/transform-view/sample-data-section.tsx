@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { globalBankAccountServiceSchemas } from '@/features/bank/schemas';
+import { globalBankAccountSchemas } from '@/features/bank/schemas';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -24,7 +24,7 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
     });
 
     const form = useForm({
-        schema: globalBankAccountServiceSchemas.update.pick({
+        schema: globalBankAccountSchemas.testTransform.service.pick({
             sampleTransformData: true,
         }),
         defaultValues: {

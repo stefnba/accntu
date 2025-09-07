@@ -1,36 +1,24 @@
 import { bucketSchemas } from '@/features/bucket/schemas';
 import { db, dbTable } from '@/server/db';
-import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
+import { bucket } from '@/server/db/tables';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq, ilike } from 'drizzle-orm';
 
 export const bucketQueries = createFeatureQueries
     .registerSchema(bucketSchemas)
     /**
-     * Create a bucket
-     */
-    .addQuery('create', {
-        operation: 'create bucket',
-        fn: async ({ data, userId }) => {
-            const [result] = await db
-                .insert(dbTable.bucket)
-                .values({ ...data, userId })
-                .returning();
-            return result || null;
-        },
-    })
-    /**
      * Get many buckets
      */
     .addQuery('getMany', {
-        operation: 'get buckets with filters',
+        operation: 'get buckets by user ID',
         fn: async ({ userId, filters, pagination }) => {
             const conditions = [
-                eq(dbTable.bucket.userId, userId),
-                eq(dbTable.bucket.isActive, true),
+                eq(bucket.userId, userId),
+                eq(bucket.isActive, true),
             ];
 
             if (filters?.search) {
-                conditions.push(ilike(dbTable.bucket.name, `%${filters.search}%`));
+                conditions.push(ilike(bucket.name, `%${filters.search}%`));
             }
 
             return await db
@@ -42,6 +30,19 @@ export const bucketQueries = createFeatureQueries
         },
     })
     /**
+     * Create a bucket
+     */
+    .addQuery('create', {
+        fn: async ({ data, userId }) => {
+            const [newBucket] = await db
+                .insert(dbTable.bucket)
+                .values({ ...data, userId })
+                .returning();
+            return newBucket;
+        },
+        operation: 'create bucket',
+    })
+    /**
      * Get a bucket by ID
      */
     .addQuery('getById', {
@@ -50,37 +51,35 @@ export const bucketQueries = createFeatureQueries
             const [result] = await db
                 .select()
                 .from(dbTable.bucket)
-                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
+                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)))
                 .limit(1);
             return result || null;
         },
     })
     /**
-     * Update a bucket by ID
+     * Soft delete a bucket
+     */
+    .addQuery('removeById', {
+        operation: 'delete bucket',
+        fn: async ({ ids, userId }) => {
+            await db
+                .update(dbTable.bucket)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)));
+        },
+    })
+    /**
+     * Update a bucket
      */
     .addQuery('updateById', {
         operation: 'update bucket',
         fn: async ({ ids, data, userId }) => {
-            const [result] = await db
+            const [updated] = await db
                 .update(dbTable.bucket)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
+                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)))
                 .returning();
-            return result || null;
-        },
-    })
-    /**
-     * Remove a bucket by ID
-     */
-    .addQuery('removeById', {
-        operation: 'remove bucket',
-        fn: async ({ ids, userId }) => {
-            const [result] = await db
-                .update(dbTable.bucket)
-                .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
-                .returning();
-            return result || null;
+            return updated || null;
         },
     });
 

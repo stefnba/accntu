@@ -1,10 +1,16 @@
-import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 const numericInputSchema = z.coerce.number();
 
-export const { schemas: transactionSchemas } = createFeatureSchemas
+export const {
+    schemas: transactionSchemas,
+    idFields,
+    idSchema,
+    rawSchema,
+    baseSchema,
+} = createFeatureSchemas
     .registerTable(dbTable.transaction)
     .omit({
         id: true,
@@ -101,26 +107,26 @@ export const { schemas: transactionSchemas } = createFeatureSchemas
     /**
      * Get a transaction by ID
      */
-    .addCore('getById', ({ buildServiceInput }) => {
+    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
         const input = buildServiceInput();
         return {
             service: input,
             query: input,
             endpoint: {
-                param: z.object({ id: z.string() }),
+                param: idFieldsSchema,
             },
         };
     })
     /**
      * Update a transaction by ID
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput }) => {
+    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
         const input = buildServiceInput({ data: baseSchema.partial() });
         return {
             service: input,
             query: input,
             endpoint: {
-                param: z.object({ id: z.string() }),
+                param: idFieldsSchema,
                 json: baseSchema.partial(),
             },
         };
@@ -140,7 +146,6 @@ export const { schemas: transactionSchemas } = createFeatureSchemas
     });
 
 export type TTransactionSchemas = InferSchemas<typeof transactionSchemas>;
-export type TTransactionServices = InferServiceSchemas<typeof transactionSchemas>;
 
 // ====================
 // Custom Schemas for backward compatibility

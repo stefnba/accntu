@@ -16,7 +16,7 @@ import {
     TConnectedBank,
     TConnectedBankAccount,
     TGlobalBank,
-} from '@/server/db';
+} from '@/features/bank/server/db/tables';
 import { typedEntries } from '@/lib/utils';
 import { MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';

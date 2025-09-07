@@ -1,71 +1,73 @@
-import { transactionImportFileServiceSchemas } from '@/features/transaction-import/schemas/import-file';
-import { importFileServices } from '@/features/transaction-import/server/services/import-file';
+import { transactionImportFileSchemas } from '@/features/transaction-import/schemas/import-file';
+import { transactionImportFileServices } from '@/features/transaction-import/server/services/import-file';
 import { parseTransactionFile } from '@/features/transaction-import/server/services/transaction-parser';
 import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
 import { createUploadToS3Endpoints } from '@/lib/upload/cloud/s3/create-endpoints';
-import { withRoute } from '@/server/lib/handler';
+import { withMutationRoute, withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
 const app = new Hono()
     /**
-     * Get all files by import ID
+     * Get all transaction import files
      */
-    .get('/import/:importId', zValidator('param', z.object({ importId: z.string() })), async (c) =>
+    .get('/', zValidator('query', transactionImportFileSchemas.getMany.endpoint.query), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const { importId } = c.req.valid('param');
-            return await importFileServices.getByImport({ filters: { importId }, userId: user.id });
+            const { page, pageSize, ...filters } = c.req.valid('query');
+            return await transactionImportFileServices.getMany({
+                userId: user.id,
+                filters,
+                pagination: {
+                    page,
+                    pageSize,
+                },
+            });
         })
     )
 
     /**
      * Get file by ID
      */
-    .get('/:id', zValidator('param', endpointSelectSchema), async (c) =>
+    .get('/:id', zValidator('param', transactionImportFileSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            return await importFileServices.getById({ id, userId: user.id });
+            return await transactionImportFileServices.getById({ ids: { id }, userId: user.id });
         })
     )
 
     /**
      * Create file record from S3 upload
      */
-    .post('/from-s3', zValidator('json', transactionImportFileServiceSchemas.create), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
+    .post('/', zValidator('json', transactionImportFileSchemas.create.endpoint.json), async (c) =>
+        withMutationRoute(c, async () => {
+            const user = getUser(c);
+            const data = c.req.valid('json');
 
-                return await importFileServices.create({
-                    userId: user.id,
-                    data,
-                });
-            },
-            201
-        )
+            return await transactionImportFileServices.create({
+                userId: user.id,
+                data,
+            });
+        })
     )
 
     /**
      * Update file status and processing information
      */
     .put(
-        '/:id/status',
-        zValidator('param', endpointSelectSchema),
-        zValidator('json', transactionImportFileServiceSchemas.update),
+        '/:id',
+        zValidator('param', transactionImportFileSchemas.updateById.endpoint.param),
+        zValidator('json', transactionImportFileSchemas.updateById.endpoint.json),
         async (c) =>
-            withRoute(c, async () => {
+            withMutationRoute(c, async () => {
                 const { id } = c.req.valid('param');
                 const data = c.req.valid('json');
                 const user = getUser(c);
 
-                return await importFileServices.update({
-                    id,
+                return await transactionImportFileServices.updateById({
+                    ids: { id },
                     userId: user.id,
                     data,
                 });
@@ -75,13 +77,13 @@ const app = new Hono()
     /**
      * Delete file
      */
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
-        withRoute(c, async () => {
+    .delete('/:id', zValidator('param', transactionImportFileSchemas.removeById.endpoint.param), async (c) =>
+        withMutationRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
 
-            return await importFileServices.remove({
-                id: id,
+            return await transactionImportFileServices.removeById({
+                ids: { id },
                 userId: user.id,
             });
         })
@@ -90,8 +92,8 @@ const app = new Hono()
     /**
      * Parse CSV file using DuckDB
      */
-    .post('/:id/parse', zValidator('param', endpointSelectSchema), async (c) =>
-        withRoute(c, async () => {
+    .post('/:id/parse', zValidator('param', transactionImportFileSchemas.getById.endpoint.param), async (c) =>
+        withMutationRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
 

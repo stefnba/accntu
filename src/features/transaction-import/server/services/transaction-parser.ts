@@ -1,8 +1,8 @@
 import * as transactionFxServices from '@/features/transaction-fx/server/services';
 import { transactionParseSchema, TTransactionParseSchema } from '@/features/transaction/schemas';
 import { DuckDBTransactionTransformSingleton } from '@/lib/duckdb';
-import { TQuerySelectUserRecordById } from '@/lib/schemas';
-import { importFileServices } from './import-file';
+
+import { transactionImportFileServices } from './import-file';
 
 /**
  * Add currency conversion to transactions (accountAmount -> userAmount)
@@ -94,7 +94,7 @@ export const parseTransactionFile = async ({ id, userId }: TQuerySelectUserRecor
     const duckdb = await DuckDBTransactionTransformSingleton.getInstance();
 
     // get the file record
-    const file = await importFileServices.getById({ id, userId });
+    const file = await transactionImportFileServices.getById({ ids: { id }, userId });
     if (!file) {
         throw new Error('Import file not found');
     }

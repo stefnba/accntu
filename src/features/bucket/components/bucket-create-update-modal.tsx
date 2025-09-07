@@ -3,9 +3,9 @@
 import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBucketEndpoints } from '@/features/bucket/api';
+import { BUCKET_STATUS_OPTIONS, BUCKET_TYPE_OPTIONS } from '@/features/bucket/constants';
 import { useCreateUpdateBucketModal } from '@/features/bucket/hooks';
-import { bucketServiceSchemas } from '@/features/bucket/schemas';
-import { bucketStatusEnum, bucketTypeEnum } from '@/server/db';
+import { bucketSchemas } from '@/features/bucket/schemas';
 import toast from 'react-hot-toast';
 
 export function BucketCreateUpdateModal() {
@@ -16,7 +16,7 @@ export function BucketCreateUpdateModal() {
     const { mutate: updateBucket } = useBucketEndpoints.update();
 
     const form = useForm({
-        schema: bucketServiceSchemas.create,
+        schema: bucketSchemas.create.endpoint.json,
         defaultValues: {
             title: '',
         },
@@ -57,7 +57,7 @@ export function BucketCreateUpdateModal() {
                         form={form}
                         name="type"
                         label="Type"
-                        options={bucketTypeEnum.enumValues.map((value) => ({
+                        options={BUCKET_TYPE_OPTIONS.map((value) => ({
                             value,
                             label: value,
                         }))}
@@ -66,7 +66,7 @@ export function BucketCreateUpdateModal() {
                         form={form}
                         name="status"
                         label="Status"
-                        options={bucketStatusEnum.enumValues.map((value) => ({
+                        options={BUCKET_STATUS_OPTIONS.map((value) => ({
                             value,
                             label: value,
                         }))}

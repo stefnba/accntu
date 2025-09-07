@@ -1,62 +1,38 @@
-import { TBucketQuery } from '@/features/bucket/schemas';
+import { bucketSchemas } from '@/features/bucket/schemas';
 import { bucketQueries } from '@/features/bucket/server/db/queries';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+import { createFeatureServices } from '@/server/lib/service/';
 
-export const bucketServices = {
-    /**
-     * Get all buckets for a user
-     */
-    getAll: async ({ userId }: TQuerySelectUserRecords) => {
-        const result = await bucketQueries.getAll({ userId });
-        return result;
-    },
-
-    /**
-     * Get a bucket by ID
-     */
-    getById: async ({ id, userId }: TQuerySelectUserRecordById) => {
-        const result = await bucketQueries.getById({ id, userId });
-
-        return result;
-    },
-
-    /**
-     * Create a bucket
-     */
-    create: async ({ data, userId }: TQueryInsertUserRecord<TBucketQuery['insert']>) => {
-        const newBucket = await bucketQueries.create({ data, userId });
-        return newBucket;
-    },
-
-    /**
-     * Update a bucket
-     */
-    update: async ({ id, userId, data }: TQueryUpdateUserRecord<TBucketQuery['update']>) => {
-        const updatedBucket = await bucketQueries.update({ id, userId, data });
-
-        if (!updatedBucket) {
-            throw new Error('Bucket not found or you do not have permission to update it');
-        }
-
-        return updatedBucket;
-    },
-
-    /**
-     * Delete a bucket
-     */
-    remove: async ({ id, userId }: TQueryDeleteUserRecord) => {
-        const deletedBucket = await bucketQueries.remove({ id, userId });
-
-        if (!deletedBucket) {
-            throw new Error('Bucket not found or you do not have permission to delete it');
-        }
-
-        return { id };
-    },
-};
+export const bucketServices = createFeatureServices
+    .registerSchema(bucketSchemas)
+    .registerQuery(bucketQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a new bucket
+         */
+        create: async (input) => {
+            return await queries.create({ data: input.data, userId: input.userId });
+        },
+        /**
+         * Get a bucket by ID
+         */
+        getById: async ({ ids, userId }) => {
+            return await queries.getById({
+                ids,
+                userId,
+            });
+        },
+        /**
+         * Get many buckets
+         */
+        getMany: async ({ userId, filters, pagination }) => {
+            return await queries.getMany({ userId, filters, pagination });
+        },
+        /**
+         * Update a bucket by ID
+         */
+        updateById: async ({ data, ids, userId }) => queries.updateById({ ids, data, userId }),
+        /**
+         * Remove a bucket by ID
+         */
+        removeById: async ({ ids, userId }) => queries.removeById({ ids, userId }),
+    }));

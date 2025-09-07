@@ -1,30 +1,62 @@
+import { createFeatureSchemas } from '@/lib/schemas';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
-export const ExchangeRateSchema = z.object({
-    baseCurrency: z.string().length(3).toUpperCase(),
-    targetCurrency: z.string().length(3).toUpperCase(),
-    exchangeRate: z.number().positive(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-});
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
+const currency = z.string().length(3).toUpperCase();
 
-export const GetRateQuerySchema = z.object({
-    baseCurrency: z.string().length(3).toUpperCase(),
-    targetCurrency: z.string().length(3).toUpperCase(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-});
+export const { schemas: transactionFxSchemas } = createFeatureSchemas
+    .registerTable(dbTable.transactionFxRate)
+    .omit({
+        createdAt: true,
+        updatedAt: true,
+        id: true,
+    })
+    .idFields({
+        id: true,
+    })
+    /**
+     * Create exchange rate
+     */
+    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+        return {
+            service: buildServiceInput({ data: baseSchema }),
+            query: buildServiceInput({ data: baseSchema }),
+            endpoint: { json: baseSchema },
+        };
+    })
+    /**
+     * Get many exchange rates
+     */
+    .addCore('getMany', ({ buildServiceInput }) => {
+        const filtersSchema = z.object({
+            baseCurrency: currency.optional(),
+            targetCurrency: currency.optional(),
+            date: date.optional(),
+        });
 
-export const ConvertAmountSchema = z.object({
-    amount: z.number(),
-    baseCurrency: z.string().length(3).toUpperCase(),
-    targetCurrency: z.string().length(3).toUpperCase(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-});
+        return {
+            service: buildServiceInput({ filters: filtersSchema }),
+            query: buildServiceInput({ filters: filtersSchema }),
+            endpoint: { query: filtersSchema },
+        };
+    })
+    /**
+     * Convert amount
+     */
+    .addCustom('convertAmount', ({ baseSchema }) => {
+        const convertAmountSchema = z.object({
+            amount: z.number(),
+            baseCurrency: baseSchema.shape.baseCurrency,
+            targetCurrency: baseSchema.shape.targetCurrency,
+            date: date,
+        });
+        return {
+            service: convertAmountSchema,
+            endpoint: { json: convertAmountSchema },
+        };
+    });
 
 export const BatchExchangeRatesSchema = z.object({
-    rates: z.array(ExchangeRateSchema),
+    rates: z.array(transactionFxSchemas.getMany.service),
 });
-
-export type TExchangeRate = z.infer<typeof ExchangeRateSchema>;
-export type TGetRateQuery = z.infer<typeof GetRateQuerySchema>;
-export type TConvertAmount = z.infer<typeof ConvertAmountSchema>;
-export type TBatchExchangeRates = z.infer<typeof BatchExchangeRatesSchema>;

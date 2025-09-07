@@ -1,75 +1,65 @@
+import { transactionFxSchemas } from '@/features/transaction-fx/schemas';
 import { db, dbTable } from '@/server/db';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, sql } from 'drizzle-orm';
 
-export const getRate = async ({
-    baseCurrency,
-    targetCurrency,
-    date,
-}: {
-    baseCurrency: string;
-    targetCurrency: string;
-    date: string;
-}) =>
-    withDbQuery({
-        operation: 'get exchange rate for currency pair and date',
-        queryFn: async () => {
+export const transactionFxQueries = createFeatureQueries
+    .registerSchema(transactionFxSchemas)
+    /**
+     * Get many exchange rates
+     */
+    .addQuery('getMany', {
+        operation: 'get exchange rates by filters',
+        fn: async ({ filters }) => {
+            const whereConditions = [];
+
+            if (filters?.baseCurrency) {
+                whereConditions.push(
+                    eq(dbTable.transactionFxRate.baseCurrency, filters.baseCurrency)
+                );
+            }
+
+            if (filters?.targetCurrency) {
+                whereConditions.push(
+                    eq(dbTable.transactionFxRate.targetCurrency, filters.targetCurrency)
+                );
+            }
+
+            if (filters?.date) {
+                whereConditions.push(eq(dbTable.transactionFxRate.date, filters.date));
+            }
+
             const [result] = await db
-                .select()
+                .select({
+                    baseCurrency: dbTable.transactionFxRate.baseCurrency,
+                    targetCurrency: dbTable.transactionFxRate.targetCurrency,
+                    exchangeRate: dbTable.transactionFxRate.exchangeRate,
+                    date: dbTable.transactionFxRate.date,
+                })
                 .from(dbTable.transactionFxRate)
-                .where(
-                    and(
-                        eq(dbTable.transactionFxRate.baseCurrency, baseCurrency),
-                        eq(dbTable.transactionFxRate.targetCurrency, targetCurrency),
-                        eq(dbTable.transactionFxRate.date, date)
-                    )
-                )
+                .where(and(...whereConditions))
                 .limit(1);
 
             return result || null;
         },
-    });
-
-export const getRatesForDate = async ({ date }: { date: string }) =>
-    withDbQuery({
-        operation: 'get all exchange rates for date',
-        queryFn: async () => {
-            return await db
-                .select()
-                .from(dbTable.transactionFxRate)
-                .where(eq(dbTable.transactionFxRate.date, date));
-        },
-    });
-
-export const createRate = async ({
-    baseCurrency,
-    targetCurrency,
-    exchangeRate,
-    date,
-}: {
-    baseCurrency: string;
-    targetCurrency: string;
-    exchangeRate: number;
-    date: string;
-}) =>
-    withDbQuery({
+    })
+    /**
+     * Create exchange rate
+     */
+    .addQuery('create', {
         operation: 'create exchange rate',
-        queryFn: async () => {
-            const [result] = await db
-                .insert(dbTable.transactionFxRate)
-                .values({
-                    baseCurrency,
-                    targetCurrency,
-                    exchangeRate: exchangeRate.toString(),
-                    date,
-                })
-                .returning();
+        fn: async ({ data }) => {
+            const [result] = await db.insert(dbTable.transactionFxRate).values(data).returning();
 
             return result;
         },
     });
 
+export type TTransactionFxQueries = InferFeatureType<typeof transactionFxQueries, 'getMany'>;
+
+// ToDO
 export const upsertRate = async ({
     baseCurrency,
     targetCurrency,
@@ -109,7 +99,8 @@ export const upsertRate = async ({
         },
     });
 
-export const batchUpsertRates = async ({
+// ToDO
+const batchUpsertRates = async ({
     rates,
 }: {
     rates: Array<{
