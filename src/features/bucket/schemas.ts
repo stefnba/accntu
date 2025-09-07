@@ -11,15 +11,15 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
         id: true,
         userId: true,
     })
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a bucket
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -31,7 +31,7 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
     /**
      * Get many buckets
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().default(1),
             pageSize: z.number().int().default(20),
@@ -41,7 +41,7 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
             search: z.string().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -57,10 +57,10 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
     /**
      * Get a bucket by id
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
@@ -69,10 +69,10 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
     /**
      * Update a bucket by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema }),
-            query: buildServiceInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema }),
+            query: buildInput({ data: baseSchema }),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -82,10 +82,10 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
     /**
      * Remove a bucket by id
      */
-    .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,

@@ -103,15 +103,18 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 ### Table Import Architecture
 
 **Feature Table Files** (`src/features/*/server/db/tables.ts`):
+
 - ✅ **CAN import** from other feature table files for foreign keys
 - ❌ **CANNOT import** from central `@/server/db` (would cause circular dependency)
 - **Example**: `import { transaction } from '@/features/transaction/server/db/tables'`
 
 **Central Export** (`src/server/db/tables.ts`):
+
 - **Exports** all feature tables to central location
 - **Only file allowed** to import from feature table files
 
 **All Other Files** (queries, services, schemas, components):
+
 - ✅ **MUST import** using: `import { dbTable } from '@/server/db'`
 - ✅ **Access tables** via: `dbTable.tableName`
 - ❌ **NEVER import** directly from feature table files
@@ -167,16 +170,16 @@ For new features, use the sophisticated factory system that provides type-safe, 
 export const { schemas: tagSchemas } = createFeatureSchemas
     .registerTable(tagTable)
     .omit({ createdAt: true, updatedAt: true, id: true })
-    .userField('userId')
-    .idFields({ id: true })
-    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-        service: buildServiceInput({ data: baseSchema }),
-        query: buildServiceInput({ data: baseSchema }),
+    .setUserIdField('userId')
+    .setIdFields({ id: true })
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
+        query: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
-    .addCore('getMany', ({ buildServiceInput }) => ({
-        service: buildServiceInput({ filters: filtersSchema }),
-        query: buildServiceInput({ filters: filtersSchema }),
+    .addCore('getMany', ({ buildInput }) => ({
+        service: buildInput({ filters: filtersSchema }),
+        query: buildInput({ filters: filtersSchema }),
         endpoint: { query: filtersSchema },
     }));
 
@@ -325,7 +328,7 @@ import { createFeatureServices } from '@/server/lib/service';
 // Complete factory pipeline
 export const { schemas } = createFeatureSchemas
   .registerTable(table)
-  .userField('userId')
+  .setUserIdField('userId')
   .addCore('create', ...);
 
 export const queries = createFeatureQueries

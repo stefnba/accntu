@@ -1,6 +1,6 @@
 import { splitConfigSchema } from '@/features/budget/schemas';
-import { dbTable } from '@/server/db';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 export const { schemas: participantSchemas } = createFeatureSchemas
@@ -13,20 +13,20 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         userId: true,
         totalTransactions: true,
     })
-    .userField('userId')
-    .idFields({ id: true })
+    .setUserIdField('userId')
+    .setIdFields({ id: true })
     /**
      * Create a participant
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-        service: buildServiceInput({ data: baseSchema }),
-        query: buildServiceInput({ data: baseSchema }),
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
+        query: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
     /**
      * Get many participants
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().default(1),
             pageSize: z.number().int().default(10),
@@ -36,7 +36,7 @@ export const { schemas: participantSchemas } = createFeatureSchemas
             search: z.string().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -52,10 +52,10 @@ export const { schemas: participantSchemas } = createFeatureSchemas
     /**
      * Update a participant by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema }),
-            query: buildServiceInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema }),
+            query: buildInput({ data: baseSchema }),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -65,20 +65,20 @@ export const { schemas: participantSchemas } = createFeatureSchemas
     /**
      * Remove a participant by id
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: { param: idFieldsSchema },
         };
     })
     /**
      * Get a participant by id
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: { param: idFieldsSchema },
         };
     });

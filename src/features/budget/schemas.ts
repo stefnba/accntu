@@ -48,15 +48,15 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
         calculatedAt: true,
         isRecalculationNeeded: true,
     })
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a transaction budget
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -68,7 +68,7 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
     /**
      * Get many transaction budgets
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().default(1),
             pageSize: z.number().int().default(10),
@@ -79,7 +79,7 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
             splitSource: z.enum(['transaction', 'bucket', 'account', 'none']).optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -95,10 +95,10 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
     /**
      * Get a transaction budget by id
      */
-    .addCore('getById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -108,10 +108,10 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
     /**
      * Update a transaction budget by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema }),
-            query: buildServiceInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema }),
+            query: buildInput({ data: baseSchema }),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -121,10 +121,10 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
     /**
      * Remove a transaction budget by id
      */
-    .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -202,7 +202,7 @@ export const { schemas: transactionBudgetToParticipantSchemas } = createFeatureS
         createdAt: true,
         id: true,
     })
-    .idFields({
+    .setIdFields({
         transactionBudgetId: true,
     })
     /**

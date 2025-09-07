@@ -39,14 +39,14 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
             transformConfig: transformConfigSchema,
         })
     )
-    .idFields({
+    .setIdFields({
         id: true,
     })
     /**
      * Create a global bank account
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -58,7 +58,7 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     /**
      * Get many global bank accounts
      */
-    .addCore('getMany', ({ buildServiceInput, baseSchema }) => {
+    .addCore('getMany', ({ buildInput, baseSchema }) => {
         const filtersSchema = z.object({
             globalBankId: z.string().optional(),
             type: baseSchema.shape.type.optional(),
@@ -69,7 +69,7 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
             pageSize: z.number().int().default(20),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -85,10 +85,10 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     /**
      * Get a global bank account by ID
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
@@ -98,14 +98,14 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
      * Update a global bank account by ID
      * Only done by admin
      */
-    .addCore('updateById', ({ baseSchema, rawSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, rawSchema, buildInput, idFieldsSchema }) => {
         const adminSchema = baseSchema.extend({
             isActive: rawSchema.shape.isActive,
         });
 
         return {
-            service: buildServiceInput({ data: adminSchema.partial() }),
-            query: buildServiceInput({ data: adminSchema.partial() }),
+            service: buildInput({ data: adminSchema.partial() }),
+            query: buildInput({ data: adminSchema.partial() }),
             form: adminSchema.partial(),
             endpoint: {
                 json: adminSchema.partial(),
@@ -116,10 +116,10 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     /**
      * Remove a global bank account by ID
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },

@@ -6,7 +6,7 @@ const numericInputSchema = z.coerce.number();
 
 export const {
     schemas: transactionSchemas,
-    idFields,
+    setIdFields,
     idSchema,
     rawSchema,
     baseSchema,
@@ -29,15 +29,15 @@ export const {
             balance: numericInputSchema.optional(),
         })
     )
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a transaction
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -49,7 +49,7 @@ export const {
     /**
      * Get many transactions
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.coerce.number().min(1).default(1),
             pageSize: z.coerce.number().min(1).max(100).default(50),
@@ -91,7 +91,7 @@ export const {
             endDate: z.coerce.date().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -107,8 +107,8 @@ export const {
     /**
      * Get a transaction by ID
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
-        const input = buildServiceInput();
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
+        const input = buildInput();
         return {
             service: input,
             query: input,
@@ -120,8 +120,8 @@ export const {
     /**
      * Update a transaction by ID
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
-        const input = buildServiceInput({ data: baseSchema.partial() });
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
+        const input = buildInput({ data: baseSchema.partial() });
         return {
             service: input,
             query: input,
@@ -134,8 +134,8 @@ export const {
     /**
      * Remove a transaction by ID
      */
-    .addCore('removeById', ({ buildServiceInput }) => {
-        const input = buildServiceInput();
+    .addCore('removeById', ({ buildInput }) => {
+        const input = buildInput();
         return {
             service: input,
             query: input,

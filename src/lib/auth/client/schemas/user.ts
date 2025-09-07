@@ -5,7 +5,7 @@ import { z } from 'zod';
 export const { schemas: userSchemas } = createFeatureSchemas
     .registerTable(dbTable.user)
     .pick({ name: true, lastName: true, image: true, settings: true })
-    .idFields({ id: true })
+    .setIdFields({ id: true })
     .addCore('updateById', ({ baseSchema, idFieldsSchema }) => {
         // we need to define the fieds so better-auth doesn't complain
         // when using updateUser

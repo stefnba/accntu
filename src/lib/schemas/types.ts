@@ -45,7 +45,7 @@ export type MappingCoreServiceInput<TUser extends TZodType, TId extends TZodObje
      * Get a record by id
      */
     getById: (params?: {
-        idFields?: TId;
+        setIdFields?: TId;
         userFields?: TUser;
     }) => z.ZodObject<{ ids: TId; userId: TUser }>;
     /**
@@ -53,7 +53,7 @@ export type MappingCoreServiceInput<TUser extends TZodType, TId extends TZodObje
      */
     updateById: <D extends TZodObject>(params: {
         data: D;
-        idFields?: TId;
+        setIdFields?: TId;
         userFields?: TUser;
     }) => z.ZodObject<{ ids: TId; userId: TUser; data: D }>;
     /**
@@ -108,6 +108,7 @@ export type TOperationSchemaObject = {
     query?: TZodObject;
     service?: TZodObject | Record<string, TZodObject>;
     endpoint?: TEndpointSchemaObject;
+    form?: TZodObject;
 };
 
 /**

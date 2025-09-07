@@ -12,8 +12,8 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
         id: true,
         userId: true,
     })
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     .addCore('create', ({ baseSchema }) => {
@@ -26,7 +26,7 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
             },
         };
     })
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const filtersSchema = z.object({
             connectedBankId: z.string().optional(),
             type: z.enum(['checking', 'savings', 'credit_card', 'investment']).optional(),
@@ -38,7 +38,7 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
             pageSize: z.number().int().default(20),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -51,29 +51,29 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
             },
         };
     })
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
         };
     })
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildInput({ data: baseSchema.partial() }),
+            query: buildInput({ data: baseSchema.partial() }),
             endpoint: {
                 json: baseSchema.partial(),
                 param: idFieldsSchema,
             },
         };
     })
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },

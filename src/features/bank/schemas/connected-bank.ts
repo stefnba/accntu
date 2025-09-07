@@ -28,15 +28,15 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
             apiCredentials: apiCredentialsSchema,
         })
     )
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a connected bank
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -48,7 +48,7 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
     /**
      * Get many connected banks
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const filtersSchema = z.object({
             globalBankId: z.string().optional(),
         });
@@ -58,7 +58,7 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
             pageSize: z.number().int().default(20),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -74,10 +74,10 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
     /**
      * Get a connected bank by id
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
@@ -86,10 +86,10 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
     /**
      * Update a connected bank by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildInput({ data: baseSchema.partial() }),
+            query: buildInput({ data: baseSchema.partial() }),
             endpoint: {
                 json: baseSchema.partial(),
                 param: idFieldsSchema,
@@ -99,10 +99,10 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
     /**
      * Remove a connected bank by id
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },

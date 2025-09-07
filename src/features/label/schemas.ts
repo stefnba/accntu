@@ -19,17 +19,18 @@ export const { schemas: labelSchemas } = createFeatureSchemas
             color: colorSchema,
         })
     )
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a label
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
+            form: baseSchema,
             query: input,
             endpoint: {
                 json: baseSchema,
@@ -39,7 +40,7 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Get many labels
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().default(1),
             pageSize: z.number().int().default(20),
@@ -50,7 +51,7 @@ export const { schemas: labelSchemas } = createFeatureSchemas
             parentId: z.string().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -66,10 +67,10 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Get a label by id
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
@@ -78,10 +79,10 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Update a label by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildInput({ data: baseSchema.partial() }),
+            query: buildInput({ data: baseSchema.partial() }),
             endpoint: {
                 json: baseSchema.partial(),
                 param: idFieldsSchema,
@@ -91,10 +92,10 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Remove a label by id
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },

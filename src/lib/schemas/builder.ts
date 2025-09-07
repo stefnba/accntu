@@ -24,10 +24,10 @@ import z, { util } from 'zod';
  * const { schemas } = createFeatureSchemas
  *   .registerTable(userTable)
  *   .omit({ createdAt: true, updatedAt: true })
- *   .userField('userId')
- *   .idFields({ id: true })
- *   .addCore('create', ({ baseSchema, buildServiceInput }) => ({
- *     service: buildServiceInput({ data: baseSchema }),
+ *   .setUserIdField('userId')
+ *   .setIdFields({ id: true })
+ *   .addCore('create', ({ baseSchema, buildInput }) => ({
+ *     service: buildInput({ data: baseSchema }),
  *     endpoint: { json: baseSchema }
  *   }));
  * ```
@@ -183,15 +183,15 @@ export class BaseSchemaBuilder<
      * ```typescript
      * const builder = createFeatureSchemas
      *   .registerTable(userTable)
-     *   .idFields({ id: true }); // Use 'id' field for operations like getById, updateById
+     *   .setIdFields({ id: true }); // Use 'id' field for operations like getById, updateById
      *
      * // For composite keys:
      * const builder = createFeatureSchemas
      *   .registerTable(tagToTransactionTable)
-     *   .idFields({ tagId: true, transactionId: true });
+     *   .setIdFields({ tagId: true, transactionId: true });
      * ```
      */
-    idFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
+    setIdFields<const Mask extends util.Mask<keyof R>>(fields: Mask) {
         return new BaseSchemaBuilder({
             schemas: this.schemas,
             baseSchema: this.baseSchema.shape,
@@ -213,10 +213,10 @@ export class BaseSchemaBuilder<
      * ```typescript
      * const builder = createFeatureSchemas
      *   .registerTable(userTable)
-     *   .userField('userId'); // Operations will include userId automatically
+     *   .setUserIdField('userId'); // Operations will include userId automatically
      * ```
      */
-    userField<const TKey extends keyof R & string>(field: TKey) {
+    setUserIdField<const TKey extends keyof R & string>(field: TKey) {
         return new BaseSchemaBuilder<TFeatureSchemas, B, R, I, TKey>({
             schemas: this.schemas,
             baseSchema: this.baseSchema.shape,
@@ -241,11 +241,11 @@ export class BaseSchemaBuilder<
      * ```typescript
      * const builder = createFeatureSchemas
      *   .registerTable(userTable)
-     *   .userField('userId')
-     *   .idFields({ id: true })
-     *   .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-     *     service: buildServiceInput({ data: baseSchema }),
-     *     query: buildServiceInput({ data: baseSchema }),
+     *   .setUserIdField('userId')
+     *   .setIdFields({ id: true })
+     *   .addCore('create', ({ baseSchema, buildInput }) => ({
+     *     service: buildInput({ data: baseSchema }),
+     *     query: buildInput({ data: baseSchema }),
      *     endpoint: { json: baseSchema }
      *   }));
      * ```
@@ -261,7 +261,7 @@ export class BaseSchemaBuilder<
             rawSchema: z.ZodObject<R>;
             idFieldsSchema: z.ZodObject<I>;
             userIdField: R[U];
-            buildServiceInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>[K];
+            buildInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>[K];
         }) => S
     ) {
         const userIdField = this.rawSchema.shape[this.userIdField];
@@ -272,7 +272,7 @@ export class BaseSchemaBuilder<
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idSchema,
             userIdField: userIdField,
-            buildServiceInput: helpers,
+            buildInput: helpers,
         });
 
         return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({
@@ -322,7 +322,7 @@ export class BaseSchemaBuilder<
             rawSchema: z.ZodObject<R>;
             idFieldsSchema: z.ZodObject<I>;
             userIdField: R[U];
-            buildServiceInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>;
+            buildInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>;
         }) => S
     ) {
         const userIdField = this.rawSchema.shape[this.userIdField];
@@ -331,7 +331,7 @@ export class BaseSchemaBuilder<
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idSchema,
             userIdField: userIdField,
-            buildServiceInput: inputHelpers({ userId: userIdField, ids: this.idSchema }),
+            buildInput: inputHelpers({ userId: userIdField, ids: this.idSchema }),
         });
 
         return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({

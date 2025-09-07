@@ -1,4 +1,4 @@
-import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
@@ -19,15 +19,15 @@ export const { schemas: tagSchemas } = createFeatureSchemas
             color: colorSchema,
         })
     )
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a tag
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -39,7 +39,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     /**
      * Get many tags
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().default(1),
             pageSize: z.number().int().default(10),
@@ -49,7 +49,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
             search: z.string().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -65,10 +65,10 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     /**
      * Get a tag by id
      */
-    .addCore('getById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -78,10 +78,10 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     /**
      * Update a tag by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema }),
-            query: buildServiceInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema }),
+            query: buildInput({ data: baseSchema }),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -91,10 +91,10 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     /**
      * Remove a tag by id
      */
-    .addCore('removeById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 json: baseSchema,
                 param: idFieldsSchema,
@@ -110,7 +110,7 @@ export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
         tagId: true,
         transactionId: true,
     })
-    .idFields({
+    .setIdFields({
         transactionId: true,
     })
     .addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema, rawSchema }) => {
@@ -137,9 +137,5 @@ export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
 // ====================
 export type TTagSchemas = InferSchemas<typeof tagSchemas>;
 export type TTagToTransactionSchemas = InferSchemas<typeof tagToTransactionSchemas>;
-
-export type TTagServices = InferServiceSchemas<typeof tagSchemas>;
-
-// type AAA = TTagSchemas['operations']['create']
 
 export { type TTag } from '@/features/tag/server/db/queries';

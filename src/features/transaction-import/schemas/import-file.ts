@@ -11,15 +11,15 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
         id: true,
         userId: true,
     })
-    .userField('userId')
-    .idFields({
+    .setUserIdField('userId')
+    .setIdFields({
         id: true,
     })
     /**
      * Create a transaction import file
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
-        const input = buildServiceInput({ data: baseSchema });
+    .addCore('create', ({ baseSchema, buildInput }) => {
+        const input = buildInput({ data: baseSchema });
         return {
             service: input,
             query: input,
@@ -31,7 +31,7 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
     /**
      * Get many transaction import files
      */
-    .addCore('getMany', ({ buildServiceInput, baseSchema }) => {
+    .addCore('getMany', ({ buildInput, baseSchema }) => {
         const filtersSchema = z.object({
             status: baseSchema.shape.status.optional(),
             importId: baseSchema.shape.importId.optional(),
@@ -42,7 +42,7 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
             pageSize: z.number().int().default(20),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -58,10 +58,10 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
     /**
      * Get a transaction import file by id
      */
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },
@@ -70,10 +70,10 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
     /**
      * Update a transaction import file by id
      */
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => {
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput({ data: baseSchema.partial() }),
-            query: buildServiceInput({ data: baseSchema.partial() }),
+            service: buildInput({ data: baseSchema.partial() }),
+            query: buildInput({ data: baseSchema.partial() }),
             endpoint: {
                 json: baseSchema.partial(),
                 param: idFieldsSchema,
@@ -83,10 +83,10 @@ export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
     /**
      * Remove a transaction import file by id
      */
-    .addCore('removeById', ({ buildServiceInput, idFieldsSchema }) => {
+    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
         return {
-            service: buildServiceInput(),
-            query: buildServiceInput(),
+            service: buildInput(),
+            query: buildInput(),
             endpoint: {
                 param: idFieldsSchema,
             },

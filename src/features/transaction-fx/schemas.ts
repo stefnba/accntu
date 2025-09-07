@@ -12,23 +12,23 @@ export const { schemas: transactionFxSchemas } = createFeatureSchemas
         updatedAt: true,
         id: true,
     })
-    .idFields({
+    .setIdFields({
         id: true,
     })
     /**
      * Create exchange rate
      */
-    .addCore('create', ({ baseSchema, buildServiceInput }) => {
+    .addCore('create', ({ baseSchema, buildInput }) => {
         return {
-            service: buildServiceInput({ data: baseSchema }),
-            query: buildServiceInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema }),
+            query: buildInput({ data: baseSchema }),
             endpoint: { json: baseSchema },
         };
     })
     /**
      * Get many exchange rates
      */
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const filtersSchema = z.object({
             baseCurrency: currency.optional(),
             targetCurrency: currency.optional(),
@@ -36,8 +36,8 @@ export const { schemas: transactionFxSchemas } = createFeatureSchemas
         });
 
         return {
-            service: buildServiceInput({ filters: filtersSchema }),
-            query: buildServiceInput({ filters: filtersSchema }),
+            service: buildInput({ filters: filtersSchema }),
+            query: buildInput({ filters: filtersSchema }),
             endpoint: { query: filtersSchema },
         };
     })

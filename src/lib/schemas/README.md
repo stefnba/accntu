@@ -30,18 +30,18 @@ import { userTable } from './db/schema';
 export const { schemas: userSchemas } = createFeatureSchemas
     .registerTable(userTable)
     .omit({ createdAt: true, updatedAt: true, id: true })
-    .userField('userId')
-    .idFields({ id: true })
-    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-        service: buildServiceInput({ data: baseSchema }),
-        query: buildServiceInput({ data: baseSchema }),
+    .setUserIdField('userId')
+    .setIdFields({ id: true })
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
+        query: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .addCore('getMany', ({ buildInput }) => {
         const filters = z.object({ search: z.string().optional() });
         return {
-            service: buildServiceInput({ filters }),
-            query: buildServiceInput({ filters }),
+            service: buildInput({ filters }),
+            query: buildInput({ filters }),
             endpoint: { query: filters },
         };
     });
@@ -70,8 +70,8 @@ createFeatureSchemas
   .transform(schema =>
     schema.extend({ custom: z.string() })  // Add custom fields
   )
-  .userField('userId')            // Define user authentication field
-  .idFields({ id: true })         // Define ID fields for operations
+  .setUserIdField('userId')            // Define user authentication field
+  .setIdFields({ id: true })         // Define ID fields for operations
   .addCore('create', ...)         // Add CRUD operations
   .addCustom('custom', ...);      // Add custom operations
 ```
@@ -123,8 +123,8 @@ const builder = createSchemasFactory(userTable, {
 
 #### Configuration
 
-- **`.userField(field)`** - Set user authentication field
-- **`.idFields(fields)`** - Define ID fields for operations
+- **`.setUserIdField(field)`** - Set user authentication field
+- **`.setIdFields(fields)`** - Define ID fields for operations
 
 #### Operation Definition
 
@@ -170,18 +170,18 @@ type AllEndpoints = TTagSchemas['endpoints'];
 export const { schemas: userSchemas } = createFeatureSchemas
     .registerTable(userTable)
     .omit({ createdAt: true, updatedAt: true })
-    .userField('userId')
-    .idFields({ id: true })
-    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-        service: buildServiceInput({ data: baseSchema }),
+    .setUserIdField('userId')
+    .setIdFields({ id: true })
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
-    .addCore('getById', ({ buildServiceInput, idFieldsSchema }) => ({
-        service: buildServiceInput(),
+    .addCore('getById', ({ buildInput, idFieldsSchema }) => ({
+        service: buildInput(),
         endpoint: { param: idFieldsSchema },
     }))
-    .addCore('updateById', ({ baseSchema, buildServiceInput, idFieldsSchema }) => ({
-        service: buildServiceInput({ data: baseSchema }),
+    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => ({
+        service: buildInput({ data: baseSchema }),
         endpoint: {
             param: idFieldsSchema,
             json: baseSchema,
@@ -202,9 +202,9 @@ export const { schemas: tagSchemas } = createFeatureSchemas
             color: colorSchema, // Add custom validation
         })
     )
-    .userField('userId')
-    .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-        service: buildServiceInput({ data: baseSchema }),
+    .setUserIdField('userId')
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }));
 ```
@@ -215,7 +215,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
 export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
     .registerTable(tagToTransactionTable)
     .omit({ createdAt: true, updatedAt: true })
-    .idFields({ transactionId: true })
+    .setIdFields({ transactionId: true })
     .addCustom('assignToTransaction', ({ baseSchema, idFieldsSchema, rawSchema }) => {
         const tagIdsSchema = z.array(rawSchema.pick({ tagId: true }).shape.tagId);
 
@@ -241,8 +241,8 @@ export const { schemas: tagToTransactionSchemas } = createFeatureSchemas
 ```typescript
 export const { schemas: transactionSchemas } = createFeatureSchemas
     .registerTable(transactionTable)
-    .userField('userId')
-    .addCore('getMany', ({ buildServiceInput }) => {
+    .setUserIdField('userId')
+    .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
             page: z.number().int().min(1).default(1),
             pageSize: z.number().int().min(1).max(100).default(10),
@@ -255,7 +255,7 @@ export const { schemas: transactionSchemas } = createFeatureSchemas
             dateTo: z.string().datetime().optional(),
         });
 
-        const input = buildServiceInput({
+        const input = buildInput({
             pagination: paginationSchema,
             filters: filtersSchema,
         });
@@ -276,9 +276,9 @@ export const { schemas: transactionSchemas } = createFeatureSchemas
 
 2. **Remove Audit Fields Early**: Use `.omit()` to remove `createdAt`, `updatedAt`, `id` fields that shouldn't be in user input
 
-3. **Set User Field**: Always call `.userField('userId')` for user-scoped data
+3. **Set User Field**: Always call `.setUserIdField('userId')` for user-scoped data
 
-4. **Define ID Fields**: Use `.idFields()` to specify which fields are used for lookups
+4. **Define ID Fields**: Use `.setIdFields()` to specify which fields are used for lookups
 
 5. **Use Core Operations**: Prefer `.addCore()` for standard CRUD operations - they include automatic input helpers
 

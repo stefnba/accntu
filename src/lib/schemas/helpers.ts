@@ -54,13 +54,13 @@ export const inputHelpers = <U extends TZodType, I extends TZodObject>(defaults:
          * Combines ID fields with user authentication for secure lookups.
          *
          * @param params - Optional configuration object
-         * @param params.idFields - Optional override for ID field schema
+         * @param params.setIdFields - Optional override for ID field schema
          * @param params.userFields - Optional override for user field schema
          * @returns Combined schema with ids and userId fields
          */
         getById: (params) => {
             return z.object({
-                ids: params?.idFields ?? defaults.ids,
+                ids: params?.setIdFields ?? defaults.ids,
                 userId: params?.userFields || defaults.userId,
             });
         },
@@ -93,13 +93,13 @@ export const inputHelpers = <U extends TZodType, I extends TZodObject>(defaults:
          *
          * @param params - Configuration object
          * @param params.data - The update data schema
-         * @param params.idFields - Optional override for ID field schema
+         * @param params.setIdFields - Optional override for ID field schema
          * @param params.userFields - Optional override for user field schema
          * @returns Combined schema with ids, data, and userId fields
          */
         updateById: (params) => {
             return z.object({
-                ids: params.idFields ?? defaults.ids,
+                ids: params.setIdFields ?? defaults.ids,
                 data: params.data,
                 userId: params.userFields ?? defaults.userId,
             });
@@ -109,13 +109,13 @@ export const inputHelpers = <U extends TZodType, I extends TZodObject>(defaults:
          * Combines ID fields with user authentication for secure deletion.
          *
          * @param params - Optional configuration object
-         * @param params.idFields - Optional override for ID field schema
+         * @param params.setIdFields - Optional override for ID field schema
          * @param params.userFields - Optional override for user field schema
          * @returns Combined schema with ids and userId fields
          */
         removeById: (params) => {
             return z.object({
-                ids: params?.idFields ?? defaults.ids,
+                ids: params?.setIdFields ?? defaults.ids,
                 userId: params?.userFields ?? defaults.userId,
             });
         },

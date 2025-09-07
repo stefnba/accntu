@@ -91,40 +91,42 @@ Use the factory system for type-safe, consistent database operations:
 ```typescript
 // Query factory with automatic error handling
 export const userQueries = createFeatureQueries
-  .registerSchema(userSchemas)
-  .addQuery('create', {
-    operation: 'create user',
-    fn: async ({ data, userId }) => {
-      const [user] = await db.insert(userTable)
-        .values({ ...data, userId })
-        .returning();
-      return user;
-    }
-  })
-  .addQuery('getById', {
-    operation: 'get user by ID',
-    fn: async ({ ids, userId }) => {
-      const [user] = await db.select()
-        .from(userTable)
-        .where(and(eq(userTable.id, ids.id), eq(userTable.userId, userId)))
-        .limit(1);
-      return user || null;
-    }
-  });
+    .registerSchema(userSchemas)
+    .addQuery('create', {
+        operation: 'create user',
+        fn: async ({ data, userId }) => {
+            const [user] = await db
+                .insert(userTable)
+                .values({ ...data, userId })
+                .returning();
+            return user;
+        },
+    })
+    .addQuery('getById', {
+        operation: 'get user by ID',
+        fn: async ({ ids, userId }) => {
+            const [user] = await db
+                .select()
+                .from(userTable)
+                .where(and(eq(userTable.id, ids.id), eq(userTable.userId, userId)))
+                .limit(1);
+            return user || null;
+        },
+    });
 
 // Service factory with business logic
 export const userServices = createFeatureServices
-  .registerSchema(userSchemas)
-  .registerQuery(userQueries)
-  .defineServices(({ queries }) => ({
-    create: async (input) => {
-      // Business logic validation
-      if (input.data.email.includes('spam')) {
-        throw new Error('Invalid email domain');
-      }
-      return await queries.create(input);
-    }
-  }));
+    .registerSchema(userSchemas)
+    .registerQuery(userQueries)
+    .defineServices(({ queries }) => ({
+        create: async (input) => {
+            // Business logic validation
+            if (input.data.email.includes('spam')) {
+                throw new Error('Invalid email domain');
+            }
+            return await queries.create(input);
+        },
+    }));
 ```
 
 ### Legacy Query Wrapper Pattern
@@ -505,7 +507,7 @@ export const getItemSummaries = async ({ userId }: { userId: string }) =>
 For comprehensive factory system documentation:
 
 - **Schema Factory**: @src/lib/schemas/README.md - Schema definition and validation
-- **Query Factory**: @src/server/lib/db/query/README.md - Database operations  
+- **Query Factory**: @src/server/lib/db/query/README.md - Database operations
 - **Service Factory**: @src/server/lib/service/README.md - Business logic layer
 
 ### Factory Integration Example
@@ -518,44 +520,48 @@ import { createFeatureServices } from '@/server/lib/service';
 
 // 1. Schema layer
 export const { schemas } = createFeatureSchemas
-  .registerTable(userTable)
-  .userField('userId')
-  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-    service: buildServiceInput({ data: baseSchema }),
-    query: buildServiceInput({ data: baseSchema }),
-    endpoint: { json: baseSchema }
-  }));
+    .registerTable(userTable)
+    .setUserIdField('userId')
+    .addCore('create', ({ baseSchema, buildInput }) => ({
+        service: buildInput({ data: baseSchema }),
+        query: buildInput({ data: baseSchema }),
+        endpoint: { json: baseSchema },
+    }));
 
 // 2. Query layer
-export const queries = createFeatureQueries
-  .registerSchema(schemas)
-  .addQuery('create', {
+export const queries = createFeatureQueries.registerSchema(schemas).addQuery('create', {
     operation: 'create user',
     fn: async ({ data, userId }) => {
-      return await db.insert(userTable).values({ ...data, userId }).returning();
-    }
-  });
+        return await db
+            .insert(userTable)
+            .values({ ...data, userId })
+            .returning();
+    },
+});
 
 // 3. Service layer
 export const services = createFeatureServices
-  .registerSchema(schemas)
-  .registerQuery(queries)
-  .defineServices(({ queries }) => ({
-    create: async (input) => {
-      // Business logic here
-      return await queries.create(input);
-    }
-  }));
+    .registerSchema(schemas)
+    .registerQuery(queries)
+    .defineServices(({ queries }) => ({
+        create: async (input) => {
+            // Business logic here
+            return await queries.create(input);
+        },
+    }));
 
 // 4. Endpoint integration
-const app = new Hono()
-  .post('/', zValidator('json', CreateUserSchema), async (c) =>
-    withRoute(c, async () => {
-      const user = getUser(c);
-      const data = c.req.valid('json');
-      return await services.create({ data, userId: user.id });
-    }, 201)
-  );
+const app = new Hono().post('/', zValidator('json', CreateUserSchema), async (c) =>
+    withRoute(
+        c,
+        async () => {
+            const user = getUser(c);
+            const data = c.req.valid('json');
+            return await services.create({ data, userId: user.id });
+        },
+        201
+    )
+);
 ```
 
 For database schema patterns: @src/features/CLAUDE.md

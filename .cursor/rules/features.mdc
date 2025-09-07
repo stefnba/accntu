@@ -579,18 +579,18 @@ import { [featureName]Table } from './server/db/schema';
 export const { schemas: [featureName]Schemas } = createFeatureSchemas
   .registerTable([featureName]Table)
   .omit({ createdAt: true, updatedAt: true, id: true })
-  .userField('userId')
-  .idFields({ id: true })
-  .addCore('create', ({ baseSchema, buildServiceInput }) => ({
-    service: buildServiceInput({ data: baseSchema }),
-    query: buildServiceInput({ data: baseSchema }),
+  .setUserIdField('userId')
+  .setIdFields({ id: true })
+  .addCore('create', ({ baseSchema, buildInput }) => ({
+    service: buildInput({ data: baseSchema }),
+    query: buildInput({ data: baseSchema }),
     endpoint: { json: baseSchema }
   }))
-  .addCore('getMany', ({ buildServiceInput }) => {
+  .addCore('getMany', ({ buildInput }) => {
     const filtersSchema = z.object({ search: z.string().optional() });
     return {
-      service: buildServiceInput({ filters: filtersSchema }),
-      query: buildServiceInput({ filters: filtersSchema }),
+      service: buildInput({ filters: filtersSchema }),
+      query: buildInput({ filters: filtersSchema }),
       endpoint: { query: filtersSchema }
     };
   });
@@ -648,10 +648,10 @@ export const [featureName]Services = createFeatureServices
       if (input.data.name.toLowerCase() === 'spam') {
         throw new Error('Invalid [feature-name] name');
       }
-      
+
       return await queries.create(input);
     },
-    
+
     /**
      * Get [feature-name]s - simple pass-through
      */
