@@ -13,3 +13,10 @@ export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
  * type UserWithRequiredId = RequiredBy<User, 'id'> // { id: string; name?: string; email?: string; }
  */
 export type RequiredBy<T, K extends keyof T> = Partial<T> & Required<Pick<T, K>>;
+
+/**
+ * Prettify a type for better readability
+ */
+export type Prettify<T> = {
+    [K in keyof T]: T[K];
+} & {};
