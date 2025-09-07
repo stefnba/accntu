@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 
 // Load environment variables
 dotenv.config();
@@ -115,7 +115,7 @@ async function demonstrateTransformation() {
         console.log(`\n📊 Transformation Results:`);
         console.log(`Total rows processed: ${result.totalRows}`);
         console.log(`Valid rows: ${result.validRows}`);
-        console.log(`Validation errors: ${result.errors.length}`);
+        console.log(`Validation errors: ${result.validationErrors.length}`);
         console.log(`Success rate: ${((result.validRows / result.totalRows) * 100).toFixed(1)}%`);
 
         if (result.validatedData.length > 0) {
@@ -123,13 +123,10 @@ async function demonstrateTransformation() {
             console.table(result.validatedData.slice(0, 5));
         }
 
-        if (result.errors.length > 0) {
+        if (result.validationErrors.length > 0) {
             console.log('\n❌ Validation errors:');
-            result.errors.slice(0, 3).forEach((error, i) => {
-                console.log(
-                    `Error ${i + 1} (row ${error.rowIndex}):`,
-                    error.error.issues[0]?.message
-                );
+            result.validationErrors.slice(0, 3).forEach((error, i) => {
+                console.log(`Error ${i + 1} (row ${error.rowIndex}):`, error.errors[0]?.message);
                 console.log('Raw row data:', error.row);
             });
         }

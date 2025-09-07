@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -92,7 +92,7 @@ async function example1BasicTransformation() {
 
         console.log(`✅ Processed ${result.totalRows} rows`);
         console.log(`✅ Successfully validated ${result.validRows} transactions`);
-        console.log(`❌ Validation errors: ${result.errors.length}`);
+        console.log(`❌ Validation errors: ${result.validationErrors.length}`);
         console.log(`⏱️  Total time: ${result.metrics.totalTimeMs}ms`);
 
         if (result.data.length > 0) {
@@ -100,10 +100,10 @@ async function example1BasicTransformation() {
             console.table(result.data.slice(0, 5));
         }
 
-        if (result.errors.length > 0) {
+        if (result.validationErrors.length > 0) {
             console.log('\nValidation errors:');
-            result.errors.slice(0, 3).forEach((error, i) => {
-                console.log(`Error ${i + 1}:`, error.error.message);
+            result.validationErrors.slice(0, 3).forEach((error, i) => {
+                console.log(`Error ${i + 1}:`, error.errors[0].message);
             });
         }
     } catch (error) {
@@ -276,13 +276,10 @@ async function example3UserBehaviorAnalysis() {
             console.table(result.data);
         }
 
-        if (result.errors.length > 0) {
-            console.log(`\n❌ Found ${result.errors.length} validation errors`);
-            result.errors.forEach((error, i) => {
-                console.log(
-                    `Error ${i + 1} (row ${error.rowIndex}):`,
-                    error.error.issues[0]?.message
-                );
+        if (result.validationErrors.length > 0) {
+            console.log(`\n❌ Found ${result.validationErrors.length} validation errors`);
+            result.validationErrors.forEach((error, i) => {
+                console.log(`Error ${i + 1} (row ${error.rowIndex}):`, error.errors[0]?.message);
             });
         }
     } catch (error) {

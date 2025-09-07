@@ -130,7 +130,7 @@ export interface TransformationConfig<T = any> {
 }
 
 export interface FieldError {
-    path: (string | number)[];
+    path: PropertyKey[];
     message: string;
     value: any;
 }

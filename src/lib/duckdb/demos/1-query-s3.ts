@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 
 // Load environment variables
 dotenv.config();

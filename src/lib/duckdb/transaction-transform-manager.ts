@@ -100,9 +100,9 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
                 const hashColumns = config.idConfig.columns
                     .map((col) => `COALESCE(CAST("${col}" AS VARCHAR), '')`)
                     .join(` || '|' || `);
-                
+
                 // Always include connectedBankAccountId in the hash if provided
-                const bankAccountPart = config.idConfig.connectedBankAccountId 
+                const bankAccountPart = config.idConfig.connectedBankAccountId
                     ? ` || '|' || '${config.idConfig.connectedBankAccountId}'`
                     : '';
 
@@ -117,7 +117,7 @@ export class DuckDBTransactionTransformManager extends DuckDBCore {
                     counted_data AS (
                         SELECT *,
                             ROW_NUMBER() OVER (
-                                PARTITION BY base_key 
+                                PARTITION BY base_key
                                 ORDER BY row_num
                             ) as occurrence_count
                         FROM base_data

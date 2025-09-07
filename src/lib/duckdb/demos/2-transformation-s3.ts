@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 
 // Load environment variables
 dotenv.config();
@@ -119,7 +119,7 @@ async function transformationS3Demo() {
         console.log(`\n📊 Transformation Results:`);
         console.log(`- Total rows processed: ${result.totalRows}`);
         console.log(`- Successfully validated: ${result.validRows}`);
-        console.log(`- Validation errors: ${result.errors.length}`);
+        console.log(`- Validation errors: ${result.validationErrors.length}`);
         console.log(`- Success rate: ${((result.validRows / result.totalRows) * 100).toFixed(1)}%`);
 
         // Show performance metrics
@@ -166,16 +166,12 @@ async function transformationS3Demo() {
         }
 
         // Display validation errors if any
-        if (result.errors.length > 0) {
+        if (result.validationErrors.length > 0) {
             console.log(`\n❌ Validation Errors (first 3):`);
-            result.errors.slice(0, 3).forEach((error, i) => {
+            result.validationErrors.slice(0, 3).forEach((error, i) => {
                 console.log(`\nError ${i + 1} (row ${error.rowIndex}):`);
-                console.log(
-                    `- Issue: ${error.error.issues[0]?.message || 'Unknown validation error'}`
-                );
-                console.log(
-                    `- Field: ${error.error.issues[0]?.path?.join('.') || 'Unknown field'}`
-                );
+                console.log(`- Issue: ${error.errors[0]?.message || 'Unknown validation error'}`);
+                console.log(`- Field: ${error.errors[0]?.path?.join('.') || 'Unknown field'}`);
                 if (error.row && Object.keys(error.row).length > 0) {
                     console.log(`- Raw data: ${JSON.stringify(error.row, null, 2)}`);
                 }

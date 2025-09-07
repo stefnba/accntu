@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 import type { ExcelReadOptions } from '../types';
 
 /**

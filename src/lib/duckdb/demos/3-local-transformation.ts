@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformManager as DuckDBManager } from '../index';
 
 const LOCAL_FILE_PATH = 'src/lib/duckdb/demos/test_transactions.csv';
 
@@ -111,7 +111,7 @@ async function localTransformationDemo() {
         console.log(`\n📊 Transformation Results:`);
         console.log(`- Total rows processed: ${result.totalRows}`);
         console.log(`- Successfully validated: ${result.validRows}`);
-        console.log(`- Validation errors: ${result.errors.length}`);
+        console.log(`- Validation errors: ${result.validationErrors.length}`);
         console.log(`- Success rate: ${((result.validRows / result.totalRows) * 100).toFixed(1)}%`);
 
         // Show performance metrics
@@ -234,16 +234,12 @@ async function localTransformationDemo() {
         }
 
         // Display validation errors if any
-        if (result.errors.length > 0) {
+        if (result.validationErrors.length > 0) {
             console.log(`\n❌ Validation Errors:`);
-            result.errors.forEach((error, i) => {
+            result.validationErrors.forEach((error, i) => {
                 console.log(`\nError ${i + 1} (row ${error.rowIndex}):`);
-                console.log(
-                    `- Issue: ${error.error.issues[0]?.message || 'Unknown validation error'}`
-                );
-                console.log(
-                    `- Field: ${error.error.issues[0]?.path?.join('.') || 'Unknown field'}`
-                );
+                console.log(`- Issue: ${error.errors[0]?.message || 'Unknown validation error'}`);
+                console.log(`- Field: ${error.errors[0]?.path?.join('.') || 'Unknown field'}`);
                 if (error.row && Object.keys(error.row).length > 0) {
                     console.log(`- Raw data: ${JSON.stringify(error.row, null, 2)}`);
                 }
