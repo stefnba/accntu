@@ -13,7 +13,7 @@ export const tagServices = createFeatureServices
          * Create a new tag
          */
         create: async (input) => {
-            return await queries.create({ data: input.data, userId: 'input.user.userId' });
+            return await queries.create({ data: input.data, userId: input.userId });
         },
         /**
          * Get a tag by ID
@@ -44,7 +44,7 @@ export const tagServices = createFeatureServices
         assignToTransaction: async ({ tagIds, transactionId, userId }) => {
             // Verify user owns the transaction (security check)
             const transaction = await transactionServices.getById({
-                id: transactionId,
+                ids: { id: transactionId },
                 userId,
             });
             if (!transaction) {
