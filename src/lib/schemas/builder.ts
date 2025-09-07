@@ -115,7 +115,7 @@ export class BaseSchemaBuilder<
         return new BaseSchemaBuilder<TFeatureSchemas, TOut, R, I, U>({
             schemas: this.schemas,
             baseSchema: transformer(this.baseSchema).shape,
-            rawSchema: transformer(this.baseSchema).shape,
+            rawSchema: this.rawSchema.shape,
             userIdField: this.userIdField,
             idSchema: this.idSchema.shape,
         });
@@ -265,13 +265,14 @@ export class BaseSchemaBuilder<
         }) => S
     ) {
         const userIdField = this.rawSchema.shape[this.userIdField];
+        const helpers = inputHelpers({ userId: userIdField, ids: this.idSchema })[key];
 
         const wrappedSchemaObjectFn = schemaObjectFn({
             baseSchema: this.baseSchema,
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idSchema,
             userIdField: userIdField,
-            buildServiceInput: inputHelpers({ userId: userIdField, ids: this.idSchema })[key],
+            buildServiceInput: helpers,
         });
 
         return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({
@@ -321,6 +322,7 @@ export class BaseSchemaBuilder<
             rawSchema: z.ZodObject<R>;
             idFieldsSchema: z.ZodObject<I>;
             userIdField: R[U];
+            buildServiceInput: MappingCoreServiceInput<R[U], z.ZodObject<I>>;
         }) => S
     ) {
         const userIdField = this.rawSchema.shape[this.userIdField];
@@ -329,6 +331,7 @@ export class BaseSchemaBuilder<
             rawSchema: this.rawSchema,
             idFieldsSchema: this.idSchema,
             userIdField: userIdField,
+            buildServiceInput: inputHelpers({ userId: userIdField, ids: this.idSchema }),
         });
 
         return new BaseSchemaBuilder<TFeatureSchemas & Record<K, S>, B, R, I, U>({

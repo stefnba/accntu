@@ -2,15 +2,16 @@ import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import { type ValidationTargets } from 'hono';
 import { z } from 'zod';
-/**
- * Type constraint for all Zod objects used in the layer system
- */
-export type TZodObject = z.ZodObject<z.ZodRawShape>;
 
 /**
  * Type constraint for all Zod shapes used in the layer system. This is more flexible than TZodObject.
  */
-export type TZodShape = z.core.$ZodShape;
+export type TZodShape = z.ZodRawShape;
+
+/**
+ * Type constraint for all Zod objects used in the layer system
+ */
+export type TZodObject<T extends TZodShape = TZodShape> = z.ZodObject<T>;
 
 /**
  * Type constraint for all Zod types used in the layer system. This is using zod core since z.ZodType is not working.
