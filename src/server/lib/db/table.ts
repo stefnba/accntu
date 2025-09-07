@@ -1,3 +1,4 @@
+import { user } from '@/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 import { InferSelectModel } from 'drizzle-orm';
 import { boolean, PgTable, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
@@ -10,7 +11,9 @@ export const COMMON_FIELDS = {
         .primaryKey()
         .notNull()
         .$defaultFn(() => createId()),
-    userId: text().notNull(),
+    userId: text()
+        .notNull()
+        .references(() => user.id, { onDelete: 'cascade' }),
     isActive: boolean().notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
