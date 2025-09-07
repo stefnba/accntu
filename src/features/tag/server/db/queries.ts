@@ -2,7 +2,7 @@ import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { db, dbTable } from '@/server/db';
 import { tag, tagToTransaction } from '@/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 
 export const tagQueries = createFeatureQueries
     .registerSchema(tagSchemas)
@@ -14,8 +14,16 @@ export const tagQueries = createFeatureQueries
         fn: async ({ userId, filters, pagination }) => {
             // todo: add filters
 
+            const filterConditions = [];
+
+            if (filters?.search) {
+                filterConditions.push(ilike(tag.name, `%${filters.search}%`));
+            }
+
             return await db.query.tag.findMany({
-                where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
+                where: and(eq(tag.userId, userId), eq(tag.isActive, true), ...filterConditions),
+                limit: pagination?.pageSize,
+                offset: ((pagination?.page || 1) - 1) * (pagination?.pageSize || 20),
             });
         },
     })
