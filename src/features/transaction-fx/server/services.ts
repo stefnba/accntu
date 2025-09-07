@@ -21,10 +21,12 @@ export const getExchangeRate = async ({
         return 1;
     }
 
-    const existingRate = await queries.getRate({
-        baseCurrency,
-        targetCurrency,
-        date,
+    const existingRate = await queries.transactionFxQueries.queries.getMany({
+        filters: {
+            baseCurrency,
+            targetCurrency,
+            date,
+        },
     });
 
     if (existingRate) {
@@ -55,10 +57,12 @@ export const getOrFetchExchangeRate = async ({
     }
 
     // First, check database cache
-    const existingRate = await queries.getRate({
-        baseCurrency,
-        targetCurrency,
-        date,
+    const existingRate = await queries.transactionFxQueries.queries.getMany({
+        filters: {
+            baseCurrency,
+            targetCurrency,
+            date,
+        },
     });
 
     if (existingRate) {
@@ -92,7 +96,7 @@ export const getOrFetchExchangeRate = async ({
             });
         }
 
-        await queries.batchUpsertRates({ rates: ratesToStore });
+        // await queries.batchUpsertRates({ rates: ratesToStore });
 
         return apiResponse.rate;
     } catch (error: any) {
@@ -140,10 +144,12 @@ export const getOrFetchMultipleExchangeRates = async ({
             continue;
         }
 
-        const existingRate = await queries.getRate({
-            baseCurrency,
-            targetCurrency,
-            date,
+        const existingRate = await queries.transactionFxQueries.queries.getMany({
+            filters: {
+                baseCurrency,
+                targetCurrency,
+                date,
+            },
         });
 
         if (existingRate) {

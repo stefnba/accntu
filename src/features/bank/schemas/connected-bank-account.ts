@@ -81,3 +81,5 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
     });
 
 export type TConnectedBankAccountSchemas = InferSchemas<typeof connectedBankAccountSchemas>;
+
+export type { TConnectedBankAccount } from '@/features/bank/server/db/queries/connected-bank-account';

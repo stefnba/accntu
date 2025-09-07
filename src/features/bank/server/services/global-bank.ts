@@ -1,10 +1,10 @@
 import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
-import { globalBankQueries } from '@/features/bank/server/db/queries';
+import { bankQueries } from '@/features/bank/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const globalBankServices = createFeatureServices
     .registerSchema(globalBankSchemas)
-    .registerQuery(globalBankQueries)
+    .registerQuery(bankQueries.globalBank)
     .defineServices(({ queries }) => ({
         /**
          * Get a global bank by id

@@ -1,271 +1,245 @@
 import { and, eq } from 'drizzle-orm';
 
-import { TTransactionBudgetQuery, TTransactionBudgetToParticipantQuery } from '@/features/budget/schemas';
 import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
+    transactionBudgetSchemas,
+    transactionBudgetToParticipantSchemas,
+} from '@/features/budget/schemas';
 import { db, dbTable } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
+import { transactionBudget, transactionBudgetToParticipant } from '@/server/db/tables';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
-/**
- * Get all transaction budgets for a user
- * @param userId - The ID of the user
- * @returns The transaction budgets for the user
- */
-const getAll = async ({
-    userId,
-}: TQuerySelectUserRecords): Promise<TTransactionBudgetQuery['select'][]> =>
-    withDbQuery({
-        queryFn: () =>
-            db
-                .select()
-                .from(dbTable.transactionBudget)
-                .where(
-                    and(eq(dbTable.transactionBudget.userId, userId), eq(dbTable.transactionBudget.isActive, true))
-                ),
-        operation: 'list all transaction budgets for a user',
-    });
+export const transactionBudgetQueries = createFeatureQueries
+    .registerSchema(transactionBudgetSchemas)
+    /**
+     * Get all transaction budgets for a user
+     */
+    .addQuery('getMany', {
+        operation: 'get transaction budgets by user ID',
+        fn: async ({ userId, filters, pagination }) => {
+            let whereConditions = and(
+                eq(transactionBudget.userId, userId),
+                eq(transactionBudget.isActive, true)
+            );
 
-/**
- * Get a transaction budget by ID
- * @param id - The ID of the transaction budget
- * @param userId - The user ID
- * @returns The transaction budget
- */
-const getById = ({ id, userId }: TQuerySelectUserRecordById) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .select()
-                .from(dbTable.transactionBudget)
-                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)));
-            return result;
-        },
-        operation: 'get transaction budget by ID',
-        allowNull: true,
-    });
-
-/**
- * Get transaction budget by transaction ID and user ID
- * @param transactionId - The transaction ID
- * @param userId - The user ID
- * @returns The transaction budget
- */
-const getByTransactionAndUser = async ({ 
-    transactionId, 
-    userId 
-}: { 
-    transactionId: string; 
-    userId: string; 
-}) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .select()
-                .from(dbTable.transactionBudget)
-                .where(
-                    and(
-                        eq(dbTable.transactionBudget.transactionId, transactionId),
-                        eq(dbTable.transactionBudget.userId, userId),
-                        eq(dbTable.transactionBudget.isActive, true)
-                    )
+            // Apply filters
+            if (filters?.transactionId) {
+                whereConditions = and(
+                    whereConditions,
+                    eq(transactionBudget.transactionId, filters.transactionId)
                 );
-            return result;
+            }
+
+            if (filters?.splitSource) {
+                whereConditions = and(
+                    whereConditions,
+                    eq(transactionBudget.splitSource, filters.splitSource)
+                );
+            }
+
+            return await db.query.transactionBudget.findMany({
+                where: whereConditions,
+                with: {
+                    transaction: true,
+                    participants: {
+                        with: {
+                            participant: true,
+                        },
+                    },
+                },
+            });
         },
-        operation: 'get transaction budget by transaction and user',
-        allowNull: true,
-    });
-
-/**
- * Get all transaction budgets that need recalculation
- * @returns Transaction budgets needing recalculation
- */
-const getPendingRecalculation = async () =>
-    withDbQuery({
-        queryFn: () =>
-            db
-                .select()
-                .from(dbTable.transactionBudget)
-                .where(
-                    and(
-                        eq(dbTable.transactionBudget.isRecalculationNeeded, true),
-                        eq(dbTable.transactionBudget.isActive, true)
-                    )
-                ),
-        operation: 'get transaction budgets needing recalculation',
-    });
-
-/**
- * Create a new transaction budget
- * @param data - The data to create the transaction budget with
- * @param userId - The user ID
- * @returns The created transaction budget
- */
-const create = ({ data, userId }: TQueryInsertUserRecord<TTransactionBudgetQuery['insert']>) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
+    })
+    /**
+     * Create a transaction budget
+     */
+    .addQuery('create', {
+        fn: async ({ data, userId }) => {
+            const [newBudget] = await db
                 .insert(dbTable.transactionBudget)
                 .values({ ...data, userId })
                 .returning();
-            return result;
+            return newBudget;
         },
         operation: 'create transaction budget',
-    });
-
-/**
- * Update a transaction budget
- * @param id - The ID of the transaction budget to update
- * @param userId - The user ID
- * @param data - The data to update the transaction budget with
- * @returns The updated transaction budget
- */
-const update = ({ id, userId, data }: TQueryUpdateUserRecord<TTransactionBudgetQuery['update']>) =>
-    withDbQuery({
-        queryFn: async () => {
+    })
+    /**
+     * Get a transaction budget by ID
+     */
+    .addQuery('getById', {
+        operation: 'get transaction budget by ID',
+        fn: async ({ ids, userId }) => {
             const [result] = await db
+                .select()
+                .from(dbTable.transactionBudget)
+                .where(
+                    and(
+                        eq(transactionBudget.id, ids.id),
+                        eq(transactionBudget.userId, userId),
+                        eq(transactionBudget.isActive, true)
+                    )
+                )
+                .limit(1);
+            return result || null;
+        },
+    })
+    /**
+     * Soft delete a transaction budget
+     */
+    .addQuery('removeById', {
+        operation: 'delete transaction budget',
+        fn: async ({ ids, userId }) => {
+            const [deleted] = await db
+                .update(dbTable.transactionBudget)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(and(eq(transactionBudget.id, ids.id), eq(transactionBudget.userId, userId)))
+                .returning();
+            return deleted || null;
+        },
+    })
+    /**
+     * Update a transaction budget
+     */
+    .addQuery('updateById', {
+        operation: 'update transaction budget',
+        fn: async ({ ids, data, userId }) => {
+            const [updated] = await db
                 .update(dbTable.transactionBudget)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)))
+                .where(and(eq(transactionBudget.id, ids.id), eq(transactionBudget.userId, userId)))
                 .returning();
-            return result;
+            return updated || null;
         },
-        operation: 'update transaction budget',
-    });
-
-/**
- * Mark transaction budget for recalculation
- * @param transactionId - The transaction ID
- * @returns Updated transaction budgets
- */
-const markForRecalculation = async ({ transactionId }: { transactionId: string }) =>
-    withDbQuery({
-        queryFn: async () => {
+    })
+    /**
+     * Get transaction budget by transaction ID and user ID
+     */
+    .addQuery('getByTransactionAndUser', {
+        operation: 'get transaction budget by transaction and user',
+        fn: async ({ transactionId, userId }) => {
+            const [result] = await db
+                .select()
+                .from(dbTable.transactionBudget)
+                .where(
+                    and(
+                        eq(transactionBudget.transactionId, transactionId),
+                        eq(transactionBudget.userId, userId),
+                        eq(transactionBudget.isActive, true)
+                    )
+                );
+            return result || null;
+        },
+    })
+    /**
+     * Get all transaction budgets that need recalculation
+     */
+    .addQuery('getPendingRecalculation', {
+        operation: 'get transaction budgets needing recalculation',
+        fn: async () => {
+            return await db
+                .select()
+                .from(dbTable.transactionBudget)
+                .where(
+                    and(
+                        eq(transactionBudget.isRecalculationNeeded, true),
+                        eq(transactionBudget.isActive, true)
+                    )
+                );
+        },
+    })
+    /**
+     * Calculate and store budget for a transaction
+     */
+    .addQuery('calculateAndStore', {
+        operation: 'calculate and store transaction budget',
+        fn: async ({ transactionId, userId }) => {
+            // This will be implemented in the service layer
+            // The query layer just provides data access
+            throw new Error('calculateAndStore should be called from service layer');
+        },
+    })
+    /**
+     * Mark transaction budgets for recalculation
+     */
+    .addQuery('markForRecalculation', {
+        operation: 'mark transaction budgets for recalculation',
+        fn: async ({ transactionId }) => {
             return await db
                 .update(dbTable.transactionBudget)
-                .set({ 
+                .set({
                     isRecalculationNeeded: true,
-                    updatedAt: new Date() 
+                    updatedAt: new Date(),
                 })
                 .where(
                     and(
-                        eq(dbTable.transactionBudget.transactionId, transactionId),
-                        eq(dbTable.transactionBudget.isActive, true)
+                        eq(transactionBudget.transactionId, transactionId),
+                        eq(transactionBudget.isActive, true)
                     )
                 )
                 .returning();
         },
-        operation: 'mark transaction budget for recalculation',
     });
 
-/**
- * Remove a transaction budget
- * @param id - The ID of the transaction budget to remove
- * @param userId - The user ID
- * @returns The removed transaction budget
- */
-const remove = ({ id, userId }: TQueryDeleteUserRecord) =>
-    withDbQuery({
-        queryFn: async () => {
-            const [result] = await db
-                .update(dbTable.transactionBudget)
-                .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(dbTable.transactionBudget.id, id), eq(dbTable.transactionBudget.userId, userId)))
-                .returning();
-
-            return result;
-        },
-        operation: 'remove transaction budget',
-    });
-
-// ====================
-// TransactionBudgetToParticipant Queries
-// ====================
-
-/**
- * Get all participants for a transaction budget
- * @param transactionBudgetId - The transaction budget ID
- * @returns Participants for the budget
- */
-const getParticipantsByBudgetId = async ({ transactionBudgetId }: { transactionBudgetId: string }) =>
-    withDbQuery({
-        queryFn: () =>
-            db
-                .select()
-                .from(dbTable.transactionBudgetToParticipant)
-                .where(eq(dbTable.transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId)),
+export const transactionBudgetToParticipantQueries = createFeatureQueries
+    .registerSchema(transactionBudgetToParticipantSchemas)
+    /**
+     * Get all participants for a transaction budget
+     */
+    .addQuery('getParticipantsByBudgetId', {
         operation: 'get participants by budget ID',
-    });
-
-/**
- * Get all budget participants for a participant
- * @param participantId - The participant ID
- * @returns Budget participants for the participant
- */
-const getBudgetsByParticipantId = async ({ participantId }: { participantId: string }) =>
-    withDbQuery({
-        queryFn: () =>
-            db
+        fn: async ({ transactionBudgetId }) => {
+            return await db
                 .select()
                 .from(dbTable.transactionBudgetToParticipant)
-                .where(eq(dbTable.transactionBudgetToParticipant.participantId, participantId)),
+                .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId));
+        },
+    })
+    /**
+     * Get all budget participants for a participant
+     */
+    .addQuery('getBudgetsByParticipantId', {
         operation: 'get budgets by participant ID',
-    });
+        fn: async ({ participantId }) => {
+            return await db
+                .select()
+                .from(dbTable.transactionBudgetToParticipant)
+                .where(eq(transactionBudgetToParticipant.participantId, participantId));
+        },
+    })
+    /**
+     * Create multiple budget participants
+     */
+    .addQuery('createParticipants', {
+        operation: 'create budget participants',
+        fn: async ({ transactionBudgetId, participants }) => {
+            if (!participants || participants.length === 0) {
+                return [];
+            }
 
-/**
- * Create multiple budget participants
- * @param participants - Array of participant data
- * @returns Created participants
- */
-const createParticipants = async ({ 
-    participants 
-}: { 
-    participants: TTransactionBudgetToParticipantQuery['insert'][] 
-}) =>
-    withDbQuery({
-        queryFn: async () => {
+            const participantsWithBudgetId = participants.map((p) => ({
+                ...p,
+                transactionBudgetId,
+            }));
+
             return await db
                 .insert(dbTable.transactionBudgetToParticipant)
-                .values(participants)
+                .values(participantsWithBudgetId)
                 .returning();
         },
-        operation: 'create budget participants',
-    });
-
-/**
- * Remove all participants for a budget
- * @param transactionBudgetId - The transaction budget ID
- * @returns Removed participants
- */
-const removeParticipantsByBudgetId = async ({ transactionBudgetId }: { transactionBudgetId: string }) =>
-    withDbQuery({
-        queryFn: async () => {
+    })
+    /**
+     * Remove all participants for a budget
+     */
+    .addQuery('removeParticipantsByBudgetId', {
+        operation: 'remove participants by budget ID',
+        fn: async ({ transactionBudgetId }) => {
             return await db
                 .delete(dbTable.transactionBudgetToParticipant)
-                .where(eq(dbTable.transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId))
+                .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId))
                 .returning();
         },
-        operation: 'remove participants by budget ID',
     });
 
-export const transactionBudgetQueries = {
-    getById,
-    getByTransactionAndUser,
-    getPendingRecalculation,
-    create,
-    update,
-    markForRecalculation,
-    remove,
-    getAll,
-};
-
-export const transactionBudgetToParticipantQueries = {
-    getParticipantsByBudgetId,
-    getBudgetsByParticipantId,
-    createParticipants,
-    removeParticipantsByBudgetId,
-};
+export type TTransactionBudget = InferFeatureType<typeof transactionBudgetQueries>;
+export type TTransactionBudgetToParticipant = InferFeatureType<
+    typeof transactionBudgetToParticipantQueries
+>;

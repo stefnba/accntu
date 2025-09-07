@@ -1,92 +1,130 @@
+import { transactionBudgetSchemas } from '@/features/budget/schemas';
+import { budgetServices } from '@/features/budget/server/services';
+import { getUser } from '@/lib/auth';
+import { withRoute } from '@/server/lib/handler';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
-import { transactionBudgetServiceSchemas } from '@/features/budget/schemas';
-import { budgetService } from '@/features/budget/server/services';
-import { getUser } from '@/lib/auth';
-import { endpointSelectSchema } from '@/lib/schemas';
-import { withRoute } from '@/server/lib/handler';
-
+// Create Hono app with proper chaining for RPC type generation
 const app = new Hono()
-    .get('/', (c) =>
+    // Get all transaction budgets for authenticated user
+    .get('/', zValidator('query', transactionBudgetSchemas.getMany.endpoint.query), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
-            const budgets = await budgetService.getAll({ userId: user.id });
-            return budgets;
+            const { page, pageSize, ...filters } = c.req.valid('query');
+            return await budgetServices.getMany({
+                pagination: {
+                    page,
+                    pageSize,
+                },
+                filters,
+                userId: user.id,
+            });
         })
     )
-    .get('/:id', zValidator('param', endpointSelectSchema), (c) =>
+
+    // Get transaction budget by ID
+    .get('/:id', zValidator('param', transactionBudgetSchemas.getById.endpoint.param), async (c) =>
         withRoute(c, async () => {
             const user = getUser(c);
             const { id } = c.req.valid('param');
-            const budget = await budgetService.getById({ id, userId: user.id });
+            const budget = await budgetServices.getById({ ids: { id }, userId: user.id });
+
+            if (!budget) {
+                throw new Error('Transaction budget not found');
+            }
+
             return budget;
         })
     )
-    .post('/calculate', zValidator('json', transactionBudgetServiceSchemas.calculate), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { transactionId } = c.req.valid('json');
-            const budget = await budgetService.calculateAndStore({
-                transactionId,
-                userId: user.id
-            });
-            return budget;
-        }, 201)
+
+    // Create a new transaction budget
+    .post('/', zValidator('json', transactionBudgetSchemas.create.endpoint.json), async (c) =>
+        withRoute(
+            c,
+            async () => {
+                const user = getUser(c);
+                const data = c.req.valid('json');
+                return await budgetServices.create({ data, userId: user.id });
+            },
+            201
+        )
     )
-    .post('/recalculate', zValidator('json', transactionBudgetServiceSchemas.recalculate), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { transactionId } = c.req.valid('json');
-            
-            // Mark for recalculation
-            await budgetService.markForRecalculation({ transactionId });
-            
-            // Process recalculation for this user
-            const budget = await budgetService.calculateAndStore({
-                transactionId,
-                userId: user.id
-            });
-            
-            return budget;
-        })
+
+    // Update a transaction budget
+    .put(
+        '/:id',
+        zValidator('param', transactionBudgetSchemas.updateById.endpoint.param),
+        zValidator('json', transactionBudgetSchemas.updateById.endpoint.json),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { id } = c.req.valid('param');
+                const data = c.req.valid('json');
+                return await budgetServices.updateById({ ids: { id }, data, userId: user.id });
+            })
     )
-    .post('/process-pending', (c) =>
-        withRoute(c, async () => {
-            const results = await budgetService.processPendingRecalculations();
-            return { processed: results.length, results };
-        })
+
+    // Delete a transaction budget (soft delete)
+    .delete(
+        '/:id',
+        zValidator('param', transactionBudgetSchemas.removeById.endpoint.param),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { id } = c.req.valid('param');
+                await budgetServices.removeById({ ids: { id }, userId: user.id });
+                return { success: true };
+            })
     )
-    .post('/', zValidator('json', transactionBudgetServiceSchemas.create), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const data = c.req.valid('json');
-            const newBudget = await budgetService.create({
-                data,
-                userId: user.id,
-            });
-            return newBudget;
-        }, 201)
+
+    // Calculate and store budget for a transaction
+    .post(
+        '/calculate',
+        zValidator('json', transactionBudgetSchemas.calculateAndStore.endpoint.json),
+        async (c) =>
+            withRoute(
+                c,
+                async () => {
+                    const user = getUser(c);
+                    const { transactionId } = c.req.valid('json');
+                    return await budgetServices.calculateAndStore({
+                        transactionId,
+                        userId: user.id,
+                    });
+                },
+                201
+            )
     )
-    .patch('/:id', zValidator('json', transactionBudgetServiceSchemas.update), (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.param();
-            const values = c.req.valid('json');
-            const updatedBudget = await budgetService.update({
-                id,
-                data: values,
-                userId: user.id,
-            });
-            return updatedBudget;
-        })
-    )
-    .delete('/:id', zValidator('param', endpointSelectSchema), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-            return await budgetService.remove({ id, userId: user.id });
-        })
+
+    // Mark transaction budgets for recalculation
+    .post(
+        '/recalculate',
+        zValidator('json', transactionBudgetSchemas.markForRecalculation.endpoint.json),
+        async (c) =>
+            withRoute(c, async () => {
+                const user = getUser(c);
+                const { transactionId } = c.req.valid('json');
+
+                // Mark for recalculation
+                await budgetServices.markForRecalculation({ transactionId });
+
+                // Process recalculation for this user
+                const budget = await budgetServices.calculateAndStore({
+                    transactionId,
+                    userId: user.id,
+                });
+
+                return budget;
+            })
     );
+
+// Process all pending recalculations
+// .post('/process-pending', async (c) =>
+//     withRoute(c, async () => {
+//         const results = await budgetServices.processPendingRecalculations();
+//         return { processed: results.length, results };
+//     })
+// );
 
 export default app;

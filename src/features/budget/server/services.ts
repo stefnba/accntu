@@ -1,30 +1,18 @@
 import { and, eq } from 'drizzle-orm';
 
-import { bucketToTransaction } from '@/server/db';
 import {
     TSplitConfig,
     TSplitParticipant,
-    TTransactionBudgetQuery,
+    transactionBudgetSchemas,
+    transactionBudgetToParticipantSchemas,
 } from '@/features/budget/schemas';
 import {
     transactionBudgetQueries,
     transactionBudgetToParticipantQueries,
 } from '@/features/budget/server/db/queries';
-import {
-    participantToBucket,
-    participantToConnectedBankAccount,
-    participantToTransaction,
-} from '@/server/db';
-import { transaction } from '@/server/db';
-import {
-    TQueryDeleteUserRecord,
-    TQueryInsertUserRecord,
-    TQuerySelectUserRecordById,
-    TQuerySelectUserRecords,
-    TQueryUpdateUserRecord,
-} from '@/lib/schemas';
-import { db } from '@/server/db';
+import { db, dbTable } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
+import { createFeatureServices } from '@/server/lib/service/';
 
 // ====================
 // Split Calculation Engine
@@ -46,8 +34,8 @@ const calculateTransactionBudget = async ({
             // Get transaction details
             const [transactionData] = await db
                 .select()
-                .from(transaction)
-                .where(eq(transaction.id, transactionId));
+                .from(dbTable.transaction)
+                .where(eq(dbTable.transaction.id, transactionId));
 
             if (!transactionData) {
                 throw new Error('Transaction not found');
@@ -56,11 +44,11 @@ const calculateTransactionBudget = async ({
             // 1. Check for direct transaction splits (highest precedence)
             const transactionSplits = await db
                 .select()
-                .from(participantToTransaction)
+                .from(dbTable.participantToTransaction)
                 .where(
                     and(
-                        eq(participantToTransaction.transactionId, transactionId),
-                        eq(participantToTransaction.isActive, true)
+                        eq(dbTable.participantToTransaction.transactionId, transactionId),
+                        eq(dbTable.participantToTransaction.isActive, true)
                     )
                 );
 
@@ -77,22 +65,22 @@ const calculateTransactionBudget = async ({
             // 2. Check for bucket-level splits
             const bucketConnection = await db
                 .select()
-                .from(bucketToTransaction)
+                .from(dbTable.bucketToTransaction)
                 .where(
                     and(
-                        eq(bucketToTransaction.transactionId, transactionId),
-                        eq(bucketToTransaction.isActive, true)
+                        eq(dbTable.bucketToTransaction.transactionId, transactionId),
+                        eq(dbTable.bucketToTransaction.isActive, true)
                     )
                 );
 
             if (bucketConnection.length > 0) {
                 const bucketSplits = await db
                     .select()
-                    .from(participantToBucket)
+                    .from(dbTable.participantToBucket)
                     .where(
                         and(
-                            eq(participantToBucket.bucketId, bucketConnection[0].bucketId),
-                            eq(participantToBucket.isActive, true)
+                            eq(dbTable.participantToBucket.bucketId, bucketConnection[0].bucketId),
+                            eq(dbTable.participantToBucket.isActive, true)
                         )
                     );
 
@@ -110,14 +98,14 @@ const calculateTransactionBudget = async ({
             // 3. Check for account-level splits
             const accountSplits = await db
                 .select()
-                .from(participantToConnectedBankAccount)
+                .from(dbTable.participantToConnectedBankAccount)
                 .where(
                     and(
                         eq(
-                            participantToConnectedBankAccount.connectedBankAccountId,
+                            dbTable.participantToConnectedBankAccount.connectedBankAccountId,
                             transactionData.connectedBankAccountId
                         ),
-                        eq(participantToConnectedBankAccount.isActive, true)
+                        eq(dbTable.participantToConnectedBankAccount.isActive, true)
                     )
                 );
 
@@ -194,7 +182,7 @@ const calculateSplitAmount = async ({
                 resolvedPercentage = (resolvedAmount / totalAmount) * 100;
                 break;
 
-            case 'share':
+            case 'share': {
                 // Calculate share ratio
                 const totalShares = splits.reduce((sum, s) => {
                     const config = s.splitConfig as TSplitConfig;
@@ -204,8 +192,9 @@ const calculateSplitAmount = async ({
                 resolvedPercentage = (shareValue / totalShares) * 100;
                 resolvedAmount = (totalAmount * resolvedPercentage) / 100;
                 break;
+            }
 
-            case 'adjustment':
+            case 'adjustment': {
                 // Base calculation + adjustment
                 const baseType = splitConfig.baseType || 'equal';
                 const basePercentage = baseType === 'equal' ? 100 / splits.length : 0;
@@ -213,6 +202,7 @@ const calculateSplitAmount = async ({
                 resolvedAmount = (totalAmount * basePercentage) / 100 + adjustment;
                 resolvedPercentage = (resolvedAmount / totalAmount) * 100;
                 break;
+            }
 
             default:
                 resolvedPercentage = 0;
@@ -263,158 +253,136 @@ const calculateSplitAmount = async ({
 };
 
 // ====================
-// Service Functions
+// Service Factory
 // ====================
 
-export const budgetService = {
-    /**
-     * Get all transaction budgets for a user
-     */
-    getAll: async ({ userId }: TQuerySelectUserRecords) => {
-        const result = await transactionBudgetQueries.getAll({ userId });
-        return result;
-    },
+export const budgetServices = createFeatureServices
+    .registerSchema(transactionBudgetSchemas)
+    .registerSchema(transactionBudgetToParticipantSchemas)
+    .registerQuery(transactionBudgetQueries)
+    .registerQuery(transactionBudgetToParticipantQueries)
+    .defineServices(({ queries }) => ({
+        /**
+         * Create a new transaction budget
+         */
+        create: async ({ data, userId }) => {
+            return await queries.create({ data, userId });
+        },
 
-    /**
-     * Get a transaction budget by ID
-     */
-    getById: async ({ id, userId }: TQuerySelectUserRecordById) => {
-        const result = await transactionBudgetQueries.getById({ id, userId });
-        return result;
-    },
+        /**
+         * Get a transaction budget by ID
+         */
+        getById: async ({ ids, userId }) => {
+            return await queries.getById({ ids, userId });
+        },
 
-    /**
-     * Calculate and store budget for a transaction
-     */
-    calculateAndStore: async ({
-        transactionId,
-        userId,
-    }: {
-        transactionId: string;
-        userId: string;
-    }) => {
-        const calculationResult = await calculateTransactionBudget({ transactionId, userId });
+        /**
+         * Get many transaction budgets
+         */
+        getMany: async ({ userId, filters, pagination }) => {
+            return await queries.getMany({ userId, filters, pagination });
+        },
 
-        // Check if budget already exists
-        const existingBudget = await transactionBudgetQueries.getByTransactionAndUser({
-            transactionId,
-            userId,
-        });
+        /**
+         * Update a transaction budget by ID
+         */
+        updateById: async ({ data, ids, userId }) => {
+            return await queries.updateById({ ids, data, userId });
+        },
 
-        let budgetRecord;
+        /**
+         * Remove a transaction budget by ID
+         */
+        removeById: async ({ ids, userId }) => {
+            return await queries.removeById({ ids, userId });
+        },
 
-        if (existingBudget) {
-            // Update existing budget
-            budgetRecord = await transactionBudgetQueries.update({
-                id: existingBudget.id,
-                userId,
-                data: {
-                    budgetAmount: calculationResult.budgetAmount,
-                    budgetPercentage: calculationResult.budgetPercentage,
-                    splitSource: calculationResult.splitSource,
-                    calculatedAt: new Date(),
-                    isRecalculationNeeded: false,
-                },
-            });
+        /**
+         * Calculate and store budget for a transaction
+         */
+        calculateAndStore: async ({ transactionId, userId }) => {
+            const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
-            // Remove existing participant records
-            await transactionBudgetToParticipantQueries.removeParticipantsByBudgetId({
-                transactionBudgetId: existingBudget.id,
-            });
-        } else {
-            // Create new budget
-            budgetRecord = await transactionBudgetQueries.create({
-                data: {
-                    transactionId,
-                    budgetAmount: calculationResult.budgetAmount,
-                    budgetPercentage: calculationResult.budgetPercentage,
-                    splitSource: calculationResult.splitSource,
-                    isRecalculationNeeded: false,
-                },
+            // Check if budget already exists
+            const existingBudget = await queries.getByTransactionAndUser({
+                transactionId,
                 userId,
             });
-        }
 
-        // Create participant records
-        const participantRecords = calculationResult.participantRecords.map((record) => ({
-            transactionBudgetId: budgetRecord.id,
-            participantId: record.participantId,
-            resolvedAmount: record.resolvedAmount,
-            resolvedPercentage: record.resolvedPercentage,
-            splitConfigUsed: record.splitConfig,
-            isUserParticipant: record.isUserParticipant,
-        }));
+            let budgetRecord;
 
-        await transactionBudgetToParticipantQueries.createParticipants({
-            participants: participantRecords,
-        });
+            if (existingBudget) {
+                // Update existing budget
+                budgetRecord = await queries.updateById({
+                    ids: { id: existingBudget.id },
+                    userId,
+                    data: {
+                        budgetAmount: calculationResult.budgetAmount.toString(),
+                        budgetPercentage: calculationResult.budgetPercentage.toString(),
+                        splitSource: calculationResult.splitSource,
+                        transactionId,
+                        // calculatedAt: new Date(),
+                        // isRecalculationNeeded: false,
+                    },
+                });
 
-        return budgetRecord;
-    },
+                // Remove existing participant records
+                await queries.removeParticipantsByBudgetId({
+                    transactionBudgetId: existingBudget.id,
+                });
+            } else {
+                // Create new budget
+                budgetRecord = await queries.create({
+                    data: {
+                        transactionId,
+                        budgetAmount: calculationResult.budgetAmount.toString(),
+                        budgetPercentage: calculationResult.budgetPercentage.toString(),
+                        splitSource: calculationResult.splitSource,
+                        // isRecalculationNeeded: false,
+                    },
+                    userId,
+                });
+            }
 
-    /**
-     * Mark transaction budgets for recalculation
-     */
-    markForRecalculation: async ({ transactionId }: { transactionId: string }) => {
-        return await transactionBudgetQueries.markForRecalculation({ transactionId });
-    },
+            // Create participant records
+            const participantRecords = calculationResult.participantRecords.map((record) => ({
+                participantId: record.participantId,
+                resolvedAmount: record.resolvedAmount.toString(),
+                resolvedPercentage: record.resolvedPercentage.toString(),
+                splitConfigUsed: record.splitConfig,
+                isUserParticipant: record.isUserParticipant,
+            }));
 
-    /**
-     * Process all pending recalculations
-     */
-    processPendingRecalculations: async () => {
-        const pendingBudgets = await transactionBudgetQueries.getPendingRecalculation();
-
-        const results = [];
-        for (const budget of pendingBudgets) {
-            const result = await budgetService.calculateAndStore({
-                transactionId: budget.transactionId,
-                userId: budget.userId,
+            await queries.createParticipants({
+                transactionBudgetId: budgetRecord.id,
+                participants: participantRecords,
             });
-            results.push(result);
-        }
 
-        return results;
-    },
+            return budgetRecord;
+        },
 
-    /**
-     * Create a transaction budget
-     */
-    create: async ({ data, userId }: TQueryInsertUserRecord<TTransactionBudgetQuery['insert']>) => {
-        return await transactionBudgetQueries.create({ data, userId });
-    },
+        /**
+         * Mark transaction budgets for recalculation
+         */
+        markForRecalculation: async ({ transactionId }) => {
+            return await queries.markForRecalculation({ transactionId });
+        },
 
-    /**
-     * Update a transaction budget
-     */
-    update: async ({
-        id,
-        userId,
-        data,
-    }: TQueryUpdateUserRecord<TTransactionBudgetQuery['update']>) => {
-        const updatedBudget = await transactionBudgetQueries.update({ id, userId, data });
+        /**
+         * Process all pending recalculations
+         */
+        // processPendingRecalculations: async () => {
+        //     const pendingBudgets = await queries.getPendingRecalculation();
 
-        if (!updatedBudget) {
-            throw new Error(
-                'Transaction budget not found or you do not have permission to update it'
-            );
-        }
+        //     const results = [];
+        //     for (const budget of pendingBudgets) {
+        //         const result = await budgetServices.calculateAndStore({
+        //             transactionId: budget.transactionId,
+        //             userId: budget.userId,
+        //         });
+        //         results.push(result);
+        //     }
 
-        return updatedBudget;
-    },
-
-    /**
-     * Delete a transaction budget
-     */
-    remove: async ({ id, userId }: TQueryDeleteUserRecord) => {
-        const deletedBudget = await transactionBudgetQueries.remove({ id, userId });
-
-        if (!deletedBudget) {
-            throw new Error(
-                'Transaction budget not found or you do not have permission to delete it'
-            );
-        }
-
-        return { id };
-    },
-};
+        //     return results;
+        // },
+    }));

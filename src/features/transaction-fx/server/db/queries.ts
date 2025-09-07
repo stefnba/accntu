@@ -100,7 +100,7 @@ export const upsertRate = async ({
     });
 
 // ToDO
-const batchUpsertRates = async ({
+export const batchUpsertRates = async ({
     rates,
 }: {
     rates: Array<{

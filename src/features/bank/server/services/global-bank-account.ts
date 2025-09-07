@@ -1,6 +1,6 @@
 import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
 import { bankQueries } from '@/features/bank/server/db/queries';
-import { transactionServiceSchemas } from '@/features/transaction/schemas';
+import { transactionSchemas } from '@/features/transaction/schemas';
 import { DuckDBTransactionTransformSingleton } from '@/lib/duckdb/singleton';
 import { localUploadService } from '@/lib/upload/local/service';
 
@@ -77,7 +77,7 @@ export const globalBankAccountServices = createFeatureServices
                             fieldName: 'key',
                         },
                         transformSql: transformQuery,
-                        schema: transactionServiceSchemas.create,
+                        schema: transactionSchemas.create.service,
                     });
                     return {
                         csvFile,

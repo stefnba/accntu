@@ -12,11 +12,7 @@ import { AccountCount } from '@/features/bank/components/account-count';
 import { AccountTypeBadge } from '@/features/bank/components/account-type';
 import { BankLogo } from '@/features/bank/components/bank-logo';
 import { IntegrationTypeBadge } from '@/features/bank/components/integration-type';
-import {
-    TConnectedBank,
-    TConnectedBankAccount,
-    TGlobalBank,
-} from '@/features/bank/server/db/tables';
+import { TConnectedBank, TConnectedBankAccount, TGlobalBank } from '@/features/bank/schemas/';
 import { typedEntries } from '@/lib/utils';
 import { MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';

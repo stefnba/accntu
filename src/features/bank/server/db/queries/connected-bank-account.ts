@@ -101,4 +101,4 @@ export const connectedBankAccountQueries = createFeatureQueries
         },
     });
 
-export type TConnectedBankAccountQueries = InferFeatureType<typeof connectedBankAccountQueries>;
+export type TConnectedBankAccount = InferFeatureType<typeof connectedBankAccountQueries>;

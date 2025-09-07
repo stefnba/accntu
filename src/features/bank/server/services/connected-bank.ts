@@ -42,30 +42,27 @@ export const connectedBankServices = createFeatureServices
         },
     }));
 
-const createConnectedBankWithAccounts = async ({
-    userId,
-    data,
-}: {
-    userId: string;
-    data: TCreateConnectedBankWithAccounts;
-}) => {
-    const { globalBankId, connectedBankAccounts } = data;
+const createConnectedBankWithAccounts = async (input: any) => {
+    const { globalBankId, connectedBankAccounts } = input;
 
     // Create the connected bank, if it already exists, connectedBank will be null
-    let connectedBank = await connectedBankQueries.create({
+    let connectedBank = await connectedBankQueries.queries.create({
         data: {
-            userId,
             globalBankId,
         },
-        userId,
+        userId: input.userId,
     });
 
     // if no connected bank was created, get the existing one
     if (!connectedBank) {
-        [connectedBank] = await connectedBankQueries.getAll({
-            userId,
+        [connectedBank] = await connectedBankQueries.queries.getMany({
+            userId: input.userId,
             filters: {
                 globalBankId,
+            },
+            pagination: {
+                page: 1,
+                pageSize: 1,
             },
         });
     }
@@ -79,10 +76,11 @@ const createConnectedBankWithAccounts = async ({
     const createdAccounts = await Promise.all(
         connectedBankAccounts.map((account) =>
             connectedBankAccountServices.create({
-                userId,
+                userId: input.userId,
                 data: {
                     connectedBankId: connectedBank.id,
                     globalBankAccountId: account.globalBankAccountId,
+                    name: account.name,
                 },
             })
         )

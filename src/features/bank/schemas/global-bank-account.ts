@@ -145,3 +145,5 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     });
 
 export type TGlobalBankAccountSchemas = InferSchemas<typeof globalBankAccountSchemas>;
+
+export type { TGlobalBankAccount } from '@/features/bank/server/db/queries/global-bank-account';

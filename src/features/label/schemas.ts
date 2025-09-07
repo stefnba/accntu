@@ -103,18 +103,19 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Get flattened labels with hierarchy info
      */
-    .addCustom('getFlattened', ({ buildServiceInput }) => {
+    .addCustom('getFlattened', () => {
         const filtersSchema = z.object({
             search: z.string().optional(),
         });
 
-        const input = buildServiceInput({
+        const schema = z.object({
             filters: filtersSchema,
+            userId: z.string(),
         });
 
         return {
-            service: input,
-            query: input,
+            service: schema,
+            query: schema,
             endpoint: {
                 query: filtersSchema,
             },
@@ -123,24 +124,25 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     /**
      * Reorder labels
      */
-    .addCustom('reorder', ({ buildServiceInput }) => {
-        const itemsSchema = z.object({
-            items: z.array(
-                z.object({
-                    id: z.string(),
-                    parentId: z.string().nullable(),
-                    index: z.number().int(),
-                })
-            ),
+    .addCustom('reorder', () => {
+        const itemsSchema = z.array(
+            z.object({
+                id: z.string(),
+                parentId: z.string().nullable(),
+                index: z.number().int(),
+            })
+        );
+
+        const schema = z.object({
+            items: itemsSchema,
+            userId: z.string(),
         });
 
-        const input = buildServiceInput({ items: itemsSchema });
-
         return {
-            service: input,
-            query: input,
+            service: schema,
+            query: schema,
             endpoint: {
-                json: itemsSchema,
+                json: z.object({ items: itemsSchema }),
             },
         };
     });
