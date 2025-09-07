@@ -4,13 +4,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 // Import all feature schemas
-import * as schemaImport from '../../src/server/db/tables';
+import { dbTable } from '@/server/db';
 
 // Handle both default and named exports
-const schema = ('default' in schemaImport ? schemaImport.default : schemaImport) as Record<
-    string,
-    any
->;
+const schema = ('default' in dbTable ? dbTable.default : dbTable) as Record<string, any>;
 
 const { DATABASE_URL } = process.env;
 

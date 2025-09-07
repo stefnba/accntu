@@ -1,7 +1,7 @@
+import { dbTable } from '@/server/db';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '../../../src/server/db/tables';
 import { globalBankSeedData } from './data/global-bank';
 import { globalBankAccountSeedData } from './data/global-bank-account';
 
@@ -10,7 +10,7 @@ const { DATABASE_URL } = process.env;
 if (!DATABASE_URL) throw new Error('DATABASE_URL is not set.');
 
 const client = postgres(DATABASE_URL);
-const db = drizzle(client, { schema, casing: 'snake_case' });
+const db = drizzle(client, { schema: dbTable, casing: 'snake_case' });
 
 /**
  * Main function to seed the database
@@ -20,12 +20,12 @@ async function main() {
 
     // Insert global banks
     console.log('Seeding global banks...');
-    await db.insert(schema.globalBank).values(globalBankSeedData).onConflictDoNothing();
+    await db.insert(dbTable.globalBank).values(globalBankSeedData).onConflictDoNothing();
 
     // Insert global bank accounts
     console.log('Seeding global bank accounts...');
     await db
-        .insert(schema.globalBankAccount)
+        .insert(dbTable.globalBankAccount)
         .values(globalBankAccountSeedData)
         .onConflictDoNothing();
 

@@ -1,4 +1,4 @@
-import { type TGlobalBankAccount } from '../../../../src/features/bank/server/db/tables';
+import { type TGlobalBankAccount } from '@/features/bank/schemas';
 import { globalBankSeedData, type TGlobalBankNames } from './global-bank';
 
 /**
@@ -109,6 +109,7 @@ ORDER BY date_col DESC`,
             dateFormat: 'dd/MM/yyyy',
             decimalSeparator: '.',
             encoding: 'utf-8',
+            idColumns: ['Date', 'Description', 'Amount', 'Reference'],
         },
         sampleTransformData: 'test',
     },
@@ -129,6 +130,7 @@ FROM read_csv_auto('{{CSV_FILE_PATH}}',
 WHERE date_col IS NOT NULL AND amount_col IS NOT NULL
 ORDER BY date_col DESC`,
         transformConfig: {
+            idColumns: ['Date', 'Description', 'Amount', 'Reference'],
             type: 'csv',
             delimiter: ';',
             hasHeader: true,
@@ -167,6 +169,7 @@ ORDER BY date_col DESC`,
             dateFormat: 'dd.MM.yyyy',
             decimalSeparator: ',',
             encoding: 'utf-8',
+            idColumns: ['Date', 'Description', 'Debit', 'Credit', 'Balance'],
         },
         sampleTransformData: 'test',
     },
@@ -196,6 +199,7 @@ ORDER BY date_col DESC`,
             dateFormat: 'dd.MM.yyyy',
             decimalSeparator: ',',
             encoding: 'utf-8',
+            idColumns: ['Date', 'Description', 'Debit', 'Credit', 'Balance'],
         },
         sampleTransformData: 'test',
     },
