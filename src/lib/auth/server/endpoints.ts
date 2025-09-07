@@ -16,6 +16,7 @@ const {
     signOut,
     signInEmailOTP,
     signInSocial,
+    signInEmail,
     sendVerificationOTP,
     getVerificationOTP,
     verifyEmailOTP,
@@ -77,6 +78,13 @@ const app = new Hono()
     .post(signInSocial.path, zValidator('json', signInSocial.options.body), async (c) => {
         const body = c.req.valid('json');
         const response = await signInSocial({
+            body,
+        });
+        return c.json(response);
+    })
+    .post(signInEmail.path, zValidator('json', signInEmail.options.body), async (c) => {
+        const body = c.req.valid('json');
+        const response = await signInEmail({
             body,
         });
         return c.json(response);
