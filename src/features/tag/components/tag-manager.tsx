@@ -46,7 +46,7 @@ export function TagManager() {
     const [deleteTagId, setDeleteTagId] = useState<string>();
     const { openModal, isModalOpen, modalView } = useTagUpsertModal();
 
-    const { data: tags = [], isLoading } = useTagEndpoints.getAll({});
+    const { data: tags = [], isLoading } = useTagEndpoints.getAll({ query: { search } });
     const deleteMutation = useTagEndpoints.delete();
 
     const sortedAndFilteredTags = useMemo(() => {

@@ -39,7 +39,7 @@ export const useTagEndpoints = {
     /**
      * Assign tags to a transaction
      */
-    assignToTransaction: createMutation(apiClient.tags.assign[':id'].$put, [
+    assignToTransaction: createMutation(apiClient.tags.assign[':transactionId'].$put, [
         TAG_QUERY_KEYS.TRANSACTION_TAGS,
         TRANSACTION_QUERY_KEYS.TRANSACTION,
         TRANSACTION_QUERY_KEYS.TRANSACTIONS,

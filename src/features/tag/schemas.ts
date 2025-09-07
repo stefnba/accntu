@@ -31,6 +31,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
         return {
             service: input,
             query: input,
+            form: baseSchema,
             endpoint: {
                 json: baseSchema,
             },
@@ -83,9 +84,10 @@ export const { schemas: tagSchemas } = createFeatureSchemas
             service: buildInput({ data: baseSchema }),
             query: buildInput({ data: baseSchema }),
             endpoint: {
-                json: baseSchema,
+                json: baseSchema.partial(),
                 param: idFieldsSchema,
             },
+            form: baseSchema.partial(),
         };
     })
     /**

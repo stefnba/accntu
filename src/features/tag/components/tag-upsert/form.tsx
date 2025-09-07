@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTagEndpoints } from '@/features/tag/api';
 import { useTagUpsertModal } from '@/features/tag/hooks';
-import { tagServiceSchemas } from '@/features/tag/schemas';
+import { tagSchemas } from '@/features/tag/schemas';
 
 export const TagUpsertForm = () => {
     // ================================
@@ -36,7 +36,7 @@ export const TagUpsertForm = () => {
 
     const form = useUpsertForm({
         create: {
-            schema: tagServiceSchemas.create,
+            schema: tagSchemas.create.form,
             defaultValues: {
                 name: '',
                 color: '',
@@ -56,7 +56,7 @@ export const TagUpsertForm = () => {
             },
         },
         update: {
-            schema: tagServiceSchemas.update,
+            schema: tagSchemas.updateById.form,
             defaultValues: tag,
             onSubmit: async (data) => {
                 await updateMutation.mutateAsync(
