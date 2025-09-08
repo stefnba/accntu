@@ -17,4 +17,34 @@ export type TValidTableForFrom<T extends Table> =
         ? DrizzleTypeError<"Cannot reference a data-modifying statement subquery if it doesn't contain a `returning` clause">
         : T;
 
+/**
+ * The columns of a table
+ */
 export type TTableColumns<T extends Table> = keyof T['_']['columns'];
+
+/**
+ * The required only type
+ */
+export type RequiredOnly<T> = {
+    [K in keyof T as undefined extends T[K] ? never : K]: T[K];
+};
+
+/**
+ * The input for the get by id query
+ */
+export type TByIdInput<
+    T extends Table,
+    TIdFields extends Array<keyof T['_']['columns']>,
+    TUserIdField extends keyof T['_']['columns'] | undefined = undefined,
+> = TUserIdField extends keyof T['_']['columns']
+    ? {
+          ids: {
+              [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
+          };
+          userId: GetColumnData<T['_']['columns'][TUserIdField]>;
+      }
+    : {
+          ids: {
+              [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
+          };
+      };

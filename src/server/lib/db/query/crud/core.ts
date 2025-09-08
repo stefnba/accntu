@@ -13,6 +13,7 @@ import {
     getTableName,
     InferInsertModel,
     isTable,
+    SQLWrapper,
     Table,
 } from 'drizzle-orm';
 
@@ -118,11 +119,13 @@ export class CrudQueryBuilder<T extends Table> {
         columns,
         limit,
         offset,
+        filters,
     }: {
         columns?: Cols;
         identifiers: Array<TBooleanFilter<T>>;
         limit?: number;
         offset?: number;
+        filters?: (SQLWrapper | undefined)[];
     }) {
         if (!isTable(this.table)) {
             throw new Error('Model is not a table');
@@ -138,7 +141,7 @@ export class CrudQueryBuilder<T extends Table> {
         const query = db
             .select(this.buildSelectColumns(columns))
             .from(this.table as TValidTableForFrom<T>)
-            .where(and(...filterConditions));
+            .where(and(...filterConditions, ...(filters ?? [])));
 
         if (limit) {
             return await query.$dynamic().limit(limit);
@@ -172,11 +175,12 @@ export class CrudQueryBuilder<T extends Table> {
         returnColumns?: Cols;
     }) {
         const filterConditions = this.buildIdentifierFilters(identifiers);
-        return db
+        const updatedRecord = await db
             .update(this.table)
             .set(data)
             .where(and(...filterConditions))
             .returning(this.buildSelectColumns(returnColumns));
+        return updatedRecord[0];
     }
 
     /**
@@ -220,7 +224,8 @@ export class CrudQueryBuilder<T extends Table> {
         returnColumns?: Cols;
     }) {
         const columns = this.buildSelectColumns(returnColumns);
-        return db.insert(this.table).values(data).returning(columns);
+        const newRecord = await db.insert(this.table).values(data).returning(columns);
+        return newRecord[0];
     }
 
     /**
