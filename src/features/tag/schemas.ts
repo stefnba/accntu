@@ -42,8 +42,8 @@ export const { schemas: tagSchemas } = createFeatureSchemas
      */
     .addCore('getMany', ({ buildInput }) => {
         const paginationSchema = z.object({
-            page: z.number().int().default(1),
-            pageSize: z.number().int().default(10),
+            page: z.coerce.number().int().default(1),
+            pageSize: z.coerce.number().int().default(10),
         });
 
         const filtersSchema = z.object({
