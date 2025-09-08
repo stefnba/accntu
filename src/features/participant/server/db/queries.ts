@@ -50,7 +50,11 @@ export const participantQueries = createFeatureQueries
             const [result] = await db
                 .select()
                 .from(dbTable.participant)
-                .where(and(eq(dbTable.participant.id, ids.id), eq(dbTable.participant.userId, userId)))
+                .where(and(
+                    eq(dbTable.participant.id, ids.id), 
+                    eq(dbTable.participant.userId, userId),
+                    eq(dbTable.participant.isActive, true)
+                ))
                 .limit(1);
             return result || null;
         },
@@ -78,7 +82,11 @@ export const participantQueries = createFeatureQueries
             const [result] = await db
                 .update(dbTable.participant)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(dbTable.participant.id, ids.id), eq(dbTable.participant.userId, userId)))
+                .where(and(
+                    eq(dbTable.participant.id, ids.id), 
+                    eq(dbTable.participant.userId, userId),
+                    eq(dbTable.participant.isActive, true)
+                ))
                 .returning();
             return result || null;
         },

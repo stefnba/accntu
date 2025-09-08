@@ -1,6 +1,5 @@
 import { bucketSchemas } from '@/features/bucket/schemas';
 import { db, dbTable } from '@/server/db';
-import { bucket } from '@/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq, ilike } from 'drizzle-orm';
 
@@ -13,12 +12,12 @@ export const bucketQueries = createFeatureQueries
         operation: 'get buckets by user ID',
         fn: async ({ userId, filters, pagination }) => {
             const conditions = [
-                eq(bucket.userId, userId),
-                eq(bucket.isActive, true),
+                eq(dbTable.bucket.userId, userId),
+                eq(dbTable.bucket.isActive, true),
             ];
 
             if (filters?.search) {
-                conditions.push(ilike(bucket.name, `%${filters.search}%`));
+                conditions.push(ilike(dbTable.bucket.title, `%${filters.search}%`));
             }
 
             return await db
@@ -51,7 +50,7 @@ export const bucketQueries = createFeatureQueries
             const [result] = await db
                 .select()
                 .from(dbTable.bucket)
-                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)))
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId), eq(dbTable.bucket.isActive, true)))
                 .limit(1);
             return result || null;
         },
@@ -65,7 +64,7 @@ export const bucketQueries = createFeatureQueries
             await db
                 .update(dbTable.bucket)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)));
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)));
         },
     })
     /**
@@ -77,7 +76,7 @@ export const bucketQueries = createFeatureQueries
             const [updated] = await db
                 .update(dbTable.bucket)
                 .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(bucket.id, ids.id), eq(bucket.userId, userId)))
+                .where(and(eq(dbTable.bucket.id, ids.id), eq(dbTable.bucket.userId, userId)))
                 .returning();
             return updated || null;
         },

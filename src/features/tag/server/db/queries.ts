@@ -49,7 +49,7 @@ export const tagQueries = createFeatureQueries
             const [result] = await db
                 .select()
                 .from(dbTable.tag)
-                .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)))
+                .where(and(eq(tag.id, ids.id), eq(tag.userId, userId), eq(tag.isActive, true)))
                 .limit(1);
             return result || null;
         },
