@@ -21,7 +21,13 @@ const app = new Hono()
         withRoute(c, async () => {
             const user = getUser(c);
             const ids = c.req.valid('param');
-            return await participantServices.getById({ ids, userId: user.id });
+            const participant = await participantServices.getById({ ids, userId: user.id });
+
+            if (!participant) {
+                throw new Error('Participant not found');
+            }
+
+            return participant;
         })
     )
     .post('/', zValidator('json', participantSchemas.create.endpoint.json), (c) =>
@@ -58,7 +64,8 @@ const app = new Hono()
         withRoute(c, async () => {
             const user = getUser(c);
             const ids = c.req.valid('param');
-            return await participantServices.removeById({ ids, userId: user.id });
+            await participantServices.removeById({ ids, userId: user.id });
+            return { success: true };
         })
     );
 
