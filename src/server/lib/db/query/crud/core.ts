@@ -267,14 +267,17 @@ export class CrudQueryBuilder<T extends Table> {
         softDelete?: boolean;
     }) {
         const filterConditions = this.buildIdentifierFilters(identifiers);
+
         if (softDelete) {
+            // if softDelete is true, update the record to set isActive to false
             await db
                 .update(this.table)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(and(...filterConditions));
+        } else {
+            // if softDelete is false, delete the record
+            await db.delete(this.table).where(and(...filterConditions));
         }
-
-        // todo: add delete
     }
 }
 
