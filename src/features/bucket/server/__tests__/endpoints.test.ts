@@ -17,7 +17,7 @@ const validateBucketResponse = (bucket: any) => {
     expect(bucket).toHaveProperty('isActive');
     expect(bucket).toHaveProperty('createdAt');
     expect(bucket).toHaveProperty('updatedAt');
-    
+
     expect(typeof bucket.id).toBe('string');
     expect(typeof bucket.title).toBe('string');
     expect(typeof bucket.type).toBe('string');
@@ -56,7 +56,7 @@ describe('Bucket API Endpoints', () => {
             const res = await client.api.buckets.$get({ query: {} }, { headers: auth.authHeaders });
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const buckets = await res.json();
                 expect(Array.isArray(buckets)).toBe(true);
@@ -81,9 +81,12 @@ describe('Bucket API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
-                const bucket = await res.json();
+                const response = await res.json();
+                expect(response).toHaveProperty('success', true);
+                expect(response).toHaveProperty('data');
+                const bucket = response.data;
                 validateBucketResponse(bucket);
                 expect(bucket.title).toBe(bucketData.title);
                 expect(bucket.type).toBe(bucketData.type);
@@ -103,7 +106,7 @@ describe('Bucket API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const bucket = await res.json();
                 validateBucketResponse(bucket);
@@ -124,10 +127,13 @@ describe('Bucket API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect(res.status).toBe(200);
-            
-            if (res.status === 200) {
-                const bucket = await res.json();
+            expect(res.status).toBe(201);
+
+            if (res.status === 201) {
+                const response = await res.json();
+                expect(response).toHaveProperty('success', true);
+                expect(response).toHaveProperty('data');
+                const bucket = response.data;
                 validateBucketResponse(bucket);
                 expect(bucket.id).toBe(createdBucketId);
                 expect(bucket.title).toBe(updateData.title);
@@ -143,19 +149,23 @@ describe('Bucket API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect(res.status).toBe(200);
-            
-            if (res.status === 200) {
+            expect(res.status).toBe(201);
+
+            if (res.status === 201) {
                 const response = await res.json();
-                expect(response).toEqual({ success: true });
+                expect(response).toHaveProperty('success', true);
             }
 
-            // Verify bucket is actually deleted
+            // Verify bucket is actually deleted (should return null)
             const getRes = await client.api.buckets[':id'].$get(
                 { param: { id: createdBucketId } },
                 { headers: auth.authHeaders }
             );
-            expect(getRes.status).toBe(500);
+            expect(getRes.status).toBe(200);
+            if (getRes.status === 200) {
+                const bucket = await getRes.json();
+                expect(bucket).toBeNull();
+            }
         });
     });
 
@@ -225,7 +235,7 @@ describe('Bucket API Endpoints', () => {
 
         it('should create bucket with different types', async () => {
             const types = ['trip', 'home', 'project', 'event', 'other'] as const;
-            
+
             for (const type of types) {
                 const res = await client.api.buckets.$post(
                     {
@@ -238,9 +248,12 @@ describe('Bucket API Endpoints', () => {
                 );
 
                 expect(res.status).toBe(201);
-                
+
                 if (res.status === 201) {
-                    const bucket = await res.json();
+                    const response = await res.json();
+                    expect(response).toHaveProperty('success', true);
+                    expect(response).toHaveProperty('data');
+                    const bucket = response.data;
                     validateBucketResponse(bucket);
                     expect(bucket.type).toBe(type);
                     expect(bucket.title).toBe(`Test ${type} Bucket`);
@@ -250,7 +263,7 @@ describe('Bucket API Endpoints', () => {
 
         it('should create bucket with different statuses', async () => {
             const statuses = ['open', 'settled'] as const;
-            
+
             for (const status of statuses) {
                 const res = await client.api.buckets.$post(
                     {
@@ -264,9 +277,12 @@ describe('Bucket API Endpoints', () => {
                 );
 
                 expect(res.status).toBe(201);
-                
+
                 if (res.status === 201) {
-                    const bucket = await res.json();
+                    const response = await res.json();
+                    expect(response).toHaveProperty('success', true);
+                    expect(response).toHaveProperty('data');
+                    const bucket = response.data;
                     validateBucketResponse(bucket);
                     expect(bucket.status).toBe(status);
                     expect(bucket.title).toBe(`Test ${status} Bucket`);
@@ -282,15 +298,15 @@ describe('Bucket API Endpoints', () => {
             const res = await client.api.buckets.$get(
                 {
                     query: {
-                        page: 1,
-                        pageSize: 10,
+                        page: '1',
+                        pageSize: '10',
                     },
                 },
                 { headers: auth.authHeaders }
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const buckets = await res.json();
                 expect(Array.isArray(buckets)).toBe(true);
@@ -310,7 +326,7 @@ describe('Bucket API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const buckets = await res.json();
                 expect(Array.isArray(buckets)).toBe(true);

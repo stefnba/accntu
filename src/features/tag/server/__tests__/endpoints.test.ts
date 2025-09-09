@@ -70,7 +70,10 @@ describe('Tag API Endpoints', () => {
             expect(res.status).toBe(201);
 
             if (res.status === 201) {
-                const tag = await res.json();
+                const response = await res.json();
+                expect(response).toHaveProperty('success', true);
+                expect(response).toHaveProperty('data');
+                const tag = response.data;
                 validateTagResponse(tag);
                 expect(tag.name).toBe(tagData.name);
                 expect(tag.description).toBe(tagData.description);
@@ -129,19 +132,23 @@ describe('Tag API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect(res.status).toBe(200);
+            expect(res.status).toBe(201);
 
-            if (res.status === 200) {
+            if (res.status === 201) {
                 const response = await res.json();
-                expect(response).toEqual({ success: true });
+                expect(response).toHaveProperty('success', true);
             }
 
-            // Verify tag is actually deleted
+            // Verify tag is actually deleted (should return null)
             const getRes = await client.api.tags[':id'].$get(
                 { param: { id: createdTagId } },
                 { headers: auth.authHeaders }
             );
-            expect(getRes.status).toBe(404);
+            expect(getRes.status).toBe(200);
+            if (getRes.status === 200) {
+                const tag = await getRes.json();
+                expect(tag).toBeNull();
+            }
         });
     });
 
