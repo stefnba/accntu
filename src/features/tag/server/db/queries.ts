@@ -60,10 +60,12 @@ export const tagQueries = createFeatureQueries
     .addQuery('removeById', {
         operation: 'delete tag',
         fn: async ({ ids, userId }) => {
-            await db
+            const [result] = await db
                 .update(dbTable.tag)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)));
+                .where(and(eq(tag.id, ids.id), eq(tag.userId, userId)))
+                .returning();
+            return result || null;
         },
     })
     /**

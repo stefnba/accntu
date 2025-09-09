@@ -1,7 +1,5 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagServices } from '@/features/tag/server/services';
-import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
 import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
@@ -41,15 +39,11 @@ const app = new Hono()
 
     // Create a new tag
     .post('/', zValidator('json', tagSchemas.create.endpoint.json), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
-                return await tagServices.create({ data, userId: user.id });
-            },
-            201
-        )
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ validatedInput }) =>
+                tagServices.create({ data: validatedInput.json, userId: 'userId' })
+            )
     )
 
     // Update a tag
@@ -71,12 +65,11 @@ const app = new Hono()
 
     // Delete a tag (soft delete)
     .delete('/:id', zValidator('param', tagSchemas.removeById.endpoint.param), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-            await tagServices.removeById({ ids: { id }, userId: user.id });
-            return { success: true };
-        })
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                tagServices.removeById({ ids: { id: validatedInput.param.id }, userId: userId })
+            )
     )
 
     // Assign tags to a transaction
@@ -85,19 +78,15 @@ const app = new Hono()
         zValidator('param', tagToTransactionSchemas.assignToTransaction.endpoint.param),
         zValidator('json', tagToTransactionSchemas.assignToTransaction.endpoint.json),
         async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const { tagIds } = c.req.valid('json');
-                const { transactionId } = c.req.valid('param');
-
-                console.log('assigning tags to transaction', transactionId, tagIds);
-
-                return await tagServices.assignToTransaction({
-                    transactionId,
-                    userId: user.id,
-                    tagIds,
-                });
-            })
+            routeHandler(c)
+                .withUser()
+                .handleMutation(async ({ userId, validatedInput }) =>
+                    tagServices.assignToTransaction({
+                        transactionId: validatedInput.param.transactionId,
+                        userId: userId,
+                        tagIds: validatedInput.json.tagIds,
+                    })
+                )
     );
 
 export default app;

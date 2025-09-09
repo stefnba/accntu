@@ -1,6 +1,9 @@
 import { TRANSACTION_QUERY_KEYS } from '@/features/transaction/api';
 import { apiClient, createMutation, createQuery } from '@/lib/api';
 
+/**
+ * Tag query keys
+ */
 const TAG_QUERY_KEYS = {
     TAGS: 'tags',
     TAG: 'tag',

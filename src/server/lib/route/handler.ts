@@ -4,11 +4,10 @@ import { handleRouteError } from '@/server/lib/error';
 import { SuccessResponseCode } from '@/server/lib/error/handler/route';
 import { getAllValidated } from '@/server/lib/route/helpers';
 import { ExtractCoreValidatedData } from '@/server/lib/route/types';
-import { Context, Input, TypedResponse } from 'hono';
-import { ContentfulStatusCode } from 'hono/utils/http-status';
-import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
+import { Context, Env, Input, TypedResponse } from 'hono';
+import { JSONValue } from 'hono/utils/types';
 
-export class RouteHandler<I extends Input, TContext extends Context<any, any, I>> {
+export class RouteHandler<I extends Input, TContext extends Context<Env, string, I>> {
     constructor(private readonly c: TContext) {}
 
     /**
@@ -36,39 +35,64 @@ export class RouteHandler<I extends Input, TContext extends Context<any, any, I>
      * const handler = routeHandler.handle(async () => service.getMany());
      * ```
      */
-    async handle<T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue>(
-        handler: (input: {
-            context: TContext;
-            validatedInput: ExtractCoreValidatedData<I>;
-        }) => Promise<T>,
-        statusCode: ContentfulStatusCode = 200
-    ) {
-        try {
-            const validatedInput = getAllValidated<I>(this.c);
-            console.log('validatedInput', validatedInput);
-            const result = await handler({
-                context: this.c,
-                validatedInput,
-            });
-            return this.c.json(result, statusCode) as TypedResponse<T, SuccessResponseCode, 'json'>;
-        } catch (error: unknown) {
-            return handleRouteError(this.c, error);
-        }
-    }
-
-    async handleMutation<T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue>(
+    async handle<T extends JSONValue>(
         handler: (input: {
             context: TContext;
             validatedInput: ExtractCoreValidatedData<I>;
         }) => Promise<T>
     ) {
-        return this.handle((input) => handler({ ...input }));
+        try {
+            const validatedInput = getAllValidated<I>(this.c);
+
+            const result = await handler({
+                context: this.c,
+                validatedInput,
+            });
+
+            // TypeScript tries to infer the full complex type chain through Hono's JSON response system, leading to infinite type recursion. But when we create an explicit response object
+            // with a defined structure, TypeScript can work with the concrete type.
+            return this.c.json(result, 200) as TypedResponse<T, SuccessResponseCode, 'json'>;
+        } catch (error: unknown) {
+            return handleRouteError(this.c, error);
+        }
+    }
+
+    /**
+     * Handle a mutation route with error handling and standardized response
+     * @param handler - The handler function to execute
+     * @returns A typed response with { success: true, data } format and 201 status
+     * @example
+     * ```
+     * const handler = routeHandler.handleMutation(async ({ validatedInput }) => service.create({ data: validatedInput.json }));
+     * ```
+     */
+    async handleMutation<T extends JSONValue | void>(
+        handler: (input: {
+            context: TContext;
+            validatedInput: ExtractCoreValidatedData<I>;
+        }) => Promise<T>
+    ) {
+        try {
+            const validatedInput = getAllValidated<I>(this.c);
+            const result = await handler({
+                context: this.c,
+                validatedInput,
+            });
+            const response: { success: true; data: T } = {
+                success: true as const,
+                data: result,
+            };
+
+            return this.c.json(response, 201);
+        } catch (error: unknown) {
+            return handleRouteError(this.c, error);
+        }
     }
 }
 
 class RouteHandlerWithUser<
     I extends Input,
-    TContext extends Context<any, any, I>,
+    TContext extends Context<Env, string, I>,
     TUser extends NonNullable<AuthContext['user']> = NonNullable<AuthContext['user']>,
 > extends RouteHandler<I, TContext> {
     constructor(
@@ -87,7 +111,7 @@ class RouteHandlerWithUser<
      * const handler = routeHandler.withUser().handle(async ({ user }) => service.getMany({ userId: user.id }));
      * ```
      */
-    handle<T extends JSONValue | SimplifyDeepArray<unknown> | InvalidJSONValue>(
+    handle<T extends JSONValue>(
         handler: (input: {
             context: TContext;
             validatedInput: ExtractCoreValidatedData<I>;
@@ -96,6 +120,30 @@ class RouteHandlerWithUser<
         }) => Promise<T>
     ) {
         return super.handle((input) =>
+            handler({ ...input, user: this.user, userId: this.user.id })
+        );
+    }
+
+    /**
+     * Handle a mutation route with error handling, authenticated user, and standardized response
+     * @param handler - The handler function to execute
+     * @returns A typed response with { success: true, data } format and 201 status
+     * @example
+     * ```
+     * const handler = routeHandler.withUser().handleMutation(async ({ user, validatedInput }) =>
+     *     service.create({ data: validatedInput.json, userId: user.id })
+     * );
+     * ```
+     */
+    handleMutation<T extends JSONValue | void>(
+        handler: (input: {
+            context: TContext;
+            validatedInput: ExtractCoreValidatedData<I>;
+            user: TUser;
+            userId: TUser['id'];
+        }) => Promise<T>
+    ) {
+        return super.handleMutation((input) =>
             handler({ ...input, user: this.user, userId: this.user.id })
         );
     }
