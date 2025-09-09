@@ -39,6 +39,9 @@ class FeatureQueries<
      * @param TUserIdField - The field that is used to identify the user
      * @param TReturnColumns - The columns that are returned by the queries
      * @param TAllowedUpsertColumns - The columns that are allowed to be upserted
+     * @param TManyFilters - The filters that are used to filter the records
+     * @param TQueryConfig - The config for the queries
+     * @param TSoftDelete - Whether to soft delete the record
      *
      * @example
      * ```typescript
@@ -47,6 +50,18 @@ class FeatureQueries<
      *     userIdField: 'userId',
      *     returnColumns: ['id', 'name'],
      *     allowedUpsertColumns: ['name'],
+     *     queryConfig: {
+     *         getMany: {
+     *             filters: (filters: Partial<{ name: string; description: string }>) => [
+     *                 eq(tag.name, filters.name),
+     *                 eq(tag.description, filters.description),
+     *             ],
+     *         },
+     *         create: {
+     *             onConflict: 'update',
+     *         },
+     *     },
+     *     softDelete: true,
      * });
      * ```
      * @returns A new FeatureQueries with the registered queries
