@@ -1,5 +1,6 @@
-import { typedEntries, typedKeys } from '@/lib/utils';
+import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
+import { withOrdering, withPagination } from '@/server/lib/db/query/crud/helpers';
 import {
     TBooleanFilter,
     TTableColumns,
@@ -7,14 +8,12 @@ import {
 } from '@/server/lib/db/query/crud/types';
 import {
     and,
-    asc,
-    desc,
     eq,
     getTableColumns,
     getTableName,
     InferInsertModel,
     isTable,
-    SQLWrapper,
+    SQL,
     Table,
 } from 'drizzle-orm';
 
@@ -101,11 +100,11 @@ export class CrudQueryBuilder<T extends Table> {
         columns?: Cols;
         throwOnNotFound?: boolean;
     }) {
-        // Normal getManyRecords with limit 1
+        // Normal getManyRecords with pageSize 1
         const records = await this.getManyRecords({
             identifiers,
             columns,
-            limit: 1,
+            pagination: { page: 1, pageSize: 1 },
         });
 
         if (throwOnNotFound && records.length === 0) {
@@ -115,20 +114,24 @@ export class CrudQueryBuilder<T extends Table> {
         return records[0];
     }
 
+    /**
+     * Get many records from the table
+     * @param identifiers - The identifiers of the records
+     * @param columns - The columns of the records
+     * @param orderBy - The order by of the records
+     * @param filters - The filters of the records
+     * @param pagination - The pagination of the records
+     */
     async getManyRecords<Cols extends Array<TTableColumns<T>>>({
         identifiers,
         columns,
-        limit,
-        offset,
         orderBy,
         filters,
         pagination = { page: 1, pageSize: 25 },
     }: {
         columns?: Cols;
         identifiers: Array<TBooleanFilter<T>>;
-        limit?: number;
-        offset?: number;
-        filters?: (SQLWrapper | undefined)[];
+        filters?: (SQL | undefined)[];
         orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
         pagination?: {
             page?: number;
@@ -140,11 +143,6 @@ export class CrudQueryBuilder<T extends Table> {
             throw new Error('Model is not a table');
         }
 
-        // check if pagination is used together with limit or offset
-        if (pagination && (limit || offset)) {
-            throw new Error('Cannot use limit and offset together with pagination');
-        }
-
         const filterConditions = identifiers.map(({ field, value }) => {
             const column = this.getColumn(field);
             return eq(column, value);
@@ -152,28 +150,26 @@ export class CrudQueryBuilder<T extends Table> {
 
         // Type assertion is safe here: we know _model is a regular table (validated by isTable check)
         // and not a data-modifying subquery that would trigger Drizzle's TableLikeHasEmptySelection constraint
-        const query = db
+        let query = db
             .select(this.buildSelectColumns(columns))
             .from(this.table as TValidTableForFrom<T>)
-            .where(and(...filterConditions, ...(filters ?? [])));
+            .where(and(...filterConditions, ...(filters ?? [])))
+            .$dynamic();
 
-        if (limit) {
-            return await query.$dynamic().limit(limit);
-        }
-
-        if (offset) {
-            // todo add offset
-        }
-
-        // order by
+        // Apply ordering if specified
         if (orderBy) {
-            const orderByConditions = typedEntries(orderBy).map(([field, direction]) => {
-                const column = this.getColumn(field);
-                return direction === 'asc' ? asc(column) : desc(column);
+            query = withOrdering(query, orderBy, (column) => this.getColumn(column));
+        }
+
+        // Apply pagination
+        if (pagination) {
+            query = withPagination(query, {
+                page: pagination.page ?? 1,
+                pageSize: pagination.pageSize ?? 25,
             });
         }
 
-        return query;
+        return await query;
     }
 
     // ================================

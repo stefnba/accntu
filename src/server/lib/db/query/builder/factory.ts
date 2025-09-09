@@ -3,7 +3,7 @@ import { typedEntries } from '@/lib/utils';
 import { QueryFn } from '@/server/lib/db/query/builder/types';
 import { CrudQueryBuilder } from '@/server/lib/db/query/crud/core';
 import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/crud/types';
-import { GetColumnData, InferInsertModel, SQLWrapper, Table } from 'drizzle-orm';
+import { GetColumnData, InferInsertModel, SQL, Table } from 'drizzle-orm';
 import { QueryBuilder } from './core';
 
 class FeatureQueries<
@@ -111,7 +111,7 @@ class FeatureQueries<
                      * });
                      * ```
                      */
-                    filters?: (filters: TManyFilters) => (SQLWrapper | undefined)[];
+                    filters?: (filters: TManyFilters) => (SQL<unknown> | undefined)[];
                     orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
                 };
             };
@@ -209,17 +209,16 @@ class FeatureQueries<
              */
             getMany: (input) =>
                 q.getManyRecords<TReturnColumns>({
-                    limit: input.limit,
                     identifiers:
                         'userId' in input && input.userId
                             ? [{ field: 'userId', value: input.userId }]
                             : [],
-                    // filters: input.filters,
-                    // pagination: input.pagination,
                     columns: returnColumns,
                     filters: input.filters
                         ? queryConfig.getMany?.filters?.(input.filters)
                         : undefined,
+                    orderBy: queryConfig.getMany?.orderBy,
+                    pagination: input.pagination,
                 }),
             /**
              * Update a record by the given identifiers
