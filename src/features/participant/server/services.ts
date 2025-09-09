@@ -10,7 +10,7 @@ export const participantServices = createFeatureServices
          * Create a participant
          */
         create: async (input) => {
-            return await queries.create({ data: input.data, userId: input.userId });
+            return await queries.create({ data: { ...input.data, userId: input.userId } });
         },
         /**
          * Get participants with filters
@@ -37,11 +37,5 @@ export const participantServices = createFeatureServices
         /**
          * Remove a participant by ID
          */
-        removeById: async ({ ids, userId }) => {
-            const result = await queries.removeById({ ids, userId });
-            if (!result) {
-                throw new Error('Participant not found or you do not have permission to delete it');
-            }
-            return result;
-        },
+        removeById: async ({ ids, userId }) => await queries.removeById({ ids, userId }),
     }));

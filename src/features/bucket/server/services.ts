@@ -10,7 +10,7 @@ export const bucketServices = createFeatureServices
          * Create a new bucket
          */
         create: async (input) => {
-            return await queries.create({ data: input.data, userId: input.userId });
+            return await queries.create({ data: { ...input.data, userId: input.userId } });
         },
         /**
          * Get a bucket by ID
