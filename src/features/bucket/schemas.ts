@@ -11,6 +11,11 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
         id: true,
         userId: true,
     })
+    .transform((base) =>
+        base.extend({
+            title: z.string().min(1, 'Title cannot be empty'),
+        })
+    )
     .setUserIdField('userId')
     .setIdFields({
         id: true,

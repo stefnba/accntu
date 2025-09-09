@@ -17,6 +17,7 @@ export const { schemas: tagSchemas } = createFeatureSchemas
     .transform((base) =>
         base.extend({
             color: colorSchema,
+            name: z.string().min(1, 'Name cannot be empty'),
         })
     )
     .setUserIdField('userId')

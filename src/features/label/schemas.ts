@@ -17,6 +17,7 @@ export const { schemas: labelSchemas } = createFeatureSchemas
     .transform((base) =>
         base.extend({
             color: colorSchema,
+            name: z.string().min(1, 'Name cannot be empty'),
         })
     )
     .setUserIdField('userId')
@@ -145,6 +146,16 @@ export const { schemas: labelSchemas } = createFeatureSchemas
             endpoint: {
                 json: z.object({ items: itemsSchema }),
             },
+        };
+    })
+    .addCustom('getMaxIndex', () => {
+        const schema = z.object({
+            parentId: z.string().optional().nullable(),
+            userId: z.string(),
+        });
+        return {
+            service: schema,
+            query: schema,
         };
     });
 

@@ -1,43 +1,17 @@
-import { labelSchemas, type TLabelSchemas } from '@/features/label/schemas';
+import { labelSchemas } from '@/features/label/schemas';
 import { db, dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
 
-export type TLabelQuery = TLabelSchemas['databases'];
-
 export const labelQueries = createFeatureQueries
     .registerSchema(labelSchemas)
-    /**
-     * Create a label
-     */
-    .addQuery('create', {
-        operation: 'create label',
-        fn: async ({ data, userId }) => {
-            // Get next index for this parent level
-            const parentId = data.parentId ?? null;
-            const maxindexResult = await db
-                .select({ maxSort: max(dbTable.label.index) })
-                .from(dbTable.label)
-                .where(
-                    and(
-                        eq(dbTable.label.userId, userId),
-                        eq(dbTable.label.isActive, true),
-                        parentId ? eq(dbTable.label.parentId, parentId) : isNull(dbTable.label.parentId)
-                    )
-                );
-
-            const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
-
-            const [labelRecord] = await db
-                .insert(dbTable.label)
-                .values({
-                    ...data,
-                    userId,
-                    index: nextindex,
-                })
-                .returning();
-
-            return labelRecord || null;
+    .registerCoreQueries(dbTable.label, {
+        idFields: ['id'],
+        userIdField: 'userId',
+        queryConfig: {
+            getMany: {
+                filters: (filters, f) => [f.ilike('name', filters?.search)],
+            },
         },
     })
     /**
@@ -156,13 +130,10 @@ export const labelQueries = createFeatureQueries
     /**
      * Get many labels
      */
-    .addQuery('getMany', {
+    .overwriteQuery('getMany', {
         operation: 'get labels with filters',
         fn: async ({ userId, filters, pagination }) => {
-            const conditions = [
-                eq(dbTable.label.userId, userId),
-                eq(dbTable.label.isActive, true),
-            ];
+            const conditions = [eq(dbTable.label.userId, userId), eq(dbTable.label.isActive, true)];
 
             if (filters?.search) {
                 conditions.push(ilike(dbTable.label.name, `%${filters.search}%`));
@@ -193,7 +164,7 @@ export const labelQueries = createFeatureQueries
         operation: 'bulk reorder labels',
         fn: async ({ items, userId }) => {
             // If no items, return early
-            if (items.items.length === 0) return { success: true, updatedCount: 0 };
+            if (items.length === 0) return { success: true, updatedCount: 0 };
 
             // Build both CASE statements in a single loop for efficiency
             const indexCases: SQL[] = [];
@@ -201,12 +172,16 @@ export const labelQueries = createFeatureQueries
             const ids: string[] = [];
 
             // add index and parentId to cases
-            items.items.forEach((item) => {
+            items.forEach((item) => {
                 ids.push(item.id);
-                indexCases.push(sql` when ${dbTable.label.id} = ${item.id} then ${item.index}::integer`);
+                indexCases.push(
+                    sql` when ${dbTable.label.id} = ${item.id} then ${item.index}::integer`
+                );
 
                 if (item.parentId) {
-                    parentCases.push(sql` when ${dbTable.label.id} = ${item.id} then ${item.parentId}`);
+                    parentCases.push(
+                        sql` when ${dbTable.label.id} = ${item.id} then ${item.parentId}`
+                    );
                 } else {
                     parentCases.push(sql` when ${dbTable.label.id} = ${item.id} then null`);
                 }
@@ -224,16 +199,20 @@ export const labelQueries = createFeatureQueries
                     updatedAt: new Date(),
                 })
                 .where(
-                    and(inArray(dbTable.label.id, ids), eq(dbTable.label.userId, userId), eq(dbTable.label.isActive, true))
+                    and(
+                        inArray(dbTable.label.id, ids),
+                        eq(dbTable.label.userId, userId),
+                        eq(dbTable.label.isActive, true)
+                    )
                 );
 
-            return { success: true, updatedCount: items.items.length };
+            return { success: true, updatedCount: items.length };
         },
     })
     /**
      * Get a specific label by ID for a user
      */
-    .addQuery('getById', {
+    .overwriteQuery('getById', {
         operation: 'get label by ID',
         fn: async ({ ids, userId }) => {
             const result = await db.query.label.findFirst({
@@ -253,48 +232,22 @@ export const labelQueries = createFeatureQueries
             return result || null;
         },
     })
-    /**
-     * Update an existing label in the database
-     */
-    .addQuery('updateById', {
-        operation: 'update label by ID',
-        fn: async ({ ids, data, userId }) => {
-            const [result] = await db
-                .update(dbTable.label)
-                .set({ ...data, updatedAt: new Date() })
+    .addQuery('getMaxIndex', {
+        operation: 'get max index for a parent',
+        fn: async ({ parentId, userId }) => {
+            const result = await db
+                .select({ maxSort: max(dbTable.label.index) })
+                .from(dbTable.label)
                 .where(
                     and(
-                        eq(dbTable.label.id, ids.id),
                         eq(dbTable.label.userId, userId),
-                        eq(dbTable.label.isActive, true)
+                        eq(dbTable.label.isActive, true),
+                        parentId
+                            ? eq(dbTable.label.parentId, parentId)
+                            : isNull(dbTable.label.parentId)
                     )
-                )
-                .returning();
-
-            return result || null;
-        },
-    })
-    /**
-     * Remove a label from the database (soft delete)
-     */
-    .addQuery('removeById', {
-        operation: 'remove label by ID',
-        fn: async ({ ids, userId }) => {
-            const [result] = await db
-                .update(dbTable.label)
-                .set({
-                    isActive: false,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(dbTable.label.id, ids.id),
-                        eq(dbTable.label.userId, userId)
-                    )
-                )
-                .returning();
-
-            return result || null;
+                );
+            return result;
         },
     });
 

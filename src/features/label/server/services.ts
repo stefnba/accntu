@@ -1,7 +1,7 @@
 import { labelSchemas } from '@/features/label/schemas';
 import { labelQueries } from '@/features/label/server/db/queries';
-import { createFeatureServices } from '@/server/lib/service';
 import { InferFeatureType } from '@/server/lib/db';
+import { createFeatureServices } from '@/server/lib/service';
 
 export const labelServices = createFeatureServices
     .registerSchema(labelSchemas)
@@ -11,7 +11,14 @@ export const labelServices = createFeatureServices
          * Create a new label with automatic index assignment
          */
         create: async (input) => {
-            return await queries.create({ data: input.data, userId: input.userId });
+            // Get next index for this parent level
+            const parentId = input.data.parentId ?? null;
+            const maxindexResult = await queries.getMaxIndex({ parentId, userId: input.userId });
+
+            const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
+            return await queries.create({
+                data: { ...input.data, userId: input.userId, index: nextindex },
+            });
         },
 
         /**
