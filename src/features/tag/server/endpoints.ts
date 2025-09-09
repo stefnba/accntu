@@ -2,6 +2,7 @@ import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagServices } from '@/features/tag/server/services';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
@@ -9,33 +10,33 @@ import { Hono } from 'hono';
 const app = new Hono()
     // Get all tags for authenticated user
     .get('/', zValidator('query', tagSchemas.getMany.endpoint.query), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { page, pageSize, ...filters } = c.req.valid('query');
-            return await tagServices.getMany({
-                pagination: {
-                    page,
-                    pageSize,
-                },
-                filters,
-                userId: user.id,
-            });
-        })
+        routeHandler(c)
+            .withUser()
+            .handle(
+                async ({
+                    userId,
+                    validatedInput: {
+                        query: { page, pageSize, ...filters },
+                    },
+                }) =>
+                    tagServices.getMany({
+                        pagination: {
+                            page,
+                            pageSize,
+                        },
+                        filters: filters,
+                        userId: userId,
+                    })
+            )
     )
 
     // Get tag by ID
     .get('/:id', zValidator('param', tagSchemas.getById.endpoint.param), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-            const tag = await tagServices.getById({ ids: { id }, userId: user.id });
-
-            if (!tag) {
-                throw new Error('Tag not found');
-            }
-
-            return tag;
-        })
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) =>
+                tagServices.getById({ ids: { id: validatedInput.param.id }, userId: userId })
+            )
     )
 
     // Create a new tag
@@ -57,12 +58,15 @@ const app = new Hono()
         zValidator('param', tagSchemas.updateById.endpoint.param),
         zValidator('json', tagSchemas.updateById.endpoint.json),
         async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const { id } = c.req.valid('param');
-                const data = c.req.valid('json');
-                return await tagServices.updateById({ ids: { id }, data, userId: user.id });
-            })
+            routeHandler(c)
+                .withUser()
+                .handle(async ({ userId, validatedInput }) =>
+                    tagServices.updateById({
+                        ids: { id: validatedInput.param.id },
+                        data: validatedInput.json,
+                        userId: userId,
+                    })
+                )
     )
 
     // Delete a tag (soft delete)
