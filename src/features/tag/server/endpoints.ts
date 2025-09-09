@@ -41,8 +41,8 @@ const app = new Hono()
     .post('/', zValidator('json', tagSchemas.create.endpoint.json), async (c) =>
         routeHandler(c)
             .withUser()
-            .handleMutation(async ({ validatedInput }) =>
-                tagServices.create({ data: validatedInput.json, userId: 'userId' })
+            .handleMutation(async ({ validatedInput, userId }) =>
+                tagServices.create({ data: validatedInput.json, userId })
             )
     )
 

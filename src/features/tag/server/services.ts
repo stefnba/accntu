@@ -13,7 +13,7 @@ export const tagServices = createFeatureServices
          * Create a new tag
          */
         create: async (input) => {
-            return await queries.create({ data: input.data, userId: input.userId });
+            return await queries.create({ data: { ...input.data, userId: input.userId } });
         },
         /**
          * Get a tag by ID
