@@ -13,6 +13,12 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         userId: true,
         totalTransactions: true,
     })
+    .transform((base) =>
+        base.extend({
+            email: z.email().optional().or(z.literal(null)),
+            name: z.string().min(1, 'Name cannot be empty'),
+        })
+    )
     .setUserIdField('userId')
     .setIdFields({ id: true })
     /**
