@@ -1,6 +1,5 @@
 import { typedEntries, typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
-import { tag } from '@/server/db/tables';
 import {
     TBooleanFilter,
     TTableColumns,
@@ -123,6 +122,7 @@ export class CrudQueryBuilder<T extends Table> {
         offset,
         orderBy,
         filters,
+        pagination = { page: 1, pageSize: 25 },
     }: {
         columns?: Cols;
         identifiers: Array<TBooleanFilter<T>>;
@@ -130,9 +130,19 @@ export class CrudQueryBuilder<T extends Table> {
         offset?: number;
         filters?: (SQLWrapper | undefined)[];
         orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
+        pagination?: {
+            page?: number;
+            pageSize?: number;
+        };
     }) {
+        // check if the table is a table
         if (!isTable(this.table)) {
             throw new Error('Model is not a table');
+        }
+
+        // check if pagination is used together with limit or offset
+        if (pagination && (limit || offset)) {
+            throw new Error('Cannot use limit and offset together with pagination');
         }
 
         const filterConditions = identifiers.map(({ field, value }) => {
@@ -297,10 +307,3 @@ export class CrudQueryBuilder<T extends Table> {
         }
     }
 }
-
-const a = new CrudQueryBuilder(tag);
-const bb = await a.updateRecord({
-    data: { name: 'test' },
-    identifiers: [{ field: 'id', value: '1' }],
-    // returnColumns: ['id', 'name'],
-});

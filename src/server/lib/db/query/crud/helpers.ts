@@ -7,7 +7,7 @@ import { PgSelect } from 'drizzle-orm/pg-core';
  * @param pageSize - The page size
  * @returns The query builder with pagination
  */
-function withPagination<T extends PgSelect>(
+export function withPagination<T extends PgSelect>(
     qb: T,
     { page, pageSize }: { page: number; pageSize: number }
 ) {
