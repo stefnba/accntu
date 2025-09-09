@@ -1,10 +1,11 @@
-import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
+import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import { typedEntries } from '@/lib/utils';
-import { QueryFn } from '@/server/lib/db/query/builder/types';
+import type { QueryFn, TCoreQueries } from '@/server/lib/db/query/builder/types';
 import { CrudQueryBuilder } from '@/server/lib/db/query/crud/core';
-import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/crud/types';
-import { GetColumnData, InferInsertModel, SQL, Table } from 'drizzle-orm';
+import { withTableFilters } from '@/server/lib/db/query/filters';
+import { SQL, Table } from 'drizzle-orm';
 import { QueryBuilder } from './core';
+import { defaultIdFiltersIdentifier, userIdIdentifier } from './helpers';
 
 class FeatureQueries<
     const TSchemas extends Record<string, TOperationSchemaObject> = Record<
@@ -74,7 +75,10 @@ class FeatureQueries<
         TAllowedUpsertColumns extends ReadonlyArray<keyof T['$inferInsert']> = ReadonlyArray<
             keyof T['$inferInsert']
         >,
-        TManyFilters extends Record<string, any> | undefined = undefined,
+        // TManyFilters extends Record<
+        //     string,
+        //     any
+        // > = InferQuerySchemas<TSchemas>['getMany']['filters'],
     >(
         table: T,
         config: {
@@ -82,6 +86,21 @@ class FeatureQueries<
              * The fields that are used to identify the record
              */
             idFields: TIdFields;
+
+            /**
+             * The default filters that are used to filter the records
+             * @example
+             * ```typescript
+             * const queries = createFeatureQueries.registerCoreQueries(tag, {
+             *     defaultIdFilters: {
+             *         isActive: true,
+             *     },
+             * });
+             * ```
+             */
+            defaultIdFilters?: {
+                [K in keyof T['_']['columns']]?: T['_']['columns'][K]['_']['data'];
+            };
 
             /**
              * The field that is used to identify the user
@@ -113,7 +132,8 @@ class FeatureQueries<
                 };
                 getMany?: {
                     /**
-                     * The filters that are used to filter the records
+                     * The filters that are used to filter the records. If the schema has a `getMany` operation with a `layer` schema returning `filter`,
+                     * the filters will be inferred using the schema.
                      *
                      * @example
                      * ```typescript
@@ -126,80 +146,33 @@ class FeatureQueries<
                      * });
                      * ```
                      */
-                    filters?: (filters: TManyFilters) => (SQL<unknown> | undefined)[];
+                    filters?: (
+                        filterParams: InferQuerySchemas<TSchemas>['getMany']['filters'],
+                        filterClauses: ReturnType<typeof withTableFilters<T>>
+                    ) => (SQL<unknown> | undefined)[];
                     orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
                 };
             };
         }
     ) {
-        const { returnColumns, softDelete = true, queryConfig = {} } = config;
+        const {
+            returnColumns,
+            softDelete = true,
+            queryConfig = {},
+            defaultIdFilters,
+            userIdField,
+        } = config;
 
         const q = new CrudQueryBuilder(table);
 
-        type A = {
-            /**
-             * Create a record in the table
-             */
-            create: QueryFn<
-                {
-                    data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                        RequiredOnly<T['$inferInsert']>;
-                },
-                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-            >;
-            /**
-             * Create many records in the table
-             */
-            createMany: QueryFn<
-                {
-                    data: Array<
-                        Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                            RequiredOnly<T['$inferInsert']>
-                    >;
-                },
-                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
-            >;
-            /**
-             * Get a record by the given identifiers
-             */
-            getById: QueryFn<
-                TByIdInput<T, TIdFields, TUserIdField>,
-                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-            >;
-            /**
-             * Get many records by the given identifiers
-             */
-            getMany: QueryFn<
-                {
-                    filters?: TManyFilters;
-                    limit?: number;
-                    pagination?: {
-                        page?: number;
-                        pageSize?: number;
-                    };
-                } & (TUserIdField extends keyof T['_']['columns']
-                    ? {
-                          userId: GetColumnData<T['_']['columns'][TUserIdField]>;
-                      }
-                    : object),
-                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
-            >;
-            /**
-             * Update a record by the given identifiers
-             */
-            updateById: QueryFn<
-                TByIdInput<T, TIdFields, TUserIdField> & {
-                    data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]>;
-                },
-                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-            >;
-            /**
-             * Remove a record by the given identifiers
-             */
-            removeById: QueryFn<TByIdInput<T, TIdFields, TUserIdField>, void>;
-        };
-
-        const queries: A = {
+        const queries: TCoreQueries<
+            TSchemas,
+            T,
+            TIdFields,
+            TUserIdField,
+            TReturnColumns,
+            TAllowedUpsertColumns
+        > = {
             /**
              * Create a record in the table
              */
@@ -214,23 +187,32 @@ class FeatureQueries<
             getById: async (input) =>
                 q.getFirstRecord<TReturnColumns>({
                     columns: returnColumns,
-                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                        field: key,
-                        value,
-                    })),
+                    identifiers: [
+                        // user id identifier
+                        ...userIdIdentifier(userIdField, input),
+                        // default id filters identifier
+                        ...defaultIdFiltersIdentifier(defaultIdFilters),
+                        // id identifier
+                        ...typedEntries(input.ids).map(([key, value]) => ({
+                            field: key,
+                            value,
+                        })),
+                    ],
                 }),
             /**
              * Get many records by the given identifiers
              */
             getMany: (input) =>
                 q.getManyRecords<TReturnColumns>({
-                    identifiers:
-                        'userId' in input && input.userId
-                            ? [{ field: 'userId', value: input.userId }]
-                            : [],
+                    identifiers: [
+                        // user id identifier
+                        ...userIdIdentifier(userIdField, input),
+                        // default id filters identifier
+                        ...defaultIdFiltersIdentifier(defaultIdFilters),
+                    ],
                     columns: returnColumns,
                     filters: input.filters
-                        ? queryConfig.getMany?.filters?.(input.filters)
+                        ? queryConfig.getMany?.filters?.(input.filters, withTableFilters<T>(table))
                         : undefined,
                     orderBy: queryConfig.getMany?.orderBy,
                     pagination: input.pagination,
@@ -241,10 +223,17 @@ class FeatureQueries<
             updateById: (input) =>
                 q.updateRecord<TReturnColumns>({
                     data: input.data,
-                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                        field: key,
-                        value,
-                    })),
+                    identifiers: [
+                        // user id identifier
+                        ...userIdIdentifier(userIdField, input),
+                        // default id filters identifier
+                        ...defaultIdFiltersIdentifier(defaultIdFilters),
+                        // id identifier
+                        ...typedEntries(input.ids).map(([key, value]) => ({
+                            field: key,
+                            value,
+                        })),
+                    ],
                     returnColumns,
                 }),
             /**
@@ -252,15 +241,32 @@ class FeatureQueries<
              */
             removeById: (input) =>
                 q.removeRecord({
-                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                        field: key,
-                        value,
-                    })),
+                    identifiers: [
+                        // user id identifier
+                        ...userIdIdentifier(userIdField, input),
+                        // default id filters identifier
+                        ...defaultIdFiltersIdentifier(defaultIdFilters),
+                        // id identifier
+                        ...typedEntries(input.ids).map(([key, value]) => ({
+                            field: key,
+                            value,
+                        })),
+                    ],
                     softDelete,
                 }),
         };
 
-        return new QueryBuilder<TSchemas, A>({
+        return new QueryBuilder<
+            TSchemas,
+            TCoreQueries<
+                TSchemas,
+                T,
+                TIdFields,
+                TUserIdField,
+                TReturnColumns,
+                TAllowedUpsertColumns
+            >
+        >({
             schemas: this.schemas,
             queries: queries,
         });

@@ -1,3 +1,7 @@
+import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
+
+import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/crud/types';
+import { GetColumnData, InferInsertModel, Table } from 'drizzle-orm';
 import { QueryBuilder } from './core';
 
 /**
@@ -69,3 +73,79 @@ export type InferFeatureType<
           ? InferFeatureTypeFromRecord<T, TKey>
           : never
       : never;
+
+// ========================================
+// Core Crud Queries
+// ========================================
+
+export type TCoreQueries<
+    TSchemas extends Record<string, TOperationSchemaObject>,
+    T extends Table,
+    TIdFields extends Array<keyof T['_']['columns']>,
+    TUserIdField extends keyof T['_']['columns'] | undefined = undefined,
+    TReturnColumns extends Array<keyof T['_']['columns']> = Array<keyof T['_']['columns']>,
+    TAllowedUpsertColumns extends ReadonlyArray<keyof T['$inferInsert']> = ReadonlyArray<
+        keyof T['$inferInsert']
+    >,
+> = {
+    /**
+     * Create a record in the table
+     */
+    create: QueryFn<
+        {
+            data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                RequiredOnly<T['$inferInsert']>;
+        },
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+    >;
+    /**
+     * Create many records in the table
+     */
+    createMany: QueryFn<
+        {
+            data: Array<
+                Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                    RequiredOnly<T['$inferInsert']>
+            >;
+        },
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+    >;
+    /**
+     * Get a record by the given identifiers
+     */
+    getById: QueryFn<
+        TByIdInput<T, TIdFields, TUserIdField>,
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+    >;
+    /**
+     * Get many records by the given identifiers
+     */
+    getMany: QueryFn<
+        {
+            filters?: InferQuerySchemas<TSchemas>['getMany']['filters'];
+            limit?: number;
+            pagination?: {
+                page?: number;
+                pageSize?: number;
+            };
+        } & (TUserIdField extends keyof T['_']['columns']
+            ? {
+                  userId: GetColumnData<T['_']['columns'][TUserIdField]>;
+              }
+            : object),
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+    >;
+    /**
+     * Update a record by the given identifiers
+     */
+    updateById: QueryFn<
+        TByIdInput<T, TIdFields, TUserIdField> & {
+            data: Partial<Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]>>;
+        },
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+    >;
+    /**
+     * Remove a record by the given identifiers
+     */
+    removeById: QueryFn<TByIdInput<T, TIdFields, TUserIdField>, void>;
+};

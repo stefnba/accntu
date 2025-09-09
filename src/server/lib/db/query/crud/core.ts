@@ -1,6 +1,6 @@
 import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
-import { withOrdering, withPagination } from '@/server/lib/db/query/crud/helpers';
+import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/crud/helpers';
 import {
     TBooleanFilter,
     TTableColumns,
@@ -111,7 +111,8 @@ export class CrudQueryBuilder<T extends Table> {
             throw new Error(`Record not found from table '${getTableName(this.table)}'`);
         }
 
-        return records[0];
+        // todo check if this is correct
+        return records[0] ?? null;
     }
 
     /**
@@ -143,18 +144,16 @@ export class CrudQueryBuilder<T extends Table> {
             throw new Error('Model is not a table');
         }
 
-        const filterConditions = identifiers.map(({ field, value }) => {
-            const column = this.getColumn(field);
-            return eq(column, value);
-        });
-
         // Type assertion is safe here: we know _model is a regular table (validated by isTable check)
         // and not a data-modifying subquery that would trigger Drizzle's TableLikeHasEmptySelection constraint
         let query = db
             .select(this.buildSelectColumns(columns))
             .from(this.table as TValidTableForFrom<T>)
-            .where(and(...filterConditions, ...(filters ?? [])))
             .$dynamic();
+
+        // filters
+        const idFilters = this.buildIdentifierFilters(identifiers);
+        query = withFilters(query, [...idFilters, ...(filters ?? [])]);
 
         // Apply ordering if specified
         if (orderBy) {

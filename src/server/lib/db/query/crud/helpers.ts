@@ -1,6 +1,6 @@
-import { asc, desc, and, Table, SQL } from 'drizzle-orm';
-import { PgSelect } from 'drizzle-orm/pg-core';
 import { typedEntries } from '@/lib/utils';
+import { and, asc, desc, SQL, Table } from 'drizzle-orm';
+import { PgSelect } from 'drizzle-orm/pg-core';
 
 /**
  * Helper function to add pagination to a query
@@ -26,7 +26,9 @@ export function withPagination<T extends PgSelect>(
 export function withOrdering<T extends PgSelect, TTable extends Table>(
     qb: T,
     orderBy: Partial<Record<keyof TTable['_']['columns'], 'asc' | 'desc'>>,
-    getColumn: (column: keyof TTable['_']['columns']) => TTable['_']['columns'][keyof TTable['_']['columns']]
+    getColumn: (
+        column: keyof TTable['_']['columns']
+    ) => TTable['_']['columns'][keyof TTable['_']['columns']]
 ) {
     const orderByConditions = typedEntries(orderBy).map(([field, direction]) => {
         const column = getColumn(field);
@@ -42,16 +44,19 @@ export function withOrdering<T extends PgSelect, TTable extends Table>(
  * @param filters - Array of SQL filters (undefined filters are ignored)
  * @returns The query builder with filters applied
  */
-export function withFilters<T extends PgSelect>(
-    qb: T,
-    filters: (SQL | undefined)[]
-) {
+export function withFilters<T extends PgSelect>(qb: T, filters: (SQL | undefined)[] | undefined) {
+    // if no filters are provided, return the query builder
+    if (!filters) {
+        return qb;
+    }
+
+    // filter out undefined filters
     const validFilters = filters.filter((filter): filter is SQL => filter !== undefined);
-    
+
     if (validFilters.length === 0) {
         return qb;
     }
-    
+
     // Combine all filters with AND and apply them
     return qb.where(and(...validFilters));
 }
