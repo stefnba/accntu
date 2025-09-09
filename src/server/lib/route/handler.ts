@@ -8,7 +8,7 @@ import { Context, Env, Input, TypedResponse } from 'hono';
 import { JSONValue } from 'hono/utils/types';
 
 export class RouteHandler<I extends Input, TContext extends Context<Env, string, I>> {
-    constructor(private readonly c: TContext) {}
+    constructor(protected readonly c: TContext) {}
 
     /**
      * Get the authenticated user from the context.
@@ -100,6 +100,22 @@ class RouteHandlerWithUser<
         private readonly user: TUser
     ) {
         super(c);
+    }
+
+    /**
+     * Check if the user is an admin and return a new route handler with the admin user
+     * @returns A new route handler with the admin user
+     * @example
+     * ```
+     * const handler = routeHandler.withAdmin().handle(async ({ user }) => service.getMany({ userId: user.id }));
+     * ```
+     */
+    withAdmin() {
+        const user = getUser(this.c);
+        if (!user || user.role !== 'admin') {
+            throw new Error('Admin access required');
+        }
+        return new RouteHandlerWithUser<I, TContext>(this.c, user);
     }
 
     /**
