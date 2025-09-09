@@ -13,8 +13,56 @@ export const connectedBankServices = createFeatureServices
          * @param data - The data to create the connected bank with
          * @returns The created connected bank
          */
-        createWithAccounts: async (input) => {
-            return await queries.create(input);
+        createWithAccounts: async ({ data, userId }) => {
+            const { globalBankId, connectedBankAccounts } = data;
+            // return await queries.create(input);
+
+            const newConnectedBank = await queries.create({
+                data: {
+                    globalBankId,
+                    userId,
+                },
+            });
+
+            let connectedBankId = newConnectedBank?.id;
+
+            // if no connected bank was created, get the existing one
+            if (!newConnectedBank) {
+                const [connectedBanks] = await connectedBankQueries.queries.getMany({
+                    userId,
+                    filters: {
+                        globalBankId,
+                    },
+                    pagination: {
+                        page: 1,
+                        pageSize: 1,
+                    },
+                });
+
+                // if no connected bank was found, throw an error
+                if (!connectedBanks) {
+                    throw new Error('Failed to create connected bank');
+                }
+
+                connectedBankId = connectedBanks?.id;
+            }
+
+            await Promise.all(
+                connectedBankAccounts.map((account) =>
+                    connectedBankAccountServices.create({
+                        userId,
+                        data: {
+                            connectedBankId: connectedBankId,
+                            globalBankAccountId: account.globalBankAccountId,
+                            name: 'test',
+                        },
+                    })
+                )
+            );
+
+            return {
+                id: connectedBankId,
+            };
         },
         /**
          * Get many connected banks
@@ -41,54 +89,3 @@ export const connectedBankServices = createFeatureServices
             return await queries.removeById(input);
         },
     }));
-
-const createConnectedBankWithAccounts = async (input: any) => {
-    const { globalBankId, connectedBankAccounts } = input;
-
-    // Create the connected bank, if it already exists, connectedBank will be null
-    let connectedBank = await connectedBankQueries.queries.create({
-        data: {
-            globalBankId,
-        },
-        userId: input.userId,
-    });
-
-    // if no connected bank was created, get the existing one
-    if (!connectedBank) {
-        [connectedBank] = await connectedBankQueries.queries.getMany({
-            userId: input.userId,
-            filters: {
-                globalBankId,
-            },
-            pagination: {
-                page: 1,
-                pageSize: 1,
-            },
-        });
-    }
-
-    // if no connected bank was found, throw an error
-    if (!connectedBank) {
-        throw new Error('Failed to create connected bank');
-    }
-
-    // Create the connected bank accounts
-    const createdAccounts = await Promise.all(
-        connectedBankAccounts.map((account) =>
-            connectedBankAccountServices.create({
-                userId: input.userId,
-                data: {
-                    connectedBankId: connectedBank.id,
-                    globalBankAccountId: account.globalBankAccountId,
-                    name: account.name,
-                },
-            })
-        )
-    );
-
-    console.log('createdAccounts', createdAccounts);
-
-    return {
-        ...connectedBank,
-    };
-};

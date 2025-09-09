@@ -41,7 +41,13 @@ export const { schemas: connectedBankSchemas } = createFeatureSchemas
             service: input,
             query: input,
             endpoint: {
-                json: baseSchema,
+                json: baseSchema.extend({
+                    connectedBankAccounts: z.array(
+                        z.object({
+                            globalBankAccountId: z.string(),
+                        })
+                    ),
+                }),
             },
         };
     })

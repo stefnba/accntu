@@ -6,10 +6,17 @@ import { and, eq } from 'drizzle-orm';
 
 export const connectedBankAccountQueries = createFeatureQueries
     .registerSchema(connectedBankAccountSchemas)
+    .registerCoreQueries(dbTable.connectedBankAccount, {
+        idFields: ['id'],
+        userIdField: 'userId',
+        defaultIdFilters: {
+            isActive: true,
+        },
+    })
     /**
      * Get many connected bank accounts
      */
-    .addQuery('getMany', {
+    .overwriteQuery('getMany', {
         operation: 'get all connected bank accounts by user id',
         fn: async ({ userId, filters }) => {
             const whereClause = [
@@ -32,72 +39,6 @@ export const connectedBankAccountQueries = createFeatureQueries
                 .where(and(...whereClause));
 
             return result;
-        },
-    })
-    /**
-     * Create a connected bank account
-     */
-    .addQuery('create', {
-        operation: 'create connected bank account',
-        fn: async ({ data, userId }) => {
-            const result = await db
-                .insert(dbTable.connectedBankAccount)
-                .values({ ...data, userId })
-                .returning();
-            return result[0];
-        },
-    })
-    /**
-     * Get a connected bank account by id
-     */
-    .addQuery('getById', {
-        operation: 'get connected bank account by id',
-        fn: async ({ ids, userId }) => {
-            const result = await db
-                .select()
-                .from(dbTable.connectedBankAccount)
-                .where(
-                    and(
-                        eq(dbTable.connectedBankAccount.id, ids.id),
-                        eq(dbTable.connectedBankAccount.userId, userId)
-                    )
-                );
-            return result[0] || null;
-        },
-    })
-    /**
-     * Update a connected bank account by id
-     */
-    .addQuery('updateById', {
-        operation: 'update connected bank account by id',
-        fn: async ({ ids, data, userId }) => {
-            const result = await db
-                .update(dbTable.connectedBankAccount)
-                .set(data)
-                .where(
-                    and(
-                        eq(dbTable.connectedBankAccount.id, ids.id),
-                        eq(dbTable.connectedBankAccount.userId, userId)
-                    )
-                );
-            return result[0];
-        },
-    })
-    /**
-     * Remove a connected bank account by id
-     */
-    .addQuery('removeById', {
-        operation: 'remove connected bank account by id',
-        fn: async ({ ids, userId }) => {
-            const result = await db
-                .delete(dbTable.connectedBankAccount)
-                .where(
-                    and(
-                        eq(dbTable.connectedBankAccount.id, ids.id),
-                        eq(dbTable.connectedBankAccount.userId, userId)
-                    )
-                );
-            return result[0];
         },
     });
 

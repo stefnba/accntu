@@ -19,7 +19,7 @@ export const useGlobalBankEndpoints = {
      * Get global banks by country
      */
     getByCountry: createQuery(
-        apiClient.banks['global-banks']['country'][':country'].$get,
+        apiClient.banks['global-banks'].$get,
         GLOBAL_BANK_QUERY_KEYS.GLOBAL_BANKS
     ),
 

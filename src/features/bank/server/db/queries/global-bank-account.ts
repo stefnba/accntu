@@ -1,80 +1,24 @@
 import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
 
-import { db, dbTable } from '@/server/db';
+import { dbTable } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
-import { and, eq } from 'drizzle-orm';
 
 export const globalBankAccountQueries = createFeatureQueries
     .registerSchema(globalBankAccountSchemas)
-    /**
-     * Create a global bank account
-     */
-    .addQuery('create', {
-        operation: 'create global bank account',
-        fn: async ({ data }) => {
-            const [result] = await db.insert(dbTable.globalBankAccount).values(data).returning();
-            return result || null;
+    .registerCoreQueries(dbTable.globalBankAccount, {
+        idFields: ['id'],
+        defaultIdFilters: {
+            isActive: true,
         },
-    })
-    /**
-     * Get many global bank accounts
-     */
-    .addQuery('getMany', {
-        operation: 'get global bank accounts with filters',
-        fn: async ({ filters, pagination }) => {
-            const conditions = [eq(dbTable.globalBankAccount.isActive, true)];
-
-            if (filters?.globalBankId) {
-                conditions.push(eq(dbTable.globalBankAccount.globalBankId, filters.globalBankId));
-            }
-
-            return await db
-                .select()
-                .from(dbTable.globalBankAccount)
-                .where(and(...conditions));
-        },
-    })
-    /**
-     * Get a global bank account by ID
-     */
-    .addQuery('getById', {
-        operation: 'get global bank account by ID',
-        fn: async ({ ids }) => {
-            const [result] = await db
-                .select()
-                .from(dbTable.globalBankAccount)
-                .where(eq(dbTable.globalBankAccount.id, ids.id))
-                .limit(1);
-            return result || null;
-        },
-    })
-    /**
-     * Update a global bank account by ID
-     */
-    .addQuery('updateById', {
-        operation: 'update global bank account',
-        fn: async ({ ids, data }) => {
-            const [result] = await db
-                .update(dbTable.globalBankAccount)
-                .set(data)
-                .where(eq(dbTable.globalBankAccount.id, ids.id))
-                .returning();
-            return result || null;
-        },
-    })
-    /**
-     * Remove a global bank account by ID
-     */
-    .addQuery('removeById', {
-        operation: 'remove global bank account',
-        fn: async ({ ids }) => {
-            const [result] = await db
-                .update(dbTable.globalBankAccount)
-                .set({ isActive: false })
-                .where(eq(dbTable.globalBankAccount.id, ids.id))
-                .returning();
-            return result || null;
-        },
+        allowedUpsertColumns: [
+            'globalBankId',
+            'type',
+            'name',
+            'description',
+            'transformQuery',
+            'transformConfig',
+            'sampleTransformData',
+        ],
     });
 
 export type TGlobalBankAccount = InferFeatureType<typeof globalBankAccountQueries>;

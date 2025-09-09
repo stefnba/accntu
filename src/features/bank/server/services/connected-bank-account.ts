@@ -42,31 +42,23 @@ export const connectedBankAccountServices = createFeatureServices
 
             // return connectedBankAccount;
             return {
-                success: true,
+                id: '1',
             };
         },
         /**
          * Get a connected bank account by id
          */
-        getById: async (data) => {
-            return await queries.getById(data);
-        },
+        getById: async (data) => await queries.getById(data),
         /**
          * Get many connected bank accounts
          */
-        getMany: async (data) => {
-            return await queries.getMany(data);
-        },
+        getMany: async (data) => await queries.getMany(data),
         /**
          * Update a connected bank account by id
          */
-        updateById: async (data) => {
-            return await queries.updateById(data);
-        },
+        updateById: async (data) => await queries.updateById(data),
         /**
          * Remove a connected bank account by id
          */
-        removeById: async (data) => {
-            return await queries.removeById(data);
-        },
+        removeById: async (data) => await queries.removeById(data),
     }));
