@@ -58,7 +58,7 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     /**
      * Get many global bank accounts
      */
-    .addCore('getMany', ({ buildInput, baseSchema }) => {
+    .addCore('getMany', ({ buildInput, idFieldsSchema, baseSchema }) => {
         const filtersSchema = z.object({
             globalBankId: z.string().optional(),
             type: baseSchema.shape.type.optional(),
@@ -79,6 +79,8 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
             query: input,
             endpoint: {
                 query: paginationSchema.extend(filtersSchema.shape),
+                param: idFieldsSchema,
+                // param: filtersSchema.shape,
             },
         };
     })

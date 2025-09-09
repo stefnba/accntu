@@ -1,73 +1,73 @@
 import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
 import { globalBankServices } from '@/features/bank/server/services/global-bank';
-import { getUser } from '@/lib/auth/server';
-import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
-
-const adminUserValidation = (c: any) => {
-    const user = getUser(c);
-    if (!user || user.role !== 'admin') {
-        throw new Error('Admin access required');
-    }
-    return user;
-};
 
 export const adminGlobalBankEndpoints = new Hono()
 
     // Get all global banks
     .get('/', zValidator('query', globalBankSchemas.getMany.endpoint.query), async (c) =>
-        withRoute(c, async () => {
-            adminUserValidation(c);
-            const { query, country } = c.req.valid('query') || {};
-
-            return await globalBankServices.getMany({
-                filters: { query, country },
-                pagination: {
-                    page: 1,
-                    pageSize: 10,
-                },
-            });
-        })
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handle(async ({ validatedInput }) =>
+                globalBankServices.getMany({
+                    filters: {
+                        query: validatedInput.query.query,
+                        country: validatedInput.query.country,
+                    },
+                    pagination: {
+                        page: 1,
+                        pageSize: 10,
+                    },
+                })
+            )
     )
 
     // Get a global bank by id
-    .get('/:id', async (c) =>
-        withRoute(c, async () => {
-            adminUserValidation(c);
-            const id = c.req.param('id');
-
-            return await globalBankServices.getById({ ids: { id } });
-        })
+    .get('/:id', zValidator('param', globalBankSchemas.getById.endpoint.param), async (c) =>
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handle(async ({ validatedInput }) =>
+                globalBankServices.getById({ ids: { id: validatedInput.param.id } })
+            )
     )
 
     // Create a global bank
     .post('/', zValidator('json', globalBankSchemas.create.endpoint.json), async (c) =>
-        withRoute(c, async () => {
-            adminUserValidation(c);
-            const data = c.req.valid('json');
-
-            return await globalBankServices.create({ data });
-        })
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handleMutation(async ({ validatedInput }) =>
+                globalBankServices.create({ data: validatedInput.json })
+            )
     )
 
     // Update a global bank
-    .put('/:id', zValidator('json', globalBankSchemas.updateById.endpoint.json), async (c) =>
-        withRoute(c, async () => {
-            adminUserValidation(c);
-            const id = c.req.param('id');
-            const data = c.req.valid('json');
-
-            return await globalBankServices.updateById({ ids: { id }, data });
-        })
+    .put(
+        '/:id',
+        zValidator('json', globalBankSchemas.updateById.endpoint.json),
+        zValidator('param', globalBankSchemas.updateById.endpoint.param),
+        async (c) =>
+            routeHandler(c)
+                .withUser()
+                .withAdmin()
+                .handleMutation(async ({ validatedInput }) =>
+                    globalBankServices.updateById({
+                        ids: { id: validatedInput.param.id },
+                        data: validatedInput.json,
+                    })
+                )
     )
 
     // Delete a global bank
-    .delete('/:id', async (c) =>
-        withRoute(c, async () => {
-            adminUserValidation(c);
-            const id = c.req.param('id');
-
-            return await globalBankServices.removeById({ ids: { id } });
-        })
+    .delete('/:id', zValidator('param', globalBankSchemas.removeById.endpoint.param), async (c) =>
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handleMutation(async ({ validatedInput }) =>
+                globalBankServices.removeById({ ids: { id: validatedInput.param.id } })
+            )
     );
