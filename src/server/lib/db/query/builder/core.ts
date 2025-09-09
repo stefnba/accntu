@@ -18,14 +18,8 @@ export class QueryBuilder<
         this.queries = queries;
     }
 
-    /**
-     * Add a query to the QueryBuilder
-     * @param key - The key of the query must be a key of the schemas and not already in the queries
-     * @param query - The query function
-     * @returns A new QueryBuilder with the added query
-     */
-    addQuery<
-        const K extends Exclude<keyof TSchemas & string, keyof TQueryObject>,
+    private _addQuery<
+        const K extends string,
         TOutput,
         TInput = K extends keyof InferQuerySchemas<TSchemas>
             ? InferQuerySchemas<TSchemas>[K]
@@ -53,5 +47,55 @@ export class QueryBuilder<
                 [key]: wrappedQuery,
             },
         });
+    }
+
+    /**
+     * Add a query to the QueryBuilder
+     * @param key - The key of the query must be a key of the schemas and not already in the queries
+     * @param query - The query function
+     * @returns A new QueryBuilder with the added query
+     */
+    addQuery<
+        const K extends Exclude<keyof TSchemas & string, keyof TQueryObject>,
+        TOutput,
+        TInput = K extends keyof InferQuerySchemas<TSchemas>
+            ? InferQuerySchemas<TSchemas>[K]
+            : never,
+    >(key: K, config: { fn: QueryFn<TInput, TOutput>; operation?: string }) {
+        return this._addQuery(key, config);
+    }
+
+    /**
+     * Remove a query from the QueryBuilder
+     * @param key - The key of the query to remove
+     * @returns A new QueryBuilder with the removed query
+     */
+    removeQuery<const K extends keyof TQueryObject & string>(key: K) {
+        return new QueryBuilder<TSchemas, Omit<TQueryObject, K>>({
+            schemas: this.schemas,
+            queries: {
+                ...this.queries,
+                [key]: undefined,
+            },
+        });
+    }
+
+    /**
+     * Overwrite a query in the QueryBuilder
+     * @param key - The key of the query to override
+     * @param config - The config of the query
+     * @returns A new QueryBuilder with the overridden query
+     */
+    overwriteQuery<
+        const K extends keyof TQueryObject & string,
+        TOutput,
+        TInput = K extends keyof InferQuerySchemas<TSchemas>
+            ? InferQuerySchemas<TSchemas>[K]
+            : never,
+    >(
+        key: K,
+        config: { fn: QueryFn<TInput, TOutput>; operation?: string }
+    ): QueryBuilder<TSchemas, Omit<TQueryObject, K> & Record<K, QueryFn<TInput, TOutput>>> {
+        return this._addQuery<K, TOutput, TInput>(key, config);
     }
 }

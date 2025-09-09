@@ -88,152 +88,167 @@ class FeatureQueries<
              */
             softDelete?: boolean;
 
-            /**
-             * The filters that are used to filter the records
-             *
-             * @example
-             * ```typescript
-             * const queries = createFeatureQueries.registerCoreQueries(tag, {
-             *     manyFilters: (filters: Partial<{ name: string; description: string }>) =>
-             *          [
-             *              eq(tag.name, filters.name),
-             *              eq(tag.description, filters.description),
-             *          ],
-             * });
-             * ```
-             */
-            manyFilters?: (filters: TManyFilters) => (SQLWrapper | undefined)[];
+            // manyFilters?: (filters: TManyFilters) => (SQLWrapper | undefined)[];
+            queryConfig?: {
+                create?: {
+                    /**
+                     * The data that is used to create the record
+                     */
+                    onConflict?: 'update' | 'ignore' | 'fail';
+                };
+                getMany?: {
+                    /**
+                     * The filters that are used to filter the records
+                     *
+                     * @example
+                     * ```typescript
+                     * const queries = createFeatureQueries.registerCoreQueries(tag, {
+                     *     manyFilters: (filters: Partial<{ name: string; description: string }>) =>
+                     *          [
+                     *              eq(tag.name, filters.name),
+                     *              eq(tag.description, filters.description),
+                     *          ],
+                     * });
+                     * ```
+                     */
+                    filters?: (filters: TManyFilters) => (SQLWrapper | undefined)[];
+                    orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
+                };
+            };
         }
     ) {
-        const { returnColumns, softDelete = true, manyFilters } = config;
+        const { returnColumns, softDelete = true, queryConfig = {} } = config;
+
         const q = new CrudQueryBuilder(table);
 
-        return new QueryBuilder<
-            TSchemas,
-            {
-                /**
-                 * Create a record in the table
-                 */
-                create: QueryFn<
-                    {
-                        data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                            RequiredOnly<T['$inferInsert']>;
-                    },
-                    { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-                >;
-                /**
-                 * Create many records in the table
-                 */
-                createMany: QueryFn<
-                    {
-                        data: Array<
-                            Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                                RequiredOnly<T['$inferInsert']>
-                        >;
-                    },
-                    { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
-                >;
-                /**
-                 * Get a record by the given identifiers
-                 */
-                getById: QueryFn<
-                    TByIdInput<T, TIdFields, TUserIdField>,
-                    { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-                >;
-                /**
-                 * Get many records by the given identifiers
-                 */
-                getMany: QueryFn<
-                    {
-                        filters?: TManyFilters;
-                        limit?: number;
-                        pagination?: {
-                            page?: number;
-                            pageSize?: number;
-                        };
-                    } & (TUserIdField extends keyof T['_']['columns']
-                        ? {
-                              userId: GetColumnData<T['_']['columns'][TUserIdField]>;
-                          }
-                        : object),
-                    { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
-                >;
-                /**
-                 * Update a record by the given identifiers
-                 */
-                updateById: QueryFn<
-                    TByIdInput<T, TIdFields, TUserIdField> & {
-                        data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]>;
-                    },
-                    { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
-                >;
-                /**
-                 * Remove a record by the given identifiers
-                 */
-                removeById: QueryFn<TByIdInput<T, TIdFields, TUserIdField>, void>;
-            }
-        >({
+        type A = {
+            /**
+             * Create a record in the table
+             */
+            create: QueryFn<
+                {
+                    data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                        RequiredOnly<T['$inferInsert']>;
+                },
+                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+            >;
+            /**
+             * Create many records in the table
+             */
+            createMany: QueryFn<
+                {
+                    data: Array<
+                        Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                            RequiredOnly<T['$inferInsert']>
+                    >;
+                },
+                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+            >;
+            /**
+             * Get a record by the given identifiers
+             */
+            getById: QueryFn<
+                TByIdInput<T, TIdFields, TUserIdField>,
+                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+            >;
+            /**
+             * Get many records by the given identifiers
+             */
+            getMany: QueryFn<
+                {
+                    filters?: TManyFilters;
+                    limit?: number;
+                    pagination?: {
+                        page?: number;
+                        pageSize?: number;
+                    };
+                } & (TUserIdField extends keyof T['_']['columns']
+                    ? {
+                          userId: GetColumnData<T['_']['columns'][TUserIdField]>;
+                      }
+                    : object),
+                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+            >;
+            /**
+             * Update a record by the given identifiers
+             */
+            updateById: QueryFn<
+                TByIdInput<T, TIdFields, TUserIdField> & {
+                    data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]>;
+                },
+                { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+            >;
+            /**
+             * Remove a record by the given identifiers
+             */
+            removeById: QueryFn<TByIdInput<T, TIdFields, TUserIdField>, void>;
+        };
+
+        const queries: A = {
+            /**
+             * Create a record in the table
+             */
+            create: (input) => q.createRecord<TReturnColumns>({ data: input.data, returnColumns }),
+            /**
+             * Create many records in the table
+             */
+            createMany: (input) => q.createManyRecords({ data: input.data }),
+            /**
+             * Get a record by the given identifiers
+             */
+            getById: async (input) =>
+                q.getFirstRecord<TReturnColumns>({
+                    columns: returnColumns,
+                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
+                        field: key,
+                        value,
+                    })),
+                }),
+            /**
+             * Get many records by the given identifiers
+             */
+            getMany: (input) =>
+                q.getManyRecords<TReturnColumns>({
+                    limit: input.limit,
+                    identifiers:
+                        'userId' in input && input.userId
+                            ? [{ field: 'userId', value: input.userId }]
+                            : [],
+                    // filters: input.filters,
+                    // pagination: input.pagination,
+                    columns: returnColumns,
+                    filters: input.filters
+                        ? queryConfig.getMany?.filters?.(input.filters)
+                        : undefined,
+                }),
+            /**
+             * Update a record by the given identifiers
+             */
+            updateById: (input) =>
+                q.updateRecord<TReturnColumns>({
+                    data: input.data,
+                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
+                        field: key,
+                        value,
+                    })),
+                    returnColumns,
+                }),
+            /**
+             * Remove a record by the given identifiers
+             */
+            removeById: (input) =>
+                q.removeRecord({
+                    identifiers: typedEntries(input.ids).map(([key, value]) => ({
+                        field: key,
+                        value,
+                    })),
+                    softDelete,
+                }),
+        };
+
+        return new QueryBuilder<TSchemas, A>({
             schemas: this.schemas,
-            queries: {
-                /**
-                 * Create a record in the table
-                 */
-                create: (input) =>
-                    q.createRecord<TReturnColumns>({ data: input.data, returnColumns }),
-                /**
-                 * Create many records in the table
-                 */
-                createMany: (input) => q.createManyRecords({ data: input.data }),
-                /**
-                 * Get a record by the given identifiers
-                 */
-                getById: async (input) =>
-                    q.getFirstRecord<TReturnColumns>({
-                        columns: returnColumns,
-                        identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                            field: key,
-                            value,
-                        })),
-                    }),
-                /**
-                 * Get many records by the given identifiers
-                 */
-                getMany: (input) =>
-                    q.getManyRecords<TReturnColumns>({
-                        limit: input.limit,
-                        identifiers:
-                            'userId' in input && input.userId
-                                ? [{ field: 'userId', value: input.userId }]
-                                : [],
-                        // filters: input.filters,
-                        // pagination: input.pagination,
-                        columns: returnColumns,
-                        filters: input.filters ? manyFilters?.(input.filters) : undefined,
-                    }),
-                /**
-                 * Update a record by the given identifiers
-                 */
-                updateById: (input) =>
-                    q.updateRecord<TReturnColumns>({
-                        data: input.data,
-                        identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                            field: key,
-                            value,
-                        })),
-                        returnColumns,
-                    }),
-                /**
-                 * Remove a record by the given identifiers
-                 */
-                removeById: (input) =>
-                    q.removeRecord({
-                        identifiers: typedEntries(input.ids).map(([key, value]) => ({
-                            field: key,
-                            value,
-                        })),
-                        softDelete,
-                    }),
-            },
+            queries: queries,
         });
     }
 

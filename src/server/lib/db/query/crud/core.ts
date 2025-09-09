@@ -1,4 +1,4 @@
-import { typedKeys } from '@/lib/utils';
+import { typedEntries, typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
 import { tag } from '@/server/db/tables';
 import {
@@ -8,6 +8,8 @@ import {
 } from '@/server/lib/db/query/crud/types';
 import {
     and,
+    asc,
+    desc,
     eq,
     getTableColumns,
     getTableName,
@@ -119,6 +121,7 @@ export class CrudQueryBuilder<T extends Table> {
         columns,
         limit,
         offset,
+        orderBy,
         filters,
     }: {
         columns?: Cols;
@@ -126,13 +129,14 @@ export class CrudQueryBuilder<T extends Table> {
         limit?: number;
         offset?: number;
         filters?: (SQLWrapper | undefined)[];
+        orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
     }) {
         if (!isTable(this.table)) {
             throw new Error('Model is not a table');
         }
 
         const filterConditions = identifiers.map(({ field, value }) => {
-            const column = getTableColumns(this.table)[field];
+            const column = this.getColumn(field);
             return eq(column, value);
         });
 
@@ -149,6 +153,14 @@ export class CrudQueryBuilder<T extends Table> {
 
         if (offset) {
             // todo add offset
+        }
+
+        // order by
+        if (orderBy) {
+            const orderByConditions = typedEntries(orderBy).map(([field, direction]) => {
+                const column = this.getColumn(field);
+                return direction === 'asc' ? asc(column) : desc(column);
+            });
         }
 
         return query;
