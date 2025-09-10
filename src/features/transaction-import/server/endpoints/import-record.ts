@@ -68,7 +68,7 @@ const app = new Hono()
     /**
      * Update transaction import
      */
-    .put(
+    .patch(
         '/:id',
         zValidator('param', transactionImportSchemas.updateById.endpoint.param),
         zValidator('json', transactionImportSchemas.updateById.endpoint.json),

@@ -47,7 +47,7 @@ export const adminGlobalBankAccountEndpoints = new Hono()
     )
 
     // Update a global bank account
-    .put(
+    .patch(
         '/:id',
         zValidator('json', globalBankAccountSchemas.updateById.endpoint.json),
         zValidator('param', globalBankAccountSchemas.updateById.endpoint.param),

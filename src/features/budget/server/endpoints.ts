@@ -52,7 +52,7 @@ const app = new Hono()
     )
 
     // Update a transaction budget
-    .put(
+    .patch(
         '/:id',
         zValidator('param', transactionBudgetSchemas.updateById.endpoint.param),
         zValidator('json', transactionBudgetSchemas.updateById.endpoint.json),

@@ -39,7 +39,7 @@ export const useConnectedBankAccountEndpoints = {
      * Update a connected bank account
      */
     update: createMutation(
-        apiClient.banks['connected-bank-accounts'][':id'].$put,
+        apiClient.banks['connected-bank-accounts'][':id'].$patch,
         CONNECTED_BANK_ACCOUNT_QUERY_KEYS.CONNECTED_BANK_ACCOUNT
     ),
 };

@@ -47,7 +47,7 @@ const app = new Hono()
     )
 
     // Update a tag
-    .put(
+    .patch(
         '/:id',
         zValidator('param', tagSchemas.updateById.endpoint.param),
         zValidator('json', tagSchemas.updateById.endpoint.json),

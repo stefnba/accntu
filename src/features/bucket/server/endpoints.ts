@@ -41,7 +41,7 @@ const app = new Hono()
     )
 
     // Update a bucket
-    .put(
+    .patch(
         '/:id',
         zValidator('param', bucketSchemas.updateById.endpoint.param),
         zValidator('json', bucketSchemas.updateById.endpoint.json),

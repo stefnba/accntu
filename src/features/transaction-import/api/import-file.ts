@@ -37,7 +37,7 @@ export const useImportFileEndpoints = {
      * Update file status
      */
     updateStatus: createMutation(
-        apiClient['transaction-import'].files[':id'].status.$put,
+        apiClient['transaction-import'].files[':id'].$patch,
         TRANSACTION_IMPORT_FILE_QUERY_KEYS.FILE
     ),
 

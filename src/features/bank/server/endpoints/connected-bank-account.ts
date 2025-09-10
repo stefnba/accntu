@@ -49,7 +49,7 @@ const app = new Hono()
     /**
      * Update a connected bank account
      */
-    .put(
+    .patch(
         '/:id',
         zValidator('param', connectedBankAccountSchemas.updateById.endpoint.param),
         zValidator('json', connectedBankAccountSchemas.updateById.endpoint.json),

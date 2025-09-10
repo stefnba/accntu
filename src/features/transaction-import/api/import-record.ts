@@ -42,7 +42,7 @@ export const useImportRecordEndpoints = {
      * Update transaction import
      */
     update: createMutation(
-        apiClient['transaction-import'][':id'].$put,
+        apiClient['transaction-import'][':id'].$patch,
         TRANSACTION_IMPORT_QUERY_KEYS.IMPORT
     ),
 

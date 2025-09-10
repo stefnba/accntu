@@ -45,7 +45,7 @@ export const useLabelEndpoints = {
     /**
      * Update a label
      */
-    update: createMutation(apiClient.labels[':id'].$put, [
+    update: createMutation(apiClient.labels[':id'].$patch, [
         LABEL_QUERY_KEYS.LABEL,
         LABEL_QUERY_KEYS.LABELS,
         LABEL_QUERY_KEYS.FLATTENED_LABELS,

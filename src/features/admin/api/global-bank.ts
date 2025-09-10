@@ -27,7 +27,7 @@ export const useAdminGlobalBankEndpoints = {
     /**
      * Update global bank (admin only)
      */
-    update: createMutation(apiClient.admin['global-banks'][':id'].$put),
+    update: createMutation(apiClient.admin['global-banks'][':id'].$patch),
 
     /**
      * Delete global bank (admin only)

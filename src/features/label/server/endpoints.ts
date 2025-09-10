@@ -1,6 +1,7 @@
 import { labelSchemas } from '@/features/label/schemas';
 import { getUser } from '@/lib/auth';
 import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { labelServices } from './services';
@@ -29,7 +30,7 @@ const app = new Hono()
             const items = c.req.valid('json');
 
             const result = await labelServices.reorder({
-                items,
+                items: items.items,
                 userId: user.id,
             });
 
@@ -83,9 +84,9 @@ const app = new Hono()
         );
     })
     /**
-     * PUT /labels/:id - Update an existing label for the authenticated user
+     * PATCH /labels/:id - Update an existing label for the authenticated user
      */
-    .put(
+    .patch(
         '/:id',
         zValidator('param', labelSchemas.updateById.endpoint.param),
         zValidator('json', labelSchemas.updateById.endpoint.json),
@@ -108,19 +109,11 @@ const app = new Hono()
     /**
      * DELETE /labels/:id - Soft delete a label for the authenticated user
      */
-    .delete('/:id', zValidator('param', labelSchemas.removeById.endpoint.param), async (c) => {
-        return withRoute(c, async () => {
-            const user = getUser(c);
-            const ids = c.req.valid('param');
-
-            const label = await labelServices.removeById({ ids, userId: user.id });
-
-            if (!label) {
-                throw new Error('Label not found');
-            }
-
-            return { success: true };
-        });
-    });
-
+    .delete('/:id', zValidator('param', labelSchemas.removeById.endpoint.param), async (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                labelServices.removeById({ ids: { id: validatedInput.param.id }, userId })
+            )
+    );
 export default app;

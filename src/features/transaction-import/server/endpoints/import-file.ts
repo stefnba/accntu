@@ -56,7 +56,7 @@ const app = new Hono()
     /**
      * Update file status and processing information
      */
-    .put(
+    .patch(
         '/:id',
         zValidator('param', transactionImportFileSchemas.updateById.endpoint.param),
         zValidator('json', transactionImportFileSchemas.updateById.endpoint.json),

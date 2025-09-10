@@ -24,7 +24,7 @@ export const useBucketEndpoints = {
     /**
      * Update a bucket
      */
-    update: createMutation(apiClient.buckets[':id'].$put, BUCKET_QUERY_KEYS.ONE),
+    update: createMutation(apiClient.buckets[':id'].$patch, BUCKET_QUERY_KEYS.ONE),
 
     /**
      * Delete a bucket
