@@ -110,10 +110,10 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
      */
     .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
         return {
-            service: buildInput({ data: baseSchema }),
-            query: buildInput({ data: baseSchema }),
+            service: buildInput({ data: baseSchema.partial() }),
+            query: buildInput({ data: baseSchema.partial() }),
             endpoint: {
-                json: baseSchema,
+                json: baseSchema.partial(),
                 param: idFieldsSchema,
             },
         };

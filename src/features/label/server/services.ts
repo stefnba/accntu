@@ -43,6 +43,33 @@ export const labelServices = createFeatureServices
          * Update a label by ID
          */
         updateById: async (input) => {
+            // Check if the label exists and belongs to the user
+            const existingLabel = await queries.getById({ ids: input.ids, userId: input.userId });
+            if (!existingLabel) {
+                throw new Error('Label not found or you do not have permission to update it');
+            }
+
+            // If updating parentId, check for circular hierarchy
+            if (input.data.parentId !== undefined) {
+                if (input.data.parentId === input.ids.id) {
+                    throw new Error('A label cannot be its own parent');
+                }
+
+                // Check if the new parent would create a circular hierarchy
+                if (input.data.parentId) {
+                    const wouldCreateCircularHierarchy = await checkCircularHierarchy({
+                        labelId: input.ids.id,
+                        newParentId: input.data.parentId,
+                        userId: input.userId,
+                        queries,
+                    });
+
+                    if (wouldCreateCircularHierarchy) {
+                        throw new Error('Cannot create circular hierarchy: the new parent is a descendant of this label');
+                    }
+                }
+            }
+
             return await queries.updateById({
                 ids: input.ids,
                 data: input.data,
@@ -77,5 +104,45 @@ export const labelServices = createFeatureServices
             });
         },
     }));
+
+// Helper function to check for circular hierarchy
+async function checkCircularHierarchy({
+    labelId,
+    newParentId,
+    userId,
+    queries,
+}: {
+    labelId: string;
+    newParentId: string;
+    userId: string;
+    queries: any;
+}): Promise<boolean> {
+    // Walk up the parent chain of the new parent to see if it eventually leads to labelId
+    let currentParentId = newParentId;
+    const visitedIds = new Set<string>();
+
+    while (currentParentId && !visitedIds.has(currentParentId)) {
+        visitedIds.add(currentParentId);
+
+        // If we find labelId in the parent chain, it would create a circular hierarchy
+        if (currentParentId === labelId) {
+            return true;
+        }
+
+        // Get the parent of the current parent
+        const parentLabel = await queries.getById({
+            ids: { id: currentParentId },
+            userId,
+        });
+
+        if (!parentLabel) {
+            break;
+        }
+
+        currentParentId = parentLabel.parentId;
+    }
+
+    return false;
+}
 
 export type TLabel = InferFeatureType<typeof labelQueries>;

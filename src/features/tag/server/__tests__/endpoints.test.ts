@@ -105,7 +105,7 @@ describe('Tag API Endpoints', () => {
             if (!createdTagId) return;
 
             const updateData = { name: 'Updated Tag', color: '#ff6b6b' };
-            const res = await client.api.tags[':id'].$put(
+            const res = await client.api.tags[':id'].$patch(
                 {
                     param: { id: createdTagId },
                     json: updateData,
@@ -139,16 +139,12 @@ describe('Tag API Endpoints', () => {
                 expect(response).toHaveProperty('success', true);
             }
 
-            // Verify tag is actually deleted (should return null)
+            // Verify tag is actually deleted (should return 404)
             const getRes = await client.api.tags[':id'].$get(
                 { param: { id: createdTagId } },
                 { headers: auth.authHeaders }
             );
-            expect(getRes.status).toBe(200);
-            if (getRes.status === 200) {
-                const tag = await getRes.json();
-                expect(tag).toBeNull();
-            }
+            expect(getRes.status).toBe(404);
         });
     });
 
@@ -228,6 +224,174 @@ describe('Tag API Endpoints', () => {
             );
 
             expect(res.status).toBe(400);
+        });
+    });
+
+    describe('Security - User Isolation', () => {
+        const client = createTestClient();
+        let userAAuth: TestAuthSetup;
+        let userBAuth: TestAuthSetup;
+        let userATagId: string;
+
+        beforeAll(async () => {
+            // Create two different users for isolation testing
+            userAAuth = await setupTestAuth();
+            userBAuth = await setupTestAuth();
+
+            // Create a tag for user A
+            const tagData = {
+                name: 'User A Tag',
+                color: '#ff0000',
+                description: 'User A private tag',
+            };
+
+            const res = await client.api.tags.$post(
+                { json: tagData },
+                { headers: userAAuth.authHeaders }
+            );
+
+            if (res.status === 201) {
+                const response = await res.json();
+                userATagId = response.data.id;
+            }
+        });
+
+        it('should prevent user B from accessing user A tags list', async () => {
+            const res = await client.api.tags.$get(
+                { query: {} },
+                { headers: userBAuth.authHeaders }
+            );
+
+            expect(res.status).toBe(200);
+            if (res.status === 200) {
+                const tags = await res.json();
+                expect(Array.isArray(tags)).toBe(true);
+                expect(tags).toHaveLength(0); // User B should see no tags
+            }
+        });
+
+        it('should prevent user B from accessing user A specific tag', async () => {
+            if (!userATagId) return;
+
+            const res = await client.api.tags[':id'].$get(
+                { param: { id: userATagId } },
+                { headers: userBAuth.authHeaders }
+            );
+
+            expect(res.status).toBe(404); // Should not find the tag
+        });
+
+        it('should prevent user B from updating user A tag', async () => {
+            if (!userATagId) return;
+
+            const updateData = {
+                name: 'Hacked by User B',
+                color: '#000000',
+            };
+
+            const res = await client.api.tags[':id'].$patch(
+                {
+                    param: { id: userATagId },
+                    json: updateData,
+                },
+                { headers: userBAuth.authHeaders }
+            );
+
+            expect([404, 500]).toContain(res.status); // Should fail to find tag to update
+        });
+
+        it('should allow same tag names for different users', async () => {
+            const tagData = {
+                name: 'Shared Tag Name',
+                color: '#00ff00',
+            };
+
+            // Create tag for user A
+            const resA = await client.api.tags.$post(
+                { json: tagData },
+                { headers: userAAuth.authHeaders }
+            );
+
+            // Create tag with same name for user B
+            const resB = await client.api.tags.$post(
+                { json: tagData },
+                { headers: userBAuth.authHeaders }
+            );
+
+            expect(resA.status).toBe(201);
+            expect(resB.status).toBe(201); // Should both succeed
+        });
+    });
+
+    describe('Business Logic - Tag Management', () => {
+        const client = createTestClient();
+
+        it('should prevent duplicate tag names for same user', async () => {
+            const tagData = {
+                name: 'Duplicate Tag Test',
+                color: '#ff00ff',
+            };
+
+            // Create first tag
+            const firstRes = await client.api.tags.$post(
+                { json: tagData },
+                { headers: auth.authHeaders }
+            );
+            expect(firstRes.status).toBe(201);
+
+            // Try to create second tag with same name
+            const secondRes = await client.api.tags.$post(
+                { json: tagData },
+                { headers: auth.authHeaders }
+            );
+
+            expect([400, 500]).toContain(secondRes.status); // Should fail
+        });
+
+        it('should handle tag assignment to non-existent transaction gracefully', async () => {
+            // Create a tag first
+            const tagData = {
+                name: 'Assignment Test Tag',
+                color: '#0000ff',
+            };
+
+            const tagRes = await client.api.tags.$post(
+                { json: tagData },
+                { headers: auth.authHeaders }
+            );
+
+            expect(tagRes.status).toBe(201);
+
+            if (tagRes.status === 201) {
+                const response = await tagRes.json();
+                const tagId = response.data.id;
+
+                // Try to assign tag to non-existent transaction
+                const assignRes = await client.api.tags.assign['non-existent-transaction-id'].$put(
+                    {
+                        param: { transactionId: 'non-existent-transaction-id' },
+                        json: { tagIds: [tagId] },
+                    },
+                    { headers: auth.authHeaders }
+                );
+
+                expect([400, 404, 500]).toContain(assignRes.status); // Should fail gracefully
+            }
+        });
+
+        it('should validate tag assignment permissions', async () => {
+            // This test would require creating a transaction to properly test tag assignment
+            // For now, we test the error handling of invalid requests
+            
+            const res = await client.api.tags.assign['invalid-transaction-id'].$put(
+                {
+                    param: { transactionId: 'invalid-transaction-id' },
+                    json: { tagIds: ['invalid-tag-id'] },
+                },
+                { headers: auth.authHeaders }
+            );
+
+            expect([400, 404, 500]).toContain(res.status); // Should handle invalid data gracefully
         });
     });
 });

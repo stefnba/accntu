@@ -30,7 +30,14 @@ export const bucketServices = createFeatureServices
         /**
          * Update a bucket by ID
          */
-        updateById: async ({ data, ids, userId }) => queries.updateById({ ids, data, userId }),
+        updateById: async ({ data, ids, userId }) => {
+            // First check if the bucket exists and belongs to the user
+            const existingBucket = await queries.getById({ ids, userId });
+            if (!existingBucket) {
+                throw new Error('Bucket not found or you do not have permission to update it');
+            }
+            return await queries.updateById({ ids, data, userId });
+        },
         /**
          * Remove a bucket by ID
          */
