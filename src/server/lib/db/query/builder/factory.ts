@@ -241,6 +241,8 @@ class FeatureQueries<
              */
             removeById: (input) =>
                 q.removeRecord({
+                    returnColumns,
+                    softDelete,
                     identifiers: [
                         // user id identifier
                         ...userIdIdentifier(userIdField, input),
@@ -252,7 +254,6 @@ class FeatureQueries<
                             value,
                         })),
                     ],
-                    softDelete,
                 }),
         };
 

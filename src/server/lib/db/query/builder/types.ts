@@ -147,5 +147,8 @@ export type TCoreQueries<
     /**
      * Remove a record by the given identifiers
      */
-    removeById: QueryFn<TByIdInput<T, TIdFields, TUserIdField>, void>;
+    removeById: QueryFn<
+        TByIdInput<T, TIdFields, TUserIdField>,
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+    >;
 };
