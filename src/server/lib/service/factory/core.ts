@@ -66,10 +66,10 @@ class FeatureServices<
     }
 
     /**
-     * Define services for the feature service collection.
+     * Define service collection for the feature service collection.
      */
     defineServices<
-        const K extends keyof TSchemas & string,
+        const K extends keyof TSchemas | (string & {}),
         R extends {
             [Key in K]?: ServiceFn<
                 Key extends keyof InferServiceSchemas<TSchemas>

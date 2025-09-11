@@ -65,12 +65,12 @@ export type InferFeatureType<
 > = T extends QueryBuilder
     ? T extends QueryBuilder<any, infer TQueries>
         ? TKey extends keyof TQueries
-            ? InferFeatureTypeFromRecord<TQueries, TKey>
+            ? NonNullable<InferFeatureTypeFromRecord<TQueries, TKey>>
             : never
         : never
     : T extends Record<string, QueryFn>
       ? TKey extends keyof T
-          ? InferFeatureTypeFromRecord<T, TKey>
+          ? NonNullable<InferFeatureTypeFromRecord<T, TKey>>
           : never
       : never;
 

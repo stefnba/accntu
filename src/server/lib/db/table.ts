@@ -11,12 +11,15 @@ export const COMMON_FIELDS = {
         .primaryKey()
         .notNull()
         .$defaultFn(() => createId()),
+    // use references to user table
     userId: text()
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
     isActive: boolean().notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+        .notNull()
+        .$onUpdate(() => new Date()),
 } as const;
 
 // ================================

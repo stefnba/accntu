@@ -1,0 +1,1 @@
+export { coreCrustServiceHandler } from './core';

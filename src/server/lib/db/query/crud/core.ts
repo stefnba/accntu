@@ -1,11 +1,11 @@
 import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
-import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/crud/helpers';
 import {
     TBooleanFilter,
     TTableColumns,
     TValidTableForFrom,
 } from '@/server/lib/db/query/crud/types';
+import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import {
     and,
     eq,
@@ -94,7 +94,6 @@ export class CrudQueryBuilder<T extends Table> {
     async getFirstRecord<Cols extends Array<TTableColumns<T>>>({
         identifiers,
         columns,
-        throwOnNotFound,
     }: {
         identifiers: Array<TBooleanFilter<T>>;
         columns?: Cols;
@@ -107,11 +106,7 @@ export class CrudQueryBuilder<T extends Table> {
             pagination: { page: 1, pageSize: 1 },
         });
 
-        if (throwOnNotFound && records.length === 0) {
-            throw new Error(`Record not found from table '${getTableName(this.table)}'`);
-        }
-
-        // todo check if this is correct
+        // The query layer returns object or null. The service layer will handle the error if the record is not found
         return records[0] ?? null;
     }
 
@@ -197,7 +192,9 @@ export class CrudQueryBuilder<T extends Table> {
             .set(data)
             .where(and(...filterConditions))
             .returning(this.buildSelectColumns(returnColumns));
-        return updatedRecord[0];
+
+        // The query layer returns object or null. The service layer will handle the error if the record is not found
+        return updatedRecord[0] ?? null;
     }
 
     /**
@@ -242,7 +239,9 @@ export class CrudQueryBuilder<T extends Table> {
     }) {
         const columns = this.buildSelectColumns(returnColumns);
         const newRecord = await db.insert(this.table).values(data).returning(columns);
-        return newRecord[0];
+
+        // The query layer returns object or null. The service layer will handle the error if the record is not created
+        return newRecord[0] ?? null;
     }
 
     /**
@@ -281,24 +280,96 @@ export class CrudQueryBuilder<T extends Table> {
      * @param identifiers - The identifiers of the record
      * @returns The removed record from the table
      */
-    async removeRecord({
+    async removeRecord<Cols extends Array<TTableColumns<T>>>({
         identifiers,
         softDelete = true,
+        returnColumns,
     }: {
         identifiers: Array<TBooleanFilter<T>>;
+        returnColumns?: Cols;
         softDelete?: boolean;
     }) {
-        const filterConditions = this.buildIdentifierFilters(identifiers);
-
         if (softDelete) {
-            // if softDelete is true, update the record to set isActive to false
-            await db
-                .update(this.table)
-                .set({ isActive: false, updatedAt: new Date() })
-                .where(and(...filterConditions));
+            return this.deactivateRecord({ identifiers, returnColumns });
         } else {
-            // if softDelete is false, delete the record
-            await db.delete(this.table).where(and(...filterConditions));
+            return this.deleteRecord({ identifiers, returnColumns });
         }
+    }
+
+    /**
+     * Deactivate a record in the table. Soft delete is used by default.
+     * @param identifiers - The identifiers of the record
+     * @param returnColumns - The columns to return
+     * @returns
+     */
+    async deactivateRecord<Cols extends Array<TTableColumns<T>>>({
+        identifiers,
+        returnColumns,
+    }: {
+        identifiers: Array<TBooleanFilter<T>>;
+        returnColumns?: Cols;
+    }) {
+        const filterConditions = this.buildIdentifierFilters(identifiers);
+        const columns = this.buildSelectColumns(returnColumns);
+
+        const deactivatedRecord = await db
+            .update(this.table)
+            .set({ isActive: false })
+            .where(and(...filterConditions))
+            .returning(columns);
+
+        // The query layer returns object or null. The service layer will handle the error if the record is not created
+        return deactivatedRecord[0] ?? null;
+    }
+
+    /**
+     * Activate a record in the table.
+     * @param identifiers - The identifiers of the record
+     * @param returnColumns - The columns to return
+     * @returns
+     */
+    async activateRecord<Cols extends Array<TTableColumns<T>>>({
+        identifiers,
+        returnColumns,
+    }: {
+        identifiers: Array<TBooleanFilter<T>>;
+        returnColumns?: Cols;
+    }) {
+        const filterConditions = this.buildIdentifierFilters(identifiers);
+        const columns = this.buildSelectColumns(returnColumns);
+
+        const activatedRecord = await db
+            .update(this.table)
+            .set({ isActive: true })
+            .where(and(...filterConditions))
+            .returning(columns);
+
+        // The query layer returns object or null. The service layer will handle the error if the record is not created
+        return activatedRecord[0] ?? null;
+    }
+
+    /**
+     * Delete a record from the table.
+     * @param identifiers - The identifiers of the record
+     * @param returnColumns - The columns to return
+     * @returns
+     */
+    async deleteRecord<Cols extends Array<TTableColumns<T>>>({
+        identifiers,
+        returnColumns,
+    }: {
+        identifiers: Array<TBooleanFilter<T>>;
+        returnColumns?: Cols;
+    }) {
+        const filterConditions = this.buildIdentifierFilters(identifiers);
+        const columns = this.buildSelectColumns(returnColumns);
+
+        const deletedRecord = await db
+            .delete(this.table)
+            .where(and(...filterConditions))
+            .returning(columns);
+
+        // The query layer returns object or null. The service layer will handle the error if the record is not created
+        return deletedRecord[0] ?? null;
     }
 }
