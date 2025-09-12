@@ -6,7 +6,7 @@ import { Hono } from 'hono';
 
 // Create Hono app with proper chaining for RPC type generation
 const app = new Hono()
-    // Get all tags for authenticated user
+    // Get all tags
     .get('/', zValidator('query', tagSchemas.getMany.endpoint.query), async (c) =>
         routeHandler(c)
             .withUser()

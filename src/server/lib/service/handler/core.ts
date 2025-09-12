@@ -4,18 +4,20 @@ import { validateExists } from '@/server/lib/service/handler/helpers';
 export class ServiceHandler<T extends object> {
     private result: Promise<T | null>;
 
-    constructor(handlerFn: () => Promise<T | null>) {
-        this.result = this._handle(handlerFn);
+    constructor(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>) {
+        this.result = this._handle(handlerFnOrPromise);
     }
 
     /**
-     * Handle a service function
-     * @param handlerFn - The function to handle
+     * Handle a service function or promise
+     * @param handlerFnOrPromise - The function to handle or promise to await
      * @returns The service handler
      */
-    private async _handle(handlerFn: () => Promise<T | null>): Promise<T | null> {
+    private async _handle(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>): Promise<T | null> {
         try {
-            const result = await handlerFn();
+            const result = typeof handlerFnOrPromise === 'function' 
+                ? await handlerFnOrPromise() 
+                : await handlerFnOrPromise;
             return result;
         } catch (error) {
             if (error instanceof BaseError) {
@@ -26,12 +28,12 @@ export class ServiceHandler<T extends object> {
     }
 
     /**
-     * Handle a service function
-     * @param handlerFn - The function to handle
+     * Handle a service function or promise
+     * @param handlerFnOrPromise - The function to handle or promise to await
      * @returns The service handler
      */
-    static handle<T extends object>(handlerFn: () => Promise<T | null>): ServiceHandler<T> {
-        return new ServiceHandler(handlerFn);
+    static handle<T extends object>(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>): ServiceHandler<T> {
+        return new ServiceHandler(handlerFnOrPromise);
     }
 
     /**
@@ -81,21 +83,21 @@ export class ServiceHandler<T extends object> {
 }
 
 /**
- * Handle a service function
- * @param handlerFn - The function to handle
+ * Handle a service function or promise
+ * @param handlerFnOrPromise - The function to handle or promise to await
  * @returns The service handler
  */
-export const serviceHandler = async <T extends object>(handlerFn: () => Promise<T | null>) => {
-    return await new ServiceHandler(handlerFn);
+export const serviceHandler = async <T extends object>(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>) => {
+    return await new ServiceHandler(handlerFnOrPromise);
 };
 
 /**
- * Handle a service function with validate exists
- * @param handlerFn - The function to handle
+ * Handle a service function or promise with validate exists
+ * @param handlerFnOrPromise - The function to handle or promise to await
  * @returns The service handler
  */
 export const serviceHandlerWithValidateExists = async <T extends object>(
-    handlerFn: () => Promise<T | null>
+    handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>
 ) => {
-    return await ServiceHandler.handle(handlerFn).validateExists();
+    return await ServiceHandler.handle(handlerFnOrPromise).validateExists();
 };

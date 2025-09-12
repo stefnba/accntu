@@ -2,6 +2,7 @@ import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
 import { transactionServices } from '@/features/transaction/server/services';
 import { createFeatureServices } from '@/server/lib/service/';
+import { coreCrudServiceHandler } from '@/server/lib/service/crud';
 
 export const tagServices = createFeatureServices
     .registerSchema(tagSchemas)
@@ -10,34 +11,35 @@ export const tagServices = createFeatureServices
     .registerQuery(tagToTransactionQueries)
     .defineServices(({ queries }) => ({
         /**
-         * Create a new tag
+         * Create a tag
          */
-        create: async (input) => {
-            return await queries.create({ data: { ...input.data, userId: input.userId } });
-        },
+        create: async ({ data, userId }) =>
+            coreCrudServiceHandler.createOneRecord(queries.create({ data: { ...data, userId } })),
+
         /**
          * Get a tag by ID
          */
-        getById: async ({ ids, userId }) => {
-            return await queries.getById({
-                ids,
-                userId,
-            });
-        },
+        getById: async ({ ids, userId }) =>
+            coreCrudServiceHandler.getOneRecord(queries.getById({ ids, userId })),
+
+        /**
+         * Update a tag by ID
+         */
+        updateById: async ({ ids, data, userId }) =>
+            coreCrudServiceHandler.updateOneRecord(queries.updateById({ ids, data, userId })),
+
+        /**
+         * Remove a tag by ID
+         */
+        removeById: async ({ ids, userId }) =>
+            coreCrudServiceHandler.deleteOneRecord(queries.removeById({ ids, userId })),
+
         /**
          * Get many tags
          */
         getMany: async ({ userId, filters, pagination }) => {
             return await queries.getMany({ userId, filters, pagination });
         },
-        /**
-         * Update a tag by ID
-         */
-        updateById: async ({ data, ids, userId }) => queries.updateById({ ids, data, userId }),
-        /**
-         * Remove a tag by ID
-         */
-        removeById: async ({ ids, userId }) => queries.removeById({ ids, userId }),
         /**
          * Assign tags to a transaction
          */

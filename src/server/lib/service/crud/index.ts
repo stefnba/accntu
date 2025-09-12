@@ -1,1 +1,1 @@
-export { coreCrustServiceHandler } from './core';
+export { coreCrudServiceHandler } from './core';
