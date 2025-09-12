@@ -1,12 +1,13 @@
 import { connectedBankAccountSchemas } from '@/features/bank/schemas/connected-bank-account';
-import { db, dbTable } from '@/server/db';
+import { db } from '@/server/db';
+import { connectedBank, connectedBankAccount } from '@/features/bank/server/db/tables';
 
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
 export const connectedBankAccountQueries = createFeatureQueries
     .registerSchema(connectedBankAccountSchemas)
-    .registerCoreQueries(dbTable.connectedBankAccount, {
+    .registerCoreQueries(connectedBankAccount, {
         idFields: ['id'],
         userIdField: 'userId',
         defaultIdFilters: {
@@ -20,21 +21,19 @@ export const connectedBankAccountQueries = createFeatureQueries
         operation: 'get all connected bank accounts by user id',
         fn: async ({ userId, filters }) => {
             const whereClause = [
-                eq(dbTable.connectedBankAccount.userId, userId),
-                eq(dbTable.connectedBankAccount.isActive, true),
+                eq(connectedBankAccount.userId, userId),
+                eq(connectedBankAccount.isActive, true),
             ];
             if (filters?.connectedBankId) {
-                whereClause.push(
-                    eq(dbTable.connectedBankAccount.connectedBankId, filters.connectedBankId)
-                );
+                whereClause.push(eq(connectedBankAccount.connectedBankId, filters.connectedBankId));
             }
 
             const result = await db
                 .select()
-                .from(dbTable.connectedBankAccount)
+                .from(connectedBankAccount)
                 .innerJoin(
-                    dbTable.connectedBank,
-                    eq(dbTable.connectedBankAccount.connectedBankId, dbTable.connectedBank.id)
+                    connectedBank,
+                    eq(connectedBankAccount.connectedBankId, connectedBank.id)
                 )
                 .where(and(...whereClause));
 

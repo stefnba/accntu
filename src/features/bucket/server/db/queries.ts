@@ -1,10 +1,10 @@
 import { bucketSchemas } from '@/features/bucket/schemas';
-import { dbTable } from '@/server/db';
+import { bucket } from '@/features/bucket/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
 export const bucketQueries = createFeatureQueries
     .registerSchema(bucketSchemas)
-    .registerCoreQueries(dbTable.bucket, {
+    .registerCoreQueries(bucket, {
         idFields: ['id'],
         userIdField: 'userId',
         defaultIdFilters: {

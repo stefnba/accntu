@@ -1,5 +1,4 @@
-import { and, eq } from 'drizzle-orm';
-
+import { bucketToTransaction } from '@/features/bucket/server/db/tables';
 import {
     TSplitConfig,
     TSplitParticipant,
@@ -10,9 +9,16 @@ import {
     transactionBudgetQueries,
     transactionBudgetToParticipantQueries,
 } from '@/features/budget/server/db/queries';
-import { db, dbTable } from '@/server/db';
+import {
+    participantToBucket,
+    participantToConnectedBankAccount,
+    participantToTransaction,
+} from '@/features/participant/server/db/tables';
+import { transaction } from '@/features/transaction/server/db/tables';
+import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/handler';
 import { createFeatureServices } from '@/server/lib/service/';
+import { and, eq } from 'drizzle-orm';
 
 // ====================
 // Split Calculation Engine
@@ -34,8 +40,8 @@ const calculateTransactionBudget = async ({
             // Get transaction details
             const [transactionData] = await db
                 .select()
-                .from(dbTable.transaction)
-                .where(eq(dbTable.transaction.id, transactionId));
+                .from(transaction)
+                .where(eq(transaction.id, transactionId));
 
             if (!transactionData) {
                 throw new Error('Transaction not found');
@@ -44,11 +50,11 @@ const calculateTransactionBudget = async ({
             // 1. Check for direct transaction splits (highest precedence)
             const transactionSplits = await db
                 .select()
-                .from(dbTable.participantToTransaction)
+                .from(participantToTransaction)
                 .where(
                     and(
-                        eq(dbTable.participantToTransaction.transactionId, transactionId),
-                        eq(dbTable.participantToTransaction.isActive, true)
+                        eq(participantToTransaction.transactionId, transactionId),
+                        eq(participantToTransaction.isActive, true)
                     )
                 );
 
@@ -65,22 +71,22 @@ const calculateTransactionBudget = async ({
             // 2. Check for bucket-level splits
             const bucketConnection = await db
                 .select()
-                .from(dbTable.bucketToTransaction)
+                .from(bucketToTransaction)
                 .where(
                     and(
-                        eq(dbTable.bucketToTransaction.transactionId, transactionId),
-                        eq(dbTable.bucketToTransaction.isActive, true)
+                        eq(bucketToTransaction.transactionId, transactionId),
+                        eq(bucketToTransaction.isActive, true)
                     )
                 );
 
             if (bucketConnection.length > 0) {
                 const bucketSplits = await db
                     .select()
-                    .from(dbTable.participantToBucket)
+                    .from(participantToBucket)
                     .where(
                         and(
-                            eq(dbTable.participantToBucket.bucketId, bucketConnection[0].bucketId),
-                            eq(dbTable.participantToBucket.isActive, true)
+                            eq(participantToBucket.bucketId, bucketConnection[0].bucketId),
+                            eq(participantToBucket.isActive, true)
                         )
                     );
 
@@ -98,14 +104,14 @@ const calculateTransactionBudget = async ({
             // 3. Check for account-level splits
             const accountSplits = await db
                 .select()
-                .from(dbTable.participantToConnectedBankAccount)
+                .from(participantToConnectedBankAccount)
                 .where(
                     and(
                         eq(
-                            dbTable.participantToConnectedBankAccount.connectedBankAccountId,
+                            participantToConnectedBankAccount.connectedBankAccountId,
                             transactionData.connectedBankAccountId
                         ),
-                        eq(dbTable.participantToConnectedBankAccount.isActive, true)
+                        eq(participantToConnectedBankAccount.isActive, true)
                     )
                 );
 

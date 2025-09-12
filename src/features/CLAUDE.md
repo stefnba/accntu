@@ -115,10 +115,6 @@ export const [featureName]Relations = relations([featureName], ({ one, many }) =
 
 **All Other Files** (queries, services, schemas, components):
 
-- ✅ **MUST import** using: `import { dbTable } from '@/server/db'`
-- ✅ **Access tables** via: `dbTable.tableName`
-- ❌ **NEVER import** directly from feature table files
-
 ## API Endpoint Patterns
 
 ### Hono Framework Rules

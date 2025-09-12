@@ -1,5 +1,8 @@
+import {
+    transactionBudget,
+    transactionBudgetToParticipant,
+} from '@/features/budget/server/db/tables';
 import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 // ====================
@@ -38,7 +41,7 @@ export type TSplitParticipant = z.infer<typeof splitParticipantSchema>;
 // ====================
 
 export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
-    .registerTable(dbTable.transactionBudget)
+    .registerTable(transactionBudget)
     .omit({
         createdAt: true,
         updatedAt: true,
@@ -197,7 +200,7 @@ export const { schemas: transactionBudgetSchemas } = createFeatureSchemas
     });
 
 export const { schemas: transactionBudgetToParticipantSchemas } = createFeatureSchemas
-    .registerTable(dbTable.transactionBudgetToParticipant)
+    .registerTable(transactionBudgetToParticipant)
     .omit({
         createdAt: true,
         id: true,

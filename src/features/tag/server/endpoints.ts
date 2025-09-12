@@ -90,3 +90,13 @@ const app = new Hono()
     );
 
 export default app;
+
+import { getEnv } from '@/lib/env';
+
+import { hc } from 'hono/client';
+
+type AppType = typeof app;
+
+const { NEXT_PUBLIC_APP_URL } = getEnv('client');
+
+const apiClient = hc<AppType>(NEXT_PUBLIC_APP_URL + '/api');

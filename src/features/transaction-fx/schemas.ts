@@ -1,12 +1,12 @@
+import { transactionFxRate } from '@/features/transaction-fx/server/db/tables';
 import { createFeatureSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 const currency = z.string().length(3).toUpperCase();
 
 export const { schemas: transactionFxSchemas } = createFeatureSchemas
-    .registerTable(dbTable.transactionFxRate)
+    .registerTable(transactionFxRate)
     .omit({
         createdAt: true,
         updatedAt: true,

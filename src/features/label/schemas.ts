@@ -1,11 +1,11 @@
+import { label } from '@/features/label/server/db/tables';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
 export const { schemas: labelSchemas } = createFeatureSchemas
-    .registerTable(dbTable.label)
+    .registerTable(label)
     .omit({
         createdAt: true,
         updatedAt: true,

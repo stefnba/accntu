@@ -1,9 +1,9 @@
+import { user } from '@/lib/auth/server/db/tables';
 import { createFeatureSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 export const { schemas: userSchemas } = createFeatureSchemas
-    .registerTable(dbTable.user)
+    .registerTable(user)
     .pick({ name: true, lastName: true, image: true, settings: true })
     .setIdFields({ id: true })
     .addCore('updateById', ({ baseSchema, idFieldsSchema }) => {

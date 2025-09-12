@@ -1,4 +1,4 @@
-import { dbTable } from '@/server/db';
+import { connectedBank } from '@/features/bank/server/db/tables';
 
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
@@ -15,7 +15,7 @@ const apiCredentialsSchema = z
 export type TApiCredentials = z.infer<typeof apiCredentialsSchema>;
 
 export const { schemas: connectedBankSchemas } = createFeatureSchemas
-    .registerTable(dbTable.connectedBank)
+    .registerTable(connectedBank)
     .omit({
         createdAt: true,
         updatedAt: true,

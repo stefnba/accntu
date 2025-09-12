@@ -1,10 +1,11 @@
 import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
-import { dbTable } from '@/server/db';
+import { globalBank } from '@/features/bank/server/db/tables';
+
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
 export const globalBankQueries = createFeatureQueries
     .registerSchema(globalBankSchemas)
-    .registerCoreQueries(dbTable.globalBank, {
+    .registerCoreQueries(globalBank, {
         idFields: ['id'],
         defaultIdFilters: {
             isActive: true,

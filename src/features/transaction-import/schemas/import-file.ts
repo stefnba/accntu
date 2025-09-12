@@ -1,9 +1,9 @@
+import { transactionImportFile } from '@/features/transaction-import/server/db/tables';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 export const { schemas: transactionImportFileSchemas } = createFeatureSchemas
-    .registerTable(dbTable.transactionImportFile)
+    .registerTable(transactionImportFile)
     .omit({
         createdAt: true,
         updatedAt: true,

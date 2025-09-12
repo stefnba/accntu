@@ -1,5 +1,6 @@
 import { transactionImportFileSchemas } from '@/features/transaction-import/schemas/import-file';
-import { db, dbTable } from '@/server/db';
+import { transactionImportFile } from '@/features/transaction-import/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
@@ -12,16 +13,16 @@ export const transactionImportFileQueries = createFeatureQueries
         operation: 'get all transaction import files by user id',
         fn: async ({ userId, filters, pagination }) => {
             const whereClause = [
-                eq(dbTable.transactionImportFile.userId, userId),
-                eq(dbTable.transactionImportFile.isActive, true),
+                eq(transactionImportFile.userId, userId),
+                eq(transactionImportFile.isActive, true),
             ];
 
             if (filters?.status) {
-                whereClause.push(eq(dbTable.transactionImportFile.status, filters.status));
+                whereClause.push(eq(transactionImportFile.status, filters.status));
             }
 
             if (filters?.importId) {
-                whereClause.push(eq(dbTable.transactionImportFile.importId, filters.importId));
+                whereClause.push(eq(transactionImportFile.importId, filters.importId));
             }
 
             const where = and(...whereClause);
@@ -45,9 +46,9 @@ export const transactionImportFileQueries = createFeatureQueries
         fn: async ({ ids, userId }) => {
             const result = await db.query.transactionImportFile.findFirst({
                 where: and(
-                    eq(dbTable.transactionImportFile.id, ids.id),
-                    eq(dbTable.transactionImportFile.userId, userId),
-                    eq(dbTable.transactionImportFile.isActive, true)
+                    eq(transactionImportFile.id, ids.id),
+                    eq(transactionImportFile.userId, userId),
+                    eq(transactionImportFile.isActive, true)
                 ),
                 with: {
                     import: {
@@ -71,7 +72,7 @@ export const transactionImportFileQueries = createFeatureQueries
         operation: 'create transaction import file',
         fn: async ({ data, userId }) => {
             const result = await db
-                .insert(dbTable.transactionImportFile)
+                .insert(transactionImportFile)
                 .values({ ...data, userId })
                 .returning();
             return result[0];
@@ -84,12 +85,12 @@ export const transactionImportFileQueries = createFeatureQueries
         operation: 'update transaction import file',
         fn: async ({ ids, data, userId }) => {
             const result = await db
-                .update(dbTable.transactionImportFile)
+                .update(transactionImportFile)
                 .set({ ...data, updatedAt: new Date() })
                 .where(
                     and(
-                        eq(dbTable.transactionImportFile.id, ids.id),
-                        eq(dbTable.transactionImportFile.userId, userId)
+                        eq(transactionImportFile.id, ids.id),
+                        eq(transactionImportFile.userId, userId)
                     )
                 )
                 .returning();
@@ -103,15 +104,15 @@ export const transactionImportFileQueries = createFeatureQueries
         operation: 'remove transaction import file',
         fn: async ({ ids, userId }) => {
             return await db
-                .update(dbTable.transactionImportFile)
+                .update(transactionImportFile)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(
                     and(
-                        eq(dbTable.transactionImportFile.id, ids.id),
-                        eq(dbTable.transactionImportFile.userId, userId)
+                        eq(transactionImportFile.id, ids.id),
+                        eq(transactionImportFile.userId, userId)
                     )
                 );
         },
-    })
+    });
 
 export type TTransactionImportFile = InferFeatureType<typeof transactionImportFileQueries>;

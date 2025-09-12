@@ -1,5 +1,6 @@
-import { connectedBankAccount, user } from '@/server/db/tables';
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
+import { user } from '@/lib/auth/server/db/tables';
 import { relations } from 'drizzle-orm';
 import { boolean, integer, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';

@@ -1,10 +1,10 @@
 import { participantSchemas } from '@/features/participant/schemas';
-import { dbTable } from '@/server/db';
+import { participant } from '@/features/participant/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
 export const participantQueries = createFeatureQueries
     .registerSchema(participantSchemas)
-    .registerCoreQueries(dbTable.participant, {
+    .registerCoreQueries(participant, {
         idFields: ['id'],
         userIdField: 'userId',
         defaultIdFilters: {

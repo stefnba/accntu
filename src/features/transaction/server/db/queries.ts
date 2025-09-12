@@ -1,8 +1,11 @@
+import { connectedBankAccount } from '@/features/bank/server/db/tables';
+import { label } from '@/features/label/server/db/tables';
+import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
 import { transactionSchemas } from '@/features/transaction/schemas';
-import { db, dbTable } from '@/server/db';
+import { transaction } from '@/features/transaction/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries } from '@/server/lib/db/query';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
-import { transaction } from './tables';
 
 export const transactionQueries = createFeatureQueries
     .registerSchema(transactionSchemas)
@@ -106,7 +109,7 @@ export const transactionQueries = createFeatureQueries
             const transactionTagsData =
                 transactionIds.length > 0
                     ? await db.query.tagToTransaction.findMany({
-                          where: inArray(dbTable.tagToTransaction.transactionId, transactionIds),
+                          where: inArray(tagToTransaction.transactionId, transactionIds),
                           with: {
                               tag: true,
                           },
@@ -119,7 +122,7 @@ export const transactionQueries = createFeatureQueries
             const labelsData =
                 labelIds.length > 0
                     ? await db.query.label.findMany({
-                          where: inArray(dbTable.label.id, labelIds),
+                          where: inArray(label.id, labelIds),
                       })
                     : [];
 
@@ -185,7 +188,7 @@ export const transactionQueries = createFeatureQueries
 
             // Get tags for this transaction
             const transactionTagsData = await db.query.tagToTransaction.findMany({
-                where: eq(dbTable.tagToTransaction.transactionId, ids.id),
+                where: eq(tagToTransaction.transactionId, ids.id),
                 with: {
                     tag: true,
                 },
@@ -194,7 +197,7 @@ export const transactionQueries = createFeatureQueries
             // Get label for this transaction
             const labelData = result.labelId
                 ? await db.query.label.findFirst({
-                      where: eq(dbTable.label.id, result.labelId),
+                      where: eq(label.id, result.labelId),
                   })
                 : null;
 
@@ -283,14 +286,14 @@ export const getFilterOptions = async (userId: string) => {
     // Get unique accounts
     const accounts = await db
         .selectDistinct({
-            id: dbTable.connectedBankAccount.id,
-            name: dbTable.connectedBankAccount.name,
-            type: dbTable.connectedBankAccount.type,
+            id: connectedBankAccount.id,
+            name: connectedBankAccount.name,
+            type: connectedBankAccount.type,
         })
         .from(transaction)
         .innerJoin(
-            dbTable.connectedBankAccount,
-            eq(transaction.connectedBankAccountId, dbTable.connectedBankAccount.id)
+            connectedBankAccount,
+            eq(transaction.connectedBankAccountId, connectedBankAccount.id)
         )
         .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
@@ -305,18 +308,18 @@ export const getFilterOptions = async (userId: string) => {
     // Get unique labels
     const labels = await db
         .selectDistinct({
-            id: dbTable.label.id,
-            name: dbTable.label.name,
-            color: dbTable.label.color,
+            id: label.id,
+            name: label.name,
+            color: label.color,
         })
         .from(transaction)
-        .innerJoin(dbTable.label, eq(transaction.labelId, dbTable.label.id))
+        .innerJoin(label, eq(transaction.labelId, label.id))
         .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
     // Get user's tags
     const tags = await db.query.tag.findMany({
-        where: and(eq(dbTable.tag.userId, userId), eq(dbTable.tag.isActive, true)),
-        orderBy: [dbTable.tag.name],
+        where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
+        orderBy: [tag.name],
     });
 
     return {

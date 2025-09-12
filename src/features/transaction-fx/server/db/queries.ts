@@ -1,7 +1,8 @@
 import { transactionFxSchemas } from '@/features/transaction-fx/schemas';
-import { db, dbTable } from '@/server/db';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
+import { transactionFxRate } from '@/features/transaction-fx/server/db/tables';
 import { withDbQuery } from '@/server/lib/handler';
 import { and, eq, sql } from 'drizzle-orm';
 
@@ -16,29 +17,25 @@ export const transactionFxQueries = createFeatureQueries
             const whereConditions = [];
 
             if (filters?.baseCurrency) {
-                whereConditions.push(
-                    eq(dbTable.transactionFxRate.baseCurrency, filters.baseCurrency)
-                );
+                whereConditions.push(eq(transactionFxRate.baseCurrency, filters.baseCurrency));
             }
 
             if (filters?.targetCurrency) {
-                whereConditions.push(
-                    eq(dbTable.transactionFxRate.targetCurrency, filters.targetCurrency)
-                );
+                whereConditions.push(eq(transactionFxRate.targetCurrency, filters.targetCurrency));
             }
 
             if (filters?.date) {
-                whereConditions.push(eq(dbTable.transactionFxRate.date, filters.date));
+                whereConditions.push(eq(transactionFxRate.date, filters.date));
             }
 
             const [result] = await db
                 .select({
-                    baseCurrency: dbTable.transactionFxRate.baseCurrency,
-                    targetCurrency: dbTable.transactionFxRate.targetCurrency,
-                    exchangeRate: dbTable.transactionFxRate.exchangeRate,
-                    date: dbTable.transactionFxRate.date,
+                    baseCurrency: transactionFxRate.baseCurrency,
+                    targetCurrency: transactionFxRate.targetCurrency,
+                    exchangeRate: transactionFxRate.exchangeRate,
+                    date: transactionFxRate.date,
                 })
-                .from(dbTable.transactionFxRate)
+                .from(transactionFxRate)
                 .where(and(...whereConditions))
                 .limit(1);
 
@@ -51,7 +48,7 @@ export const transactionFxQueries = createFeatureQueries
     .addQuery('create', {
         operation: 'create exchange rate',
         fn: async ({ data }) => {
-            const [result] = await db.insert(dbTable.transactionFxRate).values(data).returning();
+            const [result] = await db.insert(transactionFxRate).values(data).returning();
 
             return result;
         },
@@ -75,7 +72,7 @@ export const upsertRate = async ({
         operation: 'upsert exchange rate',
         queryFn: async () => {
             const [result] = await db
-                .insert(dbTable.transactionFxRate)
+                .insert(transactionFxRate)
                 .values({
                     baseCurrency,
                     targetCurrency,
@@ -84,9 +81,9 @@ export const upsertRate = async ({
                 })
                 .onConflictDoUpdate({
                     target: [
-                        dbTable.transactionFxRate.baseCurrency,
-                        dbTable.transactionFxRate.targetCurrency,
-                        dbTable.transactionFxRate.date,
+                        transactionFxRate.baseCurrency,
+                        transactionFxRate.targetCurrency,
+                        transactionFxRate.date,
                     ],
                     set: {
                         exchangeRate: exchangeRate.toString(),
@@ -121,13 +118,13 @@ export const batchUpsertRates = async ({
             }));
 
             return await db
-                .insert(dbTable.transactionFxRate)
+                .insert(transactionFxRate)
                 .values(values)
                 .onConflictDoUpdate({
                     target: [
-                        dbTable.transactionFxRate.baseCurrency,
-                        dbTable.transactionFxRate.targetCurrency,
-                        dbTable.transactionFxRate.date,
+                        transactionFxRate.baseCurrency,
+                        transactionFxRate.targetCurrency,
+                        transactionFxRate.date,
                     ],
                     set: {
                         exchangeRate: sql`excluded.exchange_rate`,

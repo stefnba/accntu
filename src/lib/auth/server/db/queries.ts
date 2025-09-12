@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 
-import { db, dbTable } from '@/server/db';
+import { db } from '@/server/db';
 
+import { authSession } from '@/lib/auth/server/db/tables';
 import { withDbQuery } from '@/server/lib/handler/db';
 
 /**
@@ -32,9 +33,6 @@ export const updateSessionActivity = async ({
             if (ipAddress) updateData.ipAddress = ipAddress;
             if (userAgent) updateData.userAgent = userAgent;
 
-            return db
-                .update(dbTable.authSession)
-                .set(updateData)
-                .where(eq(dbTable.authSession.id, sessionId));
+            return db.update(authSession).set(updateData).where(eq(authSession.id, sessionId));
         },
     });

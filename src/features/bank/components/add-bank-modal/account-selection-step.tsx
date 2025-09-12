@@ -36,7 +36,7 @@ export const AccountSelectionStep = ({ onContinue }: AccountSelectionStepProps) 
     });
 
     // Fetch available bank accounts for the selected bank
-    const { data: bankAccounts, isLoading } = useGlobalBankAccountEndpoints.getByBankId({
+    const { data: bankAccounts, isLoading } = useGlobalBankAccountEndpoints.({
         param: { id: selectedBankId },
     });
 

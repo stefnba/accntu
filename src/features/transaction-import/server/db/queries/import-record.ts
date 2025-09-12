@@ -1,7 +1,11 @@
 import { transactionImportSchemas } from '@/features/transaction-import/schemas/import-record';
-import { db, dbTable } from '@/server/db';
+import {
+    transactionImport,
+    transactionImportFile,
+} from '@/features/transaction-import/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export const transactionImportQueries = createFeatureQueries
     .registerSchema(transactionImportSchemas)
@@ -12,16 +16,18 @@ export const transactionImportQueries = createFeatureQueries
         operation: 'get all transaction imports by user id',
         fn: async ({ userId, filters, pagination }) => {
             const whereClause = [
-                eq(dbTable.transactionImport.userId, userId),
-                eq(dbTable.transactionImport.isActive, true),
+                eq(transactionImport.userId, userId),
+                eq(transactionImport.isActive, true),
             ];
 
             if (filters?.status) {
-                whereClause.push(eq(dbTable.transactionImport.status, filters.status));
+                whereClause.push(eq(transactionImport.status, filters.status));
             }
 
             if (filters?.connectedBankAccountId) {
-                whereClause.push(eq(dbTable.transactionImport.connectedBankAccountId, filters.connectedBankAccountId));
+                whereClause.push(
+                    eq(transactionImport.connectedBankAccountId, filters.connectedBankAccountId)
+                );
             }
 
             const where = and(...whereClause);
@@ -39,7 +45,7 @@ export const transactionImportQueries = createFeatureQueries
                         },
                     },
                     files: {
-                        where: eq(dbTable.transactionImportFile.isActive, true),
+                        where: eq(transactionImportFile.isActive, true),
                         orderBy: (files, { asc }) => [asc(files.createdAt)],
                     },
                 },
@@ -57,9 +63,9 @@ export const transactionImportQueries = createFeatureQueries
         fn: async ({ ids, userId }) => {
             const result = await db.query.transactionImport.findFirst({
                 where: and(
-                    eq(dbTable.transactionImport.id, ids.id),
-                    eq(dbTable.transactionImport.userId, userId),
-                    eq(dbTable.transactionImport.isActive, true)
+                    eq(transactionImport.id, ids.id),
+                    eq(transactionImport.userId, userId),
+                    eq(transactionImport.isActive, true)
                 ),
                 with: {
                     connectedBankAccount: {
@@ -72,7 +78,7 @@ export const transactionImportQueries = createFeatureQueries
                         },
                     },
                     files: {
-                        where: eq(dbTable.transactionImportFile.isActive, true),
+                        where: eq(transactionImportFile.isActive, true),
                         orderBy: (files, { asc }) => [asc(files.createdAt)],
                     },
                 },
@@ -87,7 +93,7 @@ export const transactionImportQueries = createFeatureQueries
         operation: 'create transaction import',
         fn: async ({ data, userId }) => {
             const result = await db
-                .insert(dbTable.transactionImport)
+                .insert(transactionImport)
                 .values({ ...data, userId })
                 .returning();
             return result[0];
@@ -100,14 +106,9 @@ export const transactionImportQueries = createFeatureQueries
         operation: 'update transaction import',
         fn: async ({ ids, data, userId }) => {
             const result = await db
-                .update(dbTable.transactionImport)
+                .update(transactionImport)
                 .set({ ...data, updatedAt: new Date() })
-                .where(
-                    and(
-                        eq(dbTable.transactionImport.id, ids.id),
-                        eq(dbTable.transactionImport.userId, userId)
-                    )
-                )
+                .where(and(eq(transactionImport.id, ids.id), eq(transactionImport.userId, userId)))
                 .returning();
             return result[0];
         },
@@ -119,15 +120,10 @@ export const transactionImportQueries = createFeatureQueries
         operation: 'remove transaction import',
         fn: async ({ ids, userId }) => {
             return await db
-                .update(dbTable.transactionImport)
+                .update(transactionImport)
                 .set({ isActive: false, updatedAt: new Date() })
-                .where(
-                    and(
-                        eq(dbTable.transactionImport.id, ids.id),
-                        eq(dbTable.transactionImport.userId, userId)
-                    )
-                );
+                .where(and(eq(transactionImport.id, ids.id), eq(transactionImport.userId, userId)));
         },
-    })
+    });
 
 export type TTransactionImport = InferFeatureType<typeof transactionImportQueries>;

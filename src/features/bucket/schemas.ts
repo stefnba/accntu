@@ -1,9 +1,9 @@
+import { bucket } from '@/features/bucket/server/db/tables';
 import { createFeatureSchemas, InferSchemas, InferServiceSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 export const { schemas: bucketSchemas } = createFeatureSchemas
-    .registerTable(dbTable.bucket)
+    .registerTable(bucket)
     .omit({
         createdAt: true,
         updatedAt: true,

@@ -1,5 +1,5 @@
+import { transaction } from '@/features/transaction/server/db/tables';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
-import { dbTable } from '@/server/db';
 import { z } from 'zod';
 
 const numericInputSchema = z.coerce.number();
@@ -11,7 +11,7 @@ export const {
     rawSchema,
     baseSchema,
 } = createFeatureSchemas
-    .registerTable(dbTable.transaction)
+    .registerTable(transaction)
     .omit({
         id: true,
         createdAt: true,

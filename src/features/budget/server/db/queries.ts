@@ -4,8 +4,11 @@ import {
     transactionBudgetSchemas,
     transactionBudgetToParticipantSchemas,
 } from '@/features/budget/schemas';
-import { db, dbTable } from '@/server/db';
-import { transactionBudget, transactionBudgetToParticipant } from '@/server/db/tables';
+import {
+    transactionBudget,
+    transactionBudgetToParticipant,
+} from '@/features/budget/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
 export const transactionBudgetQueries = createFeatureQueries
@@ -55,7 +58,7 @@ export const transactionBudgetQueries = createFeatureQueries
     .addQuery('create', {
         fn: async ({ data, userId }) => {
             const [newBudget] = await db
-                .insert(dbTable.transactionBudget)
+                .insert(transactionBudget)
                 .values({ ...data, userId })
                 .returning();
             return newBudget;
@@ -70,7 +73,7 @@ export const transactionBudgetQueries = createFeatureQueries
         fn: async ({ ids, userId }) => {
             const [result] = await db
                 .select()
-                .from(dbTable.transactionBudget)
+                .from(transactionBudget)
                 .where(
                     and(
                         eq(transactionBudget.id, ids.id),
@@ -89,7 +92,7 @@ export const transactionBudgetQueries = createFeatureQueries
         operation: 'delete transaction budget',
         fn: async ({ ids, userId }) => {
             const [deleted] = await db
-                .update(dbTable.transactionBudget)
+                .update(transactionBudget)
                 .set({ isActive: false, updatedAt: new Date() })
                 .where(and(eq(transactionBudget.id, ids.id), eq(transactionBudget.userId, userId)))
                 .returning();
@@ -103,7 +106,7 @@ export const transactionBudgetQueries = createFeatureQueries
         operation: 'update transaction budget',
         fn: async ({ ids, data, userId }) => {
             const [updated] = await db
-                .update(dbTable.transactionBudget)
+                .update(transactionBudget)
                 .set({ ...data, updatedAt: new Date() })
                 .where(and(eq(transactionBudget.id, ids.id), eq(transactionBudget.userId, userId)))
                 .returning();
@@ -118,7 +121,7 @@ export const transactionBudgetQueries = createFeatureQueries
         fn: async ({ transactionId, userId }) => {
             const [result] = await db
                 .select()
-                .from(dbTable.transactionBudget)
+                .from(transactionBudget)
                 .where(
                     and(
                         eq(transactionBudget.transactionId, transactionId),
@@ -137,7 +140,7 @@ export const transactionBudgetQueries = createFeatureQueries
         fn: async () => {
             return await db
                 .select()
-                .from(dbTable.transactionBudget)
+                .from(transactionBudget)
                 .where(
                     and(
                         eq(transactionBudget.isRecalculationNeeded, true),
@@ -164,7 +167,7 @@ export const transactionBudgetQueries = createFeatureQueries
         operation: 'mark transaction budgets for recalculation',
         fn: async ({ transactionId }) => {
             return await db
-                .update(dbTable.transactionBudget)
+                .update(transactionBudget)
                 .set({
                     isRecalculationNeeded: true,
                     updatedAt: new Date(),
@@ -189,7 +192,7 @@ export const transactionBudgetToParticipantQueries = createFeatureQueries
         fn: async ({ transactionBudgetId }) => {
             return await db
                 .select()
-                .from(dbTable.transactionBudgetToParticipant)
+                .from(transactionBudgetToParticipant)
                 .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId));
         },
     })
@@ -201,7 +204,7 @@ export const transactionBudgetToParticipantQueries = createFeatureQueries
         fn: async ({ participantId }) => {
             return await db
                 .select()
-                .from(dbTable.transactionBudgetToParticipant)
+                .from(transactionBudgetToParticipant)
                 .where(eq(transactionBudgetToParticipant.participantId, participantId));
         },
     })
@@ -221,7 +224,7 @@ export const transactionBudgetToParticipantQueries = createFeatureQueries
             }));
 
             return await db
-                .insert(dbTable.transactionBudgetToParticipant)
+                .insert(transactionBudgetToParticipant)
                 .values(participantsWithBudgetId)
                 .returning();
         },
@@ -233,7 +236,7 @@ export const transactionBudgetToParticipantQueries = createFeatureQueries
         operation: 'remove participants by budget ID',
         fn: async ({ transactionBudgetId }) => {
             return await db
-                .delete(dbTable.transactionBudgetToParticipant)
+                .delete(transactionBudgetToParticipant)
                 .where(eq(transactionBudgetToParticipant.transactionBudgetId, transactionBudgetId))
                 .returning();
         },
