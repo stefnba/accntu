@@ -115,7 +115,7 @@ export type TCoreQueries<
      */
     getById: QueryFn<
         TByIdInput<T, TIdFields, TUserIdField>,
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] } | null
     >;
     /**
      * Get many records by the given identifiers
