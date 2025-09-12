@@ -1,4 +1,4 @@
-import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
+import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { LanguageAndRegionForm } from '@/features/user/components/language-and-region/language-and-region';
 

@@ -1,4 +1,4 @@
-import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
+import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { CurrentUserProfile } from '@/features/user/components/profile/current-profile';
 import { ProfileCard } from '@/features/user/components/profile/profile-card';

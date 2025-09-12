@@ -1,4 +1,4 @@
-import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
+import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { ListActiveSessions } from '@/features/user/components/security/list-sessions';
 import { RevokeAllSessionsButton } from '@/features/user/components/security/revoke-all-sessions-button';
@@ -9,8 +9,8 @@ export default function SecurityPage() {
     return (
         <MainContent
             pageHeader={{
-                title: 'Active Sessions',
-                description: 'Manage your active sessions',
+                title: item.title,
+                description: item.description,
                 actionBar: <RevokeAllSessionsButton />,
             }}
             backButton

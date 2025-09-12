@@ -1,4 +1,4 @@
-import { getNavItem, userNavItems } from '@/app/(protected)/user/page';
+import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { SessionManager } from '@/features/user/components/security/session-manager';
 
