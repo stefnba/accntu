@@ -2,12 +2,10 @@ import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-
+import * as dbTable from '../../src/server/db/tables';
 // Import all feature schemas
-import { dbTable } from '@/server/db';
 
 // Handle both default and named exports
-const schema = ('default' in dbTable ? dbTable.default : dbTable) as Record<string, any>;
 
 const { DATABASE_URL } = process.env;
 
@@ -15,13 +13,13 @@ if (!DATABASE_URL) throw new Error('DATABASE_URL is not set');
 
 const client = postgres(DATABASE_URL);
 
-const db = drizzle(client, { schema, logger: false });
+const db = drizzle(client, { schema: dbTable, logger: false });
 
 async function reset() {
     console.log('🗑️ Emptying the entire database');
 
     // Get all table names from the combined schema
-    const tableNames = Object.values(schema)
+    const tableNames = Object.values(dbTable)
         .filter(
             (table: any) => table && typeof table === 'object' && table[Symbol.for('drizzle:Name')]
         )
