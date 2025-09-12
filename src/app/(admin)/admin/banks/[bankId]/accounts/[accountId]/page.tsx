@@ -4,7 +4,7 @@ import { GlobalBankAccountDetailsView } from '@/features/admin/components/global
 export default async function AdminGlobalBankAccountPage({
     params,
 }: {
-    params: { accountId: string; bankId: string };
+    params: Promise<{ accountId: string; bankId: string }>;
 }) {
     const { accountId, bankId } = await params;
     return (

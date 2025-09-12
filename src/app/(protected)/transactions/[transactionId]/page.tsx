@@ -2,9 +2,9 @@ import { MainContent } from '@/components/layout/main';
 import { TransactionDetailsView } from '@/features/transaction/components';
 
 interface TransactionPageProps {
-    params: {
+    params: Promise<{
         transactionId: string;
-    };
+    }>;
 }
 
 export default async function TransactionPage({ params }: TransactionPageProps) {

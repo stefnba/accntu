@@ -165,3 +165,11 @@ export const { schemas: labelSchemas } = createFeatureSchemas
 export type TLabelSchemas = InferSchemas<typeof labelSchemas>;
 
 export { type TLabel } from '@/features/label/server/db/queries';
+
+// ====================
+// Legacy Support
+// ====================
+export const labelServiceSchemas = {
+    insert: labelSchemas.create.form,
+    update: labelSchemas.updateById.endpoint.json,
+};

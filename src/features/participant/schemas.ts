@@ -126,3 +126,11 @@ export type TParticipantToConnectedBankAccount = z.infer<
 export type TParticipantToBucket = z.infer<typeof participantToBucketSchema>;
 
 export { type TParticipant } from '@/features/participant/server/db/queries';
+
+// ====================
+// Legacy Support
+// ====================
+export const participantServiceSchemas = {
+    insert: participantSchemas.create.endpoint.json,
+    update: participantSchemas.updateById.endpoint.json,
+};

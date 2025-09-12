@@ -2,9 +2,9 @@ import { MainContent } from '@/components/layout/main';
 import { BankDetailsView } from '@/features/bank/components';
 
 interface BankPageProps {
-    params: {
+    params: Promise<{
         bankId: string;
-    };
+    }>;
 }
 
 export default async function BankPage({ params }: BankPageProps) {

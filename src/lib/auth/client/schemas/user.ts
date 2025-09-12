@@ -23,3 +23,10 @@ export const { schemas: userSchemas } = createFeatureSchemas
             endpoint: { json: input, param: idFieldsSchema },
         };
     });
+
+// ====================
+// Legacy Support
+// ====================
+export const userServiceSchemas = {
+    update: userSchemas.updateById.endpoint.json,
+};
