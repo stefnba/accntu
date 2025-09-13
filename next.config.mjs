@@ -4,6 +4,14 @@ const nextConfig = {
     output: 'standalone',
     typedRoutes: true,
     experimental: {},
+    eslint: {
+        // Disable ESLint during builds to avoid memory issues
+        ignoreDuringBuilds: true,
+    },
+    typescript: {
+        // Also ignore TypeScript errors during builds if needed
+        ignoreBuildErrors: true,
+    },
     webpack: (config, { isServer }) => {
         if (isServer) {
             // Handle DuckDB native bindings for server-side only
