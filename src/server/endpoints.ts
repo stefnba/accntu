@@ -15,7 +15,7 @@ import transactionFxEndpoints from '@/features/transaction-fx/server/endpoints';
 import transactionImportEndpoints from '@/features/transaction-import/server/endpoints';
 import transactionEndpoints from '@/features/transaction/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
-import authEndpoints from '@/lib/auth/server/endpoints';
+import authEndpoints from '@/lib/auth/server/endpoints-new';
 
 // Status endpoints
 const statusEndpoints = new Hono().get('/', async (c) =>
@@ -32,8 +32,15 @@ const statusEndpoints = new Hono().get('/', async (c) =>
 );
 
 export const appEndpoints = {
+    // status
     status: statusEndpoints,
+    // user & auth
+    user: userEndpoints,
+    auth: authEndpoints,
+    // admin
     admin: adminEndpoints,
+
+    // features
     banks: bankEndpoints,
     budgets: budgetEndpoints,
     labels: labelEndpoints,
@@ -42,7 +49,6 @@ export const appEndpoints = {
     transactions: transactionEndpoints,
     transactionImport: transactionImportEndpoints,
     transactionFx: transactionFxEndpoints,
-    user: userEndpoints,
-    auth: authEndpoints,
     buckets: bucketEndpoints,
 };
+//
