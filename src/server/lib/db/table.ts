@@ -1,4 +1,4 @@
-import { user } from '@/server/db/tables';
+import { user } from '@/lib/auth/server/db/tables';
 import { createId } from '@paralleldrive/cuid2';
 import { InferSelectModel } from 'drizzle-orm';
 import { boolean, PgTable, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
