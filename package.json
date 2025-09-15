@@ -14,7 +14,8 @@
         "db:generate": "drizzle-kit generate",
         "db:migrate": "bun run ./drizzle/scripts/migrate/migrate.ts",
         "db:seed": "bun run ./drizzle/scripts/seed/seed.ts",
-        "db:reset": "bun run ./drizzle/scripts/reset.ts"
+        "db:reset": "bun run ./drizzle/scripts/reset.ts",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.883.0",
