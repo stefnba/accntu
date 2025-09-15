@@ -1,29 +1,41 @@
 'use client';
 
-import { AUTH_QUERY_KEYS, useAuthEndpoints } from '@/lib/auth/client/api';
+import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
+import { authClient } from '@/lib/auth/client/client';
 import { LOGIN_REDIRECT_URL } from '@/lib/routes';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAuthLoadingStore } from './auth-loading-store';
 
 import type { TSocialProvider } from '@/lib/auth/client/types';
 
 /**
- * Sign in with email OTP. It provides both the initiate and verify mutations.
- * @important
- * This should not be used in the client. Use useSignIn instead.
+ * Sign in with email OTP using direct better-auth client methods.
+ * Provides both the initiate and verify mutations with TanStack Query integration.
  */
 const useSignInEmailOTP = () => {
     const queryClient = useQueryClient();
     const router = useRouter();
     const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
 
-    const initiateMutation = useAuthEndpoints.sendVerificationOTP({
+    const initiateMutation = useMutation({
+        mutationFn: async ({ email }: { email: string }) => {
+            const result = await authClient.emailOtp.sendVerificationOtp({
+                email,
+                type: 'sign-in',
+            });
+
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+
+            return result.data;
+        },
         onMutate: () => {
             setSigningIn('email-otp');
         },
         onSuccess: () => {
-            // OTP sent successfully - navigate to verify page after cookie is set
+            // OTP sent successfully - navigate to verify page
             router.push('/auth/verify-otp');
             router.refresh();
         },
@@ -32,15 +44,27 @@ const useSignInEmailOTP = () => {
         },
     });
 
-    const verifyMutation = useAuthEndpoints.signInEmailOTP({
+    const verifyMutation = useMutation({
+        mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
+            const result = await authClient.signIn.emailOtp({
+                email,
+                otp,
+            });
+
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+
+            return result.data;
+        },
         onMutate: () => {
             setSigningIn('email-otp');
         },
         onSuccess: (data) => {
-            // Update session cache and invalidate to trigger refetch on successful OTP verification
+            // Update session cache and invalidate to trigger refetch
             queryClient.setQueryData(AUTH_QUERY_KEYS.SESSION, data);
             queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
-            resetAuthLoading(); // Reset before redirect
+            resetAuthLoading();
             router.push(LOGIN_REDIRECT_URL);
             router.refresh();
         },
@@ -56,19 +80,29 @@ const useSignInEmailOTP = () => {
 };
 
 /**
- * Sign in with social provider
- * @important
- * This should not be used in the client. Use useSignIn instead.
+ * Sign in with social provider using direct better-auth client methods.
  */
 const useSignInSocial = () => {
     const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
 
-    return useAuthEndpoints.signInSocial({
+    return useMutation({
+        mutationFn: async ({ provider, callbackURL }: { provider: TSocialProvider; callbackURL?: string }) => {
+            const result = await authClient.signIn.social({
+                provider,
+                callbackURL,
+            });
+
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+
+            return result.data;
+        },
         onMutate: () => {
             setSigningIn('social');
         },
         onSuccess: (data) => {
-            if ('url' in data) {
+            if (data && 'url' in data && data.url) {
                 // Keep loading state during redirect - will auto-reset on page load
                 window.location.href = data.url;
             } else {
@@ -82,7 +116,7 @@ const useSignInSocial = () => {
 };
 
 /**
- * Sign in hook combining all sign in methods
+ * Sign in hook combining all sign in methods with direct better-auth client integration
  */
 export const useSignIn = () => {
     const signInSocial = useSignInSocial();
@@ -91,12 +125,12 @@ export const useSignIn = () => {
 
     return {
         signInSocial: (provider: TSocialProvider, callbackURL?: string) =>
-            signInSocial.mutate({ json: { provider, callbackURL } }),
+            signInSocial.mutate({ provider, callbackURL }),
 
         initiateEmailOTP: (email: string) =>
-            signInEmailOTP.initiate.mutate({ json: { email, type: 'sign-in' } }),
+            signInEmailOTP.initiate.mutate({ email }),
         verifyEmailOTP: (email: string, otp: string) =>
-            signInEmailOTP.verify.mutate({ json: { email, otp } }),
+            signInEmailOTP.verify.mutate({ email, otp }),
 
         // Use global loading state instead of individual mutation states
         isSigningIn,

@@ -2,6 +2,7 @@
 
 import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
 import { authClient } from '@/lib/auth/client/client';
+import { useAuthLoadingStore } from '@/lib/auth/client/session';
 import { LOGIN_URL } from '@/lib/routes';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -17,10 +18,15 @@ interface UseSignOutProps {
 export function useSignOut({ redirectToLogin = true }: UseSignOutProps = {}) {
     const router = useRouter();
     const queryClient = useQueryClient();
+    const { setSigningOut, resetAuthLoading, isSigningOut } = useAuthLoadingStore();
 
     const signOut = useCallback(() => {
         authClient.signOut({
             fetchOptions: {
+                onRequest: () => {
+                    // set signing out to true
+                    setSigningOut();
+                },
                 // error or success doesn't matter, we just want to clear the cache and redirect to login
                 onResponse: () => {
                     // Security-first approach: Clear all cache to prevent data leakage
@@ -32,16 +38,19 @@ export function useSignOut({ redirectToLogin = true }: UseSignOutProps = {}) {
                         queryClient.clear();
                     }, 100);
 
+                    resetAuthLoading();
+
                     if (redirectToLogin) {
                         // Redirect to login
                         router.push(LOGIN_URL);
                     }
 
-                    router.refresh(); // Force page refresh to clear any server state
+                    // Force page refresh to clear any server state
+                    router.refresh();
                 },
             },
         });
-    }, [queryClient, router]);
+    }, [queryClient, router, redirectToLogin, setSigningOut, resetAuthLoading]);
 
-    return signOut;
+    return { signOut, isSigningOut };
 }

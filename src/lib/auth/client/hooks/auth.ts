@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useAuthLoadingStore } from '@/lib/auth/client/session';
 import { useSession } from './session';
 import { useSignIn } from './sign-in';
 import { useSignOut } from './sign-out';
@@ -9,21 +9,24 @@ import { useSignOut } from './sign-out';
  * Global auth state hook (minimal re-renders)
  */
 export function useAuth() {
-    const { user, isAuthenticated, isLoading, refetchSession } = useSession();
-    const signOutMutation = useSignOut();
-    const signIn = useSignIn();
-
-    const signOut = useCallback(() => {
-        signOutMutation.mutate({});
-    }, [signOutMutation]);
+    const { user, isAuthenticated, refetchSession } = useSession();
+    const { isAuthLoading, isSigningIn, signingInMethod, isSigningOut } = useAuthLoadingStore();
+    const { signOut } = useSignOut();
+    const { initiateEmailOTP, verifyEmailOTP, signInSocial } = useSignIn();
 
     return {
         user,
         isAuthenticated,
-        isLoading,
-        isSigningOut: signOutMutation.isPending,
+        isLoading: isAuthLoading,
+        // Sign out
+        isSigningOut,
         signOut,
         refetchSession,
-        ...signIn,
+        // Sign in
+        initiateEmailOTP,
+        verifyEmailOTP,
+        signInSocial,
+        isSigningIn,
+        signingInMethod,
     };
 }

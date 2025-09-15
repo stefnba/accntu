@@ -8,6 +8,9 @@ import {
 import { createAuthClient } from 'better-auth/react';
 import type { auth } from '../config';
 
+/**
+ * Better-auth client
+ */
 export const authClient = createAuthClient({
     plugins: [
         emailOTPClient(),
@@ -16,17 +19,35 @@ export const authClient = createAuthClient({
         inferAdditionalFields<typeof auth>(),
     ],
 });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const authErrors = authClient.$ERROR_CODES;
+
+/**
+ * Better-auth client error codes
+ */
+export const authErrors = authClient.$ERROR_CODES;
 
 // ====================
 // Types
 // ====================
 
+/**
+ * Better-auth client session type
+ */
 export type TSession = typeof authClient.$Infer.Session.session;
+
+/**
+ * Better-auth client user type
+ */
 export type TUser = typeof authClient.$Infer.Session.user;
+
+/**
+ * Better-auth client auth session type
+ */
 export type TAuthSession = {
     user: TUser;
     session: TSession;
 };
+
+/**
+ * Better-auth client error codes
+ */
 export type TErrorCodes = keyof typeof authErrors;
