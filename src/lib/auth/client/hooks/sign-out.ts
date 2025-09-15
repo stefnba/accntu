@@ -1,33 +1,47 @@
 'use client';
 
-import { AUTH_QUERY_KEYS, useAuthEndpoints } from '@/lib/auth/client/api';
+import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
+import { authClient } from '@/lib/auth/client/client';
 import { LOGIN_URL } from '@/lib/routes';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+
+interface UseSignOutProps {
+    redirectToLogin?: boolean;
+}
 
 /**
  * Sign out mutation with cache invalidation
  */
-export function useSignOut() {
+export function useSignOut({ redirectToLogin = true }: UseSignOutProps = {}) {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const signOutMutation = useAuthEndpoints.signOut({
-        // error or success doesn't matter, we just want to clear the cache and redirect to login
-        onSettled: () => {
-            // Security-first approach: Clear all cache to prevent data leakage
-            // 1. First set session to null to prevent immediate refetch
-            queryClient.setQueryData(AUTH_QUERY_KEYS.SESSION, null);
-            
-            // 2. Then clear all cache after a brief delay to prevent race conditions
-            setTimeout(() => {
-                queryClient.clear();
-            }, 100);
 
-            // Redirect to login
-            router.push(LOGIN_URL);
-            router.refresh(); // Force page refresh to clear any server state
-        },
-    });
+    const signOut = useCallback(() => {
+        authClient.signOut({
+            fetchOptions: {
+                // error or success doesn't matter, we just want to clear the cache and redirect to login
+                onResponse: () => {
+                    // Security-first approach: Clear all cache to prevent data leakage
+                    // 1. First set session to null to prevent immediate refetch
+                    queryClient.setQueryData(AUTH_QUERY_KEYS.SESSION, null);
 
-    return signOutMutation;
+                    // 2. Then clear all cache after a brief delay to prevent race conditions
+                    setTimeout(() => {
+                        queryClient.clear();
+                    }, 100);
+
+                    if (redirectToLogin) {
+                        // Redirect to login
+                        router.push(LOGIN_URL);
+                    }
+
+                    router.refresh(); // Force page refresh to clear any server state
+                },
+            },
+        });
+    }, [queryClient, router]);
+
+    return signOut;
 }

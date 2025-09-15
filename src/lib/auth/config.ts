@@ -9,7 +9,7 @@ import { SESSION_COOKIE, SESSION_DATA } from '@/lib/auth/constants';
 import { sendOtpEmail } from '@/lib/auth/email';
 import { getEnv } from '@/lib/env';
 
-// relative import required because of better-auth bug
+// !!! relative import required because of better-auth bug !!!
 import { db } from '../../server/db';
 
 const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME } =
@@ -44,9 +44,6 @@ const options = {
         modelName: 'authVerification',
     },
     user: {
-        // fields: {
-        //     name: 'firstName',
-        // },
         additionalFields: {
             lastLoginAt: {
                 type: 'date',
@@ -58,13 +55,14 @@ const options = {
                 type: 'string',
                 returned: true,
                 required: false,
+                input: true,
             },
-            // language: {
-            //     type: 'string',
-            //     returned: true,
-            //     required: false,
-            //     defaultValue: 'en',
-            // },
+            settings: {
+                type: 'json',
+                returned: true,
+                required: false,
+                input: true,
+            },
         },
     },
     session: {
@@ -152,7 +150,7 @@ const options = {
 export const auth = betterAuth({
     ...options,
     plugins: [
-        ...(options.plugins ?? []),
+        ...options.plugins,
         customSession(async ({ user, session }) => {
             // remove ban-related fields
             const { banReason, banExpires, banned, ...restUser } = user; // eslint-disable-line @typescript-eslint/no-unused-vars

@@ -9,6 +9,6 @@ export {
     // Authentication methods
     useSignIn,
     useSignOut,
-} from './session';
-
-export type { TSocialProvider } from './hooks/sign-in';
+    // User management
+    useUserUpdate,
+} from './hooks';

@@ -1,8 +1,7 @@
 'use client';
 
-import { apiClient } from '@/lib/api';
 import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
-import { TSession, TUser } from '@/lib/auth/client/client';
+import { authClient, TSession, TUser } from '@/lib/auth/client/client';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuthLoadingStore } from './auth-loading-store';
@@ -35,7 +34,7 @@ export type TClientSession =
  */
 export const useSession = (): TClientSession => {
     const { resetAuthLoading } = useAuthLoadingStore();
-    
+
     const {
         data: session,
         isLoading,
@@ -44,16 +43,16 @@ export const useSession = (): TClientSession => {
     } = useQuery({
         queryKey: AUTH_QUERY_KEYS.SESSION,
         queryFn: async () => {
-            const response = await apiClient.auth.sessions.get.$get();
+            // const response = await apiClient.auth.sessions.get.$get();
 
-            if (!response.ok) {
-                if (response.status === 401) return null;
-                throw new Error(`Session check failed: ${response.status}`);
+            const response = await authClient.getSession();
+
+            if (response.error) {
+                if (response.error.status === 401) return null;
+                throw new Error(`Session check failed: ${response.error.message}`);
             }
 
-            const data = await response.json();
-
-            return data;
+            return response.data;
         },
         enabled: true,
         staleTime: STALE_TIME,

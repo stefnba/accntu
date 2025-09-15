@@ -1,9 +1,20 @@
-import { customSessionClient, emailOTPClient, passkeyClient } from 'better-auth/client/plugins';
+import {
+    customSessionClient,
+    emailOTPClient,
+    inferAdditionalFields,
+    passkeyClient,
+} from 'better-auth/client/plugins';
+
 import { createAuthClient } from 'better-auth/react';
 import type { auth } from '../config';
 
 export const authClient = createAuthClient({
-    plugins: [emailOTPClient(), customSessionClient<typeof auth>(), passkeyClient()],
+    plugins: [
+        emailOTPClient(),
+        customSessionClient<typeof auth>(),
+        passkeyClient(),
+        inferAdditionalFields<typeof auth>(),
+    ],
 });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const authErrors = authClient.$ERROR_CODES;

@@ -6,8 +6,12 @@ const router = new Hono<{ Bindings: AuthContext }>({
     strict: false,
 });
 
-router.on(['POST', 'GET'], '/auth/*', (c) => {
+router.on(['POST', 'GET'], '*', (c) => {
     return auth.handler(c.req.raw);
 });
+
+// router.on(['POST', 'GET'], '*', (c) => {
+//     return auth.handler(c.req.raw);
+// });
 
 export default router;
