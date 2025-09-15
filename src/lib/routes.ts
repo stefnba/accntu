@@ -34,7 +34,14 @@ export const PUBLIC_ROUTES = [
     '/images/*',
 ];
 
+/**
+ * Redirect URL after login
+ */
 export const LOGIN_REDIRECT_URL: RoutePath = '/dashboard';
+
+/**
+ * Login URL
+ */
 export const LOGIN_URL: RoutePath = '/login';
 
 /**

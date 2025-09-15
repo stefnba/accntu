@@ -4,6 +4,17 @@ import { COOKIE_NAMES_SESSION } from '@/server/lib/cookies/constants';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+/**
+ * Middleware for route protection and session-based redirects.
+ * - Attaches `x-pathname` header to all requests for downstream use.
+ * - Redirects authenticated users away from login/signup/root to dashboard.
+ * - Allows access to public routes without authentication.
+ * - For protected routes, if no session cookie, allows request but marks path for server-side redirect to login.
+ * - Excludes static, image, favicon, and API routes from middleware.
+
+ * Important:
+ * Does not validate session, only checks for session cookie presence.
+ */
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
@@ -20,7 +31,7 @@ export function middleware(request: NextRequest) {
 
     // If it's a public route, allow access
     if (isPublic) {
-        return NextResponse.next();
+        return NextResponse.next({ headers: { 'x-pathname': pathname } });
     }
 
     // If no session cookie, redirect to login
@@ -28,13 +39,13 @@ export function middleware(request: NextRequest) {
         const loginUrl = new URL(LOGIN_URL, request.url);
         // Add the original URL as a query parameter for redirect after login
         loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(loginUrl);
+        return NextResponse.next({ headers: { 'x-pathname': pathname } });
     }
 
     // Session cookie exists, allow access
     // Note: This doesn't validate the session, just checks for its existence
     // The actual validation happens in the API routes or server components
-    return NextResponse.next();
+    return NextResponse.next({ headers: { 'x-pathname': pathname } });
 }
 
 // Configure which paths the middleware should run on
