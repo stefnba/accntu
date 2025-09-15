@@ -3,7 +3,6 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import noCrossFeatureQueryImports from './eslint-rules/no-cross-feature-query-imports';
 import noEndpointQueryImports from './eslint-rules/no-endpoint-query-imports';
-import noDirectFeatureTableImports from './eslint-rules/no-direct-feature-table-imports';
 
 export default tseslint.config(js.configs.recommended, ...tseslint.configs.recommended, {
     files: ['**/*.{js,jsx,ts,tsx}'],
@@ -23,7 +22,6 @@ export default tseslint.config(js.configs.recommended, ...tseslint.configs.recom
             rules: {
                 'no-cross-feature-query-imports': noCrossFeatureQueryImports,
                 'no-endpoint-query-imports': noEndpointQueryImports,
-                'no-direct-feature-table-imports': noDirectFeatureTableImports,
             },
         },
     },
@@ -35,6 +33,5 @@ export default tseslint.config(js.configs.recommended, ...tseslint.configs.recom
         '@typescript-eslint/no-explicit-any': 'warn',
         'custom/no-cross-feature-query-imports': 'error',
         'custom/no-endpoint-query-imports': 'error',
-        'custom/no-direct-feature-table-imports': 'error',
     },
 });
