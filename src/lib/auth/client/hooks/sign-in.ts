@@ -82,11 +82,17 @@ const useSignInEmailOTP = () => {
 /**
  * Sign in with social provider using direct better-auth client methods.
  */
-const useSignInSocial = () => {
+export const useSignInSocial = () => {
     const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
 
     return useMutation({
-        mutationFn: async ({ provider, callbackURL }: { provider: TSocialProvider; callbackURL?: string }) => {
+        mutationFn: async ({
+            provider,
+            callbackURL,
+        }: {
+            provider: TSocialProvider;
+            callbackURL?: string;
+        }) => {
             const result = await authClient.signIn.social({
                 provider,
                 callbackURL,
@@ -127,8 +133,7 @@ export const useSignIn = () => {
         signInSocial: (provider: TSocialProvider, callbackURL?: string) =>
             signInSocial.mutate({ provider, callbackURL }),
 
-        initiateEmailOTP: (email: string) =>
-            signInEmailOTP.initiate.mutate({ email }),
+        initiateEmailOTP: (email: string) => signInEmailOTP.initiate.mutate({ email }),
         verifyEmailOTP: (email: string, otp: string) =>
             signInEmailOTP.verify.mutate({ email, otp }),
 
@@ -136,4 +141,34 @@ export const useSignIn = () => {
         isSigningIn,
         signingInMethod,
     };
+};
+
+/**
+ * Sign in with email password.
+ */
+export const useSignInEmailPassword = () => {
+    const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (params: Parameters<typeof authClient.signIn.email>[0]) => {
+            const result = await authClient.signIn.email(params);
+
+            if (result.error) {
+                throw new Error(result.error.message);
+            }
+
+            return result.data;
+        },
+        onMutate: () => {
+            setSigningIn('email-password');
+        },
+        onSuccess: (data) => {
+            resetAuthLoading();
+            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
+        },
+        onSettled: () => {
+            resetAuthLoading();
+        },
+    });
 };

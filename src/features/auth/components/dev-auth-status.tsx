@@ -1,128 +1,36 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { Separator } from '@/components/ui/separator';
-import { useSession, useSignOut } from '@/lib/auth/client';
-import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
+import { useAuthLoadingStore, useSession, useSignOut } from '@/lib/auth/client';
+import { useAuthEndpoints } from '@/lib/auth/client/api';
+
 import { authClient } from '@/lib/auth/client/client';
-import { useRouter } from 'next/navigation';
+import { useSignInEmailPassword, useSignInSocial } from '@/lib/auth/client/hooks/sign-in';
 import { alphabet, generateRandomString } from 'oslo/crypto';
-
-// const useAuth = () => {
-//     return useQuery({
-//         queryKey: AUTH_QUERY_KEYS.SESSION,
-//         queryFn: async () => {
-//             const res = await authClient.getSession();
-
-//             if (res.error) {
-//                 throw res.error;
-//             }
-//             const data = res.data;
-
-//             if (!data) {
-//                 throw new Error('Session not found');
-//             }
-
-//             return data;
-//         },
-//     });
-// };
-
-const useUpdateUser = () => {
-    const queryClient = useQueryClient();
-    const router = useRouter();
-
-    return useMutation({
-        mutationFn: async (params: Parameters<typeof authClient.updateUser>[0]) => {
-            return authClient.updateUser({ ...params });
-        },
-        onSuccess: () => {
-            // invalidate session cache to refetch updated user data
-            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
-
-            // refresh page to show updated user data
-            router.refresh();
-        },
-    });
-};
-
-const useListAccounts = () => {
-    return useQuery({
-        queryKey: ['auth-accounts'],
-        queryFn: async () => {
-            const res = await authClient.listAccounts();
-
-            if (res.error) {
-                throw res.error;
-            }
-
-            const data = res.data;
-
-            return data;
-        },
-    });
-};
-
-const useSignInEmail = () => {
-    const queryClient = useQueryClient();
-    const router = useRouter();
-
-    return useMutation({
-        mutationFn: async (params: Parameters<typeof authClient.signIn.email>[0]) => {
-            const res = await authClient.signIn.email({ ...params });
-
-            if (res.error) {
-                console.log('Error:', res.error);
-                throw res.error;
-            }
-
-            return res.data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
-            router.refresh();
-        },
-    });
-};
-
-const useSignInSocial = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (params: Parameters<typeof authClient.signIn.social>[0]) => {
-            const res = await authClient.signIn.social({ ...params });
-
-            if (res.error) {
-                console.log('Error:', res.error);
-                throw res.error;
-            }
-
-            return res.data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
-        },
-    });
-};
 
 export function AuthStatusClient() {
     const session = useSession();
-
-    const queryClient = useQueryClient();
-
-    const updateUser = useUpdateUser();
-
-    const useSessionData = authClient.useSession();
-
-    const signInEmail = useSignInEmail();
-
-    // const accountList = await authClient.listAccounts();
-
-    const listAccounts = useListAccounts();
+    const signInEmailPassword = useSignInEmailPassword();
     const signInSocial = useSignInSocial();
 
-    const signOut = useSignOut({ redirectToLogin: false });
+    const updateUserMutation = useAuthEndpoints.updateUser();
+    const linkedAccounts = useAuthEndpoints.getLinkedAccounts();
+    const activeSessions = useAuthEndpoints.getActiveSessions({});
+
+    // Original better-auth hook for comparison
+    const useSessionData = authClient.useSession();
+
+    const { signOut } = useSignOut({ redirectToLogin: false });
+    const { isAuthLoading } = useAuthLoadingStore();
+
+    // const cache = queryClient.getQueryCache();
+
+    // for (const query of cache.findAll()) {
+    //     console.log('query', query.queryKey);
+    // }
+
+    // console.log('cache', cache, cache);
 
     return (
         <div className="">
@@ -142,7 +50,7 @@ export function AuthStatusClient() {
                 )}
             </div>
             <Separator className="my-4" />
-            <h2 className="text-2xl font-bold">Better Auth useSession</h2>
+            <h2 className="text-2xl font-bold">Better Auth useSession (Original)</h2>
             {useSessionData && <div>ID: {useSessionData.data?.user?.id}</div>}
             {useSessionData && <div>Email: {useSessionData.data?.user?.email}</div>}
             {useSessionData && (
@@ -150,28 +58,35 @@ export function AuthStatusClient() {
                     Name: {useSessionData.data?.user?.name} {useSessionData.data?.user?.lastName}
                 </div>
             )}
+
             <Separator className="my-4" />
             <h2 className="text-2xl font-bold">Actions</h2>
             <div className="flex gap-2">
                 {/* Logout */}
-                <Button onClick={() => signOut()}>Logout</Button>
+                <Button disabled={isAuthLoading} onClick={() => signOut()}>
+                    Logout
+                </Button>
 
-                {/* Login with Email */}
+                {/* Login with Email - Using our new type-safe wrapper */}
                 <Button
+                    disabled={isAuthLoading}
                     onClick={() =>
-                        signInEmail.mutate({
+                        signInEmailPassword.mutate({
                             email: 'test@test.com',
                             password: 'password',
                         })
                     }
                 >
-                    Login
+                    Login with Password
                 </Button>
-                {/* Login with Social */}
-                <Button onClick={() => signInSocial.mutate({ provider: 'github' })}>
+                {/* Login with Social - Using our new type-safe wrapper */}
+                <Button
+                    disabled={isAuthLoading}
+                    onClick={() => signInSocial.mutate({ provider: 'github' })}
+                >
                     Login with Github
                 </Button>
-                {/* Signup */}
+                {/* Signup
                 <Button
                     onClick={() =>
                         authClient.signUp.email({
@@ -192,29 +107,60 @@ export function AuthStatusClient() {
                     Signup
                 </Button>
 
-                {/* Update User */}
+                {/* Update User - Using our new type-safe wrapper */}
                 <Button
+                    disabled={updateUserMutation.isPending}
                     onClick={() =>
-                        updateUser.mutate({
-                            name: generateRandomString(5, alphabet('a-z', 'A-Z')),
-                            lastName: generateRandomString(5, alphabet('a-z', 'A-Z')),
-                        })
+                        updateUserMutation.mutate(
+                            {
+                                name: generateRandomString(5, alphabet('a-z', 'A-Z')),
+                                lastName: generateRandomString(5, alphabet('a-z', 'A-Z')),
+                            },
+                            {
+                                onSuccess: () => {
+                                    console.log('Update User onSuccess in component');
+                                },
+                            }
+                        )
                     }
                 >
                     Update User
                 </Button>
             </div>
+
             <Separator className="my-4" />
-            <h2 className="text-2xl font-bold">List account</h2>
-            {listAccounts.data && listAccounts.data.length > 0 && (
-                <div>
-                    {listAccounts.data.map((account) => (
-                        <div key={account.id}>
-                            {account.providerId} {account.scopes} {String(account.createdAt)}
-                        </div>
-                    ))}
-                </div>
-            )}
+            <h2 className="text-2xl font-bold">List Accounts</h2>
+            <div className="mb-4">
+                {linkedAccounts.isLoading && <div>Loading accounts...</div>}
+                {linkedAccounts.error && <div>Error: {linkedAccounts.error.message}</div>}
+                {linkedAccounts.data && (
+                    <div>
+                        {linkedAccounts.data.map((account) => (
+                            <div key={account.id}>
+                                {account.providerId} - {account.scopes}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* List Sessions */}
+            <Separator className="my-4" />
+            <h2 className="text-2xl font-bold">List Sessions</h2>
+            <div className="mb-4">
+                {activeSessions.isLoading && <div>Loading sessions...</div>}
+                {activeSessions.error && <div>Error: {activeSessions.error.message}</div>}
+                {activeSessions.data && (
+                    <div>
+                        {activeSessions.data.map((session) => (
+                            <div key={session.id}>
+                                {session.id} {String(session.updatedAt)} {session.ipAddress}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
+//

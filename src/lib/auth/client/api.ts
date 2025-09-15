@@ -1,55 +1,55 @@
-import { apiClient, createQuery } from '@/lib/api';
-import { createMutation } from '@/lib/api/mutation';
+// Note: API imports removed since we're using direct better-auth client methods
+
+import { createBetterAuthMutation, createBetterAuthQuery } from '@/lib/auth/client/api-handlers';
+import { authClient } from '@/lib/auth/client/client';
+import { useRouter } from 'next/navigation';
 
 export const AUTH_QUERY_KEYS = {
-    SESSION: ['auth', 'session'] as const,
-    ACTIVE_SESSIONS: ['active-sessions'] as const,
+    SESSION: ['auth', 'session'],
+    ACTIVE_SESSIONS: ['active-sessions'],
+    LINKED_ACCOUNTS: ['linked-accounts'],
 } as const;
 
-/**
- * User API endpoints with integrated error handling
- */
 export const useAuthEndpoints = {
     /**
-     * Send verification OTP
+     * Update user information
      */
-    sendVerificationOTP: createMutation(apiClient.auth['email-otp']['send-verification-otp'].$post),
+    updateUser: createBetterAuthMutation(authClient.updateUser, [AUTH_QUERY_KEYS.SESSION], {
+        initHooks: () => {
+            const router = useRouter();
+            return {
+                router,
+            };
+        },
+        onSuccess: ({ hooks }) => {
+            hooks.router.refresh();
+            console.log('updateUser onSuccess here in useAuthEndpoints');
+        },
+    }),
+
     /**
-     * Sign in with social provider
+     * Get linked accounts
      */
-    signInSocial: createMutation(apiClient.auth['sign-in']['social'].$post),
+    getLinkedAccounts: createBetterAuthQuery(
+        authClient.listAccounts,
+        AUTH_QUERY_KEYS.LINKED_ACCOUNTS
+    ),
+
     /**
-     * Sign in with email OTP
+     * Get active sessions
      */
-    signInEmailOTP: createMutation(apiClient.auth['sign-in']['email-otp'].$post),
+    getActiveSessions: createBetterAuthQuery(
+        authClient.listSessions,
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
+    ),
+
+    /**
+     * Get session
+     */
+    getSession: createBetterAuthQuery(authClient.getSession, AUTH_QUERY_KEYS.SESSION),
+
     /**
      * Sign out
      */
-    signOut: createMutation(apiClient.auth['sign-out'].$post),
-    /**
-     * Get current user session
-     */
-    getSession: createQuery(apiClient.auth.sessions['get'].$get, AUTH_QUERY_KEYS.SESSION),
-    /**
-     * Get all active session for the user
-     */
-    listsSessions: createQuery(apiClient.auth['sessions'].$get, AUTH_QUERY_KEYS.ACTIVE_SESSIONS),
-    /**
-     * Revoke other sessions
-     */
-    revokeOtherSessions: createMutation(
-        apiClient.auth.sessions['revoke-others'].$post,
-        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
-    ),
-    /**
-     * Revoke session
-     */
-    revokeSession: createMutation(
-        apiClient.auth.sessions['revoke'].$post,
-        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
-    ),
-    /**
-     * Update user
-     */
-    updateUser: createMutation(apiClient.auth.user['update'].$patch),
+    getAccountInfo: createBetterAuthQuery(authClient.accountInfo, AUTH_QUERY_KEYS.SESSION),
 };

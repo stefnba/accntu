@@ -18,7 +18,7 @@ export const useUserUpdate = () => {
             image?: string;
             [key: string]: any;
         }) => {
-            const result = await authClient.user.update({
+            const result = await authClient.updateUser({
                 ...userData,
             });
 
