@@ -1,6 +1,6 @@
 'use client';
 
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import {
     FormControl,
     FormDescription,
@@ -16,13 +16,14 @@ import { FieldPath, FieldValues } from 'react-hook-form';
 type FormOTPInputProps<
     TFieldValues extends FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = Omit<InputHTMLAttributes<HTMLInputElement>, 'name' | 'form'> & {
     name: TName;
     label?: string;
     className?: string;
     inputClassName?: string;
     hideError?: boolean;
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     description?: string;
 };
 
@@ -33,6 +34,7 @@ type FormOTPInputProps<
 export function FormOTPInput<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -40,7 +42,7 @@ export function FormOTPInput<
     description,
     hideError = false,
     ...inputProps
-}: FormOTPInputProps<TFieldValues, TName>) {
+}: FormOTPInputProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}

@@ -1,4 +1,4 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     FormControl,
@@ -13,8 +13,9 @@ import { FieldPath, FieldValues } from 'react-hook-form';
 type FormCheckboxProps<
     TFieldValues extends FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = {
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     name: TName;
     label: string;
     description?: string;
@@ -26,6 +27,7 @@ type FormCheckboxProps<
 export function FormCheckbox<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -34,7 +36,7 @@ export function FormCheckbox<
     hideError = false,
     disabled,
     className,
-}: FormCheckboxProps<TFieldValues, TName>) {
+}: FormCheckboxProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}

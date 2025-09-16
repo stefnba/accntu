@@ -1,4 +1,4 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import {
     FormControl,
     FormDescription,
@@ -14,18 +14,20 @@ import { FieldPath, FieldValues } from 'react-hook-form';
 type FormTextareaProps<
     TFieldValues extends FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'name' | 'form'> & {
     name: TName;
     label?: string;
     className?: string;
     hideError?: boolean;
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     description?: string;
 };
 
 export function FormTextarea<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -33,7 +35,7 @@ export function FormTextarea<
     description,
     hideError = false,
     ...textareaProps
-}: FormTextareaProps<TFieldValues, TName>) {
+}: FormTextareaProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}

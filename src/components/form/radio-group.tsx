@@ -1,4 +1,4 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import {
     FormControl,
     FormDescription,
@@ -19,8 +19,9 @@ type RadioOption = {
 type FormRadioGroupProps<
     TFieldValues extends FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = {
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     name: TName;
     label?: string;
     description?: string;
@@ -33,6 +34,7 @@ type FormRadioGroupProps<
 export function FormRadioGroup<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -42,7 +44,7 @@ export function FormRadioGroup<
     hideError = false,
     className,
     disabled,
-}: FormRadioGroupProps<TFieldValues, TName>) {
+}: FormRadioGroupProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}

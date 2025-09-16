@@ -1,4 +1,4 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import {
     FormControl,
     FormDescription,
@@ -24,8 +24,9 @@ type SelectOption = {
 type FormSelectProps<
     TFieldValues extends FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = {
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     name: TName;
     label?: string;
     description?: string;
@@ -39,6 +40,7 @@ type FormSelectProps<
 export function FormSelect<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -49,7 +51,7 @@ export function FormSelect<
     hideError = false,
     className,
     disabled,
-}: FormSelectProps<TFieldValues, TName>) {
+}: FormSelectProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}

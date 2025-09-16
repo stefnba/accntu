@@ -1,18 +1,21 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { VariantProps } from 'class-variance-authority';
 import { FieldValues } from 'react-hook-form';
 
-type FormSubmitButtonProps<TFieldValues extends FieldValues> = Omit<
-    React.ComponentProps<'button'>,
-    'type' | 'form'
-> & {
-    form: UseZodFormReturn<TFieldValues>;
+type FormSubmitButtonProps<
+    TFieldValues extends FieldValues = FieldValues,
+    TTransformedValues extends FieldValues = TFieldValues,
+> = Omit<React.ComponentProps<'button'>, 'type' | 'form'> & {
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     loadingText?: string;
     disabledBeforeValid?: boolean;
 } & Pick<VariantProps<typeof buttonVariants>, 'size' | 'variant'>;
 
-export function FormSubmitButton<TFieldValues extends FieldValues>({
+export function FormSubmitButton<
+    TFieldValues extends FieldValues = FieldValues,
+    TTransformedValues extends FieldValues = TFieldValues,
+>({
     form,
     children,
     loadingText = 'Submitting...',
@@ -21,7 +24,7 @@ export function FormSubmitButton<TFieldValues extends FieldValues>({
     size,
     variant,
     ...buttonProps
-}: FormSubmitButtonProps<TFieldValues>) {
+}: FormSubmitButtonProps<TFieldValues, TTransformedValues>) {
     const isFormValid = form.formState.isValid;
     const isSubmitting = form.isSubmitting;
 

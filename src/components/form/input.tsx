@@ -12,15 +12,16 @@ import { InputHTMLAttributes } from 'react';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
 type FormInputProps<
-    TFieldValues extends FieldValues,
+    TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 > = Omit<InputHTMLAttributes<HTMLInputElement>, 'name' | 'form'> & {
     name: TName;
     label?: string;
     className?: string;
     inputClassName?: string;
     hideError?: boolean;
-    form: UseZodFormReturn<TFieldValues>;
+    form: UseZodFormReturn<TFieldValues, any, TTransformedValues>;
     description?: string;
 };
 
@@ -31,6 +32,7 @@ type FormInputProps<
 export function FormInput<
     TFieldValues extends FieldValues = FieldValues,
     TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+    TTransformedValues extends FieldValues = TFieldValues,
 >({
     form,
     name,
@@ -38,7 +40,7 @@ export function FormInput<
     description,
     hideError = false,
     ...inputProps
-}: FormInputProps<TFieldValues, TName>) {
+}: FormInputProps<TFieldValues, TName, TTransformedValues>) {
     return (
         <FormField
             control={form.control}
