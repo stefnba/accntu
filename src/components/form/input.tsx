@@ -1,4 +1,4 @@
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks';
 import {
     FormControl,
     FormDescription,
