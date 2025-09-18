@@ -13,13 +13,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ParticipantForm } from '@/features/participant/components/participant-form';
+import { ParticipantUpsertForm } from '@/features/participant/components/participant-form';
 import { useCreateUpdateParticipantModal } from '@/features/participant/hooks';
 import toast from 'react-hot-toast';
 
 export function ParticipantManager() {
     const { setModal } = useCreateUpdateParticipantModal();
-    const { data: participants } = useParticipantEndpoints.getAll({});
+    const { data: participants } = useParticipantEndpoints.getAll({ query: {} });
     const { mutate: deleteParticipant } = useParticipantEndpoints.delete();
 
     const handleDelete = (id: string) => {
@@ -65,7 +65,7 @@ export function ParticipantManager() {
                 </TableBody>
             </Table>
 
-            <ParticipantForm />
+            <ParticipantUpsertForm />
         </Card>
     );
 }

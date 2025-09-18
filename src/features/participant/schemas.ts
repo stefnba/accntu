@@ -17,6 +17,17 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         base.extend({
             email: z.email().optional().nullable(),
             name: z.string().min(1, 'Name cannot be empty'),
+            linkedUserId: z
+                .string()
+                .trim()
+                .optional()
+                .nullable()
+                .transform((val) => {
+                    if (val?.length === 0) {
+                        return null;
+                    }
+                    return val;
+                }),
         })
     )
     .setUserIdField('userId')
