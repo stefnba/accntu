@@ -1,13 +1,7 @@
 'use client';
 
 import { toast } from '@/components/feedback';
-import {
-    Form,
-    FormColorSelect,
-    FormInput,
-    FormSubmitButton,
-    useUpsertForm,
-} from '@/components/form';
+import { FormColorSelect, useUpsertForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useTagEndpoints } from '@/features/tag/api';
 import { useTagUpsertModal } from '@/features/tag/hooks';
@@ -34,7 +28,7 @@ export const TagUpsertForm = () => {
     // Form
     // ================================
 
-    const form = useUpsertForm({
+    const { form, Form, Input, SubmitButton } = useUpsertForm({
         create: {
             schema: tagSchemas.create.form,
             defaultValues: {
@@ -57,7 +51,11 @@ export const TagUpsertForm = () => {
         },
         update: {
             schema: tagSchemas.updateById.form,
-            defaultValues: tag,
+            defaultValues: tag || {
+                name: '',
+                color: '',
+            },
+            initialData: tag,
             onSubmit: async (data) => {
                 await updateMutation.mutateAsync(
                     {
@@ -73,27 +71,19 @@ export const TagUpsertForm = () => {
                 );
             },
         },
-        isUpdate: !!tagId,
+        mode: tagId ? 'update' : 'create',
     });
     return (
-        <Form form={form} className="">
-            <FormInput
-                form={form}
-                name="name"
-                label="Name"
-                placeholder="Enter tag name"
-                autoFocus
-            />
+        <Form className="">
+            <Input name="name" label="Name" placeholder="Enter tag name" autoFocus />
 
-            <FormColorSelect cols={8} form={form} name="color" label="Color" showClear />
+            <FormColorSelect form={form} cols={8} name="color" label="Color" showClear />
 
             <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={closeModal}>
                     Cancel
                 </Button>
-                <FormSubmitButton form={form}>
-                    {tagId ? 'Update Tag' : 'Create Tag'}
-                </FormSubmitButton>
+                <SubmitButton>{tagId ? 'Update Tag' : 'Create Tag'}</SubmitButton>
             </div>
         </Form>
     );
