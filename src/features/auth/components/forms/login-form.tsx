@@ -1,5 +1,16 @@
 import { AuthForm } from './auth-form';
 
-export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
-    return <AuthForm mode="login" className={className} {...props} />;
+export function LoginForm({
+    className,
+    isEmailAndPasswordEnabled,
+    ...props
+}: React.ComponentPropsWithoutRef<'div'> & { isEmailAndPasswordEnabled: boolean }) {
+    return (
+        <AuthForm
+            mode="login"
+            className={className}
+            isEmailAndPasswordEnabled={isEmailAndPasswordEnabled}
+            {...props}
+        />
+    );
 }

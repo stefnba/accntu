@@ -146,9 +146,10 @@ export const useSignIn = () => {
 /**
  * Sign in with email password.
  */
-export const useSignInEmailPassword = () => {
+export const useSignInEmailPassword = ({ redirect = true } = { redirect: true }) => {
     const { setSigningIn, resetAuthLoading } = useAuthLoadingStore();
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     return useMutation({
         mutationFn: async (params: Parameters<typeof authClient.signIn.email>[0]) => {
@@ -166,6 +167,10 @@ export const useSignInEmailPassword = () => {
         onSuccess: (data) => {
             resetAuthLoading();
             queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSION });
+            if (redirect) {
+                router.push(LOGIN_REDIRECT_URL);
+                router.refresh();
+            }
         },
         onSettled: () => {
             resetAuthLoading();

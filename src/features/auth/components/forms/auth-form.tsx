@@ -8,6 +8,7 @@ import { loginEmailFormSchema, signupEmailFormSchema } from '@/features/auth/sch
 import { TSocialProvider } from '@/lib/auth';
 import { useSignIn } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 /*
     Social Auth
@@ -139,9 +140,15 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
 type AuthFormProps = React.ComponentProps<'div'> & {
     mode: 'login' | 'signup';
+    isEmailAndPasswordEnabled?: boolean;
 };
 
-export function AuthForm({ className, mode, ...props }: AuthFormProps) {
+export function AuthForm({
+    className,
+    mode,
+    isEmailAndPasswordEnabled = false,
+    ...props
+}: AuthFormProps) {
     const isLogin = mode === 'login';
     const action = isLogin ? 'Login' : 'Sign up';
     const toggleText = isLogin ? "Don't have an account?" : 'Already have an account?';
@@ -172,10 +179,20 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
 
                         <div className="text-center text-sm">
                             {toggleText}{' '}
-                            <a href={toggleHref} className="underline underline-offset-4">
+                            <Link href={toggleHref} className="underline underline-offset-4">
                                 {toggleLink}
-                            </a>
+                            </Link>
                         </div>
+                        {isEmailAndPasswordEnabled && (
+                            <div className="text-center text-sm">
+                                <Link
+                                    href="/login/password"
+                                    className="underline underline-offset-4"
+                                >
+                                    Login with Email and Password
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>

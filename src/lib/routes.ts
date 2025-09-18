@@ -17,6 +17,7 @@ export type TAppRoute = {
 export const PUBLIC_ROUTES = [
     // Auth routes
     '/login',
+    '/login/password',
     '/signup',
     '/auth/*',
 
