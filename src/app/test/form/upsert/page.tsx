@@ -8,38 +8,40 @@ import { z } from 'zod';
 export default function TestNewForm2() {
     const [mode, setMode] = useState<'create' | 'update'>('create');
 
-    const { form, Form, Input, SubmitButton } = useUpsertForm({
+    const { Input, Form, form, SubmitButton } = useUpsertForm({
         create: {
             schema: z.object({
-                name: z.string(),
+                name: z.string().min(1),
+                location: z.string().min(1),
+                what: z.string().min(1),
             }),
             defaultValues: {
                 name: '',
+                location: '',
+                what: '',
             },
             onSubmit: (data) => {
-                alert('Submit');
-            },
-            onError: (errors) => {
-                alert('Error');
+                console.log(data);
+                alert('create');
             },
         },
         update: {
-            schema: z.object({
-                name: z.string(),
-                age: z.string(),
-            }),
             defaultValues: {
                 name: '',
                 age: '',
+                location: '',
             },
             onSubmit: (data) => {
-                alert('Submit');
+                console.log(data);
+                alert('update');
             },
-            onError: (errors) => {
-                alert('Error');
-            },
+            schema: z.object({
+                name: z.string().min(1),
+                age: z.coerce.number(),
+                location: z.string().min(1),
+            }),
         },
-        mode: mode,
+        mode,
     });
 
     return (
@@ -53,15 +55,15 @@ export default function TestNewForm2() {
                     Update
                 </Button>
             </div>
-            <Form className="mt-4space-y-4">
-                <div className="flex gap-2">
+            <Form className="mt-4 space-y-4">
+                <div className="space-y-2">
                     <Input label="Name" name="name" />
-                    {mode === 'update' && <Input label="Age" name="name" />}
+                    <Input label="Age" mode="update" name="age" />
+                    <Input label="Location" name="location" />
+                    <Input label="What" mode="create" name="what" />
                 </div>
                 <SubmitButton>Submit</SubmitButton>
             </Form>
-
-            {/* <pre>{JSON.stringify(form, null, 2)}</pre> */}
         </div>
     );
 }

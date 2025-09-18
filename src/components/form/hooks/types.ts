@@ -1,10 +1,13 @@
 import {
+    FieldPath,
     FieldValues,
     SubmitErrorHandler,
     SubmitHandler,
     UseFormProps,
     UseFormReturn,
 } from 'react-hook-form';
+
+import { z } from 'zod/v4';
 
 /**
  * Enhanced form hook options that extend React Hook Form's options
@@ -63,3 +66,55 @@ export interface UseZodFormReturn<
      */
     // resetSubmitState: () => void;
 }
+
+//============================================
+// Upsert
+//============================================
+
+/**
+ * The mode of the form
+ */
+export type TFormMode = 'create' | 'update';
+
+/**
+ * The mode of the component
+ */
+export type TComponentMode = 'create' | 'update' | 'both';
+
+/**
+ * Configuration for the useUpsertForm hook
+ * @param TMode - The mode of the form
+ * @param TCreateSchema - The create schema
+ * @param TUpdateSchema - The update schema
+ * @returns The configuration for the useUpsertForm hook
+ */
+export interface UseUpsertFormConfig<
+    TMode extends TFormMode,
+    TCreateSchema extends z.ZodType<FieldValues, FieldValues>,
+    TUpdateSchema extends z.ZodType<FieldValues, FieldValues>,
+> {
+    create: {
+        schema: TCreateSchema;
+    } & UseZodFormOptions<z.input<TCreateSchema>, z.output<TCreateSchema>>;
+    update: {
+        schema: TUpdateSchema;
+    } & UseZodFormOptions<z.input<TUpdateSchema>, z.output<TUpdateSchema>>;
+    mode: TMode;
+}
+
+/**
+ * Type for the field path of the upsert form
+ * @param M - The mode of the form
+ * @param TCreateSchema - The create schema
+ * @param TUpdateSchema - The update schema
+ * @returns The field path of the upsert form
+ */
+export type UpsertFieldPath<
+    M extends TComponentMode,
+    TCreateSchema extends z.ZodType<FieldValues, FieldValues>,
+    TUpdateSchema extends z.ZodType<FieldValues, FieldValues>,
+> = M extends 'create'
+    ? FieldPath<z.input<TCreateSchema>>
+    : M extends 'update'
+      ? FieldPath<z.input<TUpdateSchema>>
+      : FieldPath<z.input<TCreateSchema>> & FieldPath<z.input<TUpdateSchema>>;
