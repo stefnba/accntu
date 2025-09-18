@@ -65,7 +65,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
     // Login form
     const LoginFormComponent = () => {
-        const { form, Form, Input, SubmitButton } = useForm({
+        const { Form, Input, SubmitButton } = useForm({
             schema: loginEmailFormSchema,
             defaultValues: {
                 email: '',
@@ -99,7 +99,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
     // Sign up form
     const SignUpFormComponent = () => {
-        const { form, Form, Input, SubmitButton } = useForm({
+        const { Form, Input, SubmitButton } = useForm({
             schema: signupEmailFormSchema,
             defaultValues: {
                 name: '',
