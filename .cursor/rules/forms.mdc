@@ -1,9 +1,8 @@
 ---
 description: Form Development Guidelines
-globs: 
+globs:
 alwaysApply: false
 ---
-
 
 # Form Development Guidelines
 
@@ -22,38 +21,36 @@ We use a custom form system built on top of React Hook Form and Zod, providing:
 
 ## Quick Start
 
-1. Import form components:
+### Import form components
+
 ```typescript
-import { 
-  Form, 
-  FormInput, 
-  FormSubmitButton, 
-  useForm, 
-  createFormSchema 
-} from '@/components/form';
+import { Form, FormInput, FormSubmitButton, useForm, createFormSchema } from '@/components/form';
 ```
 
-2. Define schema:
+### Define schema
+
 ```typescript
 const formSchema = createFormSchema(
-  z.object({
-    email: z.string().email(),
-  }),
-  { email: "" }
+    z.object({
+        email: z.email(),
+    }),
+    { email: '' }
 );
 ```
 
-3. Create form:
+### Create form
+
 ```typescript
 const form = useForm({
-  ...formSchema,
-  onSubmit: async (data) => {
-    // Handle submission
-  },
+    ...formSchema,
+    onSubmit: async (data) => {
+        // Handle submission
+    },
 });
 ```
 
-4. Render form:
+### Render form
+
 ```typescript
 <Form form={form}>
   <FormInput name="email" form={form} />
