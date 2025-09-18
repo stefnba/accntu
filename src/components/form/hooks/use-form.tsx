@@ -59,6 +59,7 @@ export const useForm = <
     //============================================
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
 
     // Track initial data snapshot for change detection
     const initialDataSnapshot = useRef<z.input<T> | null>(null);
@@ -129,6 +130,20 @@ export const useForm = <
     }, [currentValues, requireChanges]);
 
     //============================================
+    // Auto-clear server error on user input
+    //============================================
+
+    useEffect(() => {
+        // Clear server error when user starts typing
+        if (serverError) {
+            const subscription = form.watch(() => {
+                setServerError(null);
+            });
+            return () => subscription.unsubscribe();
+        }
+    }, [serverError, form]);
+
+    //============================================
     // Handle form submission
     //============================================
 
@@ -141,6 +156,8 @@ export const useForm = <
             e.preventDefault();
         }
 
+        // Clear any previous server errors
+        setServerError(null);
         setIsSubmitting(true);
 
         try {
@@ -155,6 +172,7 @@ export const useForm = <
                     if (formOptions.onError) {
                         await formOptions.onError(errors);
                     }
+                    // todo submit Error
                 }
             )(e);
         } catch (error) {
@@ -182,6 +200,7 @@ export const useForm = <
             isSubmitting: false,
             isLoading: false,
             hasChanges: false,
+            serverError: null,
             formState: form.formState,
         };
     }
@@ -192,6 +211,7 @@ export const useForm = <
     stableFormRef.current.isSubmitting = isSubmitting;
     stableFormRef.current.isLoading = isLoading;
     stableFormRef.current.hasChanges = hasChanges;
+    stableFormRef.current.serverError = serverError;
 
     // Update formState with computed validity
     stableFormRef.current.formState = {
@@ -208,6 +228,7 @@ export const useForm = <
     stableFormRef.current.isSubmitting = isSubmitting;
     stableFormRef.current.isLoading = isLoading;
     stableFormRef.current.hasChanges = hasChanges;
+    stableFormRef.current.serverError = serverError;
     stableFormRef.current.formState = {
         ...form.formState,
         isValid: form.formState.isValid && (!requireChanges || hasChanges),
@@ -348,6 +369,25 @@ export const useForm = <
 
     return {
         form: enhancedForm,
+
+        // Server error control
+        setServerError,
+        clearServerError: () => setServerError(null),
+
+        // External form control methods
+        reset: (values?: z.input<T>) => {
+            setServerError(null); // Clear server error on reset
+            return form.reset(values);
+        },
+        setValue: <K extends Path<z.input<T>>>(name: K, value: z.input<T>[K]) =>
+            form.setValue(name, value),
+        trigger: (name?: Path<z.input<T>>) => form.trigger(name),
+        clearErrors: () => {
+            form.clearErrors();
+            setServerError(null);
+        },
+        getValues: () => form.getValues(),
+
         // Components
         Form: FormComponent,
         Input: InputComponent,

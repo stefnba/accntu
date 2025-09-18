@@ -86,6 +86,12 @@ export interface UseZodFormReturn<
     hasChanges?: boolean;
 
     /**
+     * Server error from business logic (e.g., "Password incorrect").
+     * Separate from form validation errors.
+     */
+    serverError: string | null;
+
+    /**
      * Whether the form has been submitted successfully
      */
     // isSubmitSuccessful: boolean;
