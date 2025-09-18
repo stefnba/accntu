@@ -39,6 +39,14 @@ export interface UseZodFormOptions<
      * Defaults to true when initialData is provided but undefined/null.
      */
     showLoadingState?: boolean;
+
+    /**
+     * Whether to require changes before allowing form submission.
+     * When true, form will be invalid until user modifies the initial data.
+     * Useful for edit forms to prevent unnecessary API calls when nothing changed.
+     * Defaults to false.
+     */
+    requireChanges?: boolean;
 }
 
 /**
@@ -70,6 +78,12 @@ export interface UseZodFormReturn<
      * True when waiting for async initialData to arrive.
      */
     isLoading: boolean;
+
+    /**
+     * Whether the form has changes compared to initial data.
+     * Only relevant when requireChanges is enabled.
+     */
+    hasChanges?: boolean;
 
     /**
      * Whether the form has been submitted successfully

@@ -1,6 +1,6 @@
 import { Form } from '@/components/form/form-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FieldValues, Path, useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod/v4';
 
@@ -13,6 +13,29 @@ import { FormSubmitButton } from '@/components/form/submit-button';
 import { FormSwitch } from '@/components/form/switch';
 import { FormTextarea } from '@/components/form/textarea';
 import { UseZodFormOptions, UseZodFormReturn } from './types';
+
+/**
+ * Deep equality comparison optimized for form data structures
+ */
+const deepEqual = (obj1: unknown, obj2: unknown): boolean => {
+    if (obj1 === obj2) return true;
+
+    if (obj1 == null || obj2 == null) return obj1 === obj2;
+
+    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+
+    const keys1 = Object.keys(obj1 as object);
+    const keys2 = Object.keys(obj2 as object);
+
+    if (keys1.length !== keys2.length) return false;
+
+    for (const key of keys1) {
+        if (!keys2.includes(key)) return false;
+        if (!deepEqual((obj1 as any)[key], (obj2 as any)[key])) return false;
+    }
+
+    return true;
+};
 
 export const useForm = <
     Output extends FieldValues,
@@ -27,6 +50,7 @@ export const useForm = <
         disableOnSubmit = true,
         initialData,
         showLoadingState,
+        requireChanges = false,
         ...formOptions
     } = options;
 
@@ -35,6 +59,9 @@ export const useForm = <
     //============================================
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Track initial data snapshot for change detection
+    const initialDataSnapshot = useRef<z.input<T> | null>(null);
 
     // Determine if we should show loading state
     const shouldShowLoadingState = useMemo(() => {
@@ -78,9 +105,28 @@ export const useForm = <
                 ...getCurrentValues(),
                 ...initialData,
             };
+
+            // Update snapshot for change detection
+            initialDataSnapshot.current = resetData;
+
             resetForm(resetData);
         }
     }, [initialData, getCurrentValues, resetForm, schema]);
+
+    //============================================
+    // Change detection for requireChanges
+    //============================================
+
+    // Watch form values for change detection
+    const currentValues = form.watch();
+
+    // Check if form has changes compared to initial data
+    const hasChanges = useMemo(() => {
+        if (!requireChanges || !initialDataSnapshot.current) {
+            return true; // No requirement to check changes
+        }
+        return !deepEqual(currentValues, initialDataSnapshot.current);
+    }, [currentValues, requireChanges]);
 
     //============================================
     // Handle form submission
@@ -129,8 +175,13 @@ export const useForm = <
             handleNativeSubmit: form.handleSubmit,
             isSubmitting,
             isLoading,
+            hasChanges,
+            formState: {
+                ...form.formState,
+                isValid: form.formState.isValid && (!requireChanges || hasChanges),
+            },
         };
-    }, [form, handleSubmit, isSubmitting, isLoading]);
+    }, [form, handleSubmit, isSubmitting, isLoading, hasChanges, requireChanges]);
 
     //============================================
     // Enhanced components with form binding

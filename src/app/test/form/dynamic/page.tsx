@@ -78,6 +78,21 @@ export default function DynamicFormTestPage() {
         },
     });
 
+    // Form with requireChanges option
+    const requireChangesForm = useForm({
+        schema: TestSchema,
+        defaultValues: {
+            name: '',
+            email: '',
+            age: 18,
+        },
+        initialData: apiData,
+        requireChanges: true,
+        onSubmit: async (data) => {
+            console.log('RequireChanges form submitted:', data);
+        },
+    });
+
     return (
         <div className="container mx-auto py-8 space-y-8">
             <div className="text-center space-y-4">
@@ -93,6 +108,7 @@ export default function DynamicFormTestPage() {
                             setIsLoadingData(false);
                             explicitLoadingForm.form.reset({ name: '', email: '', age: 18 });
                             dynamicForm.form.reset({ name: '', email: '', age: 18 });
+                            requireChangesForm.form.reset({ name: '', email: '', age: 18 });
                         }}
                     >
                         Clear Data
@@ -104,7 +120,7 @@ export default function DynamicFormTestPage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Static Form */}
                 <Card>
                     <CardHeader>
@@ -176,6 +192,36 @@ export default function DynamicFormTestPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* RequireChanges Form */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>RequireChanges Form</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Form with requireChanges=true (only valid after changes)
+                        </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <requireChangesForm.Form>
+                            <requireChangesForm.Input name="name" placeholder="Name" />
+                            <requireChangesForm.Input
+                                name="email"
+                                type="email"
+                                placeholder="Email"
+                            />
+                            <requireChangesForm.Input name="age" type="number" placeholder="Age" />
+                            <requireChangesForm.SubmitButton>
+                                Submit Changes
+                            </requireChangesForm.SubmitButton>
+                        </requireChangesForm.Form>
+                        <div className="text-xs text-muted-foreground">
+                            Loading: {requireChangesForm.form.isLoading ? 'Yes' : 'No'} |
+                            Submitting: {requireChangesForm.form.isSubmitting ? 'Yes' : 'No'} |
+                            HasChanges: {requireChangesForm.form.hasChanges ? 'Yes' : 'No'} |
+                            Valid: {requireChangesForm.form.formState.isValid ? 'Yes' : 'No'}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Debug Info */}
@@ -184,7 +230,7 @@ export default function DynamicFormTestPage() {
                     <CardTitle>Debug Info</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                         <div>
                             <h4 className="font-semibold mb-2">Static Form Values:</h4>
                             <pre className="bg-muted p-2 rounded text-xs overflow-auto">
@@ -205,6 +251,24 @@ export default function DynamicFormTestPage() {
                             <h4 className="font-semibold mb-2">Explicit Loading Form Values:</h4>
                             <pre className="bg-muted p-2 rounded text-xs overflow-auto">
                                 {JSON.stringify(explicitLoadingForm.form.getValues(), null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-2">RequireChanges Form Values:</h4>
+                            <pre className="bg-muted p-2 rounded text-xs overflow-auto">
+                                {JSON.stringify(requireChangesForm.form.getValues(), null, 2)}
+                            </pre>
+                            <h4 className="font-semibold mb-2">Form State:</h4>
+                            <pre className="bg-muted p-2 rounded text-xs overflow-auto">
+                                {JSON.stringify(
+                                    {
+                                        isValid: requireChangesForm.form.formState.isValid,
+                                        hasChanges: requireChangesForm.form.hasChanges,
+                                        isDirty: requireChangesForm.form.formState.isDirty,
+                                    },
+                                    null,
+                                    2
+                                )}
                             </pre>
                         </div>
                     </div>
