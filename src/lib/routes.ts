@@ -1,4 +1,5 @@
 import * as Icons from '@/components/icons';
+import { IconDatabase, IconFileWord, IconReport } from '@tabler/icons-react';
 import { IconType } from 'react-icons';
 import { UrlObject } from 'url';
 
@@ -64,6 +65,29 @@ export const appRoutes: TAppRoute[] = [
         icon: Icons.Wallet,
     },
 ] as const;
+
+export const secondaryRoutes: TAppRoute[] = [
+    {
+        label: 'Income & Expenses',
+        path: '/budget',
+        icon: IconDatabase,
+    },
+    {
+        path: '/labels',
+        label: 'Labels',
+        icon: IconReport,
+    },
+    {
+        label: 'Tags',
+        path: '/tags',
+        icon: IconFileWord,
+    },
+    {
+        label: 'Buckets',
+        path: '/buckets',
+        icon: IconFileWord,
+    },
+];
 
 /**
  * Routes for the user dropdown menu.
