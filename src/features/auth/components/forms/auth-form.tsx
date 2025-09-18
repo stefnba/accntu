@@ -1,11 +1,12 @@
 'use client';
 
-import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { loginEmailFormSchema, signupEmailFormSchema } from '@/features/auth/schemas';
-import { TSocialProvider, useSignIn } from '@/lib/auth/client';
+import { TSocialProvider } from '@/lib/auth';
+import { useSignIn } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
 
 /*
@@ -64,7 +65,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
     // Login form
     const LoginFormComponent = () => {
-        const form = useForm({
+        const { form, Form, Input, SubmitButton } = useForm({
             schema: loginEmailFormSchema,
             defaultValues: {
                 email: '',
@@ -83,23 +84,14 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
         return (
             <div className="flex flex-col gap-6">
-                <Form form={form} className="grid gap-4">
-                    <FormInput
-                        placeholder="Enter your Email"
-                        name="email"
-                        form={form}
-                        disabled={isSigningIn}
-                    />
-                    <FormSubmitButton
-                        disabledBeforeValid={isSigningIn}
-                        form={form}
-                        className="w-full"
-                    >
+                <Form className="grid gap-4">
+                    <Input placeholder="Enter your Email" name="email" disabled={isSigningIn} />
+                    <SubmitButton className="w-full">
                         {isSigningIn && signingInMethod == 'email-otp' ? `${action}...` : action}
-                    </FormSubmitButton>
-                    {form.submitError && (
+                    </SubmitButton>
+                    {/* {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>
-                    )}
+                    )} */}
                 </Form>
             </div>
         );
@@ -107,7 +99,7 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
     // Sign up form
     const SignUpFormComponent = () => {
-        const form = useForm({
+        const { form, Form, Input, SubmitButton } = useForm({
             schema: signupEmailFormSchema,
             defaultValues: {
                 name: '',
@@ -128,15 +120,15 @@ const EmailAuth = ({ action }: { action: 'Login' | 'Sign up' }) => {
 
         return (
             <div className="flex flex-col gap-6">
-                <Form form={form} className="grid gap-4">
-                    <FormInput placeholder="Enter your Name" name="name" form={form} />
-                    <FormInput placeholder="Enter your Email" name="email" form={form} />
-                    <FormSubmitButton disabledBeforeValid={false} form={form} className="w-full">
+                <Form className="grid gap-4">
+                    <Input placeholder="Enter your Name" name="name" />
+                    <Input placeholder="Enter your Email" name="email" />
+                    <SubmitButton className="w-full">
                         {isSigningIn ? `${action}...` : action}
-                    </FormSubmitButton>
-                    {form.submitError && (
+                    </SubmitButton>
+                    {/* {form.submitError && (
                         <p className="text-sm text-red-500">{form.submitError.message}</p>
-                    )}
+                    )} */}
                 </Form>
             </div>
         );
@@ -154,7 +146,7 @@ export function AuthForm({ className, mode, ...props }: AuthFormProps) {
     const action = isLogin ? 'Login' : 'Sign up';
     const toggleText = isLogin ? "Don't have an account?" : 'Already have an account?';
     const toggleLink = isLogin ? 'Sign up' : 'Sign in';
-    const toggleHref = isLogin ? '/auth/signup' : '/auth/login';
+    const toggleHref = isLogin ? '/signup' : '/login';
 
     return (
         <div className={cn('flex flex-col gap-6', className)} {...props}>

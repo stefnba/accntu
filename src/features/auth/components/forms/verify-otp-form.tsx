@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { emailOTPVerifySchema } from '@/features/auth/schemas';
 import { cn } from '@/lib/utils';
 
-import { Form, FormOTPInput, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { useSignIn } from '@/lib/auth/client';
 import { useEffect, useRef } from 'react';
 
@@ -18,7 +18,7 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
     const { verifyEmailOTP, isSigningIn } = useSignIn();
     const hasAutoSubmitted = useRef(false);
 
-    const form = useForm({
+    const { form, Form, OTPInput, SubmitButton } = useForm({
         schema: emailOTPVerifySchema,
         onSubmit: (values) => {
             verifyEmailOTP(email, values.code);
@@ -51,16 +51,12 @@ export function VerifyOtpForm({ className, email, ...props }: VerifyOtpFormProps
                     <CardDescription>Please enter the code sent to your Email</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form form={form} className="flex flex-col gap-4">
-                        <FormOTPInput name="code" form={form} />
+                    <Form className="flex flex-col gap-4">
+                        <OTPInput name="code" />
 
-                        <FormSubmitButton
-                            className="w-full"
-                            form={form}
-                            disabled={isSubmitting || isSigningIn}
-                        >
+                        <SubmitButton className="w-full" disabled={isSubmitting || isSigningIn}>
                             Submit
-                        </FormSubmitButton>
+                        </SubmitButton>
                         {formState.errors.code && (
                             <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
                                 {formState.errors.code.message}
