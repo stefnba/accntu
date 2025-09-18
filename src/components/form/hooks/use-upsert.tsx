@@ -113,7 +113,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormInput form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     const TextareaComponent = useCallback(
@@ -129,7 +129,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormTextarea form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     const SelectComponent = useCallback(
@@ -145,7 +145,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormSelect form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     const SwitchComponent = useCallback(
@@ -161,7 +161,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormSwitch form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     const RadioGroupComponent = useCallback(
@@ -177,7 +177,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormRadioGroup form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     const CheckboxComponent = useCallback(
@@ -193,7 +193,7 @@ export const useUpsertForm = <
                 formMode: currentMode,
                 component: <FormCheckbox form={selectedForm as any} {...props} />,
             }),
-        [selectedForm, currentMode]
+        [] // Remove dependencies to keep component definition stable
     );
 
     //============================================

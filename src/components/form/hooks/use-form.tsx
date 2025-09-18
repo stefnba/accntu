@@ -165,23 +165,55 @@ export const useForm = <
     };
 
     //============================================
-    // Return the enhanced form
+    // Return the enhanced form with stable reference
     //============================================
 
-    const enhancedForm: UseZodFormReturn<z.input<T>, any, z.output<T>> = useMemo(() => {
-        return {
+    // Use ref to maintain stable form object reference
+    // This is important to avoid re-rendering the form when the form is updated
+    // We did this because as soon as the form is valid, it re-renders and loses focus
+    const stableFormRef = useRef<UseZodFormReturn<z.input<T>, any, z.output<T>> | null>(null);
+
+    // Initialize stable form once
+    if (!stableFormRef.current) {
+        stableFormRef.current = {
             ...form,
             handleSubmit,
             handleNativeSubmit: form.handleSubmit,
-            isSubmitting,
-            isLoading,
-            hasChanges,
-            formState: {
-                ...form.formState,
-                isValid: form.formState.isValid && (!requireChanges || hasChanges),
-            },
+            isSubmitting: false,
+            isLoading: false,
+            hasChanges: false,
+            formState: form.formState,
         };
-    }, [form, handleSubmit, isSubmitting, isLoading, hasChanges, requireChanges]);
+    }
+
+    // Update only specific properties (keeps same object reference)
+    stableFormRef.current.handleSubmit = handleSubmit;
+    stableFormRef.current.handleNativeSubmit = form.handleSubmit;
+    stableFormRef.current.isSubmitting = isSubmitting;
+    stableFormRef.current.isLoading = isLoading;
+    stableFormRef.current.hasChanges = hasChanges;
+
+    // Update formState with computed validity
+    stableFormRef.current.formState = {
+        ...form.formState,
+        isValid: form.formState.isValid && (!requireChanges || hasChanges),
+    };
+
+    // Update any form methods/properties that might have changed
+    Object.assign(stableFormRef.current, form);
+
+    // Restore our enhanced properties after Object.assign
+    stableFormRef.current.handleSubmit = handleSubmit;
+    stableFormRef.current.handleNativeSubmit = form.handleSubmit;
+    stableFormRef.current.isSubmitting = isSubmitting;
+    stableFormRef.current.isLoading = isLoading;
+    stableFormRef.current.hasChanges = hasChanges;
+    stableFormRef.current.formState = {
+        ...form.formState,
+        isValid: form.formState.isValid && (!requireChanges || hasChanges),
+    };
+
+    const enhancedForm = stableFormRef.current;
 
     //============================================
     // Enhanced components with form binding
