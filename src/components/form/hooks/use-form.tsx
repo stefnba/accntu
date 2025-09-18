@@ -88,12 +88,15 @@ export const useForm = <
     // Dynamic data loading effect
     //============================================
 
-    const getCurrentValues = form.getValues;
-    const resetForm = form.reset;
+    // Track the last processed initial data using deep comparison
+    const lastProcessedInitialData = useRef<Partial<z.input<T>> | null>(null);
 
     useEffect(() => {
-        // Reset form when initialData becomes available
-        if (initialData) {
+        // Only reset when initialData is truthy and actually different
+        if (initialData && !deepEqual(initialData, lastProcessedInitialData.current)) {
+            // Update tracking ref immediately to prevent re-execution
+            lastProcessedInitialData.current = initialData;
+
             const validatedData = schema.safeParse(initialData);
 
             // If validation fails, don't reset the form
@@ -103,16 +106,16 @@ export const useForm = <
             }
 
             const resetData: z.input<T> = {
-                ...getCurrentValues(),
+                ...form.getValues(),
                 ...initialData,
             };
 
             // Update snapshot for change detection
             initialDataSnapshot.current = resetData;
 
-            resetForm(resetData);
+            form.reset(resetData);
         }
-    }, [initialData, getCurrentValues, resetForm, schema]);
+    }, [initialData]);
 
     //============================================
     // Change detection for requireChanges
