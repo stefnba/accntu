@@ -48,11 +48,25 @@ export const globalBankAccountServices = createFeatureServices
          * @param data - The data to test the global bank account transformation query
          * @returns The result of the global bank account transformation query
          */
-        testTransform: async ({ transformConfig, sampleTransformData, transformQuery }) => {
+        testTransform: async ({ globalBankAccountId }) => {
+            if (!globalBankAccountId) {
+                throw new Error('Global bank account id is required');
+            }
+
+            const globalBankAccount = await queries.getById({
+                ids: { id: globalBankAccountId },
+            });
+
+            if (!globalBankAccount) {
+                throw new Error('Global bank account not found');
+            }
+
+            const { transformConfig, transformQuery, sampleTransformData } = globalBankAccount;
+
             return localUploadService.createTempFileForFn(
                 {
                     file: sampleTransformData || '',
-                    fileExtension: 'csv',
+                    fileExtension: 'csv', // always csv for now
                 },
                 async (csvFile) => {
                     const duckdb = await DuckDBTransactionTransformSingleton.getInstance();
@@ -77,11 +91,10 @@ export const globalBankAccountServices = createFeatureServices
                             fieldName: 'key',
                         },
                         transformSql: transformQuery,
-                        schema: transactionSchemas.create.service,
+                        schema: transactionSchemas.validateImport.service,
                     });
                     return {
-                        csvFile,
-                        result,
+                        result: result,
                     };
                 }
             );

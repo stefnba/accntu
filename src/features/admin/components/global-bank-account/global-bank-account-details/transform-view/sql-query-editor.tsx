@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { QueryResultView } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/query-result-view';
 import { SqlEditor } from '@/features/admin/components/global-bank-account/global-bank-account-details/transform-view/sql-editor';
-import { globalBankAccountSchemas } from '@/features/bank/schemas';
 import { Code2, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'sql-formatter';
+import { z } from 'zod';
 
 interface SqlQueryEditorProps {
     accountId: string;
@@ -25,11 +25,14 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
     const testTransformQuery = useAdminGlobalBankAccountEndpoints.testTransformQuery();
 
     const { form, Form, SubmitButton } = useForm({
-        schema: globalBankAccountSchemas.testTransform.service.pick({
-            transformQuery: true,
+        schema: z.object({
+            transformQuery: z.string(),
         }),
         defaultValues: {
             transformQuery: '',
+        },
+        initialData: {
+            transformQuery: account?.transformQuery,
         },
         onSubmit: (data) => {
             updateAccount.mutate(
@@ -88,10 +91,8 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
 
         testTransformQuery.mutate(
             {
-                json: {
-                    transformQuery,
-                    sampleTransformData,
-                    transformConfig,
+                param: {
+                    globalBankAccountId: accountId,
                 },
             },
             {
@@ -142,7 +143,7 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                     </div>
 
                     <QueryResultView
-                        transformResult={testTransformQuery.data?.data?.result.validatedData}
+                        transformResult={testTransformQuery.data?.data.result}
                         isLoading={testTransformQuery.isPending}
                     />
                 </Form>

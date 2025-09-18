@@ -50,6 +50,7 @@ export const useAdminGlobalBankAccountEndpoints = {
      * Test global bank account transformation query (admin only)
      */
     testTransformQuery: createMutation(
-        apiClient.admin['global-bank-accounts']['test-transform-query'].$post
+        apiClient.admin['global-bank-accounts']['test-transform-query'][':globalBankAccountId']
+            .$post
     ),
 };

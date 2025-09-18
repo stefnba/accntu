@@ -3,7 +3,7 @@
 import { useForm } from '@/components/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { globalBankAccountSchemas } from '@/features/bank/schemas';
+import { transformConfigSchema } from '@/features/bank/schemas';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
     const { form, Form, Input, Select, SubmitButton } = useForm({
-        schema: globalBankAccountSchemas.testTransform.service.shape.transformConfig.unwrap(),
+        schema: transformConfigSchema,
         defaultValues: {
             type: 'csv',
             skipRows: 1,
@@ -30,6 +30,7 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
             delimiter: ',',
             idColumns: [''],
         },
+        initialData: account?.transformConfig,
         onSubmit: (data) => {
             updateAccount.mutate(
                 {
@@ -49,12 +50,6 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
             );
         },
     });
-
-    useEffect(() => {
-        if (account?.transformConfig) {
-            form.reset(account.transformConfig);
-        }
-    }, [account?.transformConfig, form.reset]);
 
     const transformType = form.watch('type');
     const delimiterValue = form.watch('delimiter');

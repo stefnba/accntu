@@ -143,6 +143,22 @@ export const {
                 param: z.object({ id: z.string() }),
             },
         };
+    })
+    /**
+     * Validate a transaction import
+     */
+    .addCustom('validateImport', ({ baseSchema }) => {
+        const validateSchema = baseSchema.omit({
+            userAmount: true,
+            userCurrency: true,
+            connectedBankAccountId: true,
+            accountAmount: true,
+            importFileId: true,
+            originalTitle: true,
+        });
+        return {
+            service: validateSchema,
+        };
     });
 
 export type TTransactionSchemas = InferSchemas<typeof transactionSchemas>;

@@ -2,27 +2,25 @@ import { globalBankAccount } from '@/features/bank/server/db/tables';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
-export const transformConfigSchema = z
-    .object({
-        type: z.enum(['csv', 'excel', 'json']),
-        delimiter: z.string().optional(),
-        hasHeader: z.boolean().optional(),
-        encoding: z.string().optional(),
-        skipRows: z.coerce.number().optional(),
-        idColumns: z
-            .union([z.string(), z.array(z.string())])
-            .optional()
-            .transform((val) => (Array.isArray(val) ? val : val?.split(',').map((v) => v.trim()))),
-        dateFormat: z.string().optional(),
-        sheetName: z.string().optional(),
-        decimalSeparator: z.enum(['.', ',']).optional(),
-        thousandsSeparator: z.enum([',', '.', ' ', '']).optional(),
-        quoteChar: z.string().optional(),
-        escapeChar: z.string().optional(),
-        nullValues: z.array(z.string()).optional(),
-    })
-    .optional()
-    .nullable();
+export const transformConfigSchema = z.object({
+    type: z.enum(['csv', 'excel', 'json']),
+    delimiter: z.string().optional(),
+    hasHeader: z.boolean().optional(),
+    encoding: z.string().optional(),
+    skipRows: z.coerce.number().optional(),
+    idColumns: z
+        .union([z.string(), z.array(z.string())])
+        .optional()
+        .transform((val) => (Array.isArray(val) ? val : val?.split(',').map((v) => v.trim()))),
+    dateFormat: z.string().optional(),
+    sheetName: z.string().optional(),
+    decimalSeparator: z.enum(['.', ',']).optional(),
+    thousandsSeparator: z.enum([',', '.', ' ', '']).optional(),
+    quoteChar: z.string().optional(),
+    escapeChar: z.string().optional(),
+    nullValues: z.array(z.string()).optional(),
+});
+
 export type TTransformConfig = z.infer<typeof transformConfigSchema>;
 
 export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
@@ -131,16 +129,14 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
      */
     .addCustom('testTransform', ({ rawSchema }) => {
         const schema = z.object({
-            transformQuery: rawSchema.shape.transformQuery,
-            sampleTransformData: rawSchema.shape.sampleTransformData,
-            transformConfig: transformConfigSchema.unwrap(),
+            globalBankAccountId: rawSchema.shape.id,
         });
 
         return {
             service: schema,
             query: schema,
             endpoint: {
-                json: schema,
+                param: schema,
             },
         };
     });

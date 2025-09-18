@@ -71,17 +71,15 @@ export const adminGlobalBankAccountEndpoints = new Hono()
 
     // Test global bank account transformation query
     .post(
-        '/test-transform-query',
-        zValidator('json', globalBankAccountSchemas.testTransform.endpoint.json),
+        '/test-transform-query/:globalBankAccountId',
+        zValidator('param', globalBankAccountSchemas.testTransform.endpoint.param),
         async (c) =>
             routeHandler(c)
                 .withUser()
                 .withAdmin()
                 .handleMutation(async ({ validatedInput }) =>
                     globalBankAccountServices.testTransform({
-                        transformQuery: validatedInput.json.transformQuery,
-                        sampleTransformData: validatedInput.json.sampleTransformData,
-                        transformConfig: validatedInput.json.transformConfig,
+                        globalBankAccountId: validatedInput.param.globalBankAccountId,
                     })
                 )
     );

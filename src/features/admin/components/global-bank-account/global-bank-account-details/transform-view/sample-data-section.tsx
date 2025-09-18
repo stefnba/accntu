@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
-import { globalBankAccountSchemas } from '@/features/bank/schemas';
+
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { z } from 'zod';
 
 interface SampleDataSectionProps {
     accountId: string;
@@ -23,12 +24,15 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
         param: { id: accountId },
     });
 
-    const { form, Form, Textarea, SubmitButton } = useForm({
-        schema: globalBankAccountSchemas.testTransform.service.pick({
-            sampleTransformData: true,
+    const { Form, Textarea, SubmitButton } = useForm({
+        schema: z.object({
+            sampleTransformData: z.string(),
         }),
         defaultValues: {
             sampleTransformData: '',
+        },
+        initialData: {
+            sampleTransformData: account?.sampleTransformData,
         },
         onSubmit: (data) => {
             updateAccount.mutate(
@@ -47,14 +51,6 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
             );
         },
     });
-
-    useEffect(() => {
-        if (account?.sampleTransformData) {
-            form.reset({
-                sampleTransformData: account.sampleTransformData,
-            });
-        }
-    }, [account?.sampleTransformData, form.reset]);
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
