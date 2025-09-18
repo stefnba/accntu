@@ -9,29 +9,26 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { IconType } from 'react-icons';
+import { TAppRoute } from '@/lib/routes';
+import Link from 'next/link';
 
 export function NavSecondary({
     items,
     ...props
 }: {
-    items: {
-        title: string;
-        url: string;
-        icon: IconType;
-    }[];
+    items: TAppRoute[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
     return (
         <SidebarGroup {...props}>
             <SidebarGroupContent>
                 <SidebarMenu>
                     {items.map((item) => (
-                        <SidebarMenuItem key={item.title}>
+                        <SidebarMenuItem key={item.path}>
                             <SidebarMenuButton asChild>
-                                <a href={item.url}>
-                                    <item.icon />
-                                    <span>{item.title}</span>
-                                </a>
+                                <Link href={item.path}>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.label}</span>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}

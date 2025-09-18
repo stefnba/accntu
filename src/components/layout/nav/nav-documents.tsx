@@ -1,6 +1,6 @@
 'use client';
 
-import { IconDots, IconFolder, IconShare3, IconTrash, type Icon } from '@tabler/icons-react';
+import { IconDots, IconFolder, IconShare3, IconTrash } from '@tabler/icons-react';
 
 import {
     DropdownMenu,
@@ -18,16 +18,10 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { TAppRoute } from '@/lib/routes';
+import Link from 'next/link';
 
-export function NavDocuments({
-    items,
-}: {
-    items: {
-        name: string;
-        url: string;
-        icon: Icon;
-    }[];
-}) {
+export function NavDocuments({ items }: { items: TAppRoute[] }) {
     const { isMobile } = useSidebar();
 
     return (
@@ -35,12 +29,12 @@ export function NavDocuments({
             <SidebarGroupLabel>Budgeting</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
-                    <SidebarMenuItem key={item.name}>
+                    <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton asChild>
-                            <a href={item.url}>
-                                <item.icon />
-                                <span>{item.name}</span>
-                            </a>
+                            <Link href={item.path}>
+                                {item.icon && <item.icon />}
+                                <span>{item.label}</span>
+                            </Link>
                         </SidebarMenuButton>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
