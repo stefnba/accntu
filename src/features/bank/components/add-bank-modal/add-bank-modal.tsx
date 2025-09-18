@@ -27,7 +27,9 @@ export const AddBankModal = ({ onSuccess }: AddBankModalProps) => {
     } = useAddBankModal();
 
     // API hooks
-    const { data: globalBanksData, isLoading: banksLoading } = useGlobalBankEndpoints.getAll({});
+    const { data: globalBanksData, isLoading: banksLoading } = useGlobalBankEndpoints.getAll({
+        query: { pageSize: '100' },
+    });
 
     const { mutate: createConnectedBank } = useConnectedBankEndpoints.create({
         errorHandlers: {

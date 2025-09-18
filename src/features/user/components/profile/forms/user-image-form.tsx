@@ -1,23 +1,14 @@
 'use client';
 
-import { Form, FormFileDropzone, useForm } from '@/components/form';
+import { FormFileDropzone, useForm } from '@/components/form';
 import { useAuthEndpoints } from '@/lib/auth/client';
 import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import toast from 'react-hot-toast';
 
 export function UserImageForm() {
-    const { mutate: updateUserMutate } = useAuthEndpoints.updateUser({
-        errorHandlers: {
-            'VALIDATION.INVALID_INPUT': (err) => {
-                toast.error('Please check your input');
-            },
-            default: (err) => {
-                toast.error(err.error.message || 'Error updating user');
-            },
-        },
-    });
+    const updateUser = useAuthEndpoints.updateUser();
 
-    const profileForm = useForm({
+    const { Form, form } = useForm({
         schema: userServiceSchemas.update.pick({
             image: true,
         }),
@@ -25,9 +16,9 @@ export function UserImageForm() {
             image: '',
         },
         onSubmit: async (data) => {
-            updateUserMutate(
+            updateUser.mutate(
                 {
-                    json: data,
+                    image: data.image,
                 },
                 {
                     onSuccess: () => {
@@ -39,12 +30,12 @@ export function UserImageForm() {
     });
 
     return (
-        <Form form={profileForm} className="space-y-4">
+        <Form className="space-y-4">
             <FormFileDropzone
-                form={profileForm}
+                form={form}
                 name="image"
                 maxFiles={1}
-                maxSize={1024 * 1024 * 2} // 2MB
+                maxSize={1024 * 1024 * 5} // 5MB
                 accept={{
                     'image/*': ['.jpeg', '.jpg', '.png', '.gif'],
                 }}

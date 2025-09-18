@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBucketEndpoints } from '@/features/bucket/api';
 import { BUCKET_STATUS_OPTIONS, BUCKET_TYPE_OPTIONS } from '@/features/bucket/constants';
@@ -15,7 +15,7 @@ export function BucketCreateUpdateModal() {
     const { mutate: createBucket } = useBucketEndpoints.create();
     const { mutate: updateBucket } = useBucketEndpoints.update();
 
-    const form = useForm({
+    const { Form, Input, Select, SubmitButton } = useForm({
         schema: bucketSchemas.create.endpoint.json,
         defaultValues: {
             title: '',
@@ -51,10 +51,9 @@ export function BucketCreateUpdateModal() {
                 <DialogHeader>
                     <DialogTitle>{bucketId ? 'Edit Bucket' : 'Create Bucket'}</DialogTitle>
                 </DialogHeader>
-                <Form form={form}>
-                    <FormInput name="title" label="Title" form={form} />
-                    <FormSelect
-                        form={form}
+                <Form>
+                    <Input name="title" label="Title" />
+                    <Select
                         name="type"
                         label="Type"
                         options={BUCKET_TYPE_OPTIONS.map((value) => ({
@@ -62,8 +61,7 @@ export function BucketCreateUpdateModal() {
                             label: value,
                         }))}
                     />
-                    <FormSelect
-                        form={form}
+                    <Select
                         name="status"
                         label="Status"
                         options={BUCKET_STATUS_OPTIONS.map((value) => ({
@@ -71,9 +69,7 @@ export function BucketCreateUpdateModal() {
                             label: value,
                         }))}
                     />
-                    <FormSubmitButton form={form}>
-                        {bucketId ? 'Update' : 'Create'}
-                    </FormSubmitButton>
+                    <SubmitButton>{bucketId ? 'Update' : 'Create'}</SubmitButton>
                 </Form>
             </DialogContent>
         </Dialog>

@@ -1,5 +1,5 @@
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { globalBank } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
 export const { schemas: globalBankSchemas } = createFeatureSchemas
@@ -21,6 +21,7 @@ export const { schemas: globalBankSchemas } = createFeatureSchemas
         return {
             service: input,
             query: input,
+            form: baseSchema,
             endpoint: {
                 json: baseSchema,
             },
@@ -70,13 +71,18 @@ export const { schemas: globalBankSchemas } = createFeatureSchemas
      * Update a global bank by ID
      */
     .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
+        const withActive = baseSchema.extend({
+            isActive: z.boolean().optional(),
+        });
+
         return {
-            service: buildInput({ data: baseSchema.partial() }),
-            query: buildInput({ data: baseSchema.partial() }),
+            service: buildInput({ data: withActive.partial() }),
+            query: buildInput({ data: withActive.partial() }),
             endpoint: {
-                json: baseSchema.partial(),
+                json: withActive.partial(),
                 param: idFieldsSchema,
             },
+            form: withActive.partial(),
         };
     })
     /**

@@ -1,14 +1,6 @@
 'use client';
 
-import {
-    Form,
-    FormCheckbox,
-    FormInput,
-    FormSelect,
-    FormSubmitButton,
-    FormTextarea,
-    useForm,
-} from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
@@ -21,9 +13,8 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
     const createAccount = useAdminGlobalBankAccountEndpoints.create();
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
-    const form = useForm({
+    const { form, Form, Input, Select, Textarea, Checkbox, SubmitButton } = useForm({
         schema: globalBankAccountSchemas.updateById.form,
-
         onSubmit: async (data) => {
             if (accountId) {
                 await updateAccount.mutateAsync({
@@ -35,19 +26,13 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
     });
 
     return (
-        <Form form={form} className="space-y-8">
+        <Form className="space-y-8">
             {/* Basic Information */}
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormInput
-                        form={form}
-                        name="name"
-                        label="Name"
-                        placeholder="e.g., Checking Account"
-                    />
+                    <Input name="name" label="Name" placeholder="e.g., Checking Account" />
 
-                    <FormSelect
-                        form={form}
+                    <Select
                         name="type"
                         label="Account Type"
                         placeholder="Select account type"
@@ -61,8 +46,7 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
                     />
                 </div>
 
-                <FormTextarea
-                    form={form}
+                <Textarea
                     name="description"
                     label="Description"
                     placeholder="Optional description for this account template"
@@ -72,8 +56,7 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
 
             {/* Status */}
             <div className="space-y-4">
-                <FormCheckbox
-                    form={form}
+                <Checkbox
                     name="isActive"
                     label="Active Template"
                     description="Enable this account template for user connections"
@@ -89,9 +72,9 @@ export const GlobalBankAccountOverviewForm = ({ accountId }: GlobalBankAccountFo
                 >
                     Cancel
                 </Button>
-                <FormSubmitButton form={form} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <SubmitButton className="bg-blue-600 hover:bg-blue-700 text-white">
                     {accountId ? 'Update' : 'Create'}
-                </FormSubmitButton>
+                </SubmitButton>
             </div>
         </Form>
     );

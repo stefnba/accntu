@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, FormSubmitButton, FormTextarea, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -23,7 +23,7 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
         param: { id: accountId },
     });
 
-    const form = useForm({
+    const { form, Form, Textarea, SubmitButton } = useForm({
         schema: globalBankAccountSchemas.testTransform.service.pick({
             sampleTransformData: true,
         }),
@@ -80,15 +80,14 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
                 </CardHeader>
                 <CollapsibleContent>
                     <CardContent>
-                        <Form form={form}>
-                            <FormTextarea
-                                form={form}
+                        <Form>
+                            <Textarea
                                 name="sampleTransformData"
                                 className="h-[300px] w-full"
                                 placeholder="Paste your sample data here..."
                             />
                             <div className="w-full flex justify-end mt-4">
-                                <FormSubmitButton form={form}>Save Sample Data</FormSubmitButton>
+                                <SubmitButton>Save Sample Data</SubmitButton>
                             </div>
                         </Form>
                     </CardContent>

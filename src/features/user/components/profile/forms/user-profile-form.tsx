@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useProfileUpdateModal } from '@/features/user/hooks';
 import { useAuth, useAuthEndpoints } from '@/lib/auth/client';
@@ -16,7 +16,12 @@ export function UserProfileForm() {
     const updateUser = useAuthEndpoints.updateUser();
     const router = useRouter();
 
-    const profileForm = useForm({
+    const {
+        form: profileForm,
+        Form,
+        Input,
+        SubmitButton,
+    } = useForm({
         schema: userServiceSchemas.update.pick({
             name: true,
             lastName: true,
@@ -57,29 +62,19 @@ export function UserProfileForm() {
     }
 
     return (
-        <Form form={profileForm} className="space-y-8 w-lg">
+        <Form className="space-y-8 w-lg">
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
-                <FormInput
-                    form={profileForm}
-                    name="name"
-                    label="First Name"
-                    placeholder="Enter your first name"
-                />
-                <FormInput
-                    form={profileForm}
-                    name="lastName"
-                    label="Last Name"
-                    placeholder="Enter your last name"
-                />
+                <Input name="name" label="First Name" placeholder="Enter your first name" />
+                <Input name="lastName" label="Last Name" placeholder="Enter your last name" />
             </div>
 
             <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={closeModal}>
                     Cancel
                 </Button>
-                <FormSubmitButton form={profileForm} disabled={profileForm.formState.isSubmitting}>
+                <SubmitButton disabled={profileForm.formState.isSubmitting}>
                     {profileForm.formState.isSubmitting ? 'Updating...' : 'Update Name'}
-                </FormSubmitButton>
+                </SubmitButton>
             </div>
         </Form>
     );

@@ -15,7 +15,7 @@ export const { schemas: participantSchemas } = createFeatureSchemas
     })
     .transform((base) =>
         base.extend({
-            email: z.email().optional().or(z.literal(null)),
+            email: z.email().optional().nullable(),
             name: z.string().min(1, 'Name cannot be empty'),
         })
     )
@@ -26,6 +26,7 @@ export const { schemas: participantSchemas } = createFeatureSchemas
      */
     .addCore('create', ({ baseSchema, buildInput }) => ({
         service: buildInput({ data: baseSchema }),
+        form: baseSchema,
         query: buildInput({ data: baseSchema }),
         endpoint: { json: baseSchema },
     }))
@@ -62,6 +63,7 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         return {
             service: buildInput({ data: baseSchema.partial() }),
             query: buildInput({ data: baseSchema.partial() }),
+            form: baseSchema.partial(),
             endpoint: {
                 json: baseSchema.partial(),
                 param: idFieldsSchema,

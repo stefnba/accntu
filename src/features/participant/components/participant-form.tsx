@@ -1,36 +1,26 @@
 'use client';
 
-import { Form, FormInput, FormSubmitButton, useForm } from '@/components/form';
+import { useUpsertForm } from '@/components/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useParticipantEndpoints } from '@/features/participant/api';
 import { useCreateUpdateParticipantModal } from '@/features/participant/hooks';
-import { participantServiceSchemas } from '@/features/participant/schemas';
+import { participantSchemas } from '@/features/participant/schemas';
 import toast from 'react-hot-toast';
 
-export function ParticipantForm() {
-    const { modalIsOpen, setModal, participantId, setParticipantId, closeModal } =
-        useCreateUpdateParticipantModal();
+export function ParticipantUpsertForm() {
+    const { modalIsOpen, setModal, participantId, closeModal } = useCreateUpdateParticipantModal();
     const { mutate: createParticipant } = useParticipantEndpoints.create();
     const { mutate: updateParticipant } = useParticipantEndpoints.update();
 
-    const form = useForm({
-        schema: participantServiceSchemas.create,
-        defaultValues: {
-            name: '',
-            email: '',
-        },
-        onSubmit: (data) => {
-            if (participantId) {
-                updateParticipant(
-                    { param: { id: participantId }, json: data },
-                    {
-                        onSuccess() {
-                            closeModal();
-                            toast.success('Participant updated successfully');
-                        },
-                    }
-                );
-            } else {
+    const { Form, Input, SubmitButton } = useUpsertForm({
+        create: {
+            schema: participantSchemas.create.form,
+            defaultValues: {
+                name: '',
+                email: '',
+                linkedUserId: '',
+            },
+            onSubmit: (data) => {
                 createParticipant(
                     { json: data },
                     {
@@ -40,8 +30,28 @@ export function ParticipantForm() {
                         },
                     }
                 );
-            }
+            },
         },
+        update: {
+            schema: participantSchemas.updateById.form,
+            defaultValues: {
+                name: '',
+                email: '',
+                linkedUserId: '',
+            },
+            onSubmit: (data) => {
+                updateParticipant(
+                    { param: { id: participantId }, json: data },
+                    {
+                        onSuccess() {
+                            closeModal();
+                            toast.success('Participant updated successfully');
+                        },
+                    }
+                );
+            },
+        },
+        mode: participantId ? 'update' : 'create',
     });
 
     return (
@@ -52,12 +62,10 @@ export function ParticipantForm() {
                         {participantId ? 'Edit Participant' : 'Add Participant'}
                     </DialogTitle>
                 </DialogHeader>
-                <Form form={form}>
-                    <FormInput name="name" label="Name" form={form} />
-                    <FormInput name="email" label="Email" type="email" form={form} />
-                    <FormSubmitButton form={form}>
-                        {participantId ? 'Update' : 'Add'}
-                    </FormSubmitButton>
+                <Form>
+                    <Input name="name" label="Name" />
+                    <Input name="email" label="Email" type="email" />
+                    <SubmitButton>{participantId ? 'Update' : 'Add'}</SubmitButton>
                 </Form>
             </DialogContent>
         </Dialog>

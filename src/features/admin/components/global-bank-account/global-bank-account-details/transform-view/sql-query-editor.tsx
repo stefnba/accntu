@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
@@ -24,7 +24,7 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
     const testTransformQuery = useAdminGlobalBankAccountEndpoints.testTransformQuery();
 
-    const form = useForm({
+    const { form, Form, SubmitButton } = useForm({
         schema: globalBankAccountSchemas.testTransform.service.pick({
             transformQuery: true,
         }),
@@ -116,7 +116,7 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                <Form form={form}>
+                <Form>
                     {/* SQL Editor */}
                     <div className="h-[400px]">
                         <SqlEditor
@@ -138,11 +138,11 @@ export const SqlQueryEditor: React.FC<SqlQueryEditorProps> = ({ accountId }) => 
                             )}
                             Test Query
                         </Button>
-                        <FormSubmitButton form={form}>Save Query</FormSubmitButton>
+                        <SubmitButton>Save Query</SubmitButton>
                     </div>
 
                     <QueryResultView
-                        transformResult={testTransformQuery.data?.result}
+                        transformResult={testTransformQuery.data?.data?.result.validatedData}
                         isLoading={testTransformQuery.isPending}
                     />
                 </Form>

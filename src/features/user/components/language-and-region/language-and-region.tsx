@@ -1,7 +1,7 @@
 'use client';
 
 import { SettingsCard } from '@/components/content';
-import { Form, FormSelect, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 
 import { Calendar, Clock, Languages } from 'lucide-react';
@@ -16,7 +16,7 @@ const languageAndRegionSchema = z.object({
 });
 
 export const LanguageAndRegionForm = () => {
-    const form = useForm({
+    const { form, Form, Select } = useForm({
         schema: languageAndRegionSchema,
         defaultValues: {
             language: 'en',
@@ -72,7 +72,7 @@ export const LanguageAndRegionForm = () => {
 
     return (
         <div className="space-y-6">
-            <Form form={form} className="space-y-6">
+            <Form className="space-y-6">
                 {/* Language Card */}
                 <SettingsCard.Auto
                     title="Language"
@@ -83,8 +83,7 @@ export const LanguageAndRegionForm = () => {
                             label: 'Language',
                             description: 'Choose your preferred language',
                             action: (
-                                <FormSelect
-                                    form={form}
+                                <Select
                                     name="language"
                                     placeholder="Select language"
                                     options={languageOptions}
@@ -104,8 +103,7 @@ export const LanguageAndRegionForm = () => {
                             label: 'Timezone',
                             description: 'Select your timezone for accurate time display',
                             action: (
-                                <FormSelect
-                                    form={form}
+                                <Select
                                     name="timezone"
                                     placeholder="Select timezone"
                                     options={timezoneOptions}
@@ -117,8 +115,7 @@ export const LanguageAndRegionForm = () => {
                             label: 'Date Format',
                             description: 'Choose how dates are displayed',
                             action: (
-                                <FormSelect
-                                    form={form}
+                                <Select
                                     name="dateFormat"
                                     placeholder="Select date format"
                                     options={dateFormatOptions}
@@ -130,8 +127,7 @@ export const LanguageAndRegionForm = () => {
                             label: 'Time Format',
                             description: 'Choose 12-hour or 24-hour time format',
                             action: (
-                                <FormSelect
-                                    form={form}
+                                <Select
                                     name="timeFormat"
                                     placeholder="Select time format"
                                     options={timeFormatOptions}

@@ -1,35 +1,14 @@
 'use client';
 
-import {
-    Form,
-    FormCheckbox,
-    FormInput,
-    FormSelect,
-    FormSubmitButton,
-    createFormSchema,
-    useForm,
-} from '@/components/form';
-import { Badge } from '@/components/ui/badge';
+import { useUpsertForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
-import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
-import { Building2, X } from 'lucide-react';
-import { z } from 'zod';
+import { globalBankSchemas } from '@/features/bank/schemas';
+import { Building2 } from 'lucide-react';
 
-const globalBankFormSchema = createFormSchema(globalBankServiceSchemas.insert, {
-    name: '',
-    country: '',
-    currency: '',
-    bic: '',
-    logo: '',
-    color: '',
-    providerSource: 'manual',
-    providerId: '',
-    isActive: true,
-    integrationTypes: 'csv',
-});
+// We'll use the schema from globalBankSchemas directly
 
 interface GlobalBankFormProps {
     bank?: {
@@ -52,50 +31,61 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
     const createBank = useAdminGlobalBankEndpoints.create();
     const updateBank = useAdminGlobalBankEndpoints.update();
 
-    const form = useForm({
-        schema: bank
-            ? globalBankServiceSchemas.update.extend({
-                  integrationTypes: z.array(z.string()).optional(),
-              })
-            : globalBankFormSchema.schema,
-        defaultValues: bank
-            ? {
-                  name: bank.name || '',
-                  country: bank.country || '',
-                  currency: bank.currency || '',
-                  bic: bank.bic || '',
-                  logo: bank.logo || '',
-                  color: bank.color || '',
-                  providerSource: bank.providerSource || 'manual',
-                  providerId: bank.providerId || '',
-                  integrationTypes: bank.integrationTypes || [],
-                  isActive: bank.isActive ?? true,
-              }
-            : globalBankFormSchema.defaultValues,
-        onSubmit: async (data) => {
-            if (bank) {
-                await updateBank.mutateAsync({
-                    param: { id: bank.id },
-                    json: data,
-                });
-            } else {
-                await createBank.mutateAsync({
-                    json: data,
-                });
-            }
-            onClose();
+    const { form, Form, Input, Select, Checkbox, SubmitButton } = useUpsertForm({
+        create: {
+            schema: globalBankSchemas.create.form,
+            defaultValues: {
+                name: '',
+                country: '',
+                currency: '',
+                bic: '',
+                logo: '',
+                color: '',
+                providerSource: '',
+                providerId: '',
+                // integrationTypes: [],
+            },
+            onSubmit: async (data) => {
+                if (bank) {
+                    await updateBank.mutateAsync({
+                        param: { id: bank.id },
+                        json: data,
+                    });
+                } else {
+                    await createBank.mutateAsync({
+                        json: data,
+                    });
+                }
+                onClose();
+            },
         },
+        update: {
+            schema: globalBankSchemas.updateById.form,
+            defaultValues: {
+                name: '',
+                country: '',
+                currency: '',
+                bic: '',
+                logo: '',
+                color: '',
+            },
+            onSubmit: async (data) => {
+                await updateBank.mutateAsync({
+                    param: { id: bank!.id },
+                    json: data,
+                });
+            },
+        },
+        mode: bank ? 'update' : 'create',
     });
 
-    const integrationTypes = form.watch('integrationTypes') || [];
-
-    const handleIntegrationTypeToggle = (type: string) => {
-        const current = integrationTypes;
-        const updated = current.includes(type)
-            ? current.filter((t: string) => t !== type)
-            : [...current, type];
-        form.setValue('integrationTypes', updated);
-    };
+    // const handleIntegrationTypeToggle = (type: string) => {
+    //     const current = integrationTypes;
+    //     const updated = current.includes(type)
+    //         ? current.filter((t: string) => t !== type)
+    //         : [...current, type];
+    //     form.setValue('integrationTypes', updated);
+    // };
 
     return (
         <Dialog open onOpenChange={onClose}>
@@ -118,15 +108,14 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                     </div>
                 </DialogHeader>
 
-                <Form form={form} className="space-y-8 pt-4">
+                <Form className="space-y-8 pt-4">
                     {/* Basic Information */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                             Basic Information
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="name"
                                 label="Bank Name"
                                 placeholder="Enter bank name"
@@ -134,8 +123,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                 className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                             />
 
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="country"
                                 label="Country Code"
                                 placeholder="DE, CH, etc."
@@ -144,8 +132,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                 required
                             />
 
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="currency"
                                 label="Currency Code"
                                 placeholder="EUR, USD, etc."
@@ -154,8 +141,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                 required
                             />
 
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="bic"
                                 label="BIC Code"
                                 placeholder="DEUTDEFF (Optional)"
@@ -170,8 +156,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                             Branding & Visual
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="logo"
                                 label="Logo URL"
                                 placeholder="https://example.com/logo.png (Optional)"
@@ -179,8 +164,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                 className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                             />
 
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="color"
                                 label="Brand Color"
                                 placeholder="#0066cc (Optional)"
@@ -195,8 +179,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                             Provider Configuration
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormSelect
-                                form={form}
+                            <Select
                                 name="providerSource"
                                 label="Provider Source"
                                 placeholder="Select provider"
@@ -209,8 +192,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                 className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                             />
 
-                            <FormInput
-                                form={form}
+                            <Input
                                 name="providerId"
                                 label="Provider ID"
                                 placeholder="Provider-specific identifier (Optional)"
@@ -245,8 +227,8 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                         <input
                                             type="checkbox"
                                             id={type.value}
-                                            checked={integrationTypes.includes(type.value)}
-                                            onChange={() => handleIntegrationTypeToggle(type.value)}
+                                            // checked={integrationTypes.includes(type.value)}
+                                            // onChange={() => handleIntegrationTypeToggle(type.value)}
                                             className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <div className="flex-1">
@@ -263,7 +245,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                     </div>
                                 ))}
                             </div>
-                            {integrationTypes.length > 0 && (
+                            {/* {integrationTypes.length > 0 && (
                                 <div className="flex gap-2 mt-3">
                                     {integrationTypes.map((type: string) => (
                                         <Badge
@@ -281,7 +263,7 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                                         </Badge>
                                     ))}
                                 </div>
-                            )}
+                            )} */}
                         </div>
                     </div>
 
@@ -290,8 +272,8 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                         <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                             Status
                         </h3>
-                        <FormCheckbox
-                            form={form}
+                        <Checkbox
+                            mode="update"
                             name="isActive"
                             label="Active Bank"
                             description="Enable this bank template for user connections"
@@ -308,12 +290,9 @@ export const GlobalBankForm = ({ bank, onClose }: GlobalBankFormProps) => {
                         >
                             Cancel
                         </Button>
-                        <FormSubmitButton
-                            form={form}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
+                        <SubmitButton className="bg-blue-600 hover:bg-blue-700 text-white">
                             {bank ? 'Update Bank' : 'Create Bank'}
-                        </FormSubmitButton>
+                        </SubmitButton>
                     </div>
                 </Form>
             </DialogContent>

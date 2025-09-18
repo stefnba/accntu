@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, FormInput, FormSelect, FormSubmitButton, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminGlobalBankAccountEndpoints } from '@/features/admin/api/global-bank-account';
 import { globalBankAccountSchemas } from '@/features/bank/schemas';
@@ -20,7 +20,7 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
 
     const updateAccount = useAdminGlobalBankAccountEndpoints.update();
 
-    const form = useForm({
+    const { form, Form, Input, Select, SubmitButton } = useForm({
         schema: globalBankAccountSchemas.testTransform.service.shape.transformConfig.unwrap(),
         defaultValues: {
             type: 'csv',
@@ -91,11 +91,10 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
                 <CardTitle>Configuration</CardTitle>
             </CardHeader>
             <CardContent>
-                <Form form={form}>
+                <Form>
                     <div className="grid grid-cols-1 space-y-4">
-                        <FormSelect
+                        <Select
                             className="w-full"
-                            form={form}
                             placeholder="Select transform type"
                             name="type"
                             options={[
@@ -116,19 +115,13 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
                         />
 
                         {transformType === 'excel' && (
-                            <FormInput
-                                form={form}
-                                placeholder="Sheet Name"
-                                name="sheetName"
-                                label="Sheet Name"
-                            />
+                            <Input placeholder="Sheet Name" name="sheetName" label="Sheet Name" />
                         )}
 
                         {/* CSV */}
                         {transformType === 'csv' && (
                             <>
-                                <FormSelect
-                                    form={form}
+                                <Select
                                     name="delimiter"
                                     label="Delimiter"
                                     placeholder="Select delimiter"
@@ -148,9 +141,8 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
                                     ]}
                                 />
 
-                                <FormInput form={form} name="skipRows" label="Skip Rows" />
-                                <FormSelect
-                                    form={form}
+                                <Input name="skipRows" label="Skip Rows" />
+                                <Select
                                     name="encoding"
                                     label="Encoding"
                                     options={[
@@ -163,8 +155,8 @@ export const TransformationConfiguration: React.FC<TransformationConfigurationPr
                             </>
                         )}
 
-                        <FormInput form={form} name="idColumns" label="ID Columns" />
-                        <FormSubmitButton form={form}>Save Config</FormSubmitButton>
+                        <Input name="idColumns" label="ID Columns" />
+                        <SubmitButton>Save Config</SubmitButton>
                     </div>
                 </Form>
             </CardContent>

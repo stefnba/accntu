@@ -1,7 +1,7 @@
 'use client';
 
 import { SettingsCard } from '@/components/content';
-import { Form, FormSwitch, useForm } from '@/components/form';
+import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 
 import { Bell, Calendar, FileText, Mail, Megaphone, TrendingUp } from 'lucide-react';
@@ -18,7 +18,7 @@ const notificationSchema = z.object({
 });
 
 export const NotificationPreferencesForm = () => {
-    const form = useForm({
+    const { form, Form, Switch } = useForm({
         schema: notificationSchema,
         defaultValues: {
             email: true,
@@ -36,7 +36,7 @@ export const NotificationPreferencesForm = () => {
 
     return (
         <div className="space-y-6">
-            <Form form={form} className="space-y-6">
+            <Form className="space-y-6">
                 <SettingsCard.Auto
                     title="Communication"
                     items={[
@@ -45,8 +45,7 @@ export const NotificationPreferencesForm = () => {
                             label: 'Email Notifications',
                             description: 'Receive notifications via email',
                             action: (
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="email"
                                     label="Email Notifications"
                                     description="Receive notifications via email"
@@ -69,8 +68,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={Mail} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="email"
                                     label="Email Notifications"
                                     description="Receive notifications via email"
@@ -81,8 +79,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={Bell} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="push"
                                     label="Push Notifications"
                                     description="Receive push notifications in your browser"
@@ -105,8 +102,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={Megaphone} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="marketing"
                                     label="Marketing Communications"
                                     description="Receive updates about new features and promotions"
@@ -129,8 +125,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={TrendingUp} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="transactionAlerts"
                                     label="Transaction Alerts"
                                     description="Get notified when new transactions are detected"
@@ -141,8 +136,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={Calendar} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="weeklyReports"
                                     label="Weekly Reports"
                                     description="Receive weekly summaries of your financial activity"
@@ -153,8 +147,7 @@ export const NotificationPreferencesForm = () => {
                         <SettingsCard.Item>
                             <SettingsCard.Icon icon={FileText} />
                             <SettingsCard.Body>
-                                <FormSwitch
-                                    form={form}
+                                <Switch
                                     name="monthlyReports"
                                     label="Monthly Reports"
                                     description="Receive monthly financial reports and insights"
