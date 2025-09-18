@@ -8,12 +8,13 @@ import { z } from 'zod';
 export default function TestNewForm2() {
     const [mode, setMode] = useState<'create' | 'update'>('create');
 
-    const { Input, Form, form, SubmitButton } = useUpsertForm({
+    const { Input, Form, form, SubmitButton, Textarea, Select } = useUpsertForm({
         create: {
             schema: z.object({
                 name: z.string().min(1),
                 location: z.string().min(1),
                 what: z.string().min(1),
+                description: z.string().min(1),
             }),
             defaultValues: {
                 name: '',
@@ -39,6 +40,7 @@ export default function TestNewForm2() {
                 name: z.string().min(1),
                 age: z.coerce.number(),
                 location: z.string().min(1),
+                description: z.string().min(1),
             }),
         },
         mode,
@@ -61,6 +63,26 @@ export default function TestNewForm2() {
                     <Input label="Age" mode="update" name="age" />
                     <Input label="Location" name="location" />
                     <Input label="What" mode="create" name="what" />
+                    <Textarea label="Description" name="description" />
+                    <Select
+                        label="Select"
+                        mode="update"
+                        name="age"
+                        options={[
+                            {
+                                label: '1',
+                                value: '1',
+                            },
+                            {
+                                label: '2',
+                                value: '2',
+                            },
+                            {
+                                label: '3',
+                                value: '3',
+                            },
+                        ]}
+                    />
                 </div>
                 <SubmitButton>Submit</SubmitButton>
             </Form>
