@@ -19,6 +19,16 @@ export const globalBankAccountQueries = createFeatureQueries
             'transformConfig',
             'sampleTransformData',
         ],
+        queryConfig: {
+            getMany: {
+                filters(filterParams, filterClauses) {
+                    return [
+                        filterClauses.eq('globalBankId', filterParams?.globalBankId),
+                        filterClauses.eq('type', filterParams?.type),
+                    ];
+                },
+            },
+        },
     });
 
 export type TGlobalBankAccount = InferFeatureType<typeof globalBankAccountQueries>;

@@ -1,5 +1,5 @@
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { globalBankAccount } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
 export const transformConfigSchema = z
@@ -57,7 +57,7 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
     /**
      * Get many global bank accounts
      */
-    .addCore('getMany', ({ buildInput, idFieldsSchema, baseSchema }) => {
+    .addCore('getMany', ({ buildInput, baseSchema }) => {
         const filtersSchema = z.object({
             globalBankId: z.string().optional(),
             type: baseSchema.shape.type.optional(),
@@ -78,7 +78,7 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
             query: input,
             endpoint: {
                 query: paginationSchema.extend(filtersSchema.shape),
-                param: idFieldsSchema,
+                // param: idFieldsSchema,
                 // param: filtersSchema.shape,
             },
         };

@@ -22,8 +22,8 @@ interface GlobalBankAccountListProps {
 }
 
 export const GlobalBankAccountList = ({ bankId, onAdd }: GlobalBankAccountListProps) => {
-    const { data: accounts, isLoading } = useAdminGlobalBankAccountEndpoints.getByBankId(
-        { param: { bankId } },
+    const { data: accounts, isLoading } = useAdminGlobalBankAccountEndpoints.getMany(
+        { query: { globalBankId: bankId } },
         { enabled: !!bankId }
     );
 

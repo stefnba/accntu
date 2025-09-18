@@ -3,27 +3,20 @@ import { globalBankAccountServices } from '@/features/bank/server/services/globa
 import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
-import z from 'zod';
 
 export const adminGlobalBankAccountEndpoints = new Hono()
 
     // Get all global bank accounts by bank id
-    .get(
-        '/by-bank/:bankId',
-        zValidator(
-            'param',
-            globalBankAccountSchemas.getMany.endpoint.param.extend({ bankId: z.string() })
-        ),
-        async (c) =>
-            routeHandler(c)
-                .withUser()
-                .withAdmin()
-                .handle(async ({ validatedInput }) =>
-                    globalBankAccountServices.getMany({
-                        filters: { globalBankId: validatedInput.param.bankId },
-                        pagination: { page: 1, pageSize: 10 },
-                    })
-                )
+    .get('/', zValidator('query', globalBankAccountSchemas.getMany.endpoint.query), async (c) =>
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handle(async ({ validatedInput }) =>
+                globalBankAccountServices.getMany({
+                    filters: validatedInput.query,
+                    pagination: { page: 1, pageSize: 10 },
+                })
+            )
     )
 
     // Get a global bank account by id

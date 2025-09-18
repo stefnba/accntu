@@ -12,7 +12,7 @@ export const useAdminGlobalBankAccountEndpoints = {
     /**
      * Get global bank accounts for a specific bank (admin only)
      */
-    getByBankId: createQuery(apiClient.admin['global-bank-accounts']['by-bank'][':bankId'].$get),
+    getMany: createQuery(apiClient.admin['global-bank-accounts'].$get),
 
     /**
      * Get global bank account by ID (admin only)
