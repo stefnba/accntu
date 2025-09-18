@@ -379,14 +379,21 @@ export const useForm = <
             setServerError(null); // Clear server error on reset
             return form.reset(values);
         },
-        setValue: <K extends Path<z.input<T>>>(name: K, value: z.input<T>[K]) =>
-            form.setValue(name, value),
+        setValue: <K extends Path<z.input<T>>>(
+            name: K,
+            value: z.input<T>[K],
+            options?: { shouldValidate?: boolean; shouldDirty?: boolean; shouldTouch?: boolean }
+        ) => form.setValue(name, value, options),
         trigger: (name?: Path<z.input<T>>) => form.trigger(name),
         clearErrors: () => {
             form.clearErrors();
             setServerError(null);
         },
         getValues: () => form.getValues(),
+
+        // Advanced external control
+        control: form.control,
+        watch: form.watch,
 
         // Components
         Form: FormComponent,

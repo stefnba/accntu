@@ -5,7 +5,7 @@ import { FormRadioGroup } from '@/components/form/radio-group';
 import { FormSelect } from '@/components/form/select';
 import { FormSwitch } from '@/components/form/switch';
 import { FormTextarea } from '@/components/form/textarea';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FieldValues } from 'react-hook-form';
 import { z } from 'zod/v4';
 import type { TComponentMode, TFormMode, UpsertFieldPath, UseUpsertFormConfig } from './types';
@@ -84,17 +84,6 @@ export const useUpsertForm = <
             switchToCreate();
         }
     }, [currentMode, switchToCreate, switchToUpdate]);
-
-    //============================================
-    // Form validation trigger on mode change
-    //============================================
-
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            selectedForm.trigger();
-        }, 0);
-        return () => clearTimeout(timeoutId);
-    }, [currentMode, selectedForm]);
 
     //============================================
     // Components with form binding

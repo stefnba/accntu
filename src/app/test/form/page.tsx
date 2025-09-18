@@ -80,8 +80,10 @@ export default function FormTestingPage() {
         },
         initialData: apiData,
         onSubmit: async (data) => {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log('Dynamic form submitted:', data);
         },
+        disableOnSubmit: true,
     });
 
     // Form with explicit loading state
@@ -95,8 +97,10 @@ export default function FormTestingPage() {
         initialData: apiData,
         showLoadingState: isLoadingData,
         onSubmit: async (data) => {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log('Explicit loading form submitted:', data);
         },
+        disableOnSubmit: true,
     });
 
     // Form with requireChanges option
@@ -110,8 +114,10 @@ export default function FormTestingPage() {
         initialData: apiData,
         requireChanges: true,
         onSubmit: async (data) => {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log('RequireChanges form submitted:', data);
         },
+        disableOnSubmit: true,
     });
 
     // Server Error Form
@@ -123,6 +129,7 @@ export default function FormTestingPage() {
             age: 18,
         },
         onSubmit: async (data) => {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log('Server error form submitted:', data);
 
             // Simulate server business logic error
@@ -139,6 +146,7 @@ export default function FormTestingPage() {
             // Success case
             console.log('Server error form submitted successfully:', data);
         },
+        disableOnSubmit: true,
     });
 
     // Upsert Form
@@ -151,9 +159,12 @@ export default function FormTestingPage() {
                 what: '',
                 description: '',
             },
-            onSubmit: (data) => {
+            onSubmit: async (data) => {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
                 console.log('Create form submitted:', data);
             },
+            disableOnSubmit: true,
+            mode: 'onTouched',
         },
         update: {
             schema: UpsertUpdateSchema,
@@ -163,9 +174,12 @@ export default function FormTestingPage() {
                 location: '',
                 description: '',
             },
-            onSubmit: (data) => {
+            onSubmit: async (data) => {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
                 console.log('Update form submitted:', data);
             },
+            disableOnSubmit: true,
+            mode: 'onTouched',
         },
         mode: upsertMode,
     });
@@ -360,9 +374,9 @@ export default function FormTestingPage() {
                 <TabsContent value="errors">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Server Error & External Control</CardTitle>
+                            <CardTitle>Server Error & Enhanced External Control</CardTitle>
                             <p className="text-sm text-muted-foreground">
-                                Form with server error handling and external control testing
+                                Form with server error handling, enhanced setValue with options, watch function access, and control object exposure
                             </p>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -409,6 +423,60 @@ export default function FormTestingPage() {
                                         Clear Errors
                                     </Button>
                                 </div>
+
+                                {/* Enhanced setValue with options */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            serverErrorForm.setValue('email', 'test@enhanced.com', {
+                                                shouldValidate: true,
+                                                shouldDirty: true,
+                                                shouldTouch: true,
+                                            })
+                                        }
+                                    >
+                                        Enhanced setValue
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            serverErrorForm.setValue('age', 25, {
+                                                shouldValidate: false,
+                                                shouldDirty: false,
+                                            })
+                                        }
+                                    >
+                                        Silent setValue
+                                    </Button>
+                                </div>
+
+                                {/* Watch function testing */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const currentValues = serverErrorForm.watch();
+                                            console.log('Current values via watch:', currentValues);
+                                        }}
+                                    >
+                                        Watch All Values
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const nameValue = serverErrorForm.watch('name');
+                                            console.log('Name value via watch:', nameValue);
+                                        }}
+                                    >
+                                        Watch Name Field
+                                    </Button>
+                                </div>
+
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -424,6 +492,8 @@ export default function FormTestingPage() {
                                 <div>Submitting: {serverErrorForm.form.isSubmitting ? 'Yes' : 'No'}</div>
                                 <div>HasServerError: {serverErrorForm.form.serverError ? 'Yes' : 'No'}</div>
                                 <div>Valid: {serverErrorForm.form.formState.isValid ? 'Yes' : 'No'}</div>
+                                <div>Control Object: {serverErrorForm.control ? 'Exposed' : 'Not Available'}</div>
+                                <div>Watch Function: {typeof serverErrorForm.watch === 'function' ? 'Available' : 'Not Available'}</div>
                             </div>
 
                             <div>
@@ -434,6 +504,11 @@ export default function FormTestingPage() {
                                             values: serverErrorForm.form.getValues(),
                                             serverError: serverErrorForm.form.serverError,
                                             errors: serverErrorForm.form.formState.errors,
+                                            enhancedFeatures: {
+                                                controlObjectAvailable: !!serverErrorForm.control,
+                                                watchFunctionAvailable: typeof serverErrorForm.watch === 'function',
+                                                enhancedSetValueAvailable: true,
+                                            },
                                         },
                                         null,
                                         2

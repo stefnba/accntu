@@ -47,6 +47,13 @@ export interface UseZodFormOptions<
      * Defaults to false.
      */
     requireChanges?: boolean;
+
+    /**
+     * Whether to disable form fields and submit button during submission.
+     * When true, all form inputs and submit button are disabled while isSubmitting is true.
+     * Defaults to false.
+     */
+    disableOnSubmit?: boolean;
 }
 
 /**
