@@ -25,7 +25,6 @@ export const useSession = (): TClientSession => {
     const {
         data: session,
         isLoading,
-        error,
         refetch,
     } = useQuery({
         queryKey: AUTH_QUERY_KEYS.SESSION,
@@ -78,6 +77,9 @@ export const useSession = (): TClientSession => {
     // Return
     // ====================
 
+    // Use React Query loading state, not auth loading store for session checks
+    const actualIsLoading = isLoading || isAuthLoading;
+
     // Return the client session state
     if (!isAuthenticated) {
         // If the user is not authenticated, return the client session state with null values
@@ -85,7 +87,7 @@ export const useSession = (): TClientSession => {
             session: null,
             user: null,
             isAuthenticated: false,
-            isLoading: isAuthLoading,
+            isLoading: actualIsLoading,
             error: null,
             refetchSession: refetch,
         };
@@ -96,7 +98,7 @@ export const useSession = (): TClientSession => {
         session: session?.session,
         user: session?.user,
         isAuthenticated,
-        isLoading: isAuthLoading,
+        isLoading: actualIsLoading,
         error: null,
         refetchSession: refetch,
     };

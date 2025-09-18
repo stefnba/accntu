@@ -39,7 +39,7 @@ export function middleware(request: NextRequest) {
         const loginUrl = new URL(LOGIN_URL, request.url);
         // Add the original URL as a query parameter for redirect after login
         loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.next({ headers: { 'x-pathname': pathname } });
+        return NextResponse.redirect(loginUrl);
     }
 
     // Session cookie exists, allow access
