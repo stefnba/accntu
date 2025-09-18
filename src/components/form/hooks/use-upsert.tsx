@@ -5,7 +5,7 @@ import { FormRadioGroup } from '@/components/form/radio-group';
 import { FormSelect } from '@/components/form/select';
 import { FormSwitch } from '@/components/form/switch';
 import { FormTextarea } from '@/components/form/textarea';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FieldValues } from 'react-hook-form';
 import { z } from 'zod/v4';
 import type { TComponentMode, TFormMode, UpsertFieldPath, UseUpsertFormConfig } from './types';
@@ -18,7 +18,7 @@ const withRenderOrNot = <TComponent extends React.ReactNode>(args: {
     formMode: TFormMode;
     component: TComponent;
 }): TComponent | null => {
-    const { mode, formMode, component } = args;
+    const { mode = 'both', formMode, component } = args;
 
     if (mode === 'both' || mode === formMode) {
         return component;
@@ -27,10 +27,10 @@ const withRenderOrNot = <TComponent extends React.ReactNode>(args: {
 };
 
 /**
- * Main hook: useUpsertNew
+ * Main hook: useUpsertForm
  * - Accepts create & update schemas
- * - Builds three form instances: create, update and both (derived)
- * - Returns a `form` (selected by runtime mode), the `Input` helper, and the create Form wrapper
+ * - Supports both controlled and uncontrolled mode management
+ * - Returns form instance, mode switching functions, and form components
  */
 export const useUpsertForm = <
     TCreateSchema extends z.ZodType<FieldValues, FieldValues>,
@@ -39,15 +39,62 @@ export const useUpsertForm = <
 >(
     config: UseUpsertFormConfig<TMode, TCreateSchema, TUpdateSchema>
 ) => {
-    const { create, update, mode: formMode = 'create' } = config;
+    const { create, update, mode, onModeChange, defaultMode = 'create' } = config;
 
     //============================================
-    // Form selection
+    // Mode management (controlled/uncontrolled)
+    //============================================
+
+    const isControlled = useMemo(() => mode !== undefined, [mode]);
+    const [internalMode, setInternalMode] = useState<TFormMode>(defaultMode);
+    const currentMode = isControlled ? mode! : internalMode;
+
+    //============================================
+    // Form instances
     //============================================
 
     const createForm = useForm(create);
     const updateForm = useForm(update);
-    const selectedForm = formMode === 'update' ? updateForm.form : createForm.form;
+    const selectedForm = currentMode === 'update' ? updateForm.form : createForm.form;
+
+    //============================================
+    // Mode switching functions
+    //============================================
+
+    const switchToCreate = useCallback(() => {
+        if (isControlled) {
+            onModeChange?.('create');
+        } else {
+            setInternalMode('create');
+        }
+    }, [isControlled, onModeChange]);
+
+    const switchToUpdate = useCallback(() => {
+        if (isControlled) {
+            onModeChange?.('update');
+        } else {
+            setInternalMode('update');
+        }
+    }, [isControlled, onModeChange]);
+
+    const toggleMode = useCallback(() => {
+        if (currentMode === 'create') {
+            switchToUpdate();
+        } else {
+            switchToCreate();
+        }
+    }, [currentMode, switchToCreate, switchToUpdate]);
+
+    //============================================
+    // Form validation trigger on mode change
+    //============================================
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            selectedForm.trigger();
+        }, 0);
+        return () => clearTimeout(timeoutId);
+    }, [currentMode, selectedForm]);
 
     //============================================
     // Components with form binding
@@ -63,10 +110,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormInput form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     const TextareaComponent = useCallback(
@@ -79,10 +126,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormTextarea form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     const SelectComponent = useCallback(
@@ -95,10 +142,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormSelect form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     const SwitchComponent = useCallback(
@@ -111,10 +158,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormSwitch form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     const RadioGroupComponent = useCallback(
@@ -127,10 +174,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormRadioGroup form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     const CheckboxComponent = useCallback(
@@ -143,10 +190,10 @@ export const useUpsertForm = <
         }) =>
             withRenderOrNot({
                 mode,
-                formMode,
+                formMode: currentMode,
                 component: <FormCheckbox form={selectedForm as any} {...props} />,
             }),
-        [selectedForm]
+        [selectedForm, currentMode]
     );
 
     //============================================
@@ -154,16 +201,19 @@ export const useUpsertForm = <
     //============================================
 
     return {
-        form: formMode === 'update' ? updateForm.form : createForm.form,
+        form: currentMode === 'update' ? updateForm.form : createForm.form,
         upsert: {
-            mode: formMode,
-            isCreate: formMode === 'create',
-            isUpdate: formMode === 'update',
+            mode: currentMode,
+            isCreate: currentMode === 'create',
+            isUpdate: currentMode === 'update',
+            switchToCreate,
+            switchToUpdate,
+            toggleMode,
         },
 
         // components
-        Form: formMode === 'update' ? updateForm.Form : createForm.Form,
-        SubmitButton: formMode === 'update' ? updateForm.SubmitButton : createForm.SubmitButton,
+        Form: currentMode === 'update' ? updateForm.Form : createForm.Form,
+        SubmitButton: currentMode === 'update' ? updateForm.SubmitButton : createForm.SubmitButton,
         Input: InputComponent,
         Textarea: TextareaComponent,
         Select: SelectComponent,

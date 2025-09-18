@@ -25,6 +25,20 @@ export interface UseZodFormOptions<
      * Optional onError handler for form submission errors
      */
     onError?: SubmitErrorHandler<TFieldValues>;
+
+    /**
+     * Dynamic initial data that may not be available on first render.
+     * When this data changes from undefined to defined, the form will automatically reset with the new values.
+     * Useful for edit forms where data comes from API calls.
+     */
+    initialData?: Partial<TFieldValues> | null | undefined;
+
+    /**
+     * Whether to show loading state while waiting for initial data.
+     * When true, form components will be disabled until initialData is available.
+     * Defaults to true when initialData is provided but undefined/null.
+     */
+    showLoadingState?: boolean;
 }
 
 /**
@@ -50,6 +64,12 @@ export interface UseZodFormReturn<
      * Whether the form is currently submitting
      */
     isSubmitting: boolean;
+
+    /**
+     * Whether the form is currently loading initial data.
+     * True when waiting for async initialData to arrive.
+     */
+    isLoading: boolean;
 
     /**
      * Whether the form has been submitted successfully
@@ -99,7 +119,18 @@ export interface UseUpsertFormConfig<
     update: {
         schema: TUpdateSchema;
     } & UseZodFormOptions<z.input<TUpdateSchema>, z.output<TUpdateSchema>>;
-    mode: TMode;
+    /**
+     * Current mode of the form. When provided, makes the hook controlled.
+     */
+    mode?: TMode;
+    /**
+     * Callback fired when mode changes (for controlled usage)
+     */
+    onModeChange?: (mode: TFormMode) => void;
+    /**
+     * Default mode when hook is uncontrolled
+     */
+    defaultMode?: TFormMode;
 }
 
 /**

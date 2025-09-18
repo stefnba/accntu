@@ -1,6 +1,6 @@
 import { Form } from '@/components/form/form-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FieldValues, Path, useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod/v4';
 
@@ -21,15 +21,31 @@ export const useForm = <
     T extends z.ZodType<Output, Input> = z.ZodType<Output, Input>,
 >(
     options: { schema: T; disableOnSubmit?: boolean } & UseZodFormOptions<z.input<T>, z.output<T>>
-    // ): UseZodFormReturn<z.input<T>, Context, z.output<T>> => {
 ) => {
-    const { schema, disableOnSubmit = true, ...formOptions } = options;
+    const {
+        schema,
+        disableOnSubmit = true,
+        initialData,
+        showLoadingState,
+        ...formOptions
+    } = options;
 
     //============================================
     // State
     //============================================
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Determine if we should show loading state
+    const shouldShowLoadingState = useMemo(() => {
+        if (showLoadingState !== undefined) return showLoadingState;
+        // Auto-detect: show loading if initialData is explicitly provided but undefined/null
+        return initialData !== undefined && (initialData === null || initialData === undefined);
+    }, [showLoadingState, initialData]);
+
+    const isLoading = useMemo(() => {
+        return shouldShowLoadingState && (initialData === null || initialData === undefined);
+    }, [shouldShowLoadingState, initialData]);
 
     //============================================
     // Initialize the form
@@ -39,6 +55,32 @@ export const useForm = <
         resolver: zodResolver(schema),
         ...formOptions,
     });
+
+    //============================================
+    // Dynamic data loading effect
+    //============================================
+
+    const getCurrentValues = form.getValues;
+    const resetForm = form.reset;
+
+    useEffect(() => {
+        // Reset form when initialData becomes available
+        if (initialData) {
+            const validatedData = schema.safeParse(initialData);
+
+            // If validation fails, don't reset the form
+            if (!validatedData.success) {
+                console.warn('initialData validation failed:', validatedData.error);
+                return;
+            }
+
+            const resetData: z.input<T> = {
+                ...getCurrentValues(),
+                ...initialData,
+            };
+            resetForm(resetData);
+        }
+    }, [initialData, getCurrentValues, resetForm, schema]);
 
     //============================================
     // Handle form submission
@@ -86,8 +128,9 @@ export const useForm = <
             handleSubmit,
             handleNativeSubmit: form.handleSubmit,
             isSubmitting,
+            isLoading,
         };
-    }, [form, handleSubmit, isSubmitting]);
+    }, [form, handleSubmit, isSubmitting, isLoading]);
 
     //============================================
     // Enhanced components with form binding
@@ -106,9 +149,13 @@ export const useForm = <
                 name: Path<z.input<T>>;
             }
         ) => (
-            <FormInput form={enhancedForm} {...props} disabled={disableOnSubmit && isSubmitting} />
+            <FormInput
+                form={enhancedForm}
+                {...props}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
+            />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const SubmitButtonComponent = useCallback(
@@ -116,10 +163,10 @@ export const useForm = <
             <FormSubmitButton
                 form={enhancedForm}
                 {...props}
-                disabled={disableOnSubmit && isSubmitting}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
             />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const TextareaComponent = useCallback(
@@ -131,10 +178,10 @@ export const useForm = <
             <FormTextarea
                 form={enhancedForm}
                 {...props}
-                disabled={disableOnSubmit && isSubmitting}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
             />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const SelectComponent = useCallback(
@@ -143,9 +190,13 @@ export const useForm = <
                 name: Path<z.input<T>>;
             }
         ) => (
-            <FormSelect form={enhancedForm} {...props} disabled={disableOnSubmit && isSubmitting} />
+            <FormSelect
+                form={enhancedForm}
+                {...props}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
+            />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const CheckboxComponent = useCallback(
@@ -157,10 +208,10 @@ export const useForm = <
             <FormCheckbox
                 form={enhancedForm}
                 {...props}
-                disabled={disableOnSubmit && isSubmitting}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
             />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const RadioGroupComponent = useCallback(
@@ -172,10 +223,10 @@ export const useForm = <
             <FormRadioGroup
                 form={enhancedForm}
                 {...props}
-                disabled={disableOnSubmit && isSubmitting}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
             />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const SwitchComponent = useCallback(
@@ -184,9 +235,13 @@ export const useForm = <
                 name: Path<z.input<T>>;
             }
         ) => (
-            <FormSwitch form={enhancedForm} {...props} disabled={disableOnSubmit && isSubmitting} />
+            <FormSwitch
+                form={enhancedForm}
+                {...props}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
+            />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     const OTPInputComponent = useCallback(
@@ -198,10 +253,10 @@ export const useForm = <
             <FormOTPInput
                 form={enhancedForm}
                 {...props}
-                disabled={disableOnSubmit && isSubmitting}
+                disabled={props.disabled || (disableOnSubmit && isSubmitting) || isLoading}
             />
         ),
-        [enhancedForm]
+        [enhancedForm, isLoading, isSubmitting, disableOnSubmit]
     );
 
     //============================================
