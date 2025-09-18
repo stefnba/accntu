@@ -44,6 +44,30 @@ export const useAuthEndpoints = {
     ),
 
     /**
+     * Revoke all sessions
+     */
+    revokeAllSessions: createBetterAuthMutation(
+        authClient.revokeSessions,
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
+    ),
+
+    /**
+     * Revoke session
+     */
+    revokeSession: createBetterAuthMutation(
+        authClient.revokeSession,
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
+    ),
+
+    /**
+     * Revoke other sessions, except the current one
+     */
+    revokeOtherSessions: createBetterAuthMutation(
+        authClient.revokeOtherSessions,
+        AUTH_QUERY_KEYS.ACTIVE_SESSIONS
+    ),
+
+    /**
      * Get session
      */
     getSession: createBetterAuthQuery(authClient.getSession, AUTH_QUERY_KEYS.SESSION),

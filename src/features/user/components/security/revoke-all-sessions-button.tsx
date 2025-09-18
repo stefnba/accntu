@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 export function RevokeAllSessionsButton() {
-    const listsSessions = useAuthEndpoints.listsSessions({});
+    const listsSessions = useAuthEndpoints.getActiveSessions();
     const sessions = listsSessions.data ?? [];
     const revokeOtherSessions = useAuthEndpoints.revokeOtherSessions();
 

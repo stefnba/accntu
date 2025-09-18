@@ -6,7 +6,7 @@ import { useAuthEndpoints } from '@/lib/auth/client';
 import { Loader2 } from 'lucide-react';
 
 export function ListActiveSessions() {
-    const listSessions = useAuthEndpoints.listsSessions({});
+    const listSessions = useAuthEndpoints.getActiveSessions();
     const sessions = listSessions.data ?? [];
 
     if (listSessions.isLoading) {
