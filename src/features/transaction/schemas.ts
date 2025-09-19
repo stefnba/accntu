@@ -152,7 +152,6 @@ export const {
             userAmount: true,
             userCurrency: true,
             connectedBankAccountId: true,
-            accountAmount: true,
             importFileId: true,
             originalTitle: true,
         });
