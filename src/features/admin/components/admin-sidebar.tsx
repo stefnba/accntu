@@ -1,8 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
     Sidebar,
     SidebarContent,
@@ -15,53 +13,52 @@ import {
     SidebarMenuItem,
     SidebarSeparator,
 } from '@/components/ui/sidebar';
-import {
-    Settings,
-    Database,
-    Users,
-    BarChart3,
-    Shield,
-    ArrowLeft,
-    Building2,
-    CreditCard,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TAppRoute } from '@/lib/routes';
+import { cn } from '@/lib/utils';
+import { ArrowLeft, BarChart3, Building2, DollarSign, Shield, Users } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-const adminNavItems = [
+const adminNavItems: TAppRoute[] = [
     {
-        title: 'Dashboard',
-        url: '/admin',
+        label: 'Dashboard',
+        path: '/admin',
         icon: BarChart3,
     },
     {
-        title: 'Global Banks',
-        url: '/admin/banks',
+        label: 'Global Banks',
+        path: '/admin/banks',
         icon: Building2,
     },
+    // {
+    //     label: 'Bank Accounts',
+    //     path: '/admin/accounts',
+    //     icon: CreditCard,
+    // },
     {
-        title: 'Bank Accounts',
-        url: '/admin/accounts',
-        icon: CreditCard,
-    },
-    {
-        title: 'User Management',
-        url: '/admin/users',
+        label: 'User Management',
+        path: '/admin/users',
         icon: Users,
     },
+    // {
+    //     label: 'System Settings',
+    //     path: '/admin/settings',
+    //     icon: Settings,
+    // },
+    // {
+    //     label: 'Database',
+    //     path: '/admin/database',
+    //     icon: Database,
+    // },
+    // {
+    //     label: 'Security',
+    //     path: '/admin/security',
+    //     icon: Shield,
+    // },
     {
-        title: 'System Settings',
-        url: '/admin/settings',
-        icon: Settings,
-    },
-    {
-        title: 'Database',
-        url: '/admin/database',
-        icon: Database,
-    },
-    {
-        title: 'Security',
-        url: '/admin/security',
-        icon: Shield,
+        label: 'FX Rates',
+        path: '/admin/fx',
+        icon: DollarSign,
     },
 ];
 
@@ -69,7 +66,11 @@ export const AdminSidebar = () => {
     const pathname = usePathname();
 
     return (
-        <Sidebar variant="sidebar" collapsible="icon" className="border-r-2 border-red-200 bg-red-50/50">
+        <Sidebar
+            variant="sidebar"
+            collapsible="icon"
+            className="border-r-2 border-red-200 bg-red-50/50"
+        >
             <SidebarHeader className="border-b border-red-200 bg-red-100/50">
                 <div className="flex items-center gap-2 px-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600 text-white">
@@ -88,9 +89,9 @@ export const AdminSidebar = () => {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {adminNavItems.map((item) => {
-                                const isActive = pathname === item.url;
+                                const isActive = pathname === item.path;
                                 return (
-                                    <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuItem key={item.label}>
                                         <SidebarMenuButton
                                             asChild
                                             className={cn(
@@ -100,9 +101,9 @@ export const AdminSidebar = () => {
                                                     : 'text-red-700 hover:bg-red-100 hover:text-red-900'
                                             )}
                                         >
-                                            <Link href={item.url}>
-                                                <item.icon className="h-4 w-4" />
-                                                <span>{item.title}</span>
+                                            <Link href={item.path}>
+                                                {item.icon && <item.icon className="h-4 w-4" />}
+                                                <span>{item.label}</span>
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
