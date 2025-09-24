@@ -1,9 +1,9 @@
 import * as Icons from '@/components/icons';
 import { IconDatabase, IconFileWord, IconReport } from '@tabler/icons-react';
+import { Route } from 'next';
 import { IconType } from 'react-icons';
-import { UrlObject } from 'url';
 
-export type RoutePath = __next_route_internal_types__.RouteImpl<UrlObject>;
+export type RoutePath = Route;
 
 export type TAppRoute = {
     path: RoutePath;
