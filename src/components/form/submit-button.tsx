@@ -1,5 +1,5 @@
 import { UseZodFormReturn } from '@/components/form/hooks';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants, LoadingButton } from '@/components/ui/button';
 import { VariantProps } from 'class-variance-authority';
 import { FieldValues } from 'react-hook-form';
 
@@ -29,14 +29,16 @@ export function FormSubmitButton<
     const isSubmitting = form.isSubmitting;
 
     return (
-        <Button
+        <LoadingButton
             type="submit"
             size={size}
             variant={variant}
             disabled={disabled || isSubmitting || (disabledBeforeValid && !isFormValid)}
             {...buttonProps}
+            isLoading={isSubmitting}
+            loadingText={loadingText}
         >
-            {isSubmitting ? loadingText : children}
-        </Button>
+            {children}
+        </LoadingButton>
     );
 }
