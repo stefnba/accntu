@@ -1,7 +1,7 @@
 import { connectedBankSchemas } from '@/features/bank/schemas/connected-bank';
 
-import { db } from '@/server/db';
 import { connectedBank } from '@/features/bank/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
@@ -14,6 +14,11 @@ export const connectedBankQueries = createFeatureQueries
             isActive: true,
         },
         allowedUpsertColumns: ['globalBankId', 'apiCredentials'],
+        queryConfig: {
+            getMany: {
+                filters: (filters, f) => [f.eq('globalBankId', filters?.globalBankId)],
+            },
+        },
     })
     /**
      * Get many connected banks
@@ -38,19 +43,18 @@ export const connectedBankQueries = createFeatureQueries
      */
     .overwriteQuery('getById', {
         fn: async ({ ids, userId }) => {
-            return (
-                (await db.query.connectedBank.findFirst({
-                    where: and(eq(connectedBank.id, ids.id), eq(connectedBank.userId, userId)),
-                    with: {
-                        globalBank: true,
-                        connectedBankAccounts: {
-                            with: {
-                                globalBankAccount: true,
-                            },
+            const result = await db.query.connectedBank.findFirst({
+                where: and(eq(connectedBank.id, ids.id), eq(connectedBank.userId, userId)),
+                with: {
+                    globalBank: true,
+                    connectedBankAccounts: {
+                        with: {
+                            globalBankAccount: true,
                         },
                     },
-                })) ?? {}
-            );
+                },
+            });
+            return result;
         },
     });
 

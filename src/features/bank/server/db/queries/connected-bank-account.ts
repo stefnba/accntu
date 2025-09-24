@@ -1,6 +1,6 @@
 import { connectedBankAccountSchemas } from '@/features/bank/schemas/connected-bank-account';
-import { db } from '@/server/db';
 import { connectedBank, connectedBankAccount } from '@/features/bank/server/db/tables';
+import { db } from '@/server/db';
 
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
@@ -12,6 +12,16 @@ export const connectedBankAccountQueries = createFeatureQueries
         userIdField: 'userId',
         defaultIdFilters: {
             isActive: true,
+        },
+        queryConfig: {
+            getMany: {
+                filters(filters, f) {
+                    return [
+                        f.eq('connectedBankId', filters?.connectedBankId),
+                        f.eq('type', filters?.type),
+                    ];
+                },
+            },
         },
     })
     /**

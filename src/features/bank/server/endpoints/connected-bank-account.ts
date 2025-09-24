@@ -1,11 +1,25 @@
 import { connectedBankAccountSchemas } from '@/features/bank/schemas/connected-bank-account';
 import { connectedBankAccountServices } from '@/features/bank/server/services/connected-bank-account';
-import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
 const app = new Hono()
+
+    /**
+     * Get connected bank accounts
+     */
+    .get('/', async (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(({ userId, validatedInput }) =>
+                connectedBankAccountServices.getMany({
+                    userId,
+                    filters: validatedInput.filters,
+                    pagination: validatedInput.pagination,
+                })
+            )
+    )
 
     /**
      * Get connected bank account by ID
@@ -14,36 +28,28 @@ const app = new Hono()
         '/:id',
         zValidator('param', connectedBankAccountSchemas.getById.endpoint.param),
         async (c) =>
-            withRoute(c, async () => {
-                const { id } = c.req.valid('param');
-                const user = getUser(c);
-                const account = await connectedBankAccountServices.getById({
-                    ids: { id },
-                    userId: user.id,
-                });
-                if (!account) {
-                    throw new Error('Connected bank account not found');
-                }
-                return account;
-            })
+            routeHandler(c)
+                .withUser()
+                .handle(({ userId, validatedInput }) =>
+                    connectedBankAccountServices.getById({
+                        ids: { id: validatedInput.param.id },
+                        userId,
+                    })
+                )
     )
 
     /**
      * Create a connected bank account
      */
     .post('/', zValidator('json', connectedBankAccountSchemas.create.endpoint.json), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
-                return await connectedBankAccountServices.create({
-                    userId: user.id,
-                    data,
-                });
-            },
-            201
-        )
+        routeHandler(c)
+            .withUser()
+            .handle(({ userId, validatedInput }) =>
+                connectedBankAccountServices.create({
+                    userId,
+                    data: validatedInput.json,
+                })
+            )
     )
 
     /**
@@ -54,16 +60,15 @@ const app = new Hono()
         zValidator('param', connectedBankAccountSchemas.updateById.endpoint.param),
         zValidator('json', connectedBankAccountSchemas.updateById.endpoint.json),
         async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const { id } = c.req.valid('param');
-                const data = c.req.valid('json');
-                return await connectedBankAccountServices.updateById({
-                    ids: { id },
-                    userId: user.id,
-                    data,
-                });
-            })
+            routeHandler(c)
+                .withUser()
+                .handle(({ userId, validatedInput }) =>
+                    connectedBankAccountServices.updateById({
+                        ids: { id: validatedInput.param.id },
+                        userId,
+                        data: validatedInput.json,
+                    })
+                )
     );
 
 export default app;

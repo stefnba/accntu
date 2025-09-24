@@ -74,7 +74,11 @@ export const connectedBankServices = createFeatureServices
          * Get a connected bank by id
          */
         getById: async (input) => {
-            return await queries.getById(input);
+            const result = await queries.getById(input);
+            if (!result) {
+                throw new Error('Connected bank not found');
+            }
+            return result;
         },
         /**
          * Update a connected bank by id

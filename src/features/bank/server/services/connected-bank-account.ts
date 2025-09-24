@@ -6,8 +6,15 @@ export const connectedBankAccountServices = createFeatureServices
     .registerSchema(connectedBankAccountSchemas)
     .registerQuery(connectedBankAccountQueries)
     .defineServices(({ queries }) => ({
-        create: async (data) => {
-            // const { connectedBankId, globalBankAccountId } = data;
+        create: async ({ data, userId }) => {
+            const { connectedBankId, type, globalBankAccountId } = data;
+
+            const connectedBankAccount = await queries.create({
+                data: {
+                    ...data,
+                    userId,
+                },
+            });
 
             // if (!globalBankAccountId) {
             //     throw new Error('Global bank account ID is required');
@@ -40,10 +47,7 @@ export const connectedBankAccountServices = createFeatureServices
             //     userId,
             // });
 
-            // return connectedBankAccount;
-            return {
-                id: '1',
-            };
+            return connectedBankAccount;
         },
         /**
          * Get a connected bank account by id
