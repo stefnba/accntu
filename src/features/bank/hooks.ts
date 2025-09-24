@@ -6,7 +6,13 @@ import {
     useQueryState,
 } from 'nuqs';
 
-type Step = 'intro' | 'country' | 'bank-selection' | 'account-selection' | 'loading' | 'success';
+export type Step =
+    | 'intro'
+    | 'country'
+    | 'bank-selection'
+    | 'account-selection'
+    | 'loading'
+    | 'success';
 
 /**
  * Hook to manage the add bank modal state
