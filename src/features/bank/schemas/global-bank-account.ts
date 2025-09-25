@@ -62,8 +62,8 @@ export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
         });
 
         const paginationSchema = z.object({
-            page: z.number().int().default(1),
-            pageSize: z.number().int().default(20),
+            page: z.coerce.number().int().default(1),
+            pageSize: z.coerce.number().int().default(20),
         });
 
         const input = buildInput({

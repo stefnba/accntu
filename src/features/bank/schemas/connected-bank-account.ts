@@ -1,5 +1,5 @@
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { connectedBankAccount } from '@/features/bank/server/db/tables';
+import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
 export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
@@ -18,7 +18,12 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
     .addCore('create', ({ baseSchema }) => {
         const input = z.object({ data: baseSchema, userId: z.string() });
         return {
-            service: input,
+            service: input.extend({
+                data: baseSchema.extend({
+                    name: z.string().optional(),
+                    globalBankAccountId: z.string(),
+                }),
+            }),
             query: input,
             endpoint: {
                 json: baseSchema,
@@ -33,8 +38,8 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
         });
 
         const paginationSchema = z.object({
-            page: z.number().int().default(1),
-            pageSize: z.number().int().default(20),
+            page: z.coerce.number().int().default(1),
+            pageSize: z.coerce.number().int().default(20),
         });
 
         const input = buildInput({
