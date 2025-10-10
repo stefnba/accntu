@@ -84,13 +84,13 @@ export class ErrorRegistry<const R extends TErrorRegistryObject> {
 }
 
 // Usage
-const errors = ErrorRegistry.fromObject({
+const ERROR_REGISTRY = ErrorRegistry.fromObject({
     AUTH: { INVALID_TOKEN: { message: 'Invalid token', httpStatus: 401 } },
     VALIDATION: { INVALID_FORMAT: { message: 'Bad format', httpStatus: 400 } },
 });
 
-const a = errors.get('AUTH.INVALID_TOKEN');
+const a = ERROR_REGISTRY.get('AUTH.INVALID_TOKEN');
 console.log(a);
 
-type Keys = InferErrorKeysFromRegistry<typeof errors>;
-type Categories = InferErrorCategoriesFromRegistry<typeof errors>;
+type Keys = InferErrorKeysFromRegistry<typeof ERROR_REGISTRY>;
+type Categories = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY>;
