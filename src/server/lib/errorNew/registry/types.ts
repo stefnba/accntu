@@ -5,114 +5,161 @@ import { ContentfulStatusCode } from 'hono/utils/http-status';
 // PRIVATE ERROR REGISTRY
 // ==================================================
 
-export type TErrorRegistryRecordDefinition = {
-    /**
-     * The human-readable error message
-     */
-    // message: string;
-    /**
-     * The public error record that can be returned to clients
-     */
-    public: TPublicErrorRegistryDefinition;
-    /**
-     * The HTTP status code that should be returned for this error
-     */
+/**
+ * Definition for a single error in the registry
+ *
+ * @property message - Human-readable error message (optional)
+ * @property httpStatus - HTTP status code to return for this error (optional)
+ * @property layers - Application layers where this error can be thrown (optional)
+ * @property isExpected - Indicates whether this error is expected during normal operation (optional)
+ * @property public - Public error definition (required)
+ */
+export type TErrorRegistryDefinition = Readonly<{
+    message?: string;
     httpStatus?: ContentfulStatusCode;
-    /**
-     * Indicates whether this error is expected during normal operation.
-     * Expected errors are business logic errors that can happen during normal operation (e.g., invalid input)
-     * and don't include stack traces.
-     */
+    layers?: ReadonlyArray<TErrorLayer>;
     isExpected?: boolean;
-    /**
-     * The layers that this error can be thrown in.
-     */
-    layers?: Array<TErrorLayer>;
-};
+    public: TPublicErrorRegistryDefinition;
+}>;
 
 /**
- * Error registry record is a record with an error code as the key and an error registry record definition as the value.
- */
-type TErrorRegistryRecord = Record<string, TErrorRegistryRecordDefinition>;
-
-/**
- * Error registry is a record with an error category as the key and an error registry record as the value.
- */
-export type TErrorRegistry = Record<string, TErrorRegistryRecord>;
-
-/*
- * The output type for the error registry is a transformed version of the input type with the category and code added in addition to the other properties
- */
-export type TErrorRegistryOutput<T extends TErrorRegistry> = {
-    [Category in keyof T]: {
-        [Code in keyof T[Category]]: {
-            category: Category;
-            code: Code;
-        } & T[Category][Code];
-    };
-};
-
-// ==================================================
-// PRIVATE REGISTRY UTILITIES
-// ==================================================
-
-/**
- * Utility type that filters error codes from the registry where the layers array includes the given layer
+ * Structure of the error registry object
+ *
+ * A nested object where:
+ * - First level keys are categories (e.g., 'AUTH', 'VALIDATION')
+ * - Second level keys are error codes (e.g., 'INVALID_TOKEN', 'MISSING_FIELD')
+ * - Values are error definitions
  *
  * @example
  * ```typescript
- * type ServiceErrors = InferErrorCodesByLayer<typeof ERROR_REGISTRY, 'SERVICE'>;
- * // Result: "AUTH.ERROR" (assuming AUTH.ERROR has layers: ['SERVICE', 'ENDPOINT'])
+ * const registry = {
+ *   AUTH: {
+ *     INVALID_TOKEN: { message: 'Invalid token', httpStatus: 401 }
+ *   }
+ * }
  * ```
  */
-export type InferErrorCodesByLayer<T extends TErrorRegistry, L extends TErrorLayer> = {
-    [Category in keyof T]: {
-        [ErrorCode in keyof T[Category]]: T[Category][ErrorCode] extends {
-            layers: readonly (infer U)[];
-        }
-            ? L extends U
-                ? TConcatedErrorCodes<Category, ErrorCode>
-                : never
-            : never;
-    }[keyof T[Category]];
-}[keyof T];
+export type TErrorRegistryObject = Readonly<
+    Record<string, Readonly<Record<string, TErrorRegistryDefinition>>>
+>;
+
+// ==================================================
+// UTILITIES
+// ==================================================
 
 /**
- * Utility type that concatenates an error category and an error code into a fully qualified error key (e.g., 'AUTH.INVALID_TOKEN')
+ * Infer all possible error keys from a registry object
+ *
+ * Transforms nested structure into flat dot-notation keys
+ *
+ * @example
+ * ```typescript
+ * type Registry = { AUTH: { INVALID_TOKEN: {...} } }
+ * type Keys = InferErrorKeys<Registry>
+ * // Result: "AUTH.INVALID_TOKEN"
+ * ```
  */
-export type TConcatedErrorCodes<
+export type InferErrorKeys<R extends TErrorRegistryObject> = {
+    [K in keyof R & string]: { [S in keyof R[K] & string]: `${K}.${S}` }[keyof R[K] & string];
+}[keyof R & string];
+
+/**
+ * Extract error definition for a specific key from the registry
+ *
+ * Splits dot-notation key into category and code, then retrieves the definition
+ *
+ * @example
+ * ```typescript
+ * type Registry = { AUTH: { INVALID_TOKEN: { message: 'Invalid' } } }
+ * type Def = InferErrorDefinitionFromKey<Registry, 'AUTH.INVALID_TOKEN'>
+ * // Result: { message: 'Invalid' }
+ * ```
+ */
+export type InferErrorDefinitionFromKey<
+    R extends TErrorRegistryObject,
+    K extends string,
+> = K extends `${infer Category}.${infer Code}`
+    ? Category extends keyof R
+        ? Code extends keyof R[Category]
+            ? R[Category][Code]
+            : never
+        : never
+    : never;
+
+/**
+ * Union of all error definitions in a registry
+ *
+ * Used internally for Map value type - avoids recomputing complex conditional type
+ */
+export type FlattenedRegistryValue<R extends TErrorRegistryObject> = InferErrorDefinitionFromKey<
+    R,
+    InferErrorKeys<R>
+>;
+
+/**
+ * Extract all possible error keys from a registry object
+ *
+ * Helper type that avoids circular reference to ErrorRegistry class.
+ * Use this when you need to extract keys from typeof ERROR_REGISTRY.registry
+ *
+ * @example
+ * ```typescript
+ * type Keys = InferErrorKeysFromRegistry<typeof ERROR_REGISTRY.registry>
+ * // Result: "AUTH.INVALID_TOKEN" | "VALIDATION.INVALID_FORMAT" | ...
+ * ```
+ */
+export type InferErrorKeysFromRegistry<R extends TErrorRegistryObject> = InferErrorKeys<R>;
+
+/**
+ * Extract all category names from a registry object
+ *
+ * Helper type that avoids circular reference to ErrorRegistry class.
+ * Use this when you need to extract categories from typeof ERROR_REGISTRY.registry
+ *
+ * @example
+ * ```typescript
+ * type Categories = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY.registry>
+ * // Result: "AUTH" | "VALIDATION" | "RESOURCE" | ...
+ * ```
+ */
+export type InferErrorCategoriesFromRegistry<R extends TErrorRegistryObject> = keyof R;
+
+/**
+ * Build a fully qualified error key from category and code
+ *
+ * @example
+ * ```typescript
+ * type Key = TBuildErrorKey<'AUTH', 'INVALID_TOKEN'>
+ * // Result: "AUTH.INVALID_TOKEN"
+ * ```
+ */
+export type TBuildErrorKey<
     Cat extends PropertyKey,
     Code extends PropertyKey,
 > = `${Cat & string}.${Code & string}`;
 
 /**
- * Utility type that infers the fully qualified error keys for a given error registry
- */
-export type InferErrorKeys<T extends TErrorRegistry> = {
-    [Category in keyof T]: {
-        [Code in keyof T[Category]]: TConcatedErrorCodes<Category, Code>;
-    }[keyof T[Category]];
-}[keyof T];
-
-/**
- * Utility type that gets the error definition from a given error key in the registry
+ * Filter error codes from registry by layer
+ *
+ * Returns union of error keys that include the specified layer in their layers array
  *
  * @example
  * ```typescript
- * type OperationError = InferErrorFromKey<typeof ERROR_REGISTRY, 'OPERATION.CREATE_FAILED'>;
- * // Result: { category: 'OPERATION', code: 'CREATE_FAILED', ... }
+ * type AuthErrors = InferErrorCodesByLayer<typeof ERROR_REGISTRY.registry, 'AUTH'>
+ * // Result: "PERMISSION.NOT_AUTHORIZED" | "PERMISSION.ACCESS_DENIED" | ...
  * ```
  */
-export type InferErrorFromKey<
-    R extends TErrorRegistry,
-    K extends InferErrorKeys<R>,
-> = K extends `${infer Cat}.${infer Code}`
-    ? Cat extends keyof R
-        ? Code extends keyof R[Cat]
-            ? R[Cat][Code]
-            : never
-        : never
-    : never;
+export type InferErrorCodesByLayer<R extends TErrorRegistryObject, L extends TErrorLayer> = {
+    [Category in keyof R]: {
+        [ErrorCode in keyof R[Category]]: R[Category][ErrorCode] extends {
+            layers: readonly (infer U)[];
+        }
+            ? L extends U
+                ? TBuildErrorKey<Category, ErrorCode>
+                : never
+            : never;
+    }[keyof R[Category]];
+}[keyof R];
 
 // ==================================================
 // PUBLIC ERROR REGISTRY

@@ -1,8 +1,10 @@
 import { HTTP_STATUS_CODES } from '@/server/lib/errorNew/config';
+import { ErrorRegistry, createPublicErrorRecord } from '@/server/lib/errorNew/registry/factory';
 import {
-    createErrorRegistry,
-    createPublicErrorRecord,
-} from '@/server/lib/errorNew/registry/factory';
+    InferErrorCategoriesFromRegistry,
+    InferErrorCodesByLayer,
+    InferErrorKeysFromRegistry,
+} from '@/server/lib/errorNew/registry/types';
 
 // ==================================================
 // PUBLIC REGISTRY
@@ -25,13 +27,14 @@ export const PUBLIC_ERROR_REGISTRY = createPublicErrorRecord({
 // PRIVATE REGISTRY
 // ==================================================
 
-export const ERROR_REGISTRY = createErrorRegistry({
+export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     // Validation
     VALIDATION: {
         INVALID_INPUT: {
             layers: ['ENDPOINT'],
             public: PUBLIC_ERROR_REGISTRY.ALREADY_EXISTS,
             httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+            isExpected: true,
         },
         MISSING_FIELD: {
             layers: ['ENDPOINT'],
@@ -96,3 +99,7 @@ export const ERROR_REGISTRY = createErrorRegistry({
         },
     },
 });
+
+export type TErrorKeys = InferErrorKeysFromRegistry<typeof ERROR_REGISTRY.registry>;
+export type TErrorCategories = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY.registry>;
+export type AuthLayerErrors = InferErrorCodesByLayer<typeof ERROR_REGISTRY.registry, 'AUTH'>;
