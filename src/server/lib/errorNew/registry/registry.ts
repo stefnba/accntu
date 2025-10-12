@@ -97,7 +97,7 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
         },
         ALREADY_EXISTS: {
             layers: ['ENDPOINT', 'QUERY'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.ALREADY_EXISTS,
             httpStatus: HTTP_STATUS_CODES.CONFLICT,
             isExpected: true,
         },
@@ -107,19 +107,19 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     OPERATION: {
         CREATE_FAILED: {
             layers: ['ENDPOINT', 'QUERY'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         UPDATE_FAILED: {
             layers: ['ENDPOINT', 'QUERY'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         DELETE_FAILED: {
             layers: ['ENDPOINT', 'QUERY'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
@@ -128,19 +128,19 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     PERMISSION: {
         NOT_AUTHORIZED: {
             layers: ['AUTH', 'ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
             httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
             isExpected: true,
         },
         ACCESS_DENIED: {
             layers: ['AUTH', 'ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.FORBIDDEN,
             httpStatus: HTTP_STATUS_CODES.FORBIDDEN,
             isExpected: true,
         },
         INSUFFICIENT_ROLE: {
             layers: ['AUTH', 'ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.FORBIDDEN,
             httpStatus: HTTP_STATUS_CODES.FORBIDDEN,
             isExpected: true,
         },
@@ -148,16 +148,21 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
 
     SERVER: {
         INTERNAL_ERROR: {
+            layers: ['SERVICE', 'DB', 'QUERY', 'INTEGRATION', 'INFRA'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         SERVICE_UNAVAILABLE: {
+            layers: ['SERVICE', 'INTEGRATION', 'INFRA'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
-
+            httpStatus: HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
             isExpected: false,
         },
         MAINTENANCE_MODE: {
+            layers: ['SERVICE', 'INFRA'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
             isExpected: false,
         },
     },

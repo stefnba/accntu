@@ -21,11 +21,9 @@ export interface SerializedAppError {
     code: string;
     httpStatus: number;
     details?: Record<string, unknown>;
-    // context?: ErrorContext;
     timestamp: string;
-    requestId?: string;
     id: string;
-    cause?: SerializedAppError;
+    cause?: SerializedAppError | { message: string; stack?: string };
     stack?: string;
     isExpected: boolean;
     public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
@@ -81,39 +79,35 @@ export class AppError extends Error {
     }
 
     /**
-     * Logs the error
-     */
-    logError() {
-        console.error(this);
-    }
-
-    /**
      * Returns the error as an object
      */
     toObject(): SerializedAppError {
-        const obj: SerializedAppError = {
+        let serializedCause: SerializedAppError | { message: string; stack?: string } | undefined;
+
+        if (this.cause) {
+            if (AppError.isAppError(this.cause)) {
+                serializedCause = this.cause.toObject();
+            } else if (this.cause instanceof Error) {
+                serializedCause = {
+                    message: this.cause.message,
+                    stack: this.isExpected ? undefined : this.cause.stack,
+                };
+            }
+        }
+
+        return {
             message: this.message,
             name: this.name,
             code: this.code,
-            // category: this.category,
             httpStatus: this.httpStatus,
             isExpected: this.isExpected,
             public: this.public,
-            details: this.details || {},
+            details: this.details,
             timestamp: this.timestamp.toISOString(),
             id: this.id,
-            // cause: this.cause ? this.cause.toObject() : undefined,
+            cause: serializedCause,
             stack: this.isExpected ? undefined : this.stack,
         };
-
-        return obj;
-    }
-
-    /**
-     * Returns the error as a JSON string
-     */
-    toJSON() {
-        return JSON.stringify(this.toObject());
     }
 
     /**
@@ -122,7 +116,7 @@ export class AppError extends Error {
      * @param error - The value to check
      * @returns True if the value is a AppError
      */
-    isAppError(error: unknown): error is AppError {
+    static isAppError(error: unknown): error is AppError {
         return !!error && typeof error === 'object' && error instanceof AppError;
     }
 
@@ -130,27 +124,25 @@ export class AppError extends Error {
      * Converts an unknown error to a AppError
      *
      * @param error - The error to convert
+     * @param details - Additional details to attach to the error
      * @returns A AppError
      */
-    convertToAppError(error: unknown, details?: Record<string, unknown>): AppError {
-        // If the error is already a AppError, return it
-        if (this.isAppError(error)) {
+    static fromUnknown(error: unknown, details?: Record<string, unknown>): AppError {
+        if (AppError.isAppError(error)) {
             return error;
         }
 
-        // If the error is an Error, create a AppError from it
         if (error instanceof Error) {
             return makeError('SERVER.INTERNAL_ERROR', {
                 message: error.message,
                 cause: error,
-                details: { error, ...details },
+                details: { ...details, originalError: error.name },
             });
         }
 
-        // If the error is unknown, create a AppError from it
         return makeError('SERVER.INTERNAL_ERROR', {
             message: 'Unknown error',
-            details: { error, ...details },
+            details: { ...details, error },
         });
     }
 
