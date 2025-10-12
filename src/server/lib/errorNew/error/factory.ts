@@ -6,38 +6,40 @@ type TMakeErrorParams = {
     key: TErrorKeys;
     message?: string;
     cause?: Error;
-
-    /**
-     * Additional details to be added to the error
-     */
     details?: Record<string, unknown>;
-
-    /**
-     * Additional details to be added to the public error
-     */
     publicDetails?: Record<string, unknown>;
 };
 
-/**
- * Creates an error instance from the error definition
- *
- */
+type TOptionalErrorParams = Omit<TMakeErrorParams, 'key'>;
+
 export function makeError(key: TErrorKeys): AppError;
-export function makeError(key: TErrorKeys, params: Omit<TMakeErrorParams, 'key'>): AppError;
+export function makeError(key: TErrorKeys, params: TOptionalErrorParams): AppError;
 export function makeError(params: TMakeErrorParams): AppError;
 export function makeError(
-    params: TErrorKeys | TMakeErrorParams,
-    paramsAdditional?: Omit<TMakeErrorParams, 'key'>
+    keyOrParams: TErrorKeys | TMakeErrorParams,
+    maybeParams?: TOptionalErrorParams
 ): AppError {
-    const key = typeof params === 'string' ? params : params.key;
-    const message = typeof params === 'string' ? params : params.message;
-    const cause = typeof params === 'string' ? undefined : params.cause;
-    const details = typeof params === 'string' ? undefined : params.details;
-    const publicDetails = typeof params === 'string' ? undefined : params.publicDetails;
+    let key: TErrorKeys;
+    let message: string | undefined;
+    let cause: Error | undefined;
+    let details: Record<string, unknown> | undefined;
+    let publicDetails: Record<string, unknown> | undefined;
 
-    // casting to avoid union since not all keys are provided
+    if (typeof keyOrParams === 'string') {
+        key = keyOrParams;
+        message = maybeParams?.message;
+        cause = maybeParams?.cause;
+        details = maybeParams?.details;
+        publicDetails = maybeParams?.publicDetails;
+    } else {
+        key = keyOrParams.key;
+        message = keyOrParams.message;
+        cause = keyOrParams.cause;
+        details = keyOrParams.details;
+        publicDetails = keyOrParams.publicDetails;
+    }
+
     const errorDefinition = ERROR_REGISTRY.get(key) as TErrorRegistryDefinition;
-
     const { httpStatus, public: publicError, isExpected = false } = errorDefinition;
 
     return new AppError({
