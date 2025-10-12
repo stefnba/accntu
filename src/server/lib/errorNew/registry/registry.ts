@@ -10,18 +10,23 @@ import {
 // ==================================================
 
 export const PUBLIC_ERROR_REGISTRY = createPublicErrorRecord({
-    NOT_FOUND: {
-        message: 'Resource does not exist',
-        httpStatus: HTTP_STATUS_CODES.NOT_FOUND,
-    },
+    // Operation
     OPERATION_FAILED: {
         message: 'Operation failed',
         httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+    },
+
+    // Resource
+    NOT_FOUND: {
+        message: 'Resource does not exist',
+        httpStatus: HTTP_STATUS_CODES.NOT_FOUND,
     },
     ALREADY_EXISTS: {
         message: 'Resource already exists',
         httpStatus: HTTP_STATUS_CODES.CONFLICT,
     },
+
+    // Permission
     UNAUTHORIZED: {
         message: 'Unauthorized',
         httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
@@ -30,6 +35,28 @@ export const PUBLIC_ERROR_REGISTRY = createPublicErrorRecord({
         message: 'Forbidden',
         httpStatus: HTTP_STATUS_CODES.FORBIDDEN,
     },
+
+    // Validation
+    INVALID_INPUT: {
+        message: 'Invalid input',
+        httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+    },
+    MISSING_FIELD: {
+        message: 'Missing field',
+        httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+    },
+    INVALID_FORMAT: {
+        message: 'Invalid format',
+        httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+    },
+
+    // Rate limit
+    TOO_MANY_REQUESTS: {
+        message: 'Too many requests',
+        httpStatus: HTTP_STATUS_CODES.TOO_MANY_REQUESTS,
+    },
+
+    // Server
     INTERNAL_ERROR: {
         message: 'Internal server error',
         httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
@@ -45,17 +72,17 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     VALIDATION: {
         INVALID_INPUT: {
             layers: ['ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.ALREADY_EXISTS,
+            public: PUBLIC_ERROR_REGISTRY.INVALID_INPUT,
             isExpected: true,
         },
         MISSING_FIELD: {
             layers: ['ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.MISSING_FIELD,
             isExpected: true,
         },
         INVALID_FORMAT: {
             layers: ['ENDPOINT'],
-            public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
+            public: PUBLIC_ERROR_REGISTRY.INVALID_FORMAT,
             isExpected: true,
         },
     },

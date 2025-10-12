@@ -6,7 +6,16 @@ type TMakeErrorParams = {
     key: TErrorKeys;
     message?: string;
     cause?: Error;
+
+    /**
+     * Additional details to be added to the error
+     */
     details?: Record<string, unknown>;
+
+    /**
+     * Additional details to be added to the public error
+     */
+    publicDetails?: Record<string, unknown>;
 };
 
 /**
@@ -24,6 +33,7 @@ export function makeError(
     const message = typeof params === 'string' ? params : params.message;
     const cause = typeof params === 'string' ? undefined : params.cause;
     const details = typeof params === 'string' ? undefined : params.details;
+    const publicDetails = typeof params === 'string' ? undefined : params.publicDetails;
 
     // casting to avoid union since not all keys are provided
     const errorDefinition = ERROR_REGISTRY.get(key) as TErrorRegistryDefinition;
@@ -33,7 +43,7 @@ export function makeError(
     return new AppError({
         key,
         httpStatus: httpStatus ?? publicError.httpStatus,
-        public: publicError,
+        public: { ...publicError, details: publicDetails ?? {} },
         message: message ?? publicError.message ?? '',
         cause,
         details,

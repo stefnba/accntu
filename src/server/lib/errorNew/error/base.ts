@@ -2,13 +2,17 @@ import { makeError } from '@/server/lib/errorNew/error/factory';
 import { TErrorLayer } from '@/server/lib/errorNew/error/types';
 import { generateErrorId } from '@/server/lib/errorNew/error/utils';
 import { TErrorKeys } from '@/server/lib/errorNew/registry';
-import { TErrorRegistryDefinition } from '@/server/lib/errorNew/registry/types';
+import {
+    TErrorRegistryDefinition,
+    TPublicErrorRegistryDefinition,
+} from '@/server/lib/errorNew/registry/types';
 
 export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>> & {
     key: TErrorKeys;
     cause?: Error;
     layer?: TErrorLayer;
     details?: Record<string, unknown>;
+    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
 };
 
 export interface SerializedAppError {
@@ -23,6 +27,8 @@ export interface SerializedAppError {
     id: string;
     cause?: SerializedAppError;
     stack?: string;
+    isExpected: boolean;
+    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
 }
 
 export class AppError extends Error {
@@ -91,13 +97,13 @@ export class AppError extends Error {
             code: this.code,
             // category: this.category,
             httpStatus: this.httpStatus,
-            // isExpected: this.isExpected,
-            // public: this.public,
+            isExpected: this.isExpected,
+            public: this.public,
             details: this.details || {},
             timestamp: this.timestamp.toISOString(),
             id: this.id,
             // cause: this.cause ? this.cause.toObject() : undefined,
-            stack: this.stack,
+            stack: this.isExpected ? undefined : this.stack,
         };
 
         return obj;
