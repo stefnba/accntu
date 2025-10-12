@@ -6,6 +6,7 @@ import {
     TErrorRegistryDefinition,
     TPublicErrorRegistryDefinition,
 } from '@/server/lib/errorNew/registry/types';
+import { logger } from '@/server/lib/logger';
 
 export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>> & {
     key: TErrorKeys;
@@ -13,6 +14,13 @@ export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>>
     layer?: TErrorLayer;
     details?: Record<string, unknown>;
     public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
+};
+
+export type TErrorRequestData = {
+    method: string;
+    url: string;
+    userId: string | undefined | null;
+    status: number;
 };
 
 export interface SerializedAppError {
@@ -40,7 +48,7 @@ export class AppError extends Error {
     cause?: Error;
     details?: Record<string, unknown>;
 
-    readonly traceId?: string; // attach by middleware
+    readonly requestId?: string; // attach by middleware
     readonly id: string; // stable error id for logs (e.g., ulid/uuid)
 
     constructor(params: TAppErrorParams) {
@@ -154,5 +162,33 @@ export class AppError extends Error {
      */
     private createErrorName(category: string) {
         return `${category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}Error`;
+    }
+
+    /**
+     * Logs the error
+     *
+     * @param requestData - Optional request data to include in the log
+     * @param options - Additional options for logging
+     */
+    log(
+        requestData?: TErrorRequestData,
+        options: { includeChain?: boolean; includeStack?: boolean } = {}
+    ) {
+        const { includeChain = true, includeStack = true } = options;
+
+        const logData = {
+            ...this.toObject(),
+            // stack trace
+            stack: !this.isExpected || includeStack ? this.stack : undefined,
+
+            // request data
+            request: requestData,
+        };
+
+        if (this.isExpected) {
+            logger.info(this.message, { data: logData });
+        } else {
+            logger.error(this.message, { data: logData });
+        }
     }
 }
