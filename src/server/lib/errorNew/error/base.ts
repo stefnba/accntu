@@ -1,7 +1,6 @@
-import { makeError } from '@/server/lib/errorNew/error/factory';
 import { TErrorLayer } from '@/server/lib/errorNew/error/types';
 import { generateErrorId } from '@/server/lib/errorNew/error/utils';
-import { TErrorKeys } from '@/server/lib/errorNew/registry';
+import { makeError } from '@/server/lib/errorNew/factory/base';
 import {
     TErrorRegistryDefinition,
     TPublicErrorRegistryDefinition,
@@ -9,7 +8,8 @@ import {
 import { logger } from '@/server/lib/logger';
 
 export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>> & {
-    key: TErrorKeys;
+    code: string;
+    category: string;
     cause?: Error;
     layer?: TErrorLayer;
     details?: Record<string, unknown>;
@@ -29,6 +29,9 @@ export type TErrorChainItem = {
     message: string;
     id?: string;
     key?: string;
+    code?: string;
+    category?: string;
+    layer?: TErrorLayer;
 };
 
 export interface ErrorChainContext {
@@ -52,8 +55,17 @@ export interface SerializedAppError {
 }
 
 export class AppError extends Error {
-    key: TAppErrorParams['key'];
+    /**
+     * The full qualified key of the error
+     */
+    key: string;
+    /**
+     * The code of the error
+     */
     code: string;
+    /**
+     * The category of the error
+     */
     category: string;
     httpStatus: TAppErrorParams['httpStatus'];
     isExpected: TAppErrorParams['isExpected'];
@@ -61,6 +73,7 @@ export class AppError extends Error {
     timestamp: Date;
     cause?: Error;
     details?: Record<string, unknown>;
+    layer?: TErrorLayer;
 
     readonly requestId?: string; // attach by middleware
     readonly id: string; // stable error id for logs (e.g., ulid/uuid)
@@ -69,34 +82,35 @@ export class AppError extends Error {
 
     constructor(params: TAppErrorParams) {
         const {
-            key,
             httpStatus,
             isExpected,
             public: publicError,
             message,
             cause,
             details,
+            code,
+            category,
+            layer,
         } = params;
-
-        const [category, code] = key.split('.');
 
         super(message);
 
         // Maintain proper stack trace for where error was thrown
         Error.captureStackTrace(this, this.constructor);
 
-        this.name = this.createErrorName(code);
+        this.name = this.createErrorName(category);
         this.details = details;
         this.timestamp = new Date();
         this.id = generateErrorId();
 
         this.code = code;
         this.category = category;
-        this.key = key;
+        this.key = `${category}.${code}`;
         this.httpStatus = httpStatus;
         this.isExpected = isExpected;
         this.public = publicError;
         this.cause = cause;
+        this.layer = layer;
 
         // Ensure prototype chain is maintained
         Object.setPrototypeOf(this, new.target.prototype);
@@ -283,7 +297,7 @@ export class AppError extends Error {
         // Build chain (limit to 50 for safety)
         // depth: 0 = latest error, highest depth = root cause
         while (current && depth < 50) {
-            const entry: ErrorChainContext['chain'][0] = {
+            const entry: TErrorChainItem = {
                 depth,
                 name: current.name,
                 message: current.message,
@@ -293,6 +307,9 @@ export class AppError extends Error {
             if (AppError.isAppError(current)) {
                 entry.id = current.id;
                 entry.key = current.key;
+                entry.code = current.code;
+                entry.category = current.category;
+                entry.layer = current.layer;
             }
 
             chain.push(entry);
