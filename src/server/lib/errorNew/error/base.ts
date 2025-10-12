@@ -23,6 +23,20 @@ export type TErrorRequestData = {
     status: number;
 };
 
+export type TErrorChainItem = {
+    depth: number;
+    name: string;
+    message: string;
+    id?: string;
+    key?: string;
+};
+
+export interface ErrorChainContext {
+    depth: number;
+    rootCause: Omit<TErrorChainItem, 'depth'>;
+    chain: Array<TErrorChainItem>;
+}
+
 export interface SerializedAppError {
     name: string;
     message: string;
@@ -50,6 +64,8 @@ export class AppError extends Error {
 
     readonly requestId?: string; // attach by middleware
     readonly id: string; // stable error id for logs (e.g., ulid/uuid)
+
+    private static readonly MAX_SERIALIZATION_DEPTH = 10;
 
     constructor(params: TAppErrorParams) {
         const {
@@ -88,19 +104,26 @@ export class AppError extends Error {
 
     /**
      * Returns the error as an object
+     *
+     * @param depth - Current recursion depth (internal use)
+     * @returns Serialized error object
      */
-    toObject(): SerializedAppError {
+    toObject(depth = 0): SerializedAppError {
         let serializedCause: SerializedAppError | { message: string; stack?: string } | undefined;
 
-        if (this.cause) {
+        if (this.cause && depth < AppError.MAX_SERIALIZATION_DEPTH) {
             if (AppError.isAppError(this.cause)) {
-                serializedCause = this.cause.toObject();
+                serializedCause = this.cause.toObject(depth + 1);
             } else if (this.cause instanceof Error) {
                 serializedCause = {
                     message: this.cause.message,
                     stack: this.isExpected ? undefined : this.cause.stack,
                 };
             }
+        } else if (this.cause && depth >= AppError.MAX_SERIALIZATION_DEPTH) {
+            serializedCause = {
+                message: `[Max serialization depth ${AppError.MAX_SERIALIZATION_DEPTH} reached]`,
+            };
         }
 
         return {
@@ -165,10 +188,146 @@ export class AppError extends Error {
     }
 
     /**
-     * Logs the error
+     * Get root cause (deepest error in chain)
+     *
+     * @returns The deepest error in the cause chain
+     *
+     * @example
+     * ```typescript
+     * const root = error.getRootCause();
+     * // Returns: PrismaError (if that's the deepest)
+     * ```
+     */
+    getRootCause(): Error {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        let current: Error = this;
+        while ('cause' in current && current.cause instanceof Error) {
+            current = current.cause;
+        }
+        return current;
+    }
+
+    /**
+     * Get chain depth (1 = no cause, 2 = one cause, etc.)
+     *
+     * @returns Number of errors in the chain
+     *
+     * @example
+     * ```typescript
+     * const depth = error.getChainDepth();
+     * // Returns: 3 (current error + 2 causes)
+     * ```
+     */
+    getChainDepth(): number {
+        let depth = 1;
+        let current = this.cause;
+        while (current && depth < 50) {
+            depth++;
+            current =
+                'cause' in current && current.cause instanceof Error ? current.cause : undefined;
+        }
+        return depth;
+    }
+
+    /**
+     * Check if specific error type exists in chain
+     *
+     * @param predicate - Function to test each error in chain
+     * @returns true if predicate matches any error in chain
+     *
+     * @example
+     * ```typescript
+     * const hasPrismaError = error.hasInChain(e => e.name.includes('Prisma'));
+     * ```
+     */
+    hasInChain(predicate: (err: Error) => boolean): boolean {
+        let current: Error | undefined = this.cause;
+        while (current) {
+            if (predicate(current)) return true;
+            current =
+                'cause' in current && current.cause instanceof Error ? current.cause : undefined;
+        }
+        return false;
+    }
+
+    /**
+     * Get structured context for logging/monitoring
+     *
+     * Builds a complete picture of the error chain with metadata for each error.
+     * Includes depth, names, messages, and AppError-specific fields (id, key, httpStatus).
+     *
+     * Chain depth numbering: 0 = latest error (top of chain), highest = root cause (bottom of chain)
+     *
+     * @returns Structured error chain context
+     *
+     * @example
+     * ```typescript
+     * const context = error.getChainContext();
+     * // {
+     * //   depth: 3,
+     * //   rootCause: { name: 'Error', message: 'Unique constraint failed' },
+     * //   chain: [
+     * //     { depth: 0, name: 'Internal_errorError', id: 'abc123', key: 'SERVER.INTERNAL_ERROR', ... },
+     * //     { depth: 1, name: 'Create_failedError', id: 'xyz789', key: 'OPERATION.CREATE_FAILED', ... },
+     * //     { depth: 2, name: 'Error', message: 'Unique constraint failed' }
+     * //   ]
+     * // }
+     * ```
+     */
+    getChain(): ErrorChainContext {
+        const chain: ErrorChainContext['chain'] = [];
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        let current: Error | undefined = this;
+        let depth = 0;
+
+        // Build chain (limit to 50 for safety)
+        // depth: 0 = latest error, highest depth = root cause
+        while (current && depth < 50) {
+            const entry: ErrorChainContext['chain'][0] = {
+                depth,
+                name: current.name,
+                message: current.message,
+            };
+
+            // Add AppError-specific fields
+            if (AppError.isAppError(current)) {
+                entry.id = current.id;
+                entry.key = current.key;
+            }
+
+            chain.push(entry);
+            current =
+                'cause' in current && current.cause instanceof Error ? current.cause : undefined;
+            depth++;
+        }
+
+        const rootCause = chain[chain.length - 1];
+
+        return {
+            depth: chain.length,
+            rootCause: {
+                name: rootCause.name,
+                message: rootCause.message,
+                id: rootCause.id,
+                key: rootCause.key,
+            },
+            chain,
+        };
+    }
+
+    /**
+     * Logs the error with optional chain context
      *
      * @param requestData - Optional request data to include in the log
      * @param options - Additional options for logging
+     * @param options.includeChain - Whether to include error chain context (default: true)
+     * @param options.includeStack - Whether to include stack trace (default: true)
+     *
+     * @example
+     * ```typescript
+     * error.log({ method: 'POST', url: '/api/users', userId: '123', status: 500 });
+     * // Logs with full chain context showing error propagation
+     * ```
      */
     log(
         requestData?: TErrorRequestData,
@@ -176,14 +335,16 @@ export class AppError extends Error {
     ) {
         const { includeChain = true, includeStack = true } = options;
 
-        const logData = {
+        const logData: Record<string, unknown> = {
             ...this.toObject(),
-            // stack trace
             stack: !this.isExpected || includeStack ? this.stack : undefined,
-
-            // request data
             request: requestData,
         };
+
+        // Add chain context if requested and chain exists
+        if (includeChain && this.cause) {
+            logData.chain = this.getChain();
+        }
 
         if (this.isExpected) {
             logger.info(this.message, { data: logData });
