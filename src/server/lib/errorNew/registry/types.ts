@@ -18,7 +18,7 @@ export type TErrorRegistryDefinition = Readonly<{
     message?: string;
     httpStatus?: ContentfulStatusCode;
     layers?: ReadonlyArray<TErrorLayer>;
-    isExpected?: boolean;
+    isExpected: boolean;
     public: TPublicErrorRegistryDefinition;
 }>;
 
@@ -172,7 +172,7 @@ export type TPublicErrorRegistryDefinition = {
     /** Default human text (fallback). Prefer using i18nKey on the client. */
     message?: string;
     /** The HTTP status code that should be returned for this error. Override the internal status code. */
-    httpStatus?: ContentfulStatusCode | undefined;
+    httpStatus: ContentfulStatusCode;
     /** i18n lookup key used by the frontend. */
     i18nKey?: string;
 };

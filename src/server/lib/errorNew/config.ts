@@ -1,4 +1,4 @@
-import { THttpStatusCodes } from '@/server/lib/errorNew/error/types';
+import { THttpStatusCodeMapping } from '@/server/lib/errorNew/error/types';
 
 export const HTTP_STATUS_CODES = {
     // Success
@@ -20,4 +20,4 @@ export const HTTP_STATUS_CODES = {
     BAD_GATEWAY: 502,
     SERVICE_UNAVAILABLE: 503,
     GATEWAY_TIMEOUT: 504,
-} satisfies THttpStatusCodes;
+} satisfies THttpStatusCodeMapping;

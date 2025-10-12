@@ -17,4 +17,4 @@ export type TErrorLayer =
 /**
  * The HTTP status codes
  */
-export type THttpStatusCodes = Record<string, ContentfulStatusCode>;
+export type THttpStatusCodeMapping = Record<string, ContentfulStatusCode>;
