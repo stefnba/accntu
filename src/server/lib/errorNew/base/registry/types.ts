@@ -178,6 +178,13 @@ export type TPublicErrorRegistryDefinition = {
 };
 
 /**
+ * The definition of a public error registry with a code.
+ */
+export type TPublicErrorRegistryDefinitionWithCode = TPublicErrorRegistryDefinition & {
+    code: string;
+};
+
+/**
  * The public error record is a record of public error definitions with the error code as the key and the public error definition as the value
  */
 export type TPublicErrorRegistry = Record<string, TPublicErrorRegistryDefinition>;

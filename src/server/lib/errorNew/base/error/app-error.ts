@@ -7,6 +7,7 @@ import {
     TErrorLayer,
     TErrorRequestData,
 } from '@/server/lib/errorNew/base/error/types';
+import { TPublicErrorRegistryDefinitionWithCode } from '@/server/lib/errorNew/base/registry/types';
 import { generateErrorId } from '@/server/lib/errorNew/base/utils';
 import { TErrorCategory } from '@/server/lib/errorNew/registry';
 import { logger } from '@/server/lib/logger';
@@ -24,16 +25,43 @@ export class AppError extends Error {
      * The category of the error
      */
     category: string;
+    /**
+     * The HTTP status code of the error
+     */
     httpStatus: TAppErrorParams['httpStatus'];
+    /**
+     * Whether the error is expected
+     */
     isExpected: TAppErrorParams['isExpected'];
+    /**
+     * The public error information
+     */
     public: TAppErrorParams['public'];
+    /**
+     * The timestamp of the error
+     */
     timestamp: Date;
+    /**
+     * The cause of the error
+     */
     cause?: Error;
+    /**
+     * The details of the error
+     */
     details?: Record<string, unknown>;
+    /**
+     * The layer of the error
+     */
     layer?: TErrorLayer;
 
-    readonly requestId?: string; // attach by middleware
-    readonly id: string; // stable error id for logs (e.g., ulid/uuid)
+    /**
+     * The request ID of the error. Attach by middleware
+     */
+    readonly requestId?: string;
+    /**
+     * The ID of the error. Stable error id for logs (e.g., ulid/uuid)
+     */
+    readonly id: string;
 
     private static readonly MAX_SERIALIZATION_DEPTH = 10;
 
@@ -143,18 +171,20 @@ export class AppError extends Error {
             return error;
         }
 
+        const publicError: TPublicErrorRegistryDefinitionWithCode = {
+            code: 'INTERNAL_ERROR',
+            message: 'Internal server error',
+            i18nKey: 'ERRORS.INTERNAL_ERROR',
+            httpStatus: 500,
+        };
+
+        // Create error directly to avoid circular dependency with factories
         if (error instanceof Error) {
-            // Create error directly to avoid circular dependency with factories
             return new AppError({
                 category: 'SERVER',
                 code: 'INTERNAL_ERROR',
                 httpStatus: 500,
-                public: {
-                    code: 'INTERNAL_ERROR',
-                    message: 'Internal server error',
-                    i18nKey: 'ERRORS.INTERNAL_ERROR',
-                    httpStatus: 500,
-                },
+                public: publicError,
                 isExpected: false,
                 message: error.message,
                 cause: error,
@@ -167,12 +197,7 @@ export class AppError extends Error {
             category: 'SERVER',
             code: 'INTERNAL_ERROR',
             httpStatus: 500,
-            public: {
-                code: 'INTERNAL_ERROR',
-                message: 'Internal server error',
-                i18nKey: 'ERRORS.INTERNAL_ERROR',
-                httpStatus: 500,
-            },
+            public: publicError,
             isExpected: false,
             message: 'Unknown error',
             details: { ...details, error },
