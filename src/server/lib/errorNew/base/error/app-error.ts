@@ -2,12 +2,13 @@ import {
     ErrorChainContext,
     SerializedAppError,
     TAppErrorParams,
+    TDomainErrorParams,
     TErrorChainItem,
     TErrorLayer,
     TErrorRequestData,
-} from '@/server/lib/errorNew/error/types';
-import { generateErrorId } from '@/server/lib/errorNew/error/utils';
-import { makeError } from '@/server/lib/errorNew/factory/base';
+} from '@/server/lib/errorNew/base/error/types';
+import { generateErrorId } from '@/server/lib/errorNew/base/utils';
+import { TErrorCategory } from '@/server/lib/errorNew/registry';
 import { logger } from '@/server/lib/logger';
 
 export class AppError extends Error {
@@ -127,6 +128,15 @@ export class AppError extends Error {
      * @param error - The error to convert
      * @param details - Additional details to attach to the error
      * @returns A AppError
+     *
+     * @example
+     * ```typescript
+     * try {
+     *   await someOperation();
+     * } catch (err) {
+     *   throw AppError.fromUnknown(err, { context: 'someOperation' });
+     * }
+     * ```
      */
     static fromUnknown(error: unknown, details?: Record<string, unknown>): AppError {
         if (AppError.isAppError(error)) {
@@ -134,14 +144,36 @@ export class AppError extends Error {
         }
 
         if (error instanceof Error) {
-            return makeError('SERVER.INTERNAL_ERROR', {
+            // Create error directly to avoid circular dependency with factories
+            return new AppError({
+                category: 'SERVER',
+                code: 'INTERNAL_ERROR',
+                httpStatus: 500,
+                public: {
+                    code: 'INTERNAL_ERROR',
+                    message: 'Internal server error',
+                    i18nKey: 'ERRORS.INTERNAL_ERROR',
+                    httpStatus: 500,
+                },
+                isExpected: false,
                 message: error.message,
                 cause: error,
                 details: { ...details, originalError: error.name },
             });
         }
 
-        return makeError('SERVER.INTERNAL_ERROR', {
+        // Create error directly to avoid circular dependency with factories
+        return new AppError({
+            category: 'SERVER',
+            code: 'INTERNAL_ERROR',
+            httpStatus: 500,
+            public: {
+                code: 'INTERNAL_ERROR',
+                message: 'Internal server error',
+                i18nKey: 'ERRORS.INTERNAL_ERROR',
+                httpStatus: 500,
+            },
+            isExpected: false,
             message: 'Unknown error',
             details: { ...details, error },
         });
@@ -324,5 +356,14 @@ export class AppError extends Error {
         } else {
             logger.error(this.message, { data: logData });
         }
+    }
+}
+
+export class BaseAppError<C extends TErrorCategory> extends AppError {
+    constructor(category: C, params: TDomainErrorParams<C>) {
+        super({
+            ...params,
+            category,
+        });
     }
 }

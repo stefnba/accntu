@@ -1,1 +1,0 @@
-export { makeError } from './base';

@@ -4,9 +4,7 @@ import {
     InferErrorDefinitionFromKey,
     InferErrorKeys,
     TErrorRegistryObject,
-    TPublicErrorRegistry,
-    TPublicErrorRegistryOutput,
-} from '@/server/lib/errorNew/registry/types';
+} from '@/server/lib/errorNew/base/registry/types';
 
 /**
  * Type-safe error registry with caching
@@ -139,21 +137,3 @@ export class ErrorRegistry<const R extends TErrorRegistryObject> {
         return new ErrorRegistry(obj);
     }
 }
-
-/**
- * Create a public error registry
- */
-export const createPublicErrorRecord = <const T extends TPublicErrorRegistry>(records: T) => {
-    const result: TPublicErrorRegistryOutput<T> = {} as TPublicErrorRegistryOutput<T>;
-
-    for (const [key, value] of typedEntries(records)) {
-        result[key] = {
-            code: key,
-            message: value.message,
-            i18nKey: ('i18nKey' in value && value.i18nKey) || `ERRORS.${String(key)}`,
-            httpStatus: 'httpStatus' in value ? value.httpStatus : undefined,
-        } as TPublicErrorRegistryOutput<T>[typeof key];
-    }
-
-    return result;
-};

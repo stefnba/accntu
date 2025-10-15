@@ -1,7 +1,10 @@
+import {
+    TErrorRegistryDefinition,
+    TPublicErrorRegistryDefinition,
+} from '@/server/lib/errorNew/base/registry/types';
+import { TErrorCategory, TErrorCodeByCategory } from '@/server/lib/errorNew/registry';
 import { TAppLayer } from '@/types/app';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
-import { TErrorCategory, TErrorCodeByCategory } from '@/server/lib/errorNew/registry/registry';
-import { TErrorRegistryDefinition, TPublicErrorRegistryDefinition } from '@/server/lib/errorNew/registry/types';
 
 // ============================================
 // LAYER & HTTP STATUS TYPES
@@ -49,7 +52,7 @@ export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>>
     cause?: Error;
     layer?: TErrorLayer;
     details?: Record<string, unknown>;
-    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
+    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown>; code: string };
 };
 
 /**

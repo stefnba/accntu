@@ -1,14 +1,24 @@
-import { HTTP_STATUS_CODES } from '@/server/lib/errorNew/config';
-import { ErrorRegistry, createPublicErrorRecord } from '@/server/lib/errorNew/registry/factory';
+import { ErrorRegistry, createPublicErrorRecord } from '@/server/lib/errorNew/base';
 import {
     InferErrorCategoriesFromRegistry,
     InferErrorKeysFromRegistry,
-} from '@/server/lib/errorNew/registry/types';
+} from '@/server/lib/errorNew/base/registry/types';
+import { HTTP_STATUS_CODES } from '@/server/lib/errorNew/config';
 
 // ==================================================
 // PUBLIC REGISTRY
 // ==================================================
 
+/**
+ * Public error registry containing user-facing error definitions
+ *
+ * These error definitions are safe to expose to clients and contain:
+ * - User-friendly error messages
+ * - HTTP status codes
+ * - i18n keys for translation
+ *
+ * Used by internal error definitions to map to public-facing errors.
+ */
 export const PUBLIC_ERROR_REGISTRY = createPublicErrorRecord({
     // Operation
     OPERATION_FAILED: {
@@ -67,6 +77,24 @@ export const PUBLIC_ERROR_REGISTRY = createPublicErrorRecord({
 // PRIVATE REGISTRY
 // ==================================================
 
+/**
+ * Internal error registry containing detailed error definitions
+ *
+ * This registry maps error categories and codes to their complete definitions including:
+ * - Application layers where the error can be thrown
+ * - HTTP status codes
+ * - Whether the error is expected during normal operation
+ * - Public error mapping for client responses
+ *
+ * Error keys follow the pattern: CATEGORY.CODE (e.g., 'VALIDATION.INVALID_INPUT')
+ *
+ * @example
+ * ```typescript
+ * // Access error definition
+ * const definition = ERROR_REGISTRY.get('VALIDATION.INVALID_INPUT');
+ * // { layers: ['endpoint'], public: {...}, isExpected: true, httpStatus: 400 }
+ * ```
+ */
 export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     // Validation
     VALIDATION: {
@@ -177,7 +205,47 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     },
 });
 
+/**
+ * Union type of all valid error keys in the registry
+ *
+ * Represents all possible error keys in dot-notation format (e.g., 'VALIDATION.INVALID_INPUT')
+ *
+ * @example
+ * ```typescript
+ * const key: TErrorKeys = 'VALIDATION.INVALID_INPUT'; // ✓ Valid
+ * const invalid: TErrorKeys = 'INVALID.KEY'; // ✗ Type error
+ * ```
+ */
 export type TErrorKeys = InferErrorKeysFromRegistry<typeof ERROR_REGISTRY.registry>;
+
+/**
+ * Union type of all error categories in the registry
+ *
+ * Represents top-level error categories (e.g., 'VALIDATION', 'AUTH', 'RESOURCE')
+ *
+ * @example
+ * ```typescript
+ * const category: TErrorCategory = 'VALIDATION'; // ✓ Valid
+ * const invalid: TErrorCategory = 'INVALID'; // ✗ Type error
+ * ```
+ */
 export type TErrorCategory = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY.registry>;
+
+/**
+ * Extract valid error codes for a specific category
+ *
+ * Returns a union of error codes that belong to the specified category.
+ *
+ * @template C - The error category
+ *
+ * @example
+ * ```typescript
+ * type ValidationCodes = TErrorCodeByCategory<'VALIDATION'>;
+ * // Result: 'INVALID_INPUT' | 'MISSING_FIELD' | 'INVALID_FORMAT'
+ *
+ * const code: ValidationCodes = 'INVALID_INPUT'; // ✓ Valid
+ * const invalid: ValidationCodes = 'NOT_FOUND'; // ✗ Type error
+ * ```
+ */
 export type TErrorCodeByCategory<C extends TErrorCategory> =
     keyof (typeof ERROR_REGISTRY.registry)[C] & string;

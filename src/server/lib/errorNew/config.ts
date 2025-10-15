@@ -1,4 +1,4 @@
-import { THttpStatusCodeMapping } from '@/server/lib/errorNew/error/types';
+import { THttpStatusCodeMapping } from '@/server/lib/errorNew/base/error/types';
 
 export const HTTP_STATUS_CODES = {
     // Success
