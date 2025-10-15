@@ -1,9 +1,9 @@
-import { TPublicErrorCode } from '@/server/lib/error/registry/public';
+import { TPublicErrorCode } from '@/server/lib/errorOld/registry/public';
 import {
     APIErrorResponseSchema,
     TAPIErrorResponse,
     TAPIResponse,
-} from '@/server/lib/error/response';
+} from '@/server/lib/errorOld/response';
 
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 

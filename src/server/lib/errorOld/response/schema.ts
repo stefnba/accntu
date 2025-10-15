@@ -1,4 +1,4 @@
-import { PublicErrorCodesSchema } from '@/server/lib/error/registry/schema';
+import { PublicErrorCodesSchema } from '@/server/lib/errorOld/registry/schema';
 import { z } from 'zod';
 
 export const APIErrorResponseSchema = z.object({

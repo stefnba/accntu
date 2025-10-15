@@ -1,12 +1,12 @@
 import type { QueryFn } from '@/server/lib/db/query/builder/types';
-import { errorFactory } from '@/server/lib/error';
-import { BaseError } from '@/server/lib/error/base';
-import { logDevError, shouldUseDevFormatting } from '@/server/lib/error/dev-formatter';
+import { errorFactory } from '@/server/lib/errorOld';
+import { BaseError } from '@/server/lib/errorOld/base';
+import { logDevError, shouldUseDevFormatting } from '@/server/lib/errorOld/dev-formatter';
 import { z } from 'zod';
 
 /**
  * Configuration parameters for the query function handler wrapper.
- * 
+ *
  * @template TInput - The input type for the query function
  * @template TOutput - The output type for the query function
  */
@@ -21,18 +21,18 @@ interface QueryFnHandlerParams<TInput, TOutput> {
 
 /**
  * Wrapper function that adds comprehensive error handling, logging, and input validation to query functions.
- * 
+ *
  * This wrapper provides:
  * - Input validation using optional Zod schema
  * - Database-specific error handling with proper error codes
  * - Development-mode error logging for debugging
  * - Consistent error formatting across all database operations
- * 
+ *
  * @template TInput - The input type for the query function
  * @template TOutput - The output type for the query function
  * @param params - Configuration object for the wrapper
  * @returns Wrapped query function with enhanced error handling
- * 
+ *
  * @example
  * ```typescript
  * const wrappedQuery = queryFnHandler({

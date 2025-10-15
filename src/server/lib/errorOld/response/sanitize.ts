@@ -1,6 +1,6 @@
-import { TErrorFullCode } from '@/server/lib/error/registry';
-import { TErrorDefinition } from '@/server/lib/error/registry/types';
-import { TAPIErrorResponse } from '@/server/lib/error/response/types';
+import { TErrorFullCode } from '@/server/lib/errorOld/registry';
+import { TErrorDefinition } from '@/server/lib/errorOld/registry/types';
+import { TAPIErrorResponse } from '@/server/lib/errorOld/response/types';
 
 /**
  * Configuration options for error sanitization

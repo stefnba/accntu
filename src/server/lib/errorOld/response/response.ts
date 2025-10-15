@@ -1,5 +1,5 @@
 // src/server/error/response.ts
-import { TAPIMutationResponse, TAPIResponse } from '@/server/lib/error/response/types';
+import { TAPIMutationResponse, TAPIResponse } from '@/server/lib/errorOld/response/types';
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 
 /**

@@ -1,4 +1,4 @@
-import { APIErrorResponseSchema } from '@/server/lib/error/response/schema';
+import { APIErrorResponseSchema } from '@/server/lib/errorOld/response/schema';
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';
 import { z } from 'zod';
 /**
