@@ -205,6 +205,10 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     },
 });
 
+// ==================================================
+// Type definitions
+// ==================================================
+
 /**
  * Union type of all valid error keys in the registry
  *
@@ -249,3 +253,9 @@ export type TErrorCategory = InferErrorCategoriesFromRegistry<typeof ERROR_REGIS
  */
 export type TErrorCodeByCategory<C extends TErrorCategory> =
     keyof (typeof ERROR_REGISTRY.registry)[C] & string;
+
+/**
+ * Union type of all valid public error codes in the registry
+ *
+ */
+export type TPublicErrorCode = keyof typeof PUBLIC_ERROR_REGISTRY;
