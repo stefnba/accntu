@@ -1,11 +1,11 @@
-import { handleRouteError } from '@/server/lib/error/handler';
+import { handleRouteError } from '@/server/lib/errorOld/handler';
 
-import { ErrorReponseCode, SuccessResponseCode } from '@/server/lib/error/handler/route';
+import { ErrorReponseCode, SuccessResponseCode } from '@/server/lib/errorOld/handler/route';
 import {
     createMutationResponse,
     TAPIErrorResponse,
     TAPIMutationResponse,
-} from '@/server/lib/error/response';
+} from '@/server/lib/errorOld/response';
 import { Context, TypedResponse } from 'hono';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { InvalidJSONValue, JSONValue, SimplifyDeepArray } from 'hono/utils/types';

@@ -1,7 +1,7 @@
 import { getUser } from '@/lib/auth';
 import { AuthContext } from '@/lib/auth/server/types';
-import { handleRouteError } from '@/server/lib/error';
-import { SuccessResponseCode } from '@/server/lib/error/handler/route';
+import { handleRouteError } from '@/server/lib/errorOld';
+import { SuccessResponseCode } from '@/server/lib/errorOld/handler/route';
 import { getAllValidated } from '@/server/lib/route/helpers';
 import { ExtractCoreValidatedData } from '@/server/lib/route/types';
 import { Context, Env, Input, TypedResponse } from 'hono';

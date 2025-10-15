@@ -1,4 +1,4 @@
-import { errorFactory } from '@/server/lib/error';
+import { errorFactory } from '@/server/lib/errorOld';
 import { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie as honoSetCookie } from 'hono/cookie';
 import { ZodSchema } from 'zod';

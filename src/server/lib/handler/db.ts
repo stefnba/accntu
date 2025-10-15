@@ -6,9 +6,9 @@
  */
 
 import { z } from 'zod';
-import { BaseError } from '../error/base';
-import { errorFactory } from '../error/factory';
-import { logDevError, shouldUseDevFormatting } from '../error/dev-formatter';
+import { BaseError } from '../errorOld/base';
+import { logDevError, shouldUseDevFormatting } from '../errorOld/dev-formatter';
+import { errorFactory } from '../errorOld/factory';
 
 /**
  * Type-safe database query wrapper with validation and error handling
