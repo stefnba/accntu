@@ -1,58 +1,14 @@
-import { TErrorLayer } from '@/server/lib/errorNew/error/types';
+import {
+    ErrorChainContext,
+    SerializedAppError,
+    TAppErrorParams,
+    TErrorChainItem,
+    TErrorLayer,
+    TErrorRequestData,
+} from '@/server/lib/errorNew/error/types';
 import { generateErrorId } from '@/server/lib/errorNew/error/utils';
 import { makeError } from '@/server/lib/errorNew/factory/base';
-import {
-    TErrorRegistryDefinition,
-    TPublicErrorRegistryDefinition,
-} from '@/server/lib/errorNew/registry/types';
 import { logger } from '@/server/lib/logger';
-
-export type TAppErrorParams = Required<Omit<TErrorRegistryDefinition, 'layers'>> & {
-    code: string;
-    category: string;
-    cause?: Error;
-    layer?: TErrorLayer;
-    details?: Record<string, unknown>;
-    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
-};
-
-export type TErrorRequestData = {
-    method: string;
-    url: string;
-    userId: string | undefined | null;
-    status: number;
-};
-
-export type TErrorChainItem = {
-    depth: number;
-    name: string;
-    message: string;
-    id?: string;
-    key?: string;
-    code?: string;
-    category?: string;
-    layer?: TErrorLayer;
-};
-
-export interface ErrorChainContext {
-    depth: number;
-    rootCause: Omit<TErrorChainItem, 'depth'>;
-    chain: Array<TErrorChainItem>;
-}
-
-export interface SerializedAppError {
-    name: string;
-    message: string;
-    code: string;
-    httpStatus: number;
-    details?: Record<string, unknown>;
-    timestamp: string;
-    id: string;
-    cause?: SerializedAppError | { message: string; stack?: string };
-    stack?: string;
-    isExpected: boolean;
-    public?: TPublicErrorRegistryDefinition & { details?: Record<string, unknown> };
-}
 
 export class AppError extends Error {
     /**

@@ -71,17 +71,17 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     // Validation
     VALIDATION: {
         INVALID_INPUT: {
-            layers: ['ENDPOINT'],
+            layers: ['endpoint'],
             public: PUBLIC_ERROR_REGISTRY.INVALID_INPUT,
             isExpected: true,
         },
         MISSING_FIELD: {
-            layers: ['ENDPOINT'],
+            layers: ['endpoint'],
             public: PUBLIC_ERROR_REGISTRY.MISSING_FIELD,
             isExpected: true,
         },
         INVALID_FORMAT: {
-            layers: ['ENDPOINT'],
+            layers: ['endpoint'],
             public: PUBLIC_ERROR_REGISTRY.INVALID_FORMAT,
             isExpected: true,
         },
@@ -90,13 +90,13 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     // Resource
     RESOURCE: {
         NOT_FOUND: {
-            layers: ['ENDPOINT', 'QUERY'],
+            layers: ['endpoint', 'db'],
             public: PUBLIC_ERROR_REGISTRY.NOT_FOUND,
             httpStatus: HTTP_STATUS_CODES.NOT_FOUND,
             isExpected: true,
         },
         ALREADY_EXISTS: {
-            layers: ['ENDPOINT', 'QUERY'],
+            layers: ['endpoint', 'db'],
             public: PUBLIC_ERROR_REGISTRY.ALREADY_EXISTS,
             httpStatus: HTTP_STATUS_CODES.CONFLICT,
             isExpected: true,
@@ -106,19 +106,19 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
     // Operation
     OPERATION: {
         CREATE_FAILED: {
-            layers: ['ENDPOINT', 'QUERY'],
+            layers: ['endpoint', 'db'],
             public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         UPDATE_FAILED: {
-            layers: ['ENDPOINT', 'QUERY'],
+            layers: ['endpoint', 'db'],
             public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         DELETE_FAILED: {
-            layers: ['ENDPOINT', 'QUERY'],
+            layers: ['endpoint', 'db'],
             public: PUBLIC_ERROR_REGISTRY.OPERATION_FAILED,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
@@ -127,19 +127,19 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
 
     PERMISSION: {
         NOT_AUTHORIZED: {
-            layers: ['AUTH', 'ENDPOINT'],
+            layers: ['auth', 'endpoint'],
             public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
             httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
             isExpected: true,
         },
         ACCESS_DENIED: {
-            layers: ['AUTH', 'ENDPOINT'],
+            layers: ['auth', 'endpoint'],
             public: PUBLIC_ERROR_REGISTRY.FORBIDDEN,
             httpStatus: HTTP_STATUS_CODES.FORBIDDEN,
             isExpected: true,
         },
         INSUFFICIENT_ROLE: {
-            layers: ['AUTH', 'ENDPOINT'],
+            layers: ['auth', 'endpoint'],
             public: PUBLIC_ERROR_REGISTRY.FORBIDDEN,
             httpStatus: HTTP_STATUS_CODES.FORBIDDEN,
             isExpected: true,
@@ -148,25 +148,36 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
 
     SERVER: {
         INTERNAL_ERROR: {
-            layers: ['SERVICE', 'DB', 'QUERY', 'INTEGRATION', 'INFRA'],
+            layers: ['service', 'db', 'integration', 'infra'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
         SERVICE_UNAVAILABLE: {
-            layers: ['SERVICE', 'INTEGRATION', 'INFRA'],
+            layers: ['service', 'integration', 'infra'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
             httpStatus: HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
             isExpected: false,
         },
         MAINTENANCE_MODE: {
-            layers: ['SERVICE', 'INFRA'],
+            layers: ['service', 'infra'],
             public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
             httpStatus: HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
             isExpected: false,
         },
     },
+
+    AUTH: {
+        UNAUTHORIZED: {
+            layers: ['auth', 'endpoint'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
+            isExpected: true,
+        },
+    },
 });
 
 export type TErrorKeys = InferErrorKeysFromRegistry<typeof ERROR_REGISTRY.registry>;
-export type TErrorCategories = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY.registry>;
+export type TErrorCategory = InferErrorCategoriesFromRegistry<typeof ERROR_REGISTRY.registry>;
+export type TErrorCodeByCategory<C extends TErrorCategory> =
+    keyof (typeof ERROR_REGISTRY.registry)[C] & string;
