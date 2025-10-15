@@ -1,5 +1,5 @@
-import { AppError } from '@/server/lib/errorNew/base';
-import { AppErrors } from '@/server/lib/errorNew/factories';
+import { AppError } from '@/server/lib/error/base';
+import { AppErrors } from '@/server/lib/error/factories';
 
 // Test 1: Create simple error
 console.log('Test 1: Simple error creation');

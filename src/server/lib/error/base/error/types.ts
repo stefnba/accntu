@@ -1,8 +1,8 @@
 import {
     TErrorRegistryDefinition,
     TPublicErrorRegistryDefinition,
-} from '@/server/lib/errorNew/base/registry/types';
-import { TErrorCategory, TErrorCodeByCategory } from '@/server/lib/errorNew/registry';
+} from '@/server/lib/error/base/registry/types';
+import { TErrorCategory, TErrorCodeByCategory } from '@/server/lib/error/registry';
 import { TAppLayer } from '@/types/app';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 

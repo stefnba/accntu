@@ -4,7 +4,7 @@ import {
     InferErrorDefinitionFromKey,
     InferErrorKeys,
     TErrorRegistryObject,
-} from '@/server/lib/errorNew/base/registry/types';
+} from '@/server/lib/error/base/registry/types';
 
 /**
  * Type-safe error registry with caching

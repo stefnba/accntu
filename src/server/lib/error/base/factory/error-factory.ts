@@ -1,11 +1,11 @@
-import { AppError } from '@/server/lib/errorNew/base/error/app-error';
-import { TErrorFactoryParams } from '@/server/lib/errorNew/base/factory/types';
+import { AppError } from '@/server/lib/error/base/error/app-error';
+import { TErrorFactoryParams } from '@/server/lib/error/base/factory/types';
 import {
     ERROR_REGISTRY,
     TErrorCategory,
     TErrorCodeByCategory,
     TErrorKeys,
-} from '@/server/lib/errorNew/registry';
+} from '@/server/lib/error/registry';
 
 /**
  * Base factory class for creating errors

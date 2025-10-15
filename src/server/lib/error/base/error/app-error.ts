@@ -6,10 +6,10 @@ import {
     TErrorChainItem,
     TErrorLayer,
     TErrorRequestData,
-} from '@/server/lib/errorNew/base/error/types';
-import { TPublicErrorRegistryDefinitionWithCode } from '@/server/lib/errorNew/base/registry/types';
-import { generateErrorId } from '@/server/lib/errorNew/base/utils';
-import { TErrorCategory } from '@/server/lib/errorNew/registry';
+} from '@/server/lib/error/base/error/types';
+import { TPublicErrorRegistryDefinitionWithCode } from '@/server/lib/error/base/registry/types';
+import { generateErrorId } from '@/server/lib/error/base/utils';
+import { TErrorCategory } from '@/server/lib/error/registry';
 import { logger } from '@/server/lib/logger';
 
 export class AppError extends Error {

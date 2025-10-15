@@ -1,10 +1,10 @@
-import { ErrorRegistry } from '@/server/lib/errorNew/base/registry/private';
-import { createPublicErrorRecord } from '@/server/lib/errorNew/base/registry/public';
+import { ErrorRegistry } from '@/server/lib/error/base/registry/private';
+import { createPublicErrorRecord } from '@/server/lib/error/base/registry/public';
 import {
     InferErrorCategoriesFromRegistry,
     InferErrorKeysFromRegistry,
-} from '@/server/lib/errorNew/base/registry/types';
-import { HTTP_STATUS_CODES } from '@/server/lib/errorNew/config';
+} from '@/server/lib/error/base/registry/types';
+import { HTTP_STATUS_CODES } from '@/server/lib/error/config';
 
 // ==================================================
 // PUBLIC REGISTRY

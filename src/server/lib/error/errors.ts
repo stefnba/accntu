@@ -1,5 +1,5 @@
-import { AppError, BaseAppError } from '@/server/lib/errorNew/base/error/app-error';
-import { TDomainErrorParams } from '@/server/lib/errorNew/base/error/types';
+import { AppError, BaseAppError } from '@/server/lib/error/base/error/app-error';
+import { TDomainErrorParams } from '@/server/lib/error/base/error/types';
 
 /**
  * Validation error class for input validation failures

@@ -1,4 +1,4 @@
-import { TErrorLayer } from '@/server/lib/errorNew/base/error/types';
+import { TErrorLayer } from '@/server/lib/error/base/error/types';
 
 /**
  * Optional parameters for error factory methods

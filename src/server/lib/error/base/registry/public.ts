@@ -2,7 +2,7 @@ import { typedEntries } from '@/lib/utils';
 import {
     TPublicErrorRegistry,
     TPublicErrorRegistryOutput,
-} from '@/server/lib/errorNew/base/registry/types';
+} from '@/server/lib/error/base/registry/types';
 
 /**
  * Create a public error registry

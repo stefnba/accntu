@@ -15,17 +15,8 @@ export {
     ValidationError,
 } from './errors';
 
-// Factory functions and classes
-export {
-    AuthErrors,
-    makeError,
-    OperationErrors,
-    PermissionErrors,
-    QueryErrors,
-    ResourceErrors,
-    ServerErrors,
-    ValidationErrors,
-} from './factories';
+// Factory class
+export { AppErrors } from './factories';
 
 // Registry
 export { ERROR_REGISTRY } from './registry';
