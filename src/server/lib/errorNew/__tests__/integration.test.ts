@@ -1,14 +1,14 @@
 import { AppError } from '@/server/lib/errorNew/base';
-import { makeError } from '@/server/lib/errorNew/factories';
+import { AppErrors } from '@/server/lib/errorNew/factories';
 
 // Test 1: Create simple error
 console.log('Test 1: Simple error creation');
-const error1 = makeError('RESOURCE.NOT_FOUND');
+const error1 = AppErrors.resource('NOT_FOUND');
 console.log(error1.toObject());
 
 // Test 2: Create error with details
 console.log('\nTest 2: Error with details');
-const error2 = makeError('VALIDATION.INVALID_INPUT', {
+const error2 = AppErrors.validation('INVALID_INPUT', {
     message: 'Email is required',
     details: { field: 'email' },
     publicDetails: { field: 'email' },
@@ -28,8 +28,8 @@ console.log('Is regular Error?', AppError.isAppError(unknownError));
 
 // Test 5: Nested error cause serialization
 console.log('\nTest 5: Nested error cause');
-const causeError = makeError('OPERATION.CREATE_FAILED');
-const error5 = makeError('SERVER.INTERNAL_ERROR', {
+const causeError = AppErrors.operation('CREATE_FAILED');
+const error5 = AppErrors.server('INTERNAL_ERROR', {
     message: 'Failed to process request',
     cause: causeError,
 });
@@ -40,7 +40,7 @@ console.log('Cause structure:', serialized.cause);
 // Test 6: Check public error mappings
 console.log('\nTest 6: Public error mappings');
 console.log('RESOURCE.NOT_FOUND public:', error1.public);
-console.log('PERMISSION.ACCESS_DENIED public:', makeError('PERMISSION.ACCESS_DENIED').public);
+console.log('PERMISSION.ACCESS_DENIED public:', AppErrors.permission('ACCESS_DENIED').public);
 
 // Test 7: Error chaining helpers
 console.log('\nTest 7: Error chain helpers');
@@ -63,9 +63,9 @@ console.log('Chain:', chainContext.chain);
 
 // Test 9: Deep chain with limit
 console.log('\nTest 9: Deep chain serialization');
-let deepError = makeError('VALIDATION.INVALID_INPUT');
+let deepError = AppErrors.validation('INVALID_INPUT');
 for (let i = 0; i < 15; i++) {
-    deepError = makeError('OPERATION.CREATE_FAILED', { cause: deepError });
+    deepError = AppErrors.operation('CREATE_FAILED', { cause: deepError });
 }
 const deepSerialized = deepError.toObject();
 console.log('Deep chain created (15 levels), serialization limited to 10');

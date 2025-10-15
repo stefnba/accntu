@@ -1,4 +1,5 @@
-import { ErrorRegistry, createPublicErrorRecord } from '@/server/lib/errorNew/base';
+import { ErrorRegistry } from '@/server/lib/errorNew/base/registry/private';
+import { createPublicErrorRecord } from '@/server/lib/errorNew/base/registry/public';
 import {
     InferErrorCategoriesFromRegistry,
     InferErrorKeysFromRegistry,

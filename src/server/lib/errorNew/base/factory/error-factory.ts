@@ -1,6 +1,5 @@
 import { AppError } from '@/server/lib/errorNew/base/error/app-error';
-import { TAppErrorParams, TErrorLayer } from '@/server/lib/errorNew/base/error/types';
-import { TErrorRegistryDefinition } from '@/server/lib/errorNew/base/registry/types';
+import { TErrorFactoryParams } from '@/server/lib/errorNew/base/factory/types';
 import {
     ERROR_REGISTRY,
     TErrorCategory,
@@ -12,7 +11,7 @@ import {
  * Base factory class for creating errors
  *
  * Provides shared logic for registry lookup and error instantiation.
- * Domain-specific factories extend this class to add custom behavior.
+ * Subclasses extend this to create category-specific factories.
  *
  * @abstract
  */
@@ -28,100 +27,79 @@ export abstract class BaseErrorFactory {
     }
 
     /**
-     * Create AppError from registry definition
+     * Build error parameters from registry definition
      *
-     * Looks up error definition in registry and creates an AppError instance
-     * with all required fields populated.
+     * This method:
+     * 1. Looks up the error definition in registry
+     * 2. Builds parameter object with all registry metadata
+     * 3. Returns parameters ready for domain error constructor
      *
+     * @template C - Error category type
      * @param category - Error category (e.g., 'VALIDATION', 'AUTH')
      * @param code - Error code (e.g., 'INVALID_INPUT', 'UNAUTHORIZED')
      * @param params - Optional error parameters
-     * @returns AppError instance
+     * @returns Error parameters for domain error constructor
+     *
+     * @example
+     * ```typescript
+     * const params = this.buildErrorParams('VALIDATION', 'INVALID_INPUT', { ... });
+     * return new ValidationError(params);
+     * ```
      */
-    protected static createFromRegistry(
-        category: string,
-        code: string,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): AppError {
+    protected static buildErrorParams<C extends TErrorCategory>(
+        category: C,
+        code: TErrorCodeByCategory<C>,
+        params?: TErrorFactoryParams
+    ) {
         const key = `${category}.${code}` as TErrorKeys;
         const definition = this.getDefinition(key);
 
-        return new AppError({
-            category,
+        const httpStatus =
+            'httpStatus' in definition && definition.httpStatus
+                ? definition.httpStatus
+                : definition.public.httpStatus;
+
+        return {
             code,
-            httpStatus:
-                'httpStatus' in definition ? definition.httpStatus : definition.public.httpStatus,
+            httpStatus,
             public: definition.public,
             isExpected: definition.isExpected,
             message: params?.message ?? definition.public.message ?? '',
             cause: params?.cause,
             details: params?.details,
             layer: params?.layer,
-        });
-    }
-}
-
-abstract class BaseErrorFactoryA {
-    protected static registry = ERROR_REGISTRY;
-
-    protected static buildErrorDefinitionFromRegistry<C extends TErrorCategory>(
-        category: C,
-        code: TErrorCodeByCategory<C>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-            publicDetails?: Record<string, unknown>;
-        }
-    ): TAppErrorParams {
-        const key = `${category}.${code}` as TErrorKeys;
-        const definition = this.registry.get(key) as TErrorRegistryDefinition;
-
-        return {
-            ...definition,
-            ...params,
-            code,
-            category,
-            httpStatus: definition.httpStatus ?? definition.public.httpStatus,
-            message: params?.message ?? definition.message ?? 'No message provided',
-            public: {
-                ...definition.public,
-                code,
-                details: params?.publicDetails,
-            },
         };
     }
 
-    static make<C extends TErrorCategory>(
+    /**
+     * Create error from registry definition
+     *
+     * This method:
+     * 1. Looks up the error definition in registry
+     * 2. Creates an AppError with all registry metadata
+     * 3. Returns the base AppError instance
+     *
+     * Used by the general `makeError` function for dynamic error creation.
+     *
+     * @template C - Error category type
+     * @param category - Error category (e.g., 'VALIDATION', 'AUTH')
+     * @param code - Error code (e.g., 'INVALID_INPUT', 'UNAUTHORIZED')
+     * @param params - Optional error parameters
+     * @returns AppError instance with registry metadata
+     *
+     * @example
+     * ```typescript
+     * const appError = this.createFromRegistry('VALIDATION', 'INVALID_INPUT', { ... });
+     * ```
+     */
+    protected static createFromRegistry<C extends TErrorCategory>(
         category: C,
         code: TErrorCodeByCategory<C>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ) {
-        return new AppError(this.buildErrorDefinitionFromRegistry(category, code, params));
-    }
-}
-
-export class ValidationErrorFactory extends BaseErrorFactoryA {
-    static make(
-        code: TErrorCodeByCategory<'VALIDATION'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ) {
-        return super.make('VALIDATION', code, params);
+        params?: TErrorFactoryParams
+    ): AppError {
+        return new AppError({
+            category,
+            ...this.buildErrorParams(category, code, params),
+        });
     }
 }

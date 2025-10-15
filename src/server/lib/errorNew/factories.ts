@@ -1,5 +1,5 @@
-import { TErrorLayer } from './base/error/types';
 import { BaseErrorFactory } from './base/factory/error-factory';
+import { TErrorFactoryParams } from './base/factory/types';
 import {
     AuthError,
     OperationError,
@@ -8,261 +8,7 @@ import {
     ServerError,
     ValidationError,
 } from './errors';
-import { TErrorCodeByCategory, TErrorKeys } from './registry';
-
-// ============================================
-// GENERAL FACTORY FUNCTION
-// ============================================
-
-/**
- * General error factory function
- *
- * Creates an AppError by looking up the error definition in the registry.
- * Use this for generic error creation or when the error category is dynamic.
- *
- * @param key - Full error key (e.g., 'VALIDATION.INVALID_INPUT')
- * @param params - Optional error parameters
- * @returns AppError instance
- *
- * @example
- * ```typescript
- * throw makeError('VALIDATION.INVALID_INPUT', {
- *   message: 'Email is required',
- *   details: { field: 'email' }
- * });
- * ```
- */
-export function makeError(
-    key: TErrorKeys,
-    params?: {
-        message?: string;
-        cause?: Error;
-        details?: Record<string, unknown>;
-        layer?: TErrorLayer;
-    }
-) {
-    const [category, code] = key.split('.');
-    return BaseErrorFactory['createFromRegistry'](category, code, params);
-}
-
-// ============================================
-// CATEGORY-SPECIFIC FACTORIES
-// ============================================
-
-/**
- * Factory for creating validation errors
- *
- * Validation errors are expected errors that occur during input validation.
- * They typically have 400 status codes and are safe to show to users.
- */
-export class ValidationErrors extends BaseErrorFactory {
-    /**
-     * Create a validation error
-     *
-     * @param code - Validation error code
-     * @param params - Optional error parameters
-     * @returns ValidationError instance
-     *
-     * @example
-     * ```typescript
-     * throw ValidationErrors.make('INVALID_INPUT', {
-     *   message: 'Email is required',
-     *   details: { field: 'email' }
-     * });
-     * ```
-     */
-    static make(
-        code: TErrorCodeByCategory<'VALIDATION'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): ValidationError {
-        const appError = this.createFromRegistry('VALIDATION', code, params);
-        return new ValidationError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
-
-/**
- * Factory for creating authentication/authorization errors
- */
-export class AuthErrors extends BaseErrorFactory {
-    /**
-     * Create an auth error
-     *
-     * @param code - Auth error code
-     * @param params - Optional error parameters
-     * @returns AuthError instance
-     */
-    static make(
-        code: TErrorCodeByCategory<'AUTH'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): AuthError {
-        const appError = this.createFromRegistry('AUTH', code, params);
-        return new AuthError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
-
-/**
- * Factory for creating resource errors (not found, already exists, etc.)
- */
-export class ResourceErrors extends BaseErrorFactory {
-    /**
-     * Create a resource error
-     *
-     * @param code - Resource error code
-     * @param params - Optional error parameters
-     * @returns ResourceError instance
-     */
-    static make(
-        code: TErrorCodeByCategory<'RESOURCE'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): ResourceError {
-        const appError = this.createFromRegistry('RESOURCE', code, params);
-        return new ResourceError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
-
-/**
- * Factory for creating operation errors (create, update, delete failures)
- */
-export class OperationErrors extends BaseErrorFactory {
-    /**
-     * Create an operation error
-     *
-     * @param code - Operation error code
-     * @param params - Optional error parameters
-     * @returns OperationError instance
-     */
-    static make(
-        code: TErrorCodeByCategory<'OPERATION'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): OperationError {
-        const appError = this.createFromRegistry('OPERATION', code, params);
-        return new OperationError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
-
-/**
- * Factory for creating permission errors (access denied, insufficient role, etc.)
- */
-export class PermissionErrors extends BaseErrorFactory {
-    /**
-     * Create a permission error
-     *
-     * @param code - Permission error code
-     * @param params - Optional error parameters
-     * @returns PermissionError instance
-     */
-    static make(
-        code: TErrorCodeByCategory<'PERMISSION'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): PermissionError {
-        const appError = this.createFromRegistry('PERMISSION', code, params);
-        return new PermissionError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
-
-/**
- * Factory for creating server errors (internal errors, service unavailable, etc.)
- */
-export class ServerErrors extends BaseErrorFactory {
-    /**
-     * Create a server error
-     *
-     * @param code - Server error code
-     * @param params - Optional error parameters
-     * @returns ServerError instance
-     */
-    static make(
-        code: TErrorCodeByCategory<'SERVER'>,
-        params?: {
-            message?: string;
-            cause?: Error;
-            details?: Record<string, unknown>;
-            layer?: TErrorLayer;
-        }
-    ): ServerError {
-        const appError = this.createFromRegistry('SERVER', code, params);
-        return new ServerError({
-            code: appError.code,
-            httpStatus: appError.httpStatus,
-            public: appError.public,
-            isExpected: appError.isExpected,
-            message: appError.message,
-            cause: appError.cause,
-            details: appError.details,
-            layer: appError.layer,
-        });
-    }
-}
+import { TErrorCategory, TErrorCodeByCategory, TErrorKeys } from './registry';
 
 // ============================================
 // DOMAIN-SPECIFIC FACTORIES
@@ -274,7 +20,7 @@ export class ServerErrors extends BaseErrorFactory {
  * Provides semantic methods for common database error scenarios
  * with pre-configured error details and messages.
  */
-export class QueryErrors extends BaseErrorFactory {
+class QueryErrors extends BaseErrorFactory {
     /**
      * Database duplicate key/unique constraint violation
      *
@@ -363,5 +109,85 @@ export class QueryErrors extends BaseErrorFactory {
             },
             layer: 'db',
         });
+    }
+}
+
+/**
+ * AppErrors factory
+ *
+ * Creates an AppError by looking up the error definition in the registry.
+ * Use this for generic error creation or when the error category is dynamic.
+ */
+export class AppErrors extends BaseErrorFactory {
+    /**
+     * General error factory function
+     *
+     * Creates an AppError by looking up the error definition in the registry.
+     * Use this for generic error creation or when the error category is dynamic.
+     *
+     * @param key - Full error key (e.g., 'VALIDATION.INVALID_INPUT')
+     * @param params - Optional error parameters
+     * @returns AppError instance
+     *
+     * @example
+     * ```typescript
+     * throw AppErrors.raise('VALIDATION.INVALID_INPUT', {
+     *   message: 'Email is required',
+     *   details: { field: 'email' }
+     * });
+     * ```
+     */
+    static raise(key: TErrorKeys, params?: TErrorFactoryParams) {
+        const [category, code] = key.split('.') as [
+            TErrorCategory,
+            TErrorCodeByCategory<TErrorCategory>,
+        ];
+        return BaseErrorFactory['createFromRegistry'](category, code, params);
+    }
+
+    /**
+     * Factory for creating server errors (internal errors, service unavailable, etc.)
+     */
+
+    static server(code: TErrorCodeByCategory<'SERVER'>, params?: TErrorFactoryParams) {
+        return new ServerError(this.buildErrorParams('SERVER', code, params));
+    }
+
+    /**
+     * Factory for creating authentication/authorization errors
+     */
+    static auth(code: TErrorCodeByCategory<'AUTH'>, params?: TErrorFactoryParams) {
+        return new AuthError(this.buildErrorParams('AUTH', code, params));
+    }
+
+    /**
+     * Factory for creating validation errors
+     *
+     * Validation errors are expected errors that occur during input validation.
+     * They typically have 400 status codes and are safe to show to users.
+     */
+    static validation(code: TErrorCodeByCategory<'VALIDATION'>, params?: TErrorFactoryParams) {
+        return new ValidationError(this.buildErrorParams('VALIDATION', code, params));
+    }
+
+    /**
+     * Factory for creating resource errors (not found, already exists, etc.)
+     */
+    static resource(code: TErrorCodeByCategory<'RESOURCE'>, params?: TErrorFactoryParams) {
+        return new ResourceError(this.buildErrorParams('RESOURCE', code, params));
+    }
+
+    /**
+     * Factory for creating operation errors (create, update, delete failures)
+     */
+    static operation(code: TErrorCodeByCategory<'OPERATION'>, params?: TErrorFactoryParams) {
+        return new OperationError(this.buildErrorParams('OPERATION', code, params));
+    }
+
+    /**
+     * Factory for creating permission errors (access denied, insufficient role, etc.)
+     */
+    static permission(code: TErrorCodeByCategory<'PERMISSION'>, params?: TErrorFactoryParams) {
+        return new PermissionError(this.buildErrorParams('PERMISSION', code, params));
     }
 }
