@@ -4,104 +4,81 @@ import {
     getFilterOptions,
     transactionServices,
 } from '@/features/transaction/server/services';
-import { getUser } from '@/lib/auth';
-import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
 const app = new Hono()
-    // Get transactions with filters and pagination
-    .get('/', zValidator('query', transactionSchemas.getMany.endpoint.query), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const query = c.req.valid('query');
-            const { page, pageSize, ...filters } = query;
+    .get('/', zValidator('query', transactionSchemas.getMany.endpoint.query), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) => {
+                const { page, pageSize, ...filters } = validatedInput.query;
 
-            return await transactionServices.getMany({
-                userId: user.id,
-                filters,
-                pagination: {
-                    page,
-                    pageSize,
-                },
-            });
-        })
-    )
-
-    // Get filter options for transaction table
-    .get('/filter-options', async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            return await getFilterOptions(user.id);
-        })
-    )
-
-    // Get single transaction by ID
-    .get('/:id', zValidator('param', transactionSchemas.getById.endpoint.param), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const ids = c.req.valid('param');
-
-            const transaction = await transactionServices.getById({
-                userId: user.id,
-                ids,
-            });
-
-            return transaction;
-        })
-    )
-
-    // update a transaction
-    .patch(
-        '/:id',
-        zValidator('param', transactionSchemas.updateById.endpoint.param),
-        zValidator('json', transactionSchemas.updateById.endpoint.json),
-        async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const ids = c.req.valid('param');
-                const data = c.req.valid('json');
-
-                return await transactionServices.updateById({
-                    ids,
-                    data,
-                    userId: user.id,
+                return await transactionServices.getMany({
+                    userId,
+                    filters,
+                    pagination: { page, pageSize },
                 });
             })
     )
 
-    // delete a transaction
-    .delete('/:id', zValidator('param', transactionSchemas.removeById.endpoint.param), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const ids = c.req.valid('param');
-
-            return await transactionServices.removeById({
-                ids,
-                userId: user.id,
-            });
-        })
+    .get('/filter-options', (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId }) => getFilterOptions(userId))
     )
 
-    // create a new transaction
-    .post('/', zValidator('json', transactionSchemas.create.endpoint.json), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
-
-                return await transactionServices.create({
-                    data,
-                    userId: user.id,
-                });
-            },
-            201
-        )
+    .get('/:id', zValidator('param', transactionSchemas.getById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) =>
+                transactionServices.getById({
+                    userId,
+                    ids: validatedInput.param,
+                })
+            )
     )
 
-    // import transactions (bulk)
+    .patch(
+        '/:id',
+        zValidator('param', transactionSchemas.updateById.endpoint.param),
+        zValidator('json', transactionSchemas.updateById.endpoint.json),
+        (c) =>
+            routeHandler(c)
+                .withUser()
+                .handle(async ({ userId, validatedInput }) =>
+                    transactionServices.updateById({
+                        ids: validatedInput.param,
+                        data: validatedInput.json,
+                        userId,
+                    })
+                )
+    )
+
+    .delete('/:id', zValidator('param', transactionSchemas.removeById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) =>
+                transactionServices.removeById({
+                    ids: validatedInput.param,
+                    userId,
+                })
+            )
+    )
+
+    .post('/', zValidator('json', transactionSchemas.create.endpoint.json), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                transactionServices.create({
+                    data: validatedInput.json,
+                    userId,
+                })
+            )
+    )
+
     .post(
         '/import',
         zValidator(
@@ -111,17 +88,18 @@ const app = new Hono()
                 importFileId: z.string(),
             })
         ),
-        async (c) =>
-            withRoute(c, async () => {
-                const user = getUser(c);
-                const { transactions, importFileId } = c.req.valid('json');
+        (c) =>
+            routeHandler(c)
+                .withUser()
+                .handle(async ({ userId, validatedInput }) => {
+                    const { transactions, importFileId } = validatedInput.json;
 
-                return await createMany({
-                    userId: user.id,
-                    transactions,
-                    importFileId,
-                });
-            })
+                    return await createMany({
+                        userId,
+                        transactions,
+                        importFileId,
+                    });
+                })
     );
 
 export default app;

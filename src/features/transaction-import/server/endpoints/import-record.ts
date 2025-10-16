@@ -1,104 +1,78 @@
 import { transactionImportSchemas } from '@/features/transaction-import/schemas/import-record';
 import { transactionImportServices } from '@/features/transaction-import/server/services/import-record';
-import { getUser } from '@/lib/auth';
-import { withMutationRoute, withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 
 const app = new Hono()
-    /**
-     * Get all transaction imports for the authenticated user
-     */
-    .get('/', zValidator('query', transactionImportSchemas.getMany.endpoint.query), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { page, pageSize, ...filters } = c.req.valid('query');
-            return await transactionImportServices.getMany({
-                userId: user.id,
-                filters,
-                pagination: {
-                    page,
-                    pageSize,
-                },
-            });
-        })
-    )
-
-    /**
-     * Get transaction import by ID
-     */
-    .get('/:id', zValidator('param', transactionImportSchemas.getById.endpoint.param), async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-            return await transactionImportServices.getById({ ids: { id }, userId: user.id });
-        })
-    )
-
-    /**
-     * Create new transaction import
-     */
-    .post('/', zValidator('json', transactionImportSchemas.create.endpoint.json), async (c) =>
-        withMutationRoute(c, async () => {
-            const user = getUser(c);
-            const data = c.req.valid('json');
-
-            return await transactionImportServices.create({
-                userId: user.id,
-                data,
-            });
-        })
-    )
-
-    /**
-     * Activate draft import (change status from draft to pending)
-     */
-    .post('/:id/activate', zValidator('param', transactionImportSchemas.getById.endpoint.param), async (c) =>
-        withMutationRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
-
-            return await transactionImportServices.activate({
-                ids: { id },
-                userId: user.id,
-            });
-        })
-    )
-
-    /**
-     * Update transaction import
-     */
-    .patch(
-        '/:id',
-        zValidator('param', transactionImportSchemas.updateById.endpoint.param),
-        zValidator('json', transactionImportSchemas.updateById.endpoint.json),
-        async (c) =>
-            withMutationRoute(c, async () => {
-                const user = getUser(c);
-                const { id } = c.req.valid('param');
-                const data = c.req.valid('json');
-
-                return await transactionImportServices.updateById({
-                    ids: { id },
-                    userId: user.id,
-                    data,
+    .get('/', zValidator('query', transactionImportSchemas.getMany.endpoint.query), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) => {
+                const { page, pageSize, ...filters } = validatedInput.query;
+                return await transactionImportServices.getMany({
+                    userId,
+                    filters,
+                    pagination: { page, pageSize },
                 });
             })
     )
 
-    /**
-     * Delete transaction import
-     */
-    .delete('/:id', zValidator('param', transactionImportSchemas.removeById.endpoint.param), async (c) =>
-        withMutationRoute(c, async () => {
-            const user = getUser(c);
-            const { id } = c.req.valid('param');
+    .get('/:id', zValidator('param', transactionImportSchemas.getById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId, validatedInput }) =>
+                transactionImportServices.getById({ ids: { id: validatedInput.param.id }, userId })
+            )
+    )
 
-            return await transactionImportServices.removeById({
-                ids: { id },
-                userId: user.id,
-            });
-        })
+    .post('/', zValidator('json', transactionImportSchemas.create.endpoint.json), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                transactionImportServices.create({
+                    userId,
+                    data: validatedInput.json,
+                })
+            )
+    )
+
+    .post('/:id/activate', zValidator('param', transactionImportSchemas.getById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                transactionImportServices.activate({
+                    ids: { id: validatedInput.param.id },
+                    userId,
+                })
+            )
+    )
+
+    .patch(
+        '/:id',
+        zValidator('param', transactionImportSchemas.updateById.endpoint.param),
+        zValidator('json', transactionImportSchemas.updateById.endpoint.json),
+        (c) =>
+            routeHandler(c)
+                .withUser()
+                .handleMutation(async ({ userId, validatedInput }) =>
+                    transactionImportServices.updateById({
+                        ids: { id: validatedInput.param.id },
+                        userId,
+                        data: validatedInput.json,
+                    })
+                )
+    )
+
+    .delete('/:id', zValidator('param', transactionImportSchemas.removeById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                transactionImportServices.removeById({
+                    ids: { id: validatedInput.param.id },
+                    userId,
+                })
+            )
     );
 
 export default app;

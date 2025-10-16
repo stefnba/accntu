@@ -1,4 +1,4 @@
-import { withRoute } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -29,11 +29,9 @@ const BatchStoreRatesSchema = z.object({
 });
 
 const app = new Hono()
-
-    // get rate
-    .get('/rate', zValidator('query', GetRateSchema), async (c) =>
-        withRoute(c, async () => {
-            const { baseCurrency, targetCurrency, date } = c.req.valid('query');
+    .get('/rate', zValidator('query', GetRateSchema), (c) =>
+        routeHandler(c).handle(async ({ validatedInput }) => {
+            const { baseCurrency, targetCurrency, date } = validatedInput.query;
 
             const rate = await services.getExchangeRate({
                 baseCurrency,
@@ -50,40 +48,26 @@ const app = new Hono()
         })
     )
 
-    // store rate
-    .post('/rate', zValidator('json', StoreRateSchema), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const data = c.req.valid('json');
-
-                const result = await services.storeExchangeRate(data);
-
+    .post('/rate', zValidator('json', StoreRateSchema), (c) =>
+        routeHandler(c)
+            .handle(async ({ validatedInput }) => {
+                const result = await services.storeExchangeRate(validatedInput.json);
                 return result;
-            },
-            201
-        )
+            })
     )
 
-    // store rates
-    .post('/rates/batch', zValidator('json', BatchStoreRatesSchema), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const { rates } = c.req.valid('json');
-
+    .post('/rates/batch', zValidator('json', BatchStoreRatesSchema), (c) =>
+        routeHandler(c)
+            .handleMutation(async ({ validatedInput }) => {
+                const { rates } = validatedInput.json;
                 const result = await services.storeExchangeRates({ rates });
-
                 return result;
-            },
-            201
-        )
+            })
     )
 
-    // convert amount
-    .post('/convert', zValidator('json', ConvertAmountSchema), async (c) =>
-        withRoute(c, async () => {
-            const { amount, baseCurrency, targetCurrency, date } = c.req.valid('json');
+    .post('/convert', zValidator('json', ConvertAmountSchema), (c) =>
+        routeHandler(c).handle(async ({ validatedInput }) => {
+            const { amount, baseCurrency, targetCurrency, date } = validatedInput.json;
 
             const convertedAmount = await services.convertAmount({
                 amount,
