@@ -3,7 +3,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
 import { transactionFxRate } from '@/features/transaction-fx/server/db/tables';
-import { withDbQuery } from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/db';
 import { and, eq, sql } from 'drizzle-orm';
 
 export const transactionFxQueries = createFeatureQueries

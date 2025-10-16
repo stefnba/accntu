@@ -16,7 +16,8 @@ import {
 } from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/tables';
 import { db } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/db';
+import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service/';
 import { and, eq } from 'drizzle-orm';
 
@@ -309,6 +310,10 @@ export const budgetServices = createFeatureServices
         calculateAndStore: async ({ transactionId, userId }) => {
             const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
+            if (!calculationResult) {
+                throw AppErrors.raise('RESOURCE.NOT_FOUND');
+            }
+
             // Check if budget already exists
             const existingBudget = await queries.getByTransactionAndUser({
                 transactionId,
@@ -348,6 +353,9 @@ export const budgetServices = createFeatureServices
                     },
                     userId,
                 });
+            }
+            if (!budgetRecord) {
+                throw AppErrors.raise('OPERATION.CREATE_FAILED');
             }
 
             // Create participant records
