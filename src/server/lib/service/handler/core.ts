@@ -13,11 +13,14 @@ export class ServiceHandler<T extends object> {
      * @param handlerFnOrPromise - The function to handle or promise to await
      * @returns The service handler
      */
-    private async _handle(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>): Promise<T | null> {
+    private async _handle(
+        handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>
+    ): Promise<T | null> {
         try {
-            const result = typeof handlerFnOrPromise === 'function' 
-                ? await handlerFnOrPromise() 
-                : await handlerFnOrPromise;
+            const result =
+                typeof handlerFnOrPromise === 'function'
+                    ? await handlerFnOrPromise()
+                    : await handlerFnOrPromise;
             return result;
         } catch (error) {
             if (error instanceof AppError) {
@@ -32,7 +35,9 @@ export class ServiceHandler<T extends object> {
      * @param handlerFnOrPromise - The function to handle or promise to await
      * @returns The service handler
      */
-    static handle<T extends object>(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>): ServiceHandler<T> {
+    static handle<T extends object>(
+        handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>
+    ): ServiceHandler<T> {
         return new ServiceHandler(handlerFnOrPromise);
     }
 
@@ -87,7 +92,9 @@ export class ServiceHandler<T extends object> {
  * @param handlerFnOrPromise - The function to handle or promise to await
  * @returns The service handler
  */
-export const serviceHandler = async <T extends object>(handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>) => {
+export const serviceHandler = async <T extends object>(
+    handlerFnOrPromise: (() => Promise<T | null>) | Promise<T | null>
+) => {
     return await new ServiceHandler(handlerFnOrPromise);
 };
 
