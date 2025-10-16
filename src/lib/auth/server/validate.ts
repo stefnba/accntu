@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth/config';
 import { updateSessionActivity } from '@/lib/auth/server/db/queries';
 import { AuthContext } from '@/lib/auth/server/types';
 import { clearCookie } from '@/server/lib/cookies';
-import { errorFactory } from '@/server/lib/error';
+import { AppErrors } from '@/server/lib/error';
 import { getRequestMetadata } from '@/server/lib/request';
 import { Context, Next } from 'hono';
 import { isPathMatch } from '../utils';
@@ -23,18 +23,16 @@ export const validateSession = async <T extends Context>(c: T) => {
 
         if (!result || !result.session) {
             clearCookie(c, 'AUTH_SESSION');
-            throw errorFactory.createAuthError({
-                code: 'SESSION_TOKEN_NOT_FOUND',
-                statusCode: 401,
+            throw AppErrors.auth('SESSION_NOT_FOUND', {
+                message: 'Session token not found',
             });
         }
 
         return result;
     } catch (err) {
         clearCookie(c, 'AUTH_SESSION');
-        throw errorFactory.createAuthError({
-            code: 'SESSION_TOKEN_NOT_FOUND',
-            statusCode: 401,
+        throw AppErrors.auth('SESSION_NOT_FOUND', {
+            message: 'Session token not found',
             cause: err instanceof Error ? err : new Error(`${err}`),
         });
     }
@@ -49,9 +47,9 @@ export const getSession = <T extends Context>(c: T) => {
     const session = c.get('session');
 
     if (!session) {
-        throw errorFactory.createAuthError({
-            message: 'Session not found in context',
-            code: 'SESSION_NOT_IN_CONTEXT',
+        throw AppErrors.auth('SESSION_CONTEXT_ERROR', {
+            message: 'Session not found in hono context',
+            details: { context: 'getSession' },
         });
     }
 
@@ -67,9 +65,9 @@ export const getUser = (c: Context) => {
     const user = c.get('user');
 
     if (!user) {
-        throw errorFactory.createAuthError({
-            message: 'User not found in context',
-            code: 'USER_NOT_IN_CONTEXT',
+        throw AppErrors.auth('SESSION_CONTEXT_ERROR', {
+            message: 'User not found in hono context',
+            details: { context: 'getUser' },
         });
     }
 
@@ -127,9 +125,9 @@ export const validateAndSetAuthContext = async (c: Context): Promise<AuthContext
  */
 export const validateRolePermission = async (user: TUser | null, path: string) => {
     if (!user) {
-        throw errorFactory.createAuthError({
-            message: 'User not found in context',
-            code: 'USER_NOT_IN_CONTEXT',
+        throw AppErrors.auth('SESSION_CONTEXT_ERROR', {
+            message: 'User not found in hono context',
+            details: { context: 'validateRolePermission' },
         });
     }
 
@@ -138,10 +136,9 @@ export const validateRolePermission = async (user: TUser | null, path: string) =
         for (const [role, patterns] of Object.entries(ROLE_PROTECTED_ROUTES)) {
             if (isPathMatch(path, patterns) && user.role !== role) {
                 // throw error but don't log out the user
-                throw errorFactory.createAuthError({
+                throw AppErrors.permission('INSUFFICIENT_ROLE', {
                     message: 'Forbidden - insufficient permissions',
-                    code: 'INVALID_CREDENTIALS',
-                    statusCode: 403,
+                    details: { requiredRole: role, userRole: user.role, path },
                 });
             }
         }

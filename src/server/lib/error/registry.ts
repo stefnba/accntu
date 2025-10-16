@@ -203,6 +203,24 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
             httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
             isExpected: true,
         },
+        SESSION_NOT_FOUND: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
+            isExpected: true,
+        },
+        INVALID_CREDENTIALS: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
+            isExpected: true,
+        },
+        SESSION_CONTEXT_ERROR: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
     },
 
     DB: {
