@@ -122,9 +122,27 @@ export const labelQueries = createFeatureQueries
 
             const finalSql: SQL = sql.join([withRecursive, query], sql.raw(' '));
 
-            const result = await db.execute(finalSql);
+            type FlattenedLabelRow = {
+                id: string;
+                userId: string;
+                name: string;
+                color: string;
+                icon: string;
+                imageUrl: string;
+                parentId: string;
+                depth: number;
+                index: number;
+                globalIndex: number;
+                countChildren: number;
+                hasChildren: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                isActive: boolean;
+                firstParentId: string;
+                sortPath: string;
+            };
 
-            return result;
+            return await db.execute<FlattenedLabelRow>(finalSql);
         },
     })
     /**
