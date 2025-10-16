@@ -190,4 +190,31 @@ export class AppErrors extends BaseErrorFactory {
     static permission(code: TErrorCodeByCategory<'PERMISSION'>, params?: TErrorFactoryParams) {
         return new PermissionError(this.buildErrorParams('PERMISSION', code, params));
     }
+
+    /**
+     * Factory for creating database errors (connection, query, constraint violations)
+     *
+     * Database errors represent failures in database operations including:
+     * - Connection issues (CONNECTION_ERROR)
+     * - Query execution failures (QUERY_FAILED)
+     * - Constraint violations (UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION)
+     * - Transaction failures (TRANSACTION_FAILED)
+     * - Invalid output (INVALID_OUTPUT)
+     */
+    static db(code: TErrorCodeByCategory<'DB'>, params?: TErrorFactoryParams) {
+        return this.raise(`DB.${code}`, params);
+    }
+
+    /**
+     * Factory for creating cookie errors (invalid, missing, expired, tampered)
+     *
+     * Cookie errors represent issues with HTTP cookies used for session management:
+     * - Invalid cookie values (INVALID_VALUE)
+     * - Missing required cookies (MISSING)
+     * - Expired cookies (EXPIRED)
+     * - Tampered cookies (TAMPERED)
+     */
+    static cookie(code: TErrorCodeByCategory<'COOKIE'>, params?: TErrorFactoryParams) {
+        return this.raise(`COOKIE.${code}`, params);
+    }
 }

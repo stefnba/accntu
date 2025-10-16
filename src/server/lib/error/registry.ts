@@ -204,6 +204,72 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
             isExpected: true,
         },
     },
+
+    DB: {
+        CONNECTION_ERROR: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
+        QUERY_FAILED: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
+        UNIQUE_VIOLATION: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.ALREADY_EXISTS,
+            httpStatus: HTTP_STATUS_CODES.CONFLICT,
+            isExpected: true,
+        },
+        FOREIGN_KEY_VIOLATION: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INVALID_INPUT,
+            httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+            isExpected: true,
+        },
+        TRANSACTION_FAILED: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
+        INVALID_OUTPUT: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
+    },
+
+    COOKIE: {
+        INVALID_VALUE: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+            isExpected: true,
+        },
+        MISSING: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+            isExpected: true,
+        },
+        EXPIRED: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
+            isExpected: true,
+        },
+        TAMPERED: {
+            layers: ['auth'],
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.BAD_REQUEST,
+            isExpected: true,
+        },
+    },
 });
 
 // ==================================================

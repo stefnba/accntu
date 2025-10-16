@@ -42,5 +42,5 @@ export const handleGlobalError = (error: unknown, c: Context) => {
         }
     );
 
-    return c.json(appError.toObject(), appError.httpStatus);
+    return c.json(appError.toResponse(), appError.httpStatus);
 };

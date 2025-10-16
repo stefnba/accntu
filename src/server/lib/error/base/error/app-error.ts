@@ -143,11 +143,17 @@ export class AppError extends Error {
     /**
      * Converts the error to a API error response
      *
-     * @returns A API error response
+     * In production, only public error information is included.
+     * In development, additional debug information is added to error.details:
+     * - originalCode: The internal error code (e.g., "VALIDATION.INVALID_FORMAT")
+     * - originalMessage: The internal error message
+     * - errorId: The error ID for log correlation
+     *
+     * @returns A API error response safe for client consumption
      */
     toResponse(): TAPIErrorResponse {
         const publicError = this.public;
-        return {
+        const baseResponse: TAPIErrorResponse = {
             success: false,
             error: {
                 code: publicError?.code || 'FORBIDDEN',
@@ -156,6 +162,18 @@ export class AppError extends Error {
             },
             request_id: this.requestId || '',
         };
+
+        // In development, include debug info for easier troubleshooting
+        if (process.env.NODE_ENV === 'development') {
+            baseResponse.error.details = {
+                ...publicError?.details,
+                originalCode: this.key,
+                originalMessage: this.message,
+                errorId: this.id,
+            };
+        }
+
+        return baseResponse;
     }
 
     /**
