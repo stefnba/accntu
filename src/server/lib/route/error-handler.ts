@@ -6,7 +6,8 @@
  * It includes special handling for Hono RPC type safety.
  */
 
-import { TAPIErrorResponse } from '@/server/lib/error/response/types';
+import { AppError, AppErrors } from '@/server/lib/error';
+import { TAPIErrorResponse } from '@/server/lib/error/api-response';
 import { Context, TypedResponse } from 'hono';
 import {
     ClientErrorStatusCode,
@@ -14,8 +15,6 @@ import {
     ServerErrorStatusCode,
     SuccessStatusCode,
 } from 'hono/utils/http-status';
-import { errorFactory } from '../factory';
-import { isBaseError } from '../utils';
 
 export type ErrorReponseCode = ServerErrorStatusCode | ClientErrorStatusCode;
 export type SuccessResponseCode = SuccessStatusCode;
@@ -55,8 +54,8 @@ export function handleRouteError(
     error: unknown
 ): TypedResponse<TAPIErrorResponse, ErrorReponseCode, 'json'> {
     // Handle BaseError with proper type narrowing for RPC
-    if (isBaseError(error)) {
-        const errorStatusCode = ensureErrorStatusCode(error.statusCode || 500);
+    if (AppError.isAppError(error)) {
+        const errorStatusCode = ensureErrorStatusCode(error.httpStatus || 500);
 
         // IMPORTANT: This conditional block is required for Hono RPC type safety
         // It's never executed at runtime, but provides necessary type information
@@ -76,13 +75,9 @@ export function handleRouteError(
     // for the RPC client to properly infer error response types
     if (false as boolean) {
         return c.json(
-            errorFactory
-                .createError({
-                    message: 'An unexpected error occurred',
-                    errorCode: 'SERVER.INTERNAL_ERROR',
-                    statusCode: 500,
-                })
-                .toResponse(),
+            AppErrors.server('INTERNAL_ERROR', {
+                message: 'An unexpected error occurred',
+            }).toResponse(),
             500
         );
     }

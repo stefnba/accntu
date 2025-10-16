@@ -1,7 +1,7 @@
 import { authMiddleware } from '@/lib/auth';
 import { AuthContext } from '@/lib/auth/server/types';
 import { appEndpoints } from '@/server/endpoints';
-import { handleGlobalError } from '@/server/lib/error/handler';
+import { handleGlobalError } from '@/server/lib/error/handlers';
 import { corsMiddleware } from '@/server/lib/middleware/cors';
 import { securityHeaders } from '@/server/lib/middleware/security';
 import { Hono } from 'hono';

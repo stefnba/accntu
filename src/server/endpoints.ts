@@ -1,5 +1,6 @@
 import { db } from '@/server/db';
-import { withDbQuery, withQueryRoute } from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/handler';
+import { routeHandler } from '@/server/lib/route';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
@@ -17,9 +18,8 @@ import transactionEndpoints from '@/features/transaction/server/endpoints';
 import userEndpoints from '@/features/user/server/endpoints';
 import authEndpoints from '@/lib/auth/server/endpoints-new';
 
-// Status endpoints
-const statusEndpoints = new Hono().get('/', async (c) =>
-    withQueryRoute(c, async () => {
+const statusEndpoints = new Hono().get('/', (c) =>
+    routeHandler(c).handle(async () => {
         const result = await withDbQuery({
             queryFn: async () => db.execute(sql`SELECT 1`),
             operation: 'test database connection',
