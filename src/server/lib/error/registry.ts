@@ -154,13 +154,8 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
         },
     },
 
+    // Permission: What can you do?
     PERMISSION: {
-        NOT_AUTHORIZED: {
-            layers: ['auth', 'endpoint'],
-            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
-            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
-            isExpected: true,
-        },
         ACCESS_DENIED: {
             layers: ['auth', 'endpoint'],
             public: PUBLIC_ERROR_REGISTRY.FORBIDDEN,
@@ -196,6 +191,7 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
         },
     },
 
+    // Authentication: Who are you?
     AUTH: {
         UNAUTHORIZED: {
             layers: ['auth', 'endpoint'],
@@ -217,8 +213,8 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
         },
         SESSION_CONTEXT_ERROR: {
             layers: ['auth'],
-            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
-            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            public: PUBLIC_ERROR_REGISTRY.UNAUTHORIZED,
+            httpStatus: HTTP_STATUS_CODES.UNAUTHORIZED,
             isExpected: false,
         },
     },

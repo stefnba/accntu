@@ -145,8 +145,8 @@ export type TBuildErrorKey<
  *
  * @example
  * ```typescript
- * type AuthErrors = InferErrorCodesByLayer<typeof ERROR_REGISTRY.registry, 'AUTH'>
- * // Result: "PERMISSION.NOT_AUTHORIZED" | "PERMISSION.ACCESS_DENIED" | ...
+ * type AuthErrors = InferErrorCodesByLayer<typeof ERROR_REGISTRY.registry, 'auth'>
+ * // Result: "AUTH.UNAUTHORIZED" | "PERMISSION.ACCESS_DENIED" | ...
  * ```
  */
 export type InferErrorCodesByLayer<R extends TErrorRegistryObject, L extends TErrorLayer> = {
