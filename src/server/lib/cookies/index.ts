@@ -1,4 +1,4 @@
-import { errorFactory } from '@/server/lib/errorOld';
+import { AppErrors } from '@/server/lib/error';
 import { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie as honoSetCookie } from 'hono/cookie';
 import { ZodSchema } from 'zod';
@@ -132,13 +132,12 @@ export function getCookieValue<T>(
         return parsed.data;
     }
 
-    throw errorFactory.createValidationError({
-        message: 'Invalid cookie value',
-        code: 'COOKIE.INVALID_VALUE',
-        statusCode: 400,
+    throw AppErrors.cookie('INVALID_VALUE', {
+        message: `Invalid cookie value for '${cookieKey}'`,
+        cause: parsed.error,
         details: {
             cookieKey,
-            error: parsed.error,
+            zodErrors: parsed.error,
         },
     });
 }
