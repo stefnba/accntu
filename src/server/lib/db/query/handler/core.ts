@@ -1,8 +1,7 @@
 import type { QueryFn } from '@/server/lib/db/query/builder/types';
-import { errorFactory } from '@/server/lib/errorOld';
-import { BaseError } from '@/server/lib/errorOld/base';
-import { logDevError, shouldUseDevFormatting } from '@/server/lib/errorOld/dev-formatter';
+import { AppError, AppErrors } from '@/server/lib/error';
 import { z } from 'zod';
+import { handleDbQueryError } from './error';
 
 /**
  * Configuration parameters for the query function handler wrapper.
@@ -47,18 +46,20 @@ export function queryFnHandler<TInput, TOutput>(
 ): QueryFn<TInput, TOutput> {
     const { fn, operation = 'database operation', inputSchema } = params;
 
-    return async (inputData: TInput) => {
+    return async (inputData: TInput): Promise<TOutput | undefined> => {
         let data = inputData;
 
         // Validate input data if schema is provided
         if (inputSchema) {
             const validatedInput = inputSchema.safeParse(data);
             if (!validatedInput.success) {
-                throw errorFactory.createDatabaseError({
+                throw AppErrors.validation('INVALID_FORMAT', {
                     message: `Invalid input data for ${operation}`,
-                    code: 'INVALID_INPUT',
                     cause: validatedInput.error,
-                    // details: { zodErrors: validatedInput.error.errors },
+                    details: {
+                        operation,
+                        zodErrors: validatedInput.error,
+                    },
                 });
             }
 
@@ -71,39 +72,13 @@ export function queryFnHandler<TInput, TOutput>(
 
             return result;
         } catch (error) {
-            if (error instanceof BaseError) {
+            // Re-throw if already an AppError
+            if (AppError.isAppError(error)) {
                 throw error;
             }
 
-            let dbError: BaseError;
-
-            // Check if it's a database error (PostgreSQL error codes start with numbers)
-            if (error instanceof Error && 'code' in error && /^\d/.test(String(error.code))) {
-                dbError = errorFactory.createDatabaseError({
-                    message: `Database error in '${operation}': ${error.message}`,
-                    code: 'OPERATION_FAILED',
-                    cause: error,
-                });
-            } else if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
-                dbError = errorFactory.createDatabaseError({
-                    message: `Database connection refused in '${operation}'`,
-                    code: 'CONNECTION_ERROR',
-                    cause: error,
-                });
-            } else {
-                dbError = errorFactory.createDatabaseError({
-                    message: `Unknown error in '${operation}'`,
-                    code: 'OPERATION_FAILED',
-                    cause: error instanceof Error ? error : undefined,
-                });
-            }
-
-            // Log immediately in development for better debugging
-            if (shouldUseDevFormatting()) {
-                logDevError(dbError);
-            }
-
-            throw dbError;
+            // Handle database-specific errors with PostgreSQL detection
+            handleDbQueryError(error, operation);
         }
     };
 }
