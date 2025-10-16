@@ -1,3 +1,4 @@
+import { TAPIErrorResponse } from '@/server/lib/error/api-response';
 import {
     ErrorChainContext,
     SerializedAppError,
@@ -7,7 +8,6 @@ import {
     TErrorLayer,
     TErrorRequestData,
 } from '@/server/lib/error/base/error/types';
-import { TPublicErrorRegistryDefinitionWithCode } from '@/server/lib/error/base/registry/types';
 import { generateErrorId } from '@/server/lib/error/base/utils';
 import { TErrorCategory } from '@/server/lib/error/registry';
 import { logger } from '@/server/lib/logger';
@@ -141,6 +141,24 @@ export class AppError extends Error {
     }
 
     /**
+     * Converts the error to a API error response
+     *
+     * @returns A API error response
+     */
+    toResponse(): TAPIErrorResponse {
+        const publicError = this.public;
+        return {
+            success: false,
+            error: {
+                code: publicError?.code || 'FORBIDDEN',
+                message: publicError?.message || 'Internal server error',
+                details: publicError?.details,
+            },
+            request_id: this.requestId || '',
+        };
+    }
+
+    /**
      * Type guard to check if an unknown value is a AppError
      *
      * @param error - The value to check
@@ -171,7 +189,7 @@ export class AppError extends Error {
             return error;
         }
 
-        const publicError: TPublicErrorRegistryDefinitionWithCode = {
+        const publicError: TAppErrorParams['public'] = {
             code: 'INTERNAL_ERROR',
             message: 'Internal server error',
             i18nKey: 'ERRORS.INTERNAL_ERROR',
@@ -202,6 +220,16 @@ export class AppError extends Error {
             message: 'Unknown error',
             details: { ...details, error },
         });
+    }
+
+    /**
+     * Type guard to check if an unknown value is a AppError
+     *
+     * @param error - The value to check
+     * @returns True if the value is a AppError
+     */
+    isAppError(error: unknown): error is AppError {
+        return !!error && typeof error === 'object' && error instanceof AppError;
     }
 
     /**
