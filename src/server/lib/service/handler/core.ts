@@ -1,4 +1,4 @@
-import { BaseError } from '@/server/lib/error';
+import { AppError } from '@/server/lib/error';
 import { validateExists } from '@/server/lib/service/handler/helpers';
 
 export class ServiceHandler<T extends object> {
@@ -20,7 +20,7 @@ export class ServiceHandler<T extends object> {
                 : await handlerFnOrPromise;
             return result;
         } catch (error) {
-            if (error instanceof BaseError) {
+            if (error instanceof AppError) {
                 throw error;
             }
             throw error;

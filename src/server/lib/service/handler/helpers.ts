@@ -1,4 +1,4 @@
-import { errorFactory } from '@/server/lib/error';
+import { AppErrors } from '@/server/lib/error';
 
 /*
  * Validate if the result exists. If not, throw an error.
@@ -14,11 +14,12 @@ export const validateExists = <T extends object>(
     if (!result) {
         // throw service error,
         // central error handler will handle this
-        throw errorFactory.createError({
-            layer: 'SERVICE',
-            code: 'NOT_FOUND',
-            type: 'RESOURCE',
+        throw AppErrors.resource('NOT_FOUND', {
+            layer: 'service',
             message: errorMessage,
+            details: {
+                result,
+            },
         });
     }
     return result;
