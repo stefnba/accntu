@@ -1,4 +1,4 @@
-import { handleZodError } from '@/server/lib/error/handler';
+import { handleZodError } from '@/server/lib/validation/error-handler';
 import { zValidator as zv } from '@hono/zod-validator';
 import type { ValidationTargets } from 'hono';
 import { ZodSchema } from 'zod';
