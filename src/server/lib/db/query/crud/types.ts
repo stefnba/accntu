@@ -48,3 +48,47 @@ export type TByIdInput<
               [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
           };
       };
+
+/**
+ * The on conflict type for the create and update record query
+ * Supports all Drizzle ORM conflict resolution strategies with full type safety
+ */
+export type TOnConflict<T extends Table> =
+    // Simple string shortcuts
+    | 'ignore' // Shorthand for onConflictDoNothing()
+    | 'fail'   // Default behavior - let the database handle conflicts
+    // Ignore conflicts with optional target specification
+    | {
+          type: 'ignore';
+          target?: Array<TTableColumns<T>> | TTableColumns<T>;
+      }
+    // Fail on conflicts (explicit - same as omitting onConflict)
+    | {
+          type: 'fail';
+      }
+    // Update on conflicts with excluded values (full upsert)
+    | {
+          type: 'update';
+          target: Array<TTableColumns<T>> | TTableColumns<T>;
+          setExcluded?: Array<TTableColumns<T>>; // Use excluded.column values
+          where?: Array<TBooleanFilter<T>>; // Optional conditions for the update
+      }
+    // Update on conflicts with custom set values
+    | {
+          type: 'updateSet';
+          target: Array<TTableColumns<T>> | TTableColumns<T>;
+          set: Partial<{
+              [K in keyof T['_']['columns']]: GetColumnData<T['_']['columns'][K], 'raw'>;
+          }>;
+          where?: Array<TBooleanFilter<T>>; // Optional conditions for the update
+      }
+    // Mixed update: some excluded values, some custom values
+    | {
+          type: 'updateMixed';
+          target: Array<TTableColumns<T>> | TTableColumns<T>;
+          setExcluded?: Array<TTableColumns<T>>; // Columns to use excluded values
+          set?: Partial<{
+              [K in keyof T['_']['columns']]: GetColumnData<T['_']['columns'][K], 'raw'>;
+          }>;
+          where?: Array<TBooleanFilter<T>>; // Optional conditions for the update
+      };

@@ -11,7 +11,7 @@ import { QueryBuilder } from './core';
  * @template Input - The input parameter type (defaults to any for flexibility)
  * @template Output - The return type (defaults to any for flexibility)
  */
-export type QueryFn<Input = any, Output = any> = (args: Input) => Promise<Output>;
+export type QueryFn<Input = any, Output = any> = (args: Input) => Promise<Output | null>;
 
 /**
  * Infer the feature entity type from a QueryBuilder instance.

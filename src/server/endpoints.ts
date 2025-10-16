@@ -1,5 +1,5 @@
 import { db } from '@/server/db';
-import { withDbQuery } from '@/server/lib/handler';
+import { withDbQuery } from '@/server/lib/db/query/handler';
 import { routeHandler } from '@/server/lib/route';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';

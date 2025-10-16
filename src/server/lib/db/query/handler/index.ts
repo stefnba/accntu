@@ -1,1 +1,1 @@
-export * from './core';
+export { dbQueryFnHandler, withDbQuery } from './core';

@@ -2,10 +2,13 @@ import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
 import {
     TBooleanFilter,
+    TOnConflict,
     TTableColumns,
     TValidTableForFrom,
 } from '@/server/lib/db/query/crud/types';
+import { withDbQuery } from '@/server/lib/db/query/handler';
 import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
+import type { ColumnsSelection } from 'drizzle-orm';
 import {
     and,
     eq,
@@ -14,8 +17,15 @@ import {
     InferInsertModel,
     isTable,
     SQL,
+    sql,
     Table,
 } from 'drizzle-orm';
+import type {
+    IndexColumn,
+    PgInsertBase,
+    PgInsertOnConflictDoUpdateConfig,
+    PgQueryResultHKT,
+} from 'drizzle-orm/pg-core';
 
 export class CrudQueryBuilder<T extends Table> {
     constructor(public table: T) {}
@@ -88,6 +98,135 @@ export class CrudQueryBuilder<T extends Table> {
      */
     private getTableName() {
         return getTableName(this.table);
+    }
+
+    /**
+     * Apply conflict resolution to a dynamic insert query
+     * @param query - The dynamic PostgreSQL insert query
+     * @param onConflict - The conflict resolution configuration
+     * @returns The query with conflict resolution applied
+     */
+    private buildOnConflict<
+        TQueryResult extends PgQueryResultHKT,
+        TSelectedFields extends ColumnsSelection | undefined,
+        TReturning extends Record<string, unknown> | undefined,
+        TExcludedMethods extends string,
+    >(
+        query: PgInsertBase<T, TQueryResult, TSelectedFields, TReturning, true, TExcludedMethods>,
+        onConflict?: TOnConflict<T>
+    ): PgInsertBase<T, TQueryResult, TSelectedFields, TReturning, true, TExcludedMethods> {
+        if (!onConflict) return query;
+
+        // Handle simple string shortcuts
+        if (onConflict === 'ignore') {
+            return query.onConflictDoNothing();
+        }
+
+        // Default behavior - let database handle conflicts
+        if (onConflict === 'fail') {
+            return query;
+        }
+
+        // Handle object configurations
+        if (typeof onConflict === 'object') {
+            switch (onConflict.type) {
+                case 'ignore': {
+                    if (onConflict.target) {
+                        const targetColumns = Array.isArray(onConflict.target)
+                            ? onConflict.target.map((col) => this.getColumn(col))
+                            : [this.getColumn(onConflict.target)];
+                        return query.onConflictDoNothing({ target: targetColumns });
+                    }
+                    return query.onConflictDoNothing();
+                }
+
+                // Default behavior
+                case 'fail': {
+                    return query;
+                }
+
+                case 'update': {
+                    const targetColumns: IndexColumn[] = Array.isArray(onConflict.target)
+                        ? onConflict.target.map((col) => this.getColumn(col))
+                        : [this.getColumn(onConflict.target)];
+
+                    // Build set object using excluded values
+                    const setObject: Record<string, SQL> = {};
+                    if (onConflict.setExcluded) {
+                        for (const col of onConflict.setExcluded) {
+                            setObject[col as string] = sql.raw(`excluded.${String(col)}`);
+                        }
+                    }
+
+                    const config: PgInsertOnConflictDoUpdateConfig<any> = {
+                        target: targetColumns,
+                        set: setObject,
+                    };
+
+                    // Add where conditions if provided
+                    if (onConflict.where && onConflict.where.length > 0) {
+                        const whereConditions = onConflict.where.map((filter) =>
+                            eq(this.getColumn(filter.field), filter.value)
+                        );
+                        config.setWhere = and(...whereConditions);
+                    }
+
+                    return query.onConflictDoUpdate(config);
+                }
+
+                case 'updateSet': {
+                    const targetColumns: IndexColumn[] = Array.isArray(onConflict.target)
+                        ? onConflict.target.map((col) => this.getColumn(col))
+                        : [this.getColumn(onConflict.target)];
+
+                    const config: PgInsertOnConflictDoUpdateConfig<any> = {
+                        target: targetColumns,
+                        set: onConflict.set || {},
+                    };
+
+                    // Add where conditions if provided
+                    if (onConflict.where && onConflict.where.length > 0) {
+                        const whereConditions = onConflict.where.map((filter) =>
+                            eq(this.getColumn(filter.field), filter.value)
+                        );
+                        config.setWhere = and(...whereConditions);
+                    }
+
+                    return query.onConflictDoUpdate(config);
+                }
+
+                case 'updateMixed': {
+                    const targetColumns: IndexColumn[] = Array.isArray(onConflict.target)
+                        ? onConflict.target.map((col) => this.getColumn(col))
+                        : [this.getColumn(onConflict.target)];
+
+                    // Combine excluded values and custom set values
+                    const setObject: Record<string, unknown> = { ...(onConflict.set || {}) };
+                    if (onConflict.setExcluded) {
+                        for (const col of onConflict.setExcluded) {
+                            setObject[col as string] = sql.raw(`excluded.${String(col)}`);
+                        }
+                    }
+
+                    const config: PgInsertOnConflictDoUpdateConfig<any> = {
+                        target: targetColumns,
+                        set: setObject,
+                    };
+
+                    // Add where conditions if provided
+                    if (onConflict.where && onConflict.where.length > 0) {
+                        const whereConditions = onConflict.where.map((filter) =>
+                            eq(this.getColumn(filter.field), filter.value)
+                        );
+                        config.setWhere = and(...whereConditions);
+                    }
+
+                    return query.onConflictDoUpdate(config);
+                }
+            }
+        }
+
+        return query;
     }
 
     // ================================
@@ -243,15 +382,76 @@ export class CrudQueryBuilder<T extends Table> {
     async createRecord<Cols extends Array<TTableColumns<T>>>({
         data,
         returnColumns,
+        onConflict,
     }: {
         data: InferInsertModel<T>;
         returnColumns?: Cols;
-    }) {
+        onConflict?: TOnConflict<T>;
+    }): Promise<{ [K in Cols[number]]: T['_']['columns'][K]['_']['data'] } | null> {
         const columns = this.buildSelectColumns(returnColumns);
-        const newRecord = await db.insert(this.table).values(data).returning(columns);
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not created
+        const baseQuery = db.insert(this.table).values(data).$dynamic();
+        const query = this.buildOnConflict(baseQuery, onConflict);
+        const queryWithReturning = query.returning(columns);
+
+        return withDbQuery({
+            queryFn: async () => {
+                const newRecord = await queryWithReturning;
+                return newRecord[0] ?? null;
+            },
+            operation: 'create record for table ' + this.getTableName(),
+        });
+        const newRecord = await queryWithReturning;
+
         return newRecord[0] ?? null;
+
+        // return queryFnHandler({
+        //     fn: async () => {
+        //         const query = db.insert(this.table).values(data).returning(columns).$dynamic();
+        //         // const queryWithConflict =
+        //         const newRecord = await this.buildOnConflict(query, onConflict);
+        //         return newRecord[0] ?? null;
+        //     },
+        //     operation: 'create record for table ' + this.getTableName(),
+        // });
+
+        // const _query = db.insert(this.table).values(data).returning(columns).$dynamic();
+
+        // const queryWithConflict = this.buildOnConflict(query, onConflict);
+
+        // return await queryHandler({
+        //     query: queryWithConflict,
+        //     operation: 'create record for table ' + this.getTableName(),
+        // });
+
+        // return queryHandler({
+        //     query: async () => {
+        //         const newRecord = await queryWithConflict;
+        //         // The query layer returns object or null. The service layer will handle the error if the record is not created
+        //         return newRecord[0] ?? null;
+        //     },
+        //     operation: 'create record for table ' + this.getTableName(),
+        // });
+
+        // try {
+        //     const newRecord = await queryWithConflict;
+        //     // The query layer returns object or null. The service layer will handle the error if the record is not created
+        //     return newRecord[0] ?? null;
+        // } catch (error) {
+        //     // if (e instanceof PostgresError) {
+        //     //     //
+        //     // }
+        //     if (error instanceof DrizzleQueryError) {
+        //         const drizzleError = error;
+        //         console.log(drizzleError.query);
+        //         if (drizzleError.cause instanceof postgres.PostgresError) {
+        //             const postgresError = drizzleError.cause;
+        //             console.log('errro here', postgresError.code, postgresError.constraint_name);
+        //             console.log('errro here', postgresError);
+        //         }
+        //     }
+        //     // console.log(e);
+        // }
     }
 
     /**
@@ -259,16 +459,19 @@ export class CrudQueryBuilder<T extends Table> {
      * @param data - The data to create the records with (array of objects)
      * @param overrideValues - The values to override the data with
      * @param returnColumns - The columns to return
+     * @param onConflict - The conflict resolution strategy
      * @returns The created records from the table
      */
     async createManyRecords<Cols extends Array<TTableColumns<T>>>({
         data,
         returnColumns,
         overrideValues,
+        onConflict = 'ignore',
     }: {
         data: Array<InferInsertModel<T>>;
         overrideValues?: Partial<InferInsertModel<T>>;
         returnColumns?: Cols;
+        onConflict?: TOnConflict<T>;
     }) {
         let localData = data;
 
@@ -278,7 +481,12 @@ export class CrudQueryBuilder<T extends Table> {
         }
 
         const columns = this.buildSelectColumns(returnColumns);
-        return db.insert(this.table).values(localData).returning(columns);
+
+        // Build dynamic query with conflict resolution
+        let query = db.insert(this.table).values(localData).$dynamic();
+        query = this.buildOnConflict(query, onConflict);
+
+        return await query.returning(columns);
     }
 
     // ================================

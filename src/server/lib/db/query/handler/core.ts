@@ -10,8 +10,8 @@ import { z } from 'zod';
  * @template TOutput - The output type for the query function
  */
 interface QueryFnHandlerParams<TInput, TOutput> {
-    /** The query function to wrap with error handling and logging */
-    fn: QueryFn<TInput, TOutput>;
+    /** The query function to wrap with error handling and validation */
+    queryFn: QueryFn<TInput, TOutput>;
     /** Human-readable operation description for logging and error messages */
     operation?: string;
     /** Optional Zod schema to validate input data before execution */
@@ -19,34 +19,40 @@ interface QueryFnHandlerParams<TInput, TOutput> {
 }
 
 /**
- * Wrapper function that adds comprehensive error handling, logging, and input validation to query functions.
+ * Creates a wrapped query function with input validation and error handling.
  *
- * This wrapper provides:
+ * This is a function wrapper (returns a new function) that adds:
  * - Input validation using optional Zod schema
- * - Database-specific error handling with proper error codes
- * - Development-mode error logging for debugging
+ * - Database-specific error handling via withDbQuery
  * - Consistent error formatting across all database operations
+ *
+ * Use this when you need to create a reusable query function with validation.
+ * For direct execution without creating a wrapper, use withDbQuery instead.
  *
  * @template TInput - The input type for the query function
  * @template TOutput - The output type for the query function
  * @param params - Configuration object for the wrapper
- * @returns Wrapped query function with enhanced error handling
+ * @returns Wrapped query function with validation and error handling
  *
  * @example
  * ```typescript
- * const wrappedQuery = queryFnHandler({
- *   fn: async ({ userId }) => db.select().from(users).where(eq(users.id, userId)),
+ * // Create a reusable wrapped query function
+ * const getUserById = queryFnHandler({
+ *   queryFn: async ({ userId }) => db.select().from(users).where(eq(users.id, userId)),
  *   operation: 'get user by ID',
  *   inputSchema: z.object({ userId: z.string() })
  * });
+ *
+ * // Later: execute the wrapped function
+ * const user = await getUserById({ userId: '123' });
  * ```
  */
-export function queryFnHandler<TInput, TOutput>(
+export function dbQueryFnHandler<TInput, TOutput>(
     params: QueryFnHandlerParams<TInput, TOutput>
 ): QueryFn<TInput, TOutput> {
-    const { fn, operation = 'database operation', inputSchema } = params;
+    const { queryFn, operation = 'database operation', inputSchema } = params;
 
-    return async (inputData: TInput): Promise<TOutput> => {
+    return async (inputData: TInput): Promise<TOutput | null> => {
         let data = inputData;
 
         // Validate input data if schema is provided
@@ -61,44 +67,50 @@ export function queryFnHandler<TInput, TOutput>(
             data = validatedInput.data;
         }
 
-        try {
-            // Execute the query
-            const result = await fn(data);
-
-            return result;
-        } catch (error) {
-            return handleDbQueryError(error, operation);
-        }
+        // Delegate to withDbQuery for consistent error handling
+        return await withDbQuery({
+            queryFn: async () => queryFn(data),
+            operation,
+        });
     };
 }
 
 /**
- * Wrapper function that adds comprehensive error handling to query functions.
+ * Executes a database query with comprehensive error handling.
  *
- * This wrapper provides:
+ * This is a direct execution wrapper (executes immediately) that provides:
  * - Database-specific error handling with proper error codes
  * - Development-mode error logging for debugging
  * - Consistent error formatting across all database operations
  *
+ * Use this for direct query execution with error handling.
+ * For creating reusable query functions with validation, use queryFnHandler instead.
+ *
+ * @template T - The return type of the query
+ * @param queryFn - The query function to execute
+ * @param operation - Human-readable operation description for logging
+ * @returns The query result or null.
+ *
  * @example
  * ```typescript
- * const wrappedQuery = queryHandler({
- *   query: async () => db.select().from(users).where(eq(users.id, userId)),
+ * // Direct execution with error handling
+ * const user = await withDbQuery({
+ *   queryFn: async () => db.select().from(users).where(eq(users.id, userId)),
  *   operation: 'get user by ID',
  * });
  * ```
  */
-export async function queryHandler<T>({
-    query,
+export async function withDbQuery<T>({
+    queryFn,
     operation = 'database operation',
 }: {
-    query: () => Promise<T | null>;
+    queryFn: () => Promise<T | null>;
     operation?: string;
 }) {
     try {
-        // execute the query and return the result
-        return await query();
+        // Execute the query and return the result
+        return await queryFn();
     } catch (error) {
-        return handleDbQueryError(error, operation);
+        throw handleDbQueryError(error, operation);
     }
 }

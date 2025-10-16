@@ -1,6 +1,6 @@
 import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import type { QueryFn } from '@/server/lib/db/query/builder/types';
-import { queryFnHandler } from '@/server/lib/db/query/handler';
+import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 
 export class QueryBuilder<
     const TSchemas extends Record<string, TOperationSchemaObject> = Record<
@@ -28,8 +28,8 @@ export class QueryBuilder<
         const { fn, operation } = config;
 
         // Wrap the query with the queryFnHandler
-        const wrappedQuery = queryFnHandler({
-            fn,
+        const wrappedQuery = dbQueryFnHandler({
+            queryFn: fn,
             operation: operation || `${String(key)} operation`,
             // table: this.table,
         });
