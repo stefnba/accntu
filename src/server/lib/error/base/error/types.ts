@@ -127,6 +127,7 @@ export type TErrorRequestData = {
  * @property depth - Position in chain (0 = latest error, higher = deeper in chain)
  * @property name - Error name/class (e.g., 'ValidationError', 'TypeError')
  * @property message - Error message
+ * @property location - Source file location where error was thrown (e.g., 'src/features/user/queries.ts:42:12')
  * @property id - Unique error instance ID (only for AppError)
  * @property key - Full error key like 'VALIDATION.INVALID_INPUT' (only for AppError)
  * @property code - Error code like 'INVALID_INPUT' (only for AppError)
@@ -137,6 +138,7 @@ export type TErrorChainItem = {
     depth: number;
     name: string;
     message: string;
+    location?: string;
     id?: string;
     key?: string;
     code?: string;

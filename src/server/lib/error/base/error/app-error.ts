@@ -306,10 +306,52 @@ export class AppError extends Error {
     }
 
     /**
+     * Extract source location from stack trace
+     *
+     * Finds the first line in the stack trace that references application code (src/)
+     * rather than node_modules, making it easy to identify where the error originated.
+     *
+     * @param stack - Error stack trace string
+     * @returns Simplified file path and line number (e.g., "src/features/user/queries.ts:42:12")
+     *
+     * @example
+     * ```typescript
+     * const location = AppError.extractLocation(error.stack);
+     * // Returns: "src/features/user/server/db/queries.ts:42:12"
+     * ```
+     */
+    private static extractLocation(stack?: string): string | undefined {
+        if (!stack) return undefined;
+
+        const rootDirectory = 'src/';
+
+        const lines = stack.split('\n');
+        for (const line of lines) {
+            // Look for lines containing our source code (src/) but not node_modules
+            if (line.includes(rootDirectory) && !line.includes('node_modules')) {
+                // Extract path from formats like:
+                // "at functionName (/path/to/file.ts:42:12)"
+                // "at /path/to/file.ts:42:12"
+                const match = line.match(/\(([^)]+)\)/) || line.match(/at (.+)/);
+                if (match) {
+                    const location = match[1];
+                    // Simplify the path to start from 'src/'
+                    const srcIndex = location.indexOf(rootDirectory);
+                    if (srcIndex !== -1) {
+                        return location.substring(srcIndex);
+                    }
+                    return location;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
      * Get structured context for logging/monitoring
      *
      * Builds a complete picture of the error chain with metadata for each error.
-     * Includes depth, names, messages, and AppError-specific fields (id, key, httpStatus).
+     * Includes depth, names, messages, source locations, and AppError-specific fields (id, key, httpStatus).
      *
      * Chain depth numbering: 0 = latest error (top of chain), highest = root cause (bottom of chain)
      *
@@ -317,14 +359,14 @@ export class AppError extends Error {
      *
      * @example
      * ```typescript
-     * const context = error.getChainContext();
+     * const context = error.getChain();
      * // {
      * //   depth: 3,
-     * //   rootCause: { name: 'Error', message: 'Unique constraint failed' },
+     * //   rootCause: { name: 'Error', message: 'Unique constraint failed', location: 'src/features/user/queries.ts:89:5' },
      * //   chain: [
-     * //     { depth: 0, name: 'Internal_errorError', id: 'abc123', key: 'SERVER.INTERNAL_ERROR', ... },
-     * //     { depth: 1, name: 'Create_failedError', id: 'xyz789', key: 'OPERATION.CREATE_FAILED', ... },
-     * //     { depth: 2, name: 'Error', message: 'Unique constraint failed' }
+     * //     { depth: 0, name: 'Internal_errorError', id: 'abc123', key: 'SERVER.INTERNAL_ERROR', location: 'src/features/user/endpoints.ts:15:8', ... },
+     * //     { depth: 1, name: 'Create_failedError', id: 'xyz789', key: 'OPERATION.CREATE_FAILED', location: 'src/features/user/services.ts:42:12', ... },
+     * //     { depth: 2, name: 'Error', message: 'Unique constraint failed', location: 'src/features/user/queries.ts:89:5' }
      * //   ]
      * // }
      * ```
@@ -342,6 +384,7 @@ export class AppError extends Error {
                 depth,
                 name: current.name,
                 message: current.message,
+                location: AppError.extractLocation(current.stack),
             };
 
             // Add AppError-specific fields
@@ -366,6 +409,7 @@ export class AppError extends Error {
             rootCause: {
                 name: rootCause.name,
                 message: rootCause.message,
+                location: rootCause.location,
                 id: rootCause.id,
                 key: rootCause.key,
             },
