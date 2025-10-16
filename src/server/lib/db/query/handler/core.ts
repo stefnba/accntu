@@ -1,7 +1,7 @@
 import type { QueryFn } from '@/server/lib/db/query/builder/types';
-import { AppError, AppErrors } from '@/server/lib/error';
+import { handleDbQueryError } from '@/server/lib/db/query/handler/error';
+import { AppErrors } from '@/server/lib/error';
 import { z } from 'zod';
-import { handleDbQueryError } from './error';
 
 /**
  * Configuration parameters for the query function handler wrapper.
@@ -46,7 +46,7 @@ export function queryFnHandler<TInput, TOutput>(
 ): QueryFn<TInput, TOutput> {
     const { fn, operation = 'database operation', inputSchema } = params;
 
-    return async (inputData: TInput): Promise<TOutput | undefined> => {
+    return async (inputData: TInput): Promise<TOutput> => {
         let data = inputData;
 
         // Validate input data if schema is provided
@@ -56,13 +56,8 @@ export function queryFnHandler<TInput, TOutput>(
                 throw AppErrors.validation('INVALID_FORMAT', {
                     message: `Invalid input data for ${operation}`,
                     cause: validatedInput.error,
-                    details: {
-                        operation,
-                        zodErrors: validatedInput.error,
-                    },
                 });
             }
-
             data = validatedInput.data;
         }
 
@@ -72,13 +67,38 @@ export function queryFnHandler<TInput, TOutput>(
 
             return result;
         } catch (error) {
-            // Re-throw if already an AppError
-            if (AppError.isAppError(error)) {
-                throw error;
-            }
-
-            // Handle database-specific errors with PostgreSQL detection
-            handleDbQueryError(error, operation);
+            return handleDbQueryError(error, operation);
         }
     };
+}
+
+/**
+ * Wrapper function that adds comprehensive error handling to query functions.
+ *
+ * This wrapper provides:
+ * - Database-specific error handling with proper error codes
+ * - Development-mode error logging for debugging
+ * - Consistent error formatting across all database operations
+ *
+ * @example
+ * ```typescript
+ * const wrappedQuery = queryHandler({
+ *   query: async () => db.select().from(users).where(eq(users.id, userId)),
+ *   operation: 'get user by ID',
+ * });
+ * ```
+ */
+export async function queryHandler<T>({
+    query,
+    operation = 'database operation',
+}: {
+    query: () => Promise<T | null>;
+    operation?: string;
+}) {
+    try {
+        // execute the query and return the result
+        return await query();
+    } catch (error) {
+        return handleDbQueryError(error, operation);
+    }
 }

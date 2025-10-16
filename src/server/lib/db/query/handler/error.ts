@@ -1,6 +1,6 @@
 import { AppErrors } from '@/server/lib/error';
 import { DrizzleQueryError } from 'drizzle-orm';
-import { PostgresError } from 'postgres';
+import postgres from 'postgres';
 
 /**
  * Handle database query errors with PostgreSQL-specific error code detection
@@ -27,67 +27,82 @@ import { PostgresError } from 'postgres';
 export const handleDbQueryError = (error: unknown, operation?: string): never => {
     const operationContext = operation ? ` during '${operation}'` : '';
 
-    // Handle PostgreSQL errors with specific error codes
-    if (error instanceof PostgresError) {
-        const pgError = error as PostgresError;
-
-        // Extract details for better error messages
-        const detail = pgError.detail || '';
-        const constraint = pgError.constraint_name || 'unknown';
-
-        switch (pgError.code) {
-            case '23505': // Unique constraint violation
-                throw AppErrors.db('UNIQUE_VIOLATION', {
-                    message: `Unique constraint violation${operationContext}: ${detail || pgError.message}`,
-                    cause: error,
-                    details: {
-                        constraint,
-                        postgresCode: pgError.code,
-                        detail,
-                    },
-                });
-
-            case '23503': // Foreign key constraint violation
-                throw AppErrors.db('FOREIGN_KEY_VIOLATION', {
-                    message: `Foreign key constraint violation${operationContext}: ${detail || pgError.message}`,
-                    cause: error,
-                    details: {
-                        constraint,
-                        postgresCode: pgError.code,
-                        detail,
-                    },
-                });
-
-            case '23502': // Not-null constraint violation
-                throw AppErrors.db('QUERY_FAILED', {
-                    message: `Not-null constraint violation${operationContext}: ${detail || pgError.message}`,
-                    cause: error,
-                    details: {
-                        constraint,
-                        postgresCode: pgError.code,
-                        detail,
-                        reason: 'not_null_violation',
-                    },
-                });
-
-            default:
-                // Other PostgreSQL errors
-                throw AppErrors.db('QUERY_FAILED', {
-                    message: `Database query failed${operationContext}: ${pgError.message}`,
-                    cause: error,
-                    details: {
-                        postgresCode: pgError.code,
-                        detail,
-                    },
-                });
-        }
-    }
-
-    // Handle Drizzle query errors
+    // check for drizzle query error
     if (error instanceof DrizzleQueryError) {
+        const drizzleError = error;
+
+        const errorObj = { query: drizzleError.query };
+
+        // check for postgres error
+        if (drizzleError.cause instanceof postgres.PostgresError) {
+            const postgresError = drizzleError.cause;
+            const {
+                code,
+                column_name,
+                table_name: table,
+                // name,
+                constraint_name: constraint,
+                message,
+            } = postgresError;
+
+            Object.assign(errorObj, {
+                table,
+                code,
+                message,
+                constraint,
+            });
+
+            switch (postgresError.code) {
+                case '23505':
+                    throw AppErrors.db('UNIQUE_VIOLATION', {
+                        message: `Unique constraint violation${operationContext}: ${message}`,
+                        cause: error,
+                        layer: 'db',
+                        details: {
+                            constraint,
+                            postgresCode: code,
+                            detail: message,
+                        },
+                    });
+                case '23503':
+                    throw AppErrors.db('FOREIGN_KEY_VIOLATION', {
+                        message: `Foreign key constraint violation${operationContext}: ${message}`,
+                        cause: error,
+                        layer: 'db',
+                        details: {
+                            constraint,
+                            postgresCode: code,
+                            detail: message,
+                        },
+                    });
+                case '23502':
+                    throw AppErrors.db('QUERY_FAILED', {
+                        message: `Not-null constraint violation${operationContext}: ${message}`,
+                        cause: error,
+                        layer: 'db',
+                        details: {
+                            constraint,
+                            postgresCode: code,
+                            detail: message,
+                        },
+                    });
+                default:
+                    throw AppErrors.db('QUERY_FAILED', {
+                        message: `Database query failed${operationContext}: ${message}`,
+                        cause: error,
+                        layer: 'db',
+                        details: {
+                            postgresCode: code,
+                            detail: message,
+                        },
+                    });
+            }
+        }
+
         throw AppErrors.db('QUERY_FAILED', {
             message: `Database query failed${operationContext}: ${error.message}`,
             cause: error,
+            layer: 'db',
         });
     }
 
@@ -96,12 +111,10 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
         throw AppErrors.db('CONNECTION_ERROR', {
             message: `Database connection refused${operationContext}`,
             cause: error,
+            layer: 'db',
         });
     }
 
-    // Generic database error fallback
-    throw AppErrors.db('QUERY_FAILED', {
-        message: `Database operation failed${operationContext}`,
-        cause: error instanceof Error ? error : new Error(String(error)),
-    });
+    // else throw generic database error
+    throw error;
 };
