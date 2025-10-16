@@ -32,10 +32,20 @@ export class CrudQueryBuilder<T extends Table> {
         return getTableColumns(this.table);
     }
 
+    /**
+     * Get the column of the table
+     * @param column - The column to get
+     * @returns The column of the table
+     */
     private getColumn(column: keyof T['_']['columns']) {
         return this.getColumns()[column];
     }
 
+    /**
+     * Build the identifier filters
+     * @param identifiers - The identifiers to build the filters from
+     * @returns The identifier filters
+     */
     private buildIdentifierFilters(identifiers: Array<TBooleanFilter<T>>) {
         return identifiers.map(({ field, value }) => {
             const column = this.getColumn(field);
