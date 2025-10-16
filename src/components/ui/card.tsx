@@ -36,7 +36,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 const cardTitleVariants = cva('leading-none ', {
     variants: {
         size: {
-            lg: 'text-lg font-semibold',
+            lg: 'text-lg font-medium',
             xl: 'text-2xl font-semibold',
             default: 'font-medium',
         },
