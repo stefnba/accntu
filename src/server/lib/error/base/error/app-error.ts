@@ -99,6 +99,11 @@ export class AppError extends Error {
 
         // Ensure prototype chain is maintained
         Object.setPrototypeOf(this, new.target.prototype);
+
+        // Auto-log all unexpected errors
+        if (!this.isExpected) {
+            void this.log();
+        }
     }
 
     /**
@@ -327,41 +332,39 @@ export class AppError extends Error {
      * Extract source location from stack trace
      *
      * Finds the first line in the stack trace that references application code (src/)
-     * rather than node_modules, making it easy to identify where the error originated.
+     * and returns the complete stack line including function name and file location.
+     * Skips node_modules and internal code.
      *
      * @param stack - Error stack trace string
-     * @returns Simplified file path and line number (e.g., "src/features/user/queries.ts:42:12")
+     * @returns Full stack trace line for parsing (includes function name and location)
      *
      * @example
      * ```typescript
      * const location = AppError.extractLocation(error.stack);
-     * // Returns: "src/features/user/server/db/queries.ts:42:12"
+     * // Returns: "at createFromRegistry (src/server/lib/error/base/factory/error-factory.ts:80:16)"
      * ```
      */
     private static extractLocation(stack?: string): string | undefined {
         if (!stack) return undefined;
 
         const rootDirectory = 'src/';
+        const skipPatterns = [
+            '/error/base/factory/',
+            '/error/factories',
+            'AppErrors.raise',
+            'BaseErrorFactory',
+        ];
 
         const lines = stack.split('\n');
         for (const line of lines) {
-            // Look for lines containing our source code (src/) but not node_modules
             if (line.includes(rootDirectory) && !line.includes('node_modules')) {
-                // Extract path from formats like:
-                // "at functionName (/path/to/file.ts:42:12)"
-                // "at /path/to/file.ts:42:12"
-                const match = line.match(/\(([^)]+)\)/) || line.match(/at (.+)/);
-                if (match) {
-                    const location = match[1];
-                    // Simplify the path to start from 'src/'
-                    const srcIndex = location.indexOf(rootDirectory);
-                    if (srcIndex !== -1) {
-                        return location.substring(srcIndex);
-                    }
-                    return location;
+                const shouldSkip = skipPatterns.some((pattern) => line.includes(pattern));
+                if (!shouldSkip) {
+                    return line.trim();
                 }
             }
         }
+
         return undefined;
     }
 
@@ -438,6 +441,14 @@ export class AppError extends Error {
     /**
      * Logs the error with optional chain context
      *
+     * In development mode:
+     * - Exports full error details to JSON file (logs/errors/{errorId}.json)
+     * - Prints smart, compact console format with key information
+     * - Auto-cleans up old error files (keeps last 100)
+     *
+     * In production mode:
+     * - Uses structured logging with full error details
+     *
      * @param requestData - Optional request data to include in the log
      * @param options - Additional options for logging
      * @param options.includeChain - Whether to include error chain context (default: true)
@@ -446,13 +457,27 @@ export class AppError extends Error {
      * @example
      * ```typescript
      * error.log({ method: 'POST', url: '/api/users', userId: '123', status: 500 });
-     * // Logs with full chain context showing error propagation
+     * // Dev: Prints compact console format + exports to JSON
+     * // Prod: Structured logging
      * ```
      */
-    log(
+    async log(
         requestData?: TErrorRequestData,
         options: { includeChain?: boolean; includeStack?: boolean } = {}
     ) {
+        if (process.env.NODE_ENV === 'development') {
+            const { formatDevConsole, exportErrorToJson } = await import(
+                '@/server/lib/error/formatters'
+            );
+
+            await exportErrorToJson(this, requestData);
+
+            const formattedError = formatDevConsole(this, requestData);
+            console.error(formattedError);
+
+            return;
+        }
+
         const { includeChain = true, includeStack = true } = options;
 
         const logData: Record<string, unknown> = {
@@ -461,7 +486,6 @@ export class AppError extends Error {
             request: requestData,
         };
 
-        // Add chain context if requested and chain exists
         if (includeChain && this.cause) {
             logData.chain = this.getChain();
         }

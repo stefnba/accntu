@@ -1,4 +1,5 @@
 import { getEnv } from '@/lib/env';
+import { AppErrors } from '@/server/lib/error';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -27,10 +28,21 @@ export async function checkDbConnection() {
         await db.execute(sql`SELECT 1`);
         console.log('✅ Database connection successful.');
     } catch (error) {
+        AppErrors.raise('DB.CONNECTION_ERROR', {
+            message:
+                'Could not connect to the database. Please check your connection string and ensure the database server is running.',
+            cause: error instanceof Error ? error : undefined,
+            layer: 'db',
+            details: {
+                originalError: error,
+            },
+        });
+
+        // Wait for async logging to complete before exiting
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
         console.error('❌ Database connection failed:');
-        // console.error(error);
-        throw new Error(
-            '\n❌❌❌ Could not connect to the database.Please check your connection string and ensure the database server is running.'
-        );
+
+        process.exit(1);
     }
 }
