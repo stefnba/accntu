@@ -1,5 +1,6 @@
 import { getUser } from '@/lib/auth';
 import { AuthContext } from '@/lib/auth/server/types';
+import { AppErrors } from '@/server/lib/error';
 import { handleRouteError, SuccessResponseCode } from '@/server/lib/route/error-handler';
 import { getAllValidated } from '@/server/lib/route/helpers';
 import { ExtractCoreValidatedData } from '@/server/lib/route/types';
@@ -112,7 +113,10 @@ class RouteHandlerWithUser<
     withAdmin() {
         const user = getUser(this.c);
         if (!user || user.role !== 'admin') {
-            throw new Error('Admin access required');
+            throw AppErrors.permission('INSUFFICIENT_ROLE', {
+                message: 'Insufficient role',
+                details: { requiredRole: 'admin', userRole: user.role },
+            });
         }
         return new RouteHandlerWithUser<I, TContext>(this.c, user);
     }
