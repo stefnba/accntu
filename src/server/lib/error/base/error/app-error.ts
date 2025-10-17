@@ -99,11 +99,6 @@ export class AppError extends Error {
 
         // Ensure prototype chain is maintained
         Object.setPrototypeOf(this, new.target.prototype);
-
-        // Auto-log all unexpected errors
-        if (!this.isExpected) {
-            void this.log();
-        }
     }
 
     /**

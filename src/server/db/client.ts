@@ -28,7 +28,7 @@ export async function checkDbConnection() {
         await db.execute(sql`SELECT 1`);
         console.log('✅ Database connection successful.');
     } catch (error) {
-        AppErrors.raise('DB.CONNECTION_ERROR', {
+        const appError = AppErrors.raise('DB.CONNECTION_ERROR', {
             message:
                 'Could not connect to the database. Please check your connection string and ensure the database server is running.',
             cause: error instanceof Error ? error : undefined,
@@ -38,9 +38,7 @@ export async function checkDbConnection() {
             },
         });
 
-        // Wait for async logging to complete before exiting
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
+        await appError.log();
         console.error('❌ Database connection failed:');
 
         process.exit(1);

@@ -31,32 +31,27 @@ export const handleGlobalError = (error: unknown, c: Context) => {
     /**
      * Logging Strategy:
      *
-     * DEVELOPMENT:
-     * - Constructor auto-logs immediately with formatted console output + JSON export
-     * - Skip logging here to avoid duplicate console output
-     * - JSON file already has all error details
-     * - Request context not critical for local debugging
+     * ALL ENVIRONMENTS:
+     * - Constructor does NOT auto-log (removed for consistency)
+     * - Global handler logs ALL HTTP errors with full request context
+     * - Development: Formatted console output + JSON export
+     * - Production: Structured NDJSON logger with request context
      *
-     * PRODUCTION:
-     * - Constructor auto-logs basic error details
-     * - Log again HERE with full request context (method, URL, userId, status)
-     * - Second log provides critical HTTP context for monitoring/debugging
-     * - Both logs go to structured logger, second one is more complete
+     * NON-HTTP ERRORS:
+     * - Explicitly logged where they occur (e.g., DB connection in checkDbConnection)
      */
-    if (process.env.NODE_ENV !== 'development') {
-        appError.log(
-            {
-                method: c.req.method,
-                url: c.req.url,
-                userId,
-                status: appError.httpStatus,
-            },
-            {
-                includeChain: true,
-                includeStack: appError.httpStatus >= 500,
-            }
-        );
-    }
+    appError.log(
+        {
+            method: c.req.method,
+            url: c.req.url,
+            userId,
+            status: appError.httpStatus,
+        },
+        {
+            includeChain: true,
+            includeStack: appError.httpStatus >= 500,
+        }
+    );
 
     return c.json(appError.toResponse(), appError.httpStatus);
 };
