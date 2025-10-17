@@ -383,6 +383,72 @@ export const budgetServices = createFeatureServices
         },
 
         /**
+         * Recalculate transaction budget (combines mark + calculate + store)
+         */
+        recalculate: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+            await queries.markForRecalculation({ transactionId });
+
+            const calculationResult = await calculateTransactionBudget({ transactionId, userId });
+
+            if (!calculationResult) {
+                throw AppErrors.raise('RESOURCE.NOT_FOUND');
+            }
+
+            const existingBudget = await queries.getByTransactionAndUser({
+                transactionId,
+                userId,
+            });
+
+            let budgetRecord;
+
+            if (existingBudget) {
+                budgetRecord = await queries.updateById({
+                    ids: { id: existingBudget.id },
+                    userId,
+                    data: {
+                        budgetAmount: calculationResult.budgetAmount.toString(),
+                        budgetPercentage: calculationResult.budgetPercentage.toString(),
+                        splitSource: calculationResult.splitSource,
+                        transactionId,
+                    },
+                });
+
+                await queries.removeParticipantsByBudgetId({
+                    transactionBudgetId: existingBudget.id,
+                });
+            } else {
+                budgetRecord = await queries.create({
+                    data: {
+                        transactionId,
+                        budgetAmount: calculationResult.budgetAmount.toString(),
+                        budgetPercentage: calculationResult.budgetPercentage.toString(),
+                        splitSource: calculationResult.splitSource,
+                    },
+                    userId,
+                });
+            }
+
+            if (!budgetRecord) {
+                throw AppErrors.raise('OPERATION.CREATE_FAILED');
+            }
+
+            const participantRecords = calculationResult.participantRecords.map((record) => ({
+                participantId: record.participantId,
+                resolvedAmount: record.resolvedAmount.toString(),
+                resolvedPercentage: record.resolvedPercentage.toString(),
+                splitConfigUsed: record.splitConfig,
+                isUserParticipant: record.isUserParticipant,
+            }));
+
+            await queries.createParticipants({
+                transactionBudgetId: budgetRecord.id,
+                participants: participantRecords,
+            });
+
+            return budgetRecord;
+        },
+
+        /**
          * Process all pending recalculations
          */
         // processPendingRecalculations: async () => {

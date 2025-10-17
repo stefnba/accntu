@@ -30,27 +30,22 @@ const app = new Hono()
     .get('/', zValidator('query', labelSchemas.getMany.endpoint.query), (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId, validatedInput }) =>
-                labelServices.getMany({
+            .handle(async ({ userId, validatedInput }) => {
+                const { page, pageSize, ...filters } = validatedInput.query;
+                return labelServices.getMany({
+                    filters,
+                    pagination: { page, pageSize },
                     userId,
-                    filters: { search: validatedInput.query.search, parentId: validatedInput.query.parentId },
-                    pagination: { page: validatedInput.query.page, pageSize: validatedInput.query.pageSize },
-                })
-            )
+                });
+            })
     )
 
     .get('/:id', zValidator('param', labelSchemas.getById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId, validatedInput }) => {
-                const label = await labelServices.getById({ ids: validatedInput.param, userId });
-
-                if (!label) {
-                    throw new Error('Label not found');
-                }
-
-                return label;
-            })
+            .handle(async ({ userId, validatedInput }) =>
+                labelServices.getById({ ids: validatedInput.param, userId })
+            )
     )
 
     .post('/', zValidator('json', labelSchemas.create.endpoint.json), (c) =>
@@ -68,19 +63,13 @@ const app = new Hono()
         (c) =>
             routeHandler(c)
                 .withUser()
-                .handle(async ({ userId, validatedInput }) => {
-                    const label = await labelServices.updateById({
+                .handle(async ({ userId, validatedInput }) =>
+                    labelServices.updateById({
                         ids: validatedInput.param,
                         data: validatedInput.json,
                         userId,
-                    });
-
-                    if (!label) {
-                        throw new Error('Label not found');
-                    }
-
-                    return label;
-                })
+                    })
+                )
     )
 
     .delete('/:id', zValidator('param', labelSchemas.removeById.endpoint.param), (c) =>

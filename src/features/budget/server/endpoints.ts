@@ -10,9 +10,9 @@ const app = new Hono()
             .withUser()
             .handle(async ({ userId, validatedInput }) => {
                 const { page, pageSize, ...filters } = validatedInput.query;
-                return await budgetServices.getMany({
-                    pagination: { page, pageSize },
+                return budgetServices.getMany({
                     filters,
+                    pagination: { page, pageSize },
                     userId,
                 });
             })
@@ -21,18 +21,12 @@ const app = new Hono()
     .get('/:id', zValidator('param', transactionBudgetSchemas.getById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId, validatedInput }) => {
-                const budget = await budgetServices.getById({
+            .handle(async ({ userId, validatedInput }) =>
+                budgetServices.getById({
                     ids: { id: validatedInput.param.id },
                     userId,
-                });
-
-                if (!budget) {
-                    throw new Error('Transaction budget not found');
-                }
-
-                return budget;
-            })
+                })
+            )
     )
 
     .post('/', zValidator('json', transactionBudgetSchemas.create.endpoint.json), (c) =>
@@ -62,10 +56,9 @@ const app = new Hono()
     .delete('/:id', zValidator('param', transactionBudgetSchemas.removeById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId, validatedInput }) => {
-                await budgetServices.removeById({ ids: { id: validatedInput.param.id }, userId });
-                return { success: true };
-            })
+            .handleMutation(async ({ userId, validatedInput }) =>
+                budgetServices.removeById({ ids: { id: validatedInput.param.id }, userId })
+            )
     )
 
     .post(
@@ -88,18 +81,12 @@ const app = new Hono()
         (c) =>
             routeHandler(c)
                 .withUser()
-                .handle(async ({ userId, validatedInput }) => {
-                    const { transactionId } = validatedInput.json;
-
-                    await budgetServices.markForRecalculation({ transactionId });
-
-                    const budget = await budgetServices.calculateAndStore({
-                        transactionId,
+                .handle(async ({ userId, validatedInput }) =>
+                    budgetServices.recalculate({
+                        transactionId: validatedInput.json.transactionId,
                         userId,
-                    });
-
-                    return budget;
-                })
+                    })
+                )
     );
 
 // Process all pending recalculations

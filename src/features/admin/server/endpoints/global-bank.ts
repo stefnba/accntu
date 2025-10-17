@@ -7,26 +7,21 @@ import { Hono } from 'hono';
 export const adminGlobalBankEndpoints = new Hono()
 
     // Get all global banks
-    .get('/', zValidator('query', globalBankSchemas.getMany.endpoint.query), async (c) =>
+    .get('/', zValidator('query', globalBankSchemas.getMany.endpoint.query), (c) =>
         routeHandler(c)
             .withUser()
             .withAdmin()
-            .handle(async ({ validatedInput }) =>
-                globalBankServices.getMany({
-                    filters: {
-                        query: validatedInput.query.query,
-                        country: validatedInput.query.country,
-                    },
-                    pagination: {
-                        page: 1,
-                        pageSize: 10,
-                    },
-                })
-            )
+            .handle(async ({ validatedInput }) => {
+                const { page, pageSize, ...filters } = validatedInput.query;
+                return globalBankServices.getMany({
+                    filters,
+                    pagination: { page, pageSize },
+                });
+            })
     )
 
     // Get a global bank by id
-    .get('/:id', zValidator('param', globalBankSchemas.getById.endpoint.param), async (c) =>
+    .get('/:id', zValidator('param', globalBankSchemas.getById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
             .withAdmin()
@@ -36,7 +31,7 @@ export const adminGlobalBankEndpoints = new Hono()
     )
 
     // Create a global bank
-    .post('/', zValidator('json', globalBankSchemas.create.endpoint.json), async (c) =>
+    .post('/', zValidator('json', globalBankSchemas.create.endpoint.json), (c) =>
         routeHandler(c)
             .withUser()
             .withAdmin()
@@ -50,7 +45,7 @@ export const adminGlobalBankEndpoints = new Hono()
         '/:id',
         zValidator('json', globalBankSchemas.updateById.endpoint.json),
         zValidator('param', globalBankSchemas.updateById.endpoint.param),
-        async (c) =>
+        (c) =>
             routeHandler(c)
                 .withUser()
                 .withAdmin()
@@ -63,7 +58,7 @@ export const adminGlobalBankEndpoints = new Hono()
     )
 
     // Delete a global bank
-    .delete('/:id', zValidator('param', globalBankSchemas.removeById.endpoint.param), async (c) =>
+    .delete('/:id', zValidator('param', globalBankSchemas.removeById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
             .withAdmin()
