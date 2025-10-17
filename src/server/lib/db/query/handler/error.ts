@@ -31,59 +31,69 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
     if (error instanceof DrizzleQueryError) {
         const drizzleError = error;
 
-        const errorObj = { query: drizzleError.query };
+        // todo clean sensitive data from params
+        const errorObj = {
+            drizzleError: { query: drizzleError.query, params: drizzleError.params },
+        };
 
         // check for postgres error
         if (drizzleError.cause instanceof postgres.PostgresError) {
             const postgresError = drizzleError.cause;
             const {
                 code,
-                column_name,
+                column_name: column,
                 table_name: table,
-                // name,
+                detail,
                 constraint_name: constraint,
                 message,
             } = postgresError;
 
             Object.assign(errorObj, {
-                table,
-                code,
-                message,
-                constraint,
+                postgresError: {
+                    table,
+                    column,
+                    code,
+                    message,
+                    constraint,
+                    detail,
+                    name,
+                },
             });
 
             switch (postgresError.code) {
+                // Unique constraint violation
                 case '23505':
                     throw AppErrors.db('UNIQUE_VIOLATION', {
                         message: `Unique constraint violation${operationContext}: ${message}`,
                         cause: error,
                         layer: 'db',
-                        details: {
-                            constraint,
-                            postgresCode: code,
-                            detail: message,
-                        },
+                        details: { ...errorObj },
                     });
+                // Foreign key constraint violation
                 case '23503':
                     throw AppErrors.db('FOREIGN_KEY_VIOLATION', {
                         message: `Foreign key constraint violation${operationContext}: ${message}`,
                         cause: error,
                         layer: 'db',
-                        details: {
-                            constraint,
-                            postgresCode: code,
-                            detail: message,
-                        },
+                        details: { ...errorObj },
                     });
+                // Not-null constraint violation
                 case '23502':
                     throw AppErrors.db('QUERY_FAILED', {
                         message: `Not-null constraint violation${operationContext}: ${message}`,
                         cause: error,
                         layer: 'db',
+                        details: { ...errorObj },
+                    });
+                // Syntax error
+                case '42601':
+                    console.log('Syntax error', error);
+                    throw AppErrors.db('SYNTAX_ERROR', {
+                        message: `Syntax error${operationContext}: ${message}`,
+                        cause: error,
+                        layer: 'db',
                         details: {
-                            constraint,
-                            postgresCode: code,
-                            detail: message,
+                            ...errorObj,
                         },
                     });
                 default:
@@ -91,10 +101,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                         message: `Database query failed${operationContext}: ${message}`,
                         cause: error,
                         layer: 'db',
-                        details: {
-                            postgresCode: code,
-                            detail: message,
-                        },
+                        details: { ...errorObj },
                     });
             }
         }

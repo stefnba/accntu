@@ -256,6 +256,12 @@ export const ERROR_REGISTRY = ErrorRegistry.fromObject({
             httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
             isExpected: false,
         },
+        SYNTAX_ERROR: {
+            layers: ['db'],
+            public: PUBLIC_ERROR_REGISTRY.INTERNAL_ERROR,
+            httpStatus: HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+            isExpected: false,
+        },
     },
 
     COOKIE: {
