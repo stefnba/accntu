@@ -99,6 +99,11 @@ export class AppError extends Error {
 
         // Ensure prototype chain is maintained
         Object.setPrototypeOf(this, new.target.prototype);
+
+        // auto log in development
+        // if (process.env.NODE_ENV === 'development') {
+        //     void this.log();
+        // }
     }
 
     /**

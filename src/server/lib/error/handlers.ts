@@ -22,10 +22,9 @@ import { Context } from 'hono';
  * @param c - The Hono context
  * @returns JSON response with error details and appropriate status code
  */
-export const handleGlobalError = (error: unknown, c: Context) => {
+export const handleGlobalError = async (error: unknown, c: Context) => {
     const userId = c.get('user')?.id;
 
-    // Convert the error to a AppError
     const appError = AppError.fromUnknown(error);
 
     /**
@@ -39,8 +38,10 @@ export const handleGlobalError = (error: unknown, c: Context) => {
      *
      * NON-HTTP ERRORS:
      * - Explicitly logged where they occur (e.g., DB connection in checkDbConnection)
+     *
+     * IMPORTANT: Must await logging to prevent Hono context finalization errors
      */
-    appError.log(
+    await appError.log(
         {
             method: c.req.method,
             url: c.req.url,
