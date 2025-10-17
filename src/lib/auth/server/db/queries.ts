@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/server/db';
 
 import { authSession } from '@/lib/auth/server/db/tables';
-import { withDbQuery } from '@/server/lib/db/query/handler/old';
+import { withDbQuery } from '@/server/lib/db';
 
 /**
  * Update the last active timestamp and optionally the IP and user agent for a session

@@ -130,6 +130,12 @@ class FeatureQueries<
                      */
                     onConflict?: 'update' | 'ignore' | 'fail';
                 };
+                updateById?: {
+                    /**
+                     * The data that is used to update the record
+                     */
+                    onConflict?: 'update' | 'ignore' | 'fail';
+                };
                 getMany?: {
                     /**
                      * The filters that are used to filter the records. If the schema has a `getMany` operation with a `layer` schema returning `filter`,

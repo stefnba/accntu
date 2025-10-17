@@ -390,10 +390,16 @@ export class CrudQueryBuilder<T extends Table> {
     }): Promise<{ [K in Cols[number]]: T['_']['columns'][K]['_']['data'] } | null> {
         const columns = this.buildSelectColumns(returnColumns);
 
+        // base query
         const baseQuery = db.insert(this.table).values(data).$dynamic();
+
+        // build on conflict
         const query = this.buildOnConflict(baseQuery, onConflict);
+
+        // returning cols
         const queryWithReturning = query.returning(columns);
 
+        // execute query
         return withDbQuery({
             queryFn: async () => {
                 const newRecord = await queryWithReturning;
@@ -401,9 +407,6 @@ export class CrudQueryBuilder<T extends Table> {
             },
             operation: 'create record for table ' + this.getTableName(),
         });
-        const newRecord = await queryWithReturning;
-
-        return newRecord[0] ?? null;
 
         // return queryFnHandler({
         //     fn: async () => {

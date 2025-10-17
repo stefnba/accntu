@@ -9,6 +9,7 @@ import postgres from 'postgres';
  * - 23505: Unique constraint violation
  * - 23503: Foreign key constraint violation
  * - 23502: Not-null constraint violation
+ * - 42601: Syntax error
  * - ECONNREFUSED: Database connection refused
  *
  * @param error - The error thrown from database query
@@ -56,7 +57,6 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                     message,
                     constraint,
                     detail,
-                    name,
                 },
             });
 
