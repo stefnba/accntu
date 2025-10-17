@@ -8,79 +8,145 @@ Guidelines for backend development using Hono framework, Drizzle ORM, PostgreSQL
 
 ```typescript
 import { Hono } from 'hono';
-import { withRoute } from '@/server/lib/handler';
-import { getUser } from '@/lib/auth';
+import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 
 // CRITICAL: Always use method chaining for Hono instantiation
 const app = new Hono()
-    .get('/', async (c) =>
-        withRoute(c, async () => {
-            const user = getUser(c);
-            return { message: 'Hello World', userId: user.id };
-        })
+    // Simple GET - no outer async needed
+    .get('/', (c) =>
+        routeHandler(c)
+            .withUser()
+            .handle(async ({ userId }) =>
+                service.getAll({ userId })
+            )
     )
-    .post('/', zValidator('json', CreateSchema), async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
-                return await service.create({ ...data, userId: user.id });
-            },
-            201
-        )
+    // POST mutation - no outer async needed
+    .post('/', zValidator('json', CreateSchema), (c) =>
+        routeHandler(c)
+            .withUser()
+            .handleMutation(async ({ userId, validatedInput }) =>
+                service.create({
+                    data: validatedInput.json,
+                    userId
+                })
+            )
     );
 
 export default app;
 ```
 
-### Route Handler Patterns
+### Thin Handler, Fat Service Principle
+
+**CRITICAL RULE**: Handlers should ONLY handle HTTP concerns. All business logic belongs in services.
+
+#### ✅ CORRECT: Thin Handler Pattern
 
 ```typescript
-// Always use withRoute wrapper for error handling
-app.get('/items/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-    withRoute(c, async () => {
-        const { id } = c.req.valid('param');
-        const user = getUser(c);
+// Simple pass-through - no outer async needed
+.get('/', (c) =>
+    routeHandler(c)
+        .withUser()
+        .handle(async ({ userId, validatedInput }) =>
+            service.getMany({
+                ...validatedInput.query,
+                userId
+            })
+        )
+)
 
-        const item = await queries.getById({ id, userId: user.id });
+// Mutation with validation - no outer async needed
+.post('/', zValidator('json', CreateSchema), (c) =>
+    routeHandler(c)
+        .withUser()
+        .handleMutation(async ({ userId, validatedInput }) =>
+            service.create({
+                data: validatedInput.json,
+                userId
+            })
+        )
+)
 
-        if (!item) {
-            throw new Error('Item not found');
-        }
+// HTTP concern (cookies) - outer async ONLY for HTTP operations
+.post('/login', async (c) => {
+    const result = await routeHandler(c)
+        .handle(async ({ validatedInput }) =>
+            authService.login(validatedInput.json)
+        );
 
-        return item;
-    })
-);
-
-// Use appropriate status codes for different operations
-app.post(
-    '/items',
-    zValidator('json', CreateItemSchema),
-    async (c) =>
-        withRoute(
-            c,
-            async () => {
-                const user = getUser(c);
-                const data = c.req.valid('json');
-
-                return await queries.create({
-                    data: { ...data, userId: user.id },
-                });
-            },
-            201
-        ) // 201 for creation
-);
-
-app.delete('/items/:id', zValidator('param', z.object({ id: z.string() })), async (c) =>
-    withRoute(c, async () => {
-        const { id } = c.req.valid('param');
-        await queries.remove({ id });
-        return { success: true };
-    })
-);
+    setCookie(c, 'session', result.token); // HTTP concern
+    return c.json(result);
+})
 ```
+
+#### ❌ WRONG: Business Logic in Handler
+
+```typescript
+// DON'T: Error handling in handler
+.get('/:id', async (c) =>
+    routeHandler(c)
+        .withUser()
+        .handle(async ({ userId, validatedInput }) => {
+            const item = await service.getById({...});
+            if (!item) throw new Error('Not found'); // ❌ Service should handle this
+            return item;
+        })
+)
+
+// DON'T: Data transformation in handler
+.get('/', async (c) =>
+    routeHandler(c)
+        .withUser()
+        .handle(async ({ userId, validatedInput }) => {
+            const { page, pageSize, ...filters } = validatedInput.query; // ❌ Service should handle this
+            return service.getMany({ pagination: { page, pageSize }, filters, userId });
+        })
+)
+
+// DON'T: Multiple service calls (orchestration) in handler
+.post('/complex', async (c) =>
+    routeHandler(c)
+        .withUser()
+        .handleMutation(async ({ userId, validatedInput }) => {
+            await service1.markForUpdate({...}); // ❌ Orchestration logic
+            const result = await service2.process({...}); // ❌ belongs in service
+            return result;
+        })
+)
+```
+
+#### When to Use `async` on Outer Handler
+
+**Rule**: Only use `async` on the outer Hono handler when you need to perform HTTP-level operations (cookies, headers) AFTER the service call.
+
+```typescript
+// ✅ NO async - just routing to service
+.get('/', (c) =>
+    routeHandler(c).withUser().handle(async ({ userId }) =>
+        service.getAll({ userId })
+    )
+)
+
+// ✅ YES async - need to set cookie after service call
+.post('/login', async (c) => {
+    const result = await routeHandler(c)
+        .handle(async ({ validatedInput }) =>
+            authService.login(validatedInput.json)
+        );
+    setCookie(c, 'session', result.token);
+    return c.json(result);
+})
+```
+
+### Route Handler Requirements
+
+1. **Use `routeHandler(c)` wrapper** - provides error handling and auth
+2. **Call `.withUser()` for protected routes** - automatically gets user from context
+3. **Use `.handle()` for queries** - returns data directly (200 status)
+4. **Use `.handleMutation()` for mutations** - returns `{ success: true, data }` (201 status)
+5. **NO business logic in handlers** - only HTTP concerns (routing, cookies, headers)
+6. **NO `async` on outer handler** - unless you need HTTP operations after service call
+7. **Service methods handle all validation, transformation, and error throwing**
 
 ## Database Operations
 
