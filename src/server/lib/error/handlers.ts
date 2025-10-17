@@ -28,19 +28,35 @@ export const handleGlobalError = (error: unknown, c: Context) => {
     // Convert the error to a AppError
     const appError = AppError.fromUnknown(error);
 
-    // Log the error
-    appError.log(
-        {
-            method: c.req.method,
-            url: c.req.url,
-            userId,
-            status: appError.httpStatus,
-        },
-        {
-            includeChain: true,
-            includeStack: appError.httpStatus >= 500,
-        }
-    );
+    /**
+     * Logging Strategy:
+     *
+     * DEVELOPMENT:
+     * - Constructor auto-logs immediately with formatted console output + JSON export
+     * - Skip logging here to avoid duplicate console output
+     * - JSON file already has all error details
+     * - Request context not critical for local debugging
+     *
+     * PRODUCTION:
+     * - Constructor auto-logs basic error details
+     * - Log again HERE with full request context (method, URL, userId, status)
+     * - Second log provides critical HTTP context for monitoring/debugging
+     * - Both logs go to structured logger, second one is more complete
+     */
+    if (process.env.NODE_ENV !== 'development') {
+        appError.log(
+            {
+                method: c.req.method,
+                url: c.req.url,
+                userId,
+                status: appError.httpStatus,
+            },
+            {
+                includeChain: true,
+                includeStack: appError.httpStatus >= 500,
+            }
+        );
+    }
 
     return c.json(appError.toResponse(), appError.httpStatus);
 };
