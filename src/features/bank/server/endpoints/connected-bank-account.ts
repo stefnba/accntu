@@ -12,7 +12,7 @@ const app = new Hono()
     .get('/', async (c) =>
         routeHandler(c)
             .withUser()
-            .handle(({ userId, validatedInput }) =>
+            .handle(async ({ userId, validatedInput }) =>
                 connectedBankAccountServices.getMany({
                     userId,
                     filters: validatedInput.filters,
@@ -30,7 +30,7 @@ const app = new Hono()
         async (c) =>
             routeHandler(c)
                 .withUser()
-                .handle(({ userId, validatedInput }) =>
+                .handle(async ({ userId, validatedInput }) =>
                     connectedBankAccountServices.getById({
                         ids: { id: validatedInput.param.id },
                         userId,
@@ -44,7 +44,7 @@ const app = new Hono()
     .post('/', zValidator('json', connectedBankAccountSchemas.create.endpoint.json), async (c) =>
         routeHandler(c)
             .withUser()
-            .handle(({ userId, validatedInput }) =>
+            .handle(async ({ userId, validatedInput }) =>
                 connectedBankAccountServices.create({
                     userId,
                     data: validatedInput.json,
@@ -62,7 +62,7 @@ const app = new Hono()
         async (c) =>
             routeHandler(c)
                 .withUser()
-                .handle(({ userId, validatedInput }) =>
+                .handle(async ({ userId, validatedInput }) =>
                     connectedBankAccountServices.updateById({
                         ids: { id: validatedInput.param.id },
                         userId,

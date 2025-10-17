@@ -20,12 +20,13 @@ export const connectedBankQueries = createFeatureQueries
             },
         },
     })
+    .removeQuery('getMany')
     /**
      * Get many connected banks
      */
-    .overwriteQuery('getMany', {
+    .addQuery('getMany', {
         fn: async ({ userId, filters }) => {
-            return await db.query.connectedBank.findMany({
+            const result = await db.query.connectedBank.findMany({
                 where: and(eq(connectedBank.userId, userId), eq(connectedBank.isActive, true)),
                 with: {
                     globalBank: true,
@@ -36,6 +37,7 @@ export const connectedBankQueries = createFeatureQueries
                     },
                 },
             });
+            return result;
         },
     })
     /**

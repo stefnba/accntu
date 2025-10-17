@@ -17,6 +17,12 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
     })
     .addCore('create', ({ baseSchema }) => {
         const input = z.object({ data: baseSchema, userId: z.string() });
+
+        const transformedBaseSchema = baseSchema.extend({
+            name: z.string().optional(),
+            globalBankAccountId: z.string(),
+        });
+
         return {
             service: input.extend({
                 data: baseSchema.extend({
@@ -26,7 +32,7 @@ export const { schemas: connectedBankAccountSchemas } = createFeatureSchemas
             }),
             query: input,
             endpoint: {
-                json: baseSchema,
+                json: transformedBaseSchema,
             },
         };
     })

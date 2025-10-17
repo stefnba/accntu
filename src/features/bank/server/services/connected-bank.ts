@@ -1,6 +1,7 @@
 import { connectedBankSchemas } from '@/features/bank/schemas/connected-bank';
 import { connectedBankQueries } from '@/features/bank/server/db/queries/connected-bank';
 import { connectedBankAccountServices } from '@/features/bank/server/services/connected-bank-account';
+import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const connectedBankServices = createFeatureServices
@@ -28,7 +29,7 @@ export const connectedBankServices = createFeatureServices
 
             // if no connected bank was created, get the existing one
             if (!newConnectedBank) {
-                const [connectedBanks] = await connectedBankQueries.queries.getMany({
+                const connectedBanks = await connectedBankQueries.queries.getMany({
                     userId,
                     filters: {
                         globalBankId,
@@ -44,7 +45,14 @@ export const connectedBankServices = createFeatureServices
                     throw new Error('Failed to create connected bank');
                 }
 
-                connectedBankId = connectedBanks?.id;
+                connectedBankId = connectedBanks[0]?.id;
+            }
+
+            if (!connectedBankId) {
+                throw AppErrors.operation('CREATE_FAILED', {
+                    message: 'Failed to create connected bank',
+                    layer: 'service',
+                });
             }
 
             await Promise.all(
@@ -52,9 +60,8 @@ export const connectedBankServices = createFeatureServices
                     connectedBankAccountServices.create({
                         userId,
                         data: {
-                            connectedBankId: connectedBankId,
+                            connectedBankId: connectedBankId!,
                             globalBankAccountId: account.globalBankAccountId,
-                            name: 'test',
                         },
                     })
                 )
