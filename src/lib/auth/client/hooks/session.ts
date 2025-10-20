@@ -2,10 +2,12 @@
 
 import { AUTH_QUERY_KEYS } from '@/lib/auth/client/api';
 import { authClient } from '@/lib/auth/client/client';
-import { TClientSession } from '@/lib/auth/client/types';
+import { TClientSessionReturn } from '@/lib/auth/client/types';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuthLoadingStore } from './auth-loading-store';
+
+export type { TClientSessionReturn };
 
 const RETRY_COUNT = 2; // retry 2 times if the error is not 401
 const STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -15,7 +17,7 @@ const REFRESH_INTERVAL = 10 * 60 * 1000; // Background refresh every 10 minutes
  * Main session hook using React Query to fetch and manage the session data
  * We use the better-auth client to get the session and add custom logic to return the client session state.
  */
-export const useSession = (): TClientSession => {
+export const useSession = (): TClientSessionReturn => {
     const { resetAuthLoading, isAuthLoading } = useAuthLoadingStore();
 
     // ====================

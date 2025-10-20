@@ -8,5 +8,5 @@ export {
     useSession,
     useSignIn,
     useSignOut,
-    type TClientSession,
+    type TClientSessionReturn,
 } from './hooks';

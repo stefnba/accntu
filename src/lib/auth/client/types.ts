@@ -6,9 +6,15 @@ import {
 } from '@/lib/auth/client/client';
 import { type auth } from '@/lib/auth/config';
 
+/**
+ * Social provider type
+ */
 export type TSocialProvider = keyof typeof auth.options.socialProviders;
 
-export type TClientSession =
+/**
+ * Client session type
+ */
+export type TClientSessionReturn =
     // Authenticated
     | {
           isAuthenticated: true;
