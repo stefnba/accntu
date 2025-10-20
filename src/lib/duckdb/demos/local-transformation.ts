@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DuckDBManager } from '../manager';
+import { DuckDBTransactionTransformSingleton as DuckDBManager } from '../../duckdb';
 
 // Transaction schema with ID field
 const TransactionSchema = z.object({
@@ -14,9 +14,7 @@ const TransactionSchema = z.object({
 type Transaction = z.infer<typeof TransactionSchema>;
 
 (async () => {
-    const manager = new DuckDBManager({
-        enableHttpfs: false, // No S3 needed for local demo
-    });
+    const manager = await DuckDBManager.getInstance();
 
     try {
         await manager.initialize();
@@ -69,7 +67,7 @@ type Transaction = z.infer<typeof TransactionSchema>;
         console.log(`\n📊 Transformation Results:`);
         console.log(`Total rows processed: ${result.totalRows}`);
         console.log(`Valid rows: ${result.validRows}`);
-        console.log(`Validation errors: ${result.errors.length}`);
+        console.log(`Validation errors: ${result.validationErrors.length}`);
         console.log(`Success rate: ${((result.validRows / result.totalRows) * 100).toFixed(1)}%`);
 
         if (result.validRows > 0) {
@@ -94,9 +92,9 @@ type Transaction = z.infer<typeof TransactionSchema>;
             });
         }
 
-        if (result.errors.length > 0) {
+        if (result.validationErrors.length > 0) {
             console.log(`\n❌ First validation error:`);
-            console.log(result.errors[0].error.message);
+            console.log(result.validationErrors[0].errors[0].message);
         }
 
         console.log(`\n⏱️  Performance Metrics:`);
