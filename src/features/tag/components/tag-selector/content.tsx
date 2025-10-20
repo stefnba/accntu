@@ -17,7 +17,7 @@ export const TagSelectorContent = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    const { data: tags = [] } = useTagEndpoints.getAll({});
+    const { data: tags = [] } = useTagEndpoints.getAll({ query: { search: searchTerm } });
     const createTagMutation = useTagEndpoints.create();
     const assignTagsMutation = useTagEndpoints.assignToTransaction();
 
@@ -53,7 +53,7 @@ export const TagSelectorContent = () => {
                 json: { name: tagName.trim(), color: '#6366f1' },
             });
             // Add the new tag to selection
-            setSelectedTagIds((prev) => [...prev, newTag.id]);
+            setSelectedTagIds((prev) => [...prev, newTag.data.id]);
             // Clear search term
             setSearchTerm('');
             toast.success(`Tag "${tagName}" created successfully`);
@@ -68,7 +68,7 @@ export const TagSelectorContent = () => {
         try {
             await assignTagsMutation.mutateAsync({
                 json: { tagIds: selectedTagIds },
-                param: { id: transactionId },
+                param: { transactionId: transactionId },
             });
             toast.success('Tags updated successfully');
             close();
