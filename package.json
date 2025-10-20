@@ -15,7 +15,8 @@
         "db:migrate": "bun run ./drizzle/scripts/migrate/migrate.ts",
         "db:seed": "bun run ./drizzle/scripts/seed/seed.ts",
         "db:reset": "bun run ./drizzle/scripts/reset.ts",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "check": "bun run lint && bun run typecheck"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.888.0",
