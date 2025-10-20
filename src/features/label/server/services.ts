@@ -1,6 +1,7 @@
 import { labelSchemas } from '@/features/label/schemas';
 import { labelQueries } from '@/features/label/server/db/queries';
 import { InferFeatureType } from '@/server/lib/db';
+import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const labelServices = createFeatureServices
@@ -65,7 +66,14 @@ export const labelServices = createFeatureServices
                     });
 
                     if (wouldCreateCircularHierarchy) {
-                        throw new Error('Cannot create circular hierarchy: the new parent is a descendant of this label');
+                        throw AppErrors.raise('VALIDATION.INVALID_INPUT', {
+                            message:
+                                'Cannot create circular hierarchy: the new parent is a descendant of this label',
+                            details: {
+                                labelId: input.ids.id,
+                                newParentId: input.data.parentId,
+                            },
+                        });
                     }
                 }
             }
