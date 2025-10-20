@@ -52,7 +52,7 @@ export function dbQueryFnHandler<TInput, TOutput>(
 ): QueryFn<TInput, TOutput> {
     const { queryFn, operation = 'database operation', inputSchema } = params;
 
-    return async (inputData: TInput): Promise<TOutput | null> => {
+    return async (inputData: TInput): Promise<TOutput> => {
         let data = inputData;
 
         // Validate input data if schema is provided
@@ -104,7 +104,7 @@ export async function withDbQuery<T>({
     queryFn,
     operation = 'database operation',
 }: {
-    queryFn: () => Promise<T | null>;
+    queryFn: () => Promise<T>;
     operation?: string;
 }) {
     try {

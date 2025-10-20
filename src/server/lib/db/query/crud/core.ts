@@ -387,7 +387,7 @@ export class CrudQueryBuilder<T extends Table> {
         data: InferInsertModel<T>;
         returnColumns?: Cols;
         onConflict?: TOnConflict<T>;
-    }): Promise<{ [K in Cols[number]]: T['_']['columns'][K]['_']['data'] } | null> {
+    }): Promise<{ [K in Cols[number]]: T['_']['columns'][K]['_']['data'] }> {
         const columns = this.buildSelectColumns(returnColumns);
 
         // base query
@@ -403,7 +403,8 @@ export class CrudQueryBuilder<T extends Table> {
         return withDbQuery({
             queryFn: async () => {
                 const newRecord = await queryWithReturning;
-                return newRecord[0] ?? null;
+
+                return newRecord[0];
             },
             operation: 'create record for table ' + this.getTableName(),
         });
