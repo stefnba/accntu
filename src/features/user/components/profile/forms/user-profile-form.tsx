@@ -3,8 +3,8 @@
 import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useProfileUpdateModal } from '@/features/user/hooks';
+import { userSchemas } from '@/features/user/schemas';
 import { useAuth, useAuthEndpoints } from '@/lib/auth/client';
-import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ export function UserProfileForm() {
         Input,
         SubmitButton,
     } = useForm({
-        schema: userServiceSchemas.update.pick({
+        schema: userSchemas.updateById.form.pick({
             name: true,
             lastName: true,
         }),
@@ -30,9 +30,12 @@ export function UserProfileForm() {
             name: '',
             lastName: '',
         },
-        onSubmit: async (data) => {
+        onSubmit: async ({ name, lastName }) => {
             updateUser.mutate(
-                { json: data },
+                {
+                    lastName,
+                    name,
+                },
                 {
                     onSuccess: () => {
                         refetchSession();
@@ -40,7 +43,7 @@ export function UserProfileForm() {
                         toast.success('Profile updated successfully');
                         closeModal();
                     },
-                    onError: ({ error }) => {
+                    onError: (error) => {
                         toast.error(error.message || 'Error updating profile');
                     },
                 }

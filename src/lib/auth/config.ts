@@ -5,6 +5,7 @@ import { nextCookies } from 'better-auth/next-js';
 import { admin, customSession, emailOTP, openAPI } from 'better-auth/plugins';
 import { passkey } from 'better-auth/plugins/passkey';
 
+import { userSettingsSchema } from '@/features/user/schemas';
 import { SESSION_COOKIE, SESSION_DATA } from '@/lib/auth/constants';
 import { sendOtpEmail } from '@/lib/auth/email';
 import { getEnv } from '@/lib/env';
@@ -88,6 +89,23 @@ const options = {
     },
     account: {
         modelName: 'authAccount',
+    },
+
+    databaseHooks: {
+        user: {
+            create: {
+                before: async (user) => {
+                    const validatedSettings = userSettingsSchema.parse(user.settings || {});
+
+                    return {
+                        data: {
+                            ...user,
+                            settings: validatedSettings,
+                        },
+                    };
+                },
+            },
+        },
     },
     plugins: [
         admin(),

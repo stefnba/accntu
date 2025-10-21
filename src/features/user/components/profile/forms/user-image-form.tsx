@@ -1,28 +1,28 @@
 'use client';
 
 import { FormFileDropzone, useForm } from '@/components/form';
+import { userSchemas } from '@/features/user/schemas';
 import { useAuthEndpoints } from '@/lib/auth/client';
-import { userServiceSchemas } from '@/lib/auth/client/schemas/user';
 import toast from 'react-hot-toast';
 
 export function UserImageForm() {
     const updateUser = useAuthEndpoints.updateUser();
 
     const { Form, form } = useForm({
-        schema: userServiceSchemas.update.pick({
+        schema: userSchemas.updateById.form.pick({
             image: true,
         }),
         defaultValues: {
             image: '',
         },
-        onSubmit: async (data) => {
+        onSubmit: async ({ image }) => {
             updateUser.mutate(
                 {
-                    image: data.image,
+                    image,
                 },
                 {
                     onSuccess: () => {
-                        toast.success('User updated successfully');
+                        toast.success('Profile image updated successfully');
                     },
                 }
             );

@@ -1,7 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserAvatarSize, userAvatarSizes } from '@/features/user/schemas';
+
 import { generateUserInitials } from '@/features/user/utils';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ interface UserAvatarProps {
         email: string;
         image?: string | null;
     };
-    size?: UserAvatarSize;
+    size?: 'sm' | 'md' | 'lg';
     className?: string;
     showBorder?: boolean;
     onClick?: () => void;
@@ -27,7 +27,7 @@ export const UserAvatar = ({
     onClick,
 }: UserAvatarProps) => {
     const initials = generateUserInitials(user);
-    const sizeClasses = userAvatarSizes[size];
+    const sizeClasses = size === 'sm' ? 'w-6 h-6' : size === 'md' ? 'w-8 h-8' : 'w-10 h-10';
 
     return (
         <Avatar

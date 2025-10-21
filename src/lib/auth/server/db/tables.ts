@@ -1,7 +1,9 @@
+import { TUserSettings } from '@/features/user/schemas';
 import {
     boolean,
     index,
     integer,
+    jsonb,
     pgTable,
     text,
     timestamp,
@@ -24,7 +26,7 @@ export const user = pgTable(
         banExpires: timestamp('ban_expires'),
         lastLoginAt: timestamp('last_login_at'),
         lastName: text('last_name'),
-        settings: text('settings'), // JSON string for user preferences
+        settings: jsonb('settings').$type<TUserSettings>(),
     },
     (table) => [
         // Security indexes for user lookups and admin operations
