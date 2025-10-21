@@ -3,6 +3,11 @@ import { QueryBuilder } from '@/server/lib/db/query/builder';
 import { QueryFn } from '@/server/lib/db/query/builder/types';
 import { ServiceFn } from '@/server/lib/service/factory/types';
 
+/**
+ * Feature services class that provides a fluent API for registering schemas and queries.
+ * @template TSchemas - The schemas to register
+ * @template TQuery - The queries to register
+ */
 class FeatureServices<
     const TSchemas extends Record<string, TOperationSchemaObject> = Record<
         string,
@@ -32,17 +37,17 @@ class FeatureServices<
         });
     }
 
+    /**
+     * Register a query to the feature query collection.
+     * @param queryBuilderOrQueries - The query builder or record of queries to register
+     * @returns A new FeatureServices with the registered queries
+     */
     registerQuery<T extends Record<string, QueryFn>>(
         queries: T
     ): FeatureServices<TSchemas, TQuery & T>;
     registerQuery<
         T extends QueryBuilder<Record<string, TOperationSchemaObject>, Record<string, QueryFn>>,
     >(queryBuilder: T): FeatureServices<TSchemas, TQuery & T['queries']>;
-    /**
-     * Register a query to the feature query collection.
-     * @param queryBuilderOrQueries - The query builder or record of queries to register
-     * @returns A new FeatureServices with the registered queries
-     */
     registerQuery<
         T extends
             | Record<string, QueryFn>
