@@ -10,4 +10,9 @@ export const useUserEndpoints = {
      * Delete a file from S3
      */
     deleteS3File: createMutation(apiClient.user['upload-profile-image']['delete-file'].$delete),
+
+    /**
+     * Update user settings
+     */
+    updateSettings: createMutation(apiClient.user.settings.$patch),
 };

@@ -33,4 +33,15 @@ export const { schemas: userSchemas } = createFeatureSchemas
             form: input,
             endpoint: { json: input, param: idFieldsSchema },
         };
+    })
+    .addCustom('updateSettingsById', ({ baseSchema, idFieldsSchema }) => {
+        const settingsSchema = baseSchema.pick({ settings: true });
+        const input = z.object({ ids: idFieldsSchema, data: settingsSchema.partial() });
+
+        return {
+            service: input,
+            query: input,
+            form: settingsSchema,
+            endpoint: { json: settingsSchema, param: idFieldsSchema },
+        };
     });
