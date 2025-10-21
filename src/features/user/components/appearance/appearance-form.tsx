@@ -8,6 +8,8 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
+import { Checkbox } from '@/components/ui/checkbox';
+
 export function AppearanceForm() {
     const { theme, selectTheme, isLoaded } = useTheme();
     const { mutateAsync: updateSettings } = useUserEndpoints.updateSettings();
@@ -90,7 +92,7 @@ export function AppearanceForm() {
                         <div
                             key={option.value}
                             className={cn(
-                                'flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200',
+                                'flex items-center justify-between p-3 pr-6 rounded-lg border cursor-pointer transition-all duration-200',
                                 isSelected
                                     ? 'bg-primary/5 border-primary shadow-sm'
                                     : 'border-border hover:bg-muted/50'
@@ -118,7 +120,8 @@ export function AppearanceForm() {
                                     </div>
                                 </div>
                             </div>
-                            {isSelected && <div className="h-2 w-2 rounded-full bg-primary"></div>}
+
+                            {isSelected && <Checkbox className="size-4" checked={isSelected} />}
                         </div>
                     );
                 })}
