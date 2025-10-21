@@ -38,7 +38,8 @@ export function AppearanceForm() {
             });
 
             toast.success('Appearance settings updated');
-        } catch (error) {
+        } catch (err) {
+            console.error(err);
             toast.error('Failed to update appearance settings');
         } finally {
             setIsSubmitting(false);
