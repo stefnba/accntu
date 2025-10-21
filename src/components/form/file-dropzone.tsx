@@ -1,6 +1,6 @@
 'use client';
 
-import { UseZodFormReturn } from '@/components/form/use-form';
+import { UseZodFormReturn } from '@/components/form/hooks/use-form';
 import { Dropzone } from '@/components/ui/dropzone';
 import {
     FormControl,

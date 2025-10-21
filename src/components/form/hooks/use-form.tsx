@@ -14,6 +14,8 @@ import { FormSwitch } from '@/components/form/switch';
 import { FormTextarea } from '@/components/form/textarea';
 import { UseZodFormOptions, UseZodFormReturn } from './types';
 
+export type { UseZodFormReturn, UseZodFormOptions } from './types';
+
 /**
  * Deep equality comparison optimized for form data structures
  */
