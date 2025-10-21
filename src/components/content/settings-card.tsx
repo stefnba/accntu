@@ -59,7 +59,7 @@ interface SettingsCardContentProps {
  * Content area with spacing for settings items
  */
 const SettingsCardContent = ({ children, className }: SettingsCardContentProps) => {
-    return <CardContent className={cn('space-y-6', className)}>{children}</CardContent>;
+    return <CardContent className={cn('space-y-7', className)}>{children}</CardContent>;
 };
 
 interface SettingsCardItemProps {
