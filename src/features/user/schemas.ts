@@ -2,9 +2,15 @@ import { user } from '@/lib/auth/server/db/tables';
 import { createFeatureSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
+// export const LANGUAGE_OPTIONS = ['en', 'de'] as const;
+export const LANGUAGE_OPTIONS = [
+    { value: 'en', label: 'English' },
+    { value: 'de', label: 'German' },
+] as const;
+
 export const userSettingsSchema = z.object({
     theme: z.enum(['light', 'dark', 'system']).default('system'),
-    language: z.enum(['en']).default('en'),
+    language: z.enum(LANGUAGE_OPTIONS.map((option) => option.value)).default('en'),
     timezone: z.string().default('UTC'),
     dateFormat: z.string().default('MM/DD/YYYY'),
     timeFormat: z.string().default('12h'),
@@ -34,14 +40,16 @@ export const { schemas: userSchemas } = createFeatureSchemas
             endpoint: { json: input, param: idFieldsSchema },
         };
     })
-    .addCustom('updateSettingsById', ({ baseSchema, idFieldsSchema }) => {
-        const settingsSchema = baseSchema.pick({ settings: true });
-        const input = z.object({ ids: idFieldsSchema, data: settingsSchema.partial() });
+    .addCustom('updateSettingsById', ({ idFieldsSchema }) => {
+        const settingsUpdateSchema = z.object({
+            settings: userSettingsSchema,
+        });
+        const input = z.object({ ids: idFieldsSchema, data: settingsUpdateSchema });
 
         return {
             service: input,
             query: input,
-            form: settingsSchema,
-            endpoint: { json: settingsSchema, param: idFieldsSchema },
+            form: settingsUpdateSchema,
+            endpoint: { json: settingsUpdateSchema, param: idFieldsSchema },
         };
     });

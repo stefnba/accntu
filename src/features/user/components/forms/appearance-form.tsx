@@ -1,14 +1,16 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useUserEndpoints } from '@/features/user/api';
 import { useTheme } from '@/lib/theme/hooks';
+import { cn } from '@/lib/utils';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 export function AppearanceForm() {
-    const { theme, setTheme, isLoaded } = useTheme();
+    const { theme, selectTheme, isLoaded } = useTheme();
+    const { mutateAsync: updateSettings } = useUserEndpoints.updateSettings();
     const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'system'>(
         (theme as 'light' | 'dark' | 'system') || 'system'
     );
@@ -25,7 +27,14 @@ export function AppearanceForm() {
 
         setIsSubmitting(true);
         try {
-            setTheme(currentTheme);
+            // update the theme in the theme hook
+            selectTheme(currentTheme);
+
+            // update the theme in the database
+            await updateSettings({
+                json: { settings: { theme: currentTheme } },
+            });
+
             toast.success('Appearance settings updated');
         } catch (error) {
             toast.error('Failed to update appearance settings');
@@ -89,15 +98,19 @@ export function AppearanceForm() {
                             onClick={() => handleThemeChange(option.value)}
                         >
                             <div className="flex items-center space-x-3">
-                                <Icon className={cn(
-                                    'h-5 w-5',
-                                    isSelected ? 'text-primary' : 'text-muted-foreground'
-                                )} />
+                                <Icon
+                                    className={cn(
+                                        'h-5 w-5',
+                                        isSelected ? 'text-primary' : 'text-muted-foreground'
+                                    )}
+                                />
                                 <div>
-                                    <div className={cn(
-                                        'font-medium text-sm',
-                                        isSelected ? 'text-primary' : 'text-foreground'
-                                    )}>
+                                    <div
+                                        className={cn(
+                                            'font-medium text-sm',
+                                            isSelected ? 'text-primary' : 'text-foreground'
+                                        )}
+                                    >
                                         {option.label}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
@@ -105,9 +118,7 @@ export function AppearanceForm() {
                                     </div>
                                 </div>
                             </div>
-                            {isSelected && (
-                                <div className="h-2 w-2 rounded-full bg-primary"></div>
-                            )}
+                            {isSelected && <div className="h-2 w-2 rounded-full bg-primary"></div>}
                         </div>
                     );
                 })}
@@ -115,8 +126,8 @@ export function AppearanceForm() {
 
             {/* Save Button */}
             <div className="flex justify-end">
-                <Button 
-                    onClick={handleSave} 
+                <Button
+                    onClick={handleSave}
                     disabled={!hasChanges || isSubmitting}
                     className="min-w-[100px]"
                 >

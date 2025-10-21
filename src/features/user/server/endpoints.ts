@@ -18,7 +18,7 @@ const app = new Hono()
             bucket: process.env.AWS_BUCKET_NAME_PRIVATE_UPLOAD,
         })
     )
-    .patch('/settings', zValidator('json', userSchemas.updateById.endpoint.json), async (c) =>
+    .patch('/settings', zValidator('json', userSchemas.updateSettingsById.endpoint.json), async (c) =>
         routeHandler(c)
             .withUser()
             .handleMutation(async ({ user, validatedInput }) =>

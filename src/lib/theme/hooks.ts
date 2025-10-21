@@ -37,9 +37,8 @@ export function useTheme() {
         theme: currentTheme,
         resolvedTheme,
         themes,
-        setTheme,
-        toggleTheme,
         selectTheme,
+        toggleTheme,
         isLoaded: mounted,
     };
 }

@@ -3,44 +3,37 @@
 import { SettingsCard } from '@/components/content';
 import { useForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
+import { useUserEndpoints } from '@/features/user/api';
+import { LANGUAGE_OPTIONS, userSettingsSchema } from '@/features/user/schemas';
+import { useSession } from '@/lib/auth/client';
 
 import { Calendar, Clock, Languages } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
-
-const languageAndRegionSchema = z.object({
-    language: z.string(),
-    timezone: z.string(),
-    dateFormat: z.string(),
-    timeFormat: z.string(),
-});
 
 export const LanguageAndRegionForm = () => {
+    const { mutateAsync: updateSettings } = useUserEndpoints.updateSettings();
+    const { user: sessionUser } = useSession();
+
+    console.log(sessionUser?.settings);
+
     const { form, Form, Select } = useForm({
-        schema: languageAndRegionSchema,
+        schema: userSettingsSchema,
         defaultValues: {
             language: 'en',
             timezone: 'UTC',
             dateFormat: 'MM/DD/YYYY',
             timeFormat: '12h',
         },
+        initialData: sessionUser?.settings,
         onSubmit: async (data) => {
-            console.log(data);
-            toast.success('General settings updated');
+            await updateSettings({
+                json: {
+                    settings: data,
+                },
+            });
+            toast.success('Language and region settings updated');
         },
     });
-
-    const languageOptions = [
-        { value: 'en', label: 'English' },
-        // { value: 'es', label: 'Español' },
-        // { value: 'fr', label: 'Français' },
-        // { value: 'de', label: 'Deutsch' },
-        // { value: 'it', label: 'Italiano' },
-        // { value: 'pt', label: 'Português' },
-        // { value: 'ja', label: '日本語' },
-        // { value: 'ko', label: '한국어' },
-        // { value: 'zh', label: '中文' },
-    ];
 
     const timezoneOptions = [
         { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
@@ -86,7 +79,7 @@ export const LanguageAndRegionForm = () => {
                                 <Select
                                     name="language"
                                     placeholder="Select language"
-                                    options={languageOptions}
+                                    options={LANGUAGE_OPTIONS}
                                 />
                             ),
                         },
