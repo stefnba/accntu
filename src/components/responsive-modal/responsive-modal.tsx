@@ -125,6 +125,12 @@ interface ContentProps {
     scrollable?: boolean;
 }
 
+/**
+ * Content container for the modal.
+ * @param children - The content to display in the modal.
+ * @param className - Additional CSS classes to apply to the content.
+ * @param scrollable - Whether the content should be scrollable. Then it will add a max-h-[70vh] class to the content.
+ */
 ResponsiveModal.Content = ({ children, className, scrollable = true }: ContentProps) => {
     return (
         <div className={cn('px-4 pb-4', scrollable && 'overflow-y-auto max-h-[70vh]', className)}>
@@ -138,12 +144,19 @@ interface FooterProps {
     className?: string;
 }
 
+/**
+ * Footer container for the modal.
+ * @param children - The content to display in the footer.
+ * @param className - Additional CSS classes to apply to the footer.
+ */
 ResponsiveModal.Footer = ({ children, className }: FooterProps) => {
     const { isMobile } = useResponsiveModal();
     const Component = isMobile ? DrawerFooter : DialogFooter;
 
     return (
-        <Component className={cn('p-4', !isMobile && 'border-t ', className)}>{children}</Component>
+        <Component className={cn('p-4 gap-2', !isMobile && 'border-t ', className)}>
+            {children}
+        </Component>
     );
 };
 
