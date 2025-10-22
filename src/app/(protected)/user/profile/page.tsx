@@ -3,6 +3,7 @@ import { MainContent } from '@/components/layout/main';
 import { CurrentUserProfile } from '@/features/user/components/profile/current-profile';
 import { ProfileCard } from '@/features/user/components/profile/profile-card';
 import { ProfileNameUpdateModal } from '@/features/user/components/profile/profile-name-update-modal';
+import { ProfilePictureUpdateModal } from '@/features/user/components/profile/profile-picture-update-modal';
 
 const item = getNavItem(userNavItems, '/user/profile');
 
@@ -21,6 +22,7 @@ export default function ProfilePage() {
             </div>
 
             <ProfileNameUpdateModal />
+            <ProfilePictureUpdateModal />
         </MainContent>
     );
 }

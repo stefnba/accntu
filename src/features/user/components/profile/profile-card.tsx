@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/client';
 import { Camera, Mail, User } from 'lucide-react';
 
-import { useProfileUpdateModal } from '@/features/user/hooks';
+import { useProfileNameUpdateModal, useProfilePictureUpdateModal } from '@/features/user/hooks';
 import { generateDisplayName } from '@/features/user/utils';
 
 export const ProfileCard = () => {
     const { user } = useAuth();
 
-    const { openModal } = useProfileUpdateModal();
+    const nameModal = useProfileNameUpdateModal();
+    const pictureModal = useProfilePictureUpdateModal();
 
     const name = user
         ? generateDisplayName({
@@ -31,7 +32,7 @@ export const ProfileCard = () => {
                     label: 'Name',
                     description: name,
                     action: (
-                        <Button variant="outline" size="sm" onClick={() => openModal('name')}>
+                        <Button variant="outline" size="sm" onClick={() => nameModal.open()}>
                             Update
                         </Button>
                     ),
@@ -47,7 +48,7 @@ export const ProfileCard = () => {
                     label: 'Profile Picture',
                     description: 'Update your profile picture',
                     action: (
-                        <Button variant="outline" size="sm" onClick={() => openModal('picture')}>
+                        <Button variant="outline" size="sm" onClick={() => pictureModal.open()}>
                             Update
                         </Button>
                     ),

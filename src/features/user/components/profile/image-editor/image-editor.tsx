@@ -121,14 +121,6 @@ export function ImageEditor({ src, onEditChange, onProcessedImageChange }: Image
                         </div>
                     </CardContent>
                 </Card>
-
-                {/* Instructions */}
-                <div className="text-center mt-2">
-                    <p className="text-sm text-muted-foreground">
-                        Drag to reposition • Scroll or pinch to zoom • Use controls below for more
-                        options
-                    </p>
-                </div>
             </div>
 
             {/* Controls */}

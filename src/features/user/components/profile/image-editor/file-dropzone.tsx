@@ -13,7 +13,7 @@ interface FileDropzoneProps {
     maxSize?: number;
 }
 
-export function FileDropzone({
+export function ProfilePictureUpdateFileDropzone({
     onFileSelect,
     accept = {
         'image/jpeg': ['.jpeg', '.jpg'],
