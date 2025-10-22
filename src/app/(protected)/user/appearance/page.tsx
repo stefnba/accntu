@@ -1,7 +1,7 @@
 import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { Card, CardContent } from '@/components/ui/card';
-import { AppearanceForm } from '@/features/user/components/forms/appearance-form';
+import { AppearanceForm } from '@/features/user/components/appearance/appearance-form';
 
 const item = getNavItem(userNavItems, '/user/appearance');
 
