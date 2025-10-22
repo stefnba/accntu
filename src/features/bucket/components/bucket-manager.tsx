@@ -5,7 +5,7 @@ import { BucketCard } from '@/features/bucket/components/bucket-card';
 import { BucketCreateUpdateModal } from '@/features/bucket/components/bucket-create-update-modal';
 
 export function BucketManager() {
-    const { data: buckets } = useBucketEndpoints.getAll({});
+    const { data: buckets } = useBucketEndpoints.getAll({ query: {} });
 
     return (
         <div>

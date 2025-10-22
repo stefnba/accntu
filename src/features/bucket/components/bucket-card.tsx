@@ -1,9 +1,9 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TBucketService } from '@/features/bucket/schemas';
+import { TBucket } from '@/features/bucket/schemas';
 
 export type BucketCardProps = {
-    bucket: TBucketService['select'];
+    bucket: TBucket;
 };
 
 export const BucketCard: React.FC<BucketCardProps> = ({ bucket }) => {
