@@ -126,17 +126,8 @@ interface ContentProps {
 }
 
 ResponsiveModal.Content = ({ children, className, scrollable = true }: ContentProps) => {
-    const { isMobile } = useResponsiveModal();
-
     return (
-        <div
-            className={cn(
-                // isMobile ? 'px-4 pb-4' : 'px-4 pb-4',
-                'p-4',
-                scrollable && 'overflow-y-auto max-h-[70vh]',
-                className
-            )}
-        >
+        <div className={cn('px-4 pb-4', scrollable && 'overflow-y-auto max-h-[70vh]', className)}>
             {children}
         </div>
     );
