@@ -16,10 +16,10 @@ import {
 } from '@/components/ui/select';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
-type SelectOption = {
+type SelectOption = Readonly<{
     label: string;
     value: string;
-};
+}>;
 
 type FormSelectProps<
     TFieldValues extends FieldValues,
@@ -31,7 +31,7 @@ type FormSelectProps<
     label?: string;
     description?: string;
     placeholder?: string;
-    options: SelectOption[];
+    options: readonly SelectOption[];
     hideError?: boolean;
     className?: string;
     disabled?: boolean;
