@@ -1,4 +1,5 @@
 import { FormCheckbox } from '@/components/form/checkbox';
+import { FormColorSelect } from '@/components/form/color-select';
 import { useForm } from '@/components/form/hooks';
 import { FormInput } from '@/components/form/input';
 import { FormRadioGroup } from '@/components/form/radio-group';
@@ -185,6 +186,22 @@ export const useUpsertForm = <
         [] // Remove dependencies to keep component definition stable
     );
 
+    const ColorSelectComponent = useCallback(
+        <M extends TComponentMode = 'both'>({
+            mode,
+            ...props
+        }: Omit<React.ComponentProps<typeof FormColorSelect>, 'form' | 'name'> & {
+            mode?: M;
+            name: UpsertFieldPath<M, TCreateSchema, TUpdateSchema>;
+        }) =>
+            withRenderOrNot({
+                mode,
+                formMode: currentMode,
+                component: <FormColorSelect form={selectedForm as any} {...props} />,
+            }),
+        [] // Remove dependencies to keep component definition stable
+    );
+
     //============================================
     // Return
     //============================================
@@ -209,5 +226,6 @@ export const useUpsertForm = <
         Switch: SwitchComponent,
         RadioGroup: RadioGroupComponent,
         Checkbox: CheckboxComponent,
+        ColorSelect: ColorSelectComponent,
     };
 };

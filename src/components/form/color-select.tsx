@@ -37,7 +37,7 @@ export const defaultColorOptions: ColorOption[] = [
     { label: 'Pink', value: '#EC4899' },
     { label: 'Rose', value: '#F43F5E' },
     { label: 'Gray', value: '#6B7280' },
-];
+] as const;
 
 type FormColorSelectProps<
     TFieldValues extends FieldValues,
