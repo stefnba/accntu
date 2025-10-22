@@ -40,16 +40,7 @@ export const useTagUpsertModal = () => {
     });
 
     return {
-        isModalOpen: modal.isOpen,
-        closeModal: modal.close,
-        modalView: modal.view,
-        openModal: ({
-            mode = 'create',
-            tagId,
-        }: { mode: 'create'; tagId?: null } | { mode: 'update'; tagId: string }) => {
-            modal.open(mode);
-            setTagId(tagId || null);
-        },
+        modal,
         tagId,
         setTagId,
     };

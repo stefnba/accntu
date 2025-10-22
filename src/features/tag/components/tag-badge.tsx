@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { TTagQuery } from '@/features/tag/schemas';
+import { TTag } from '@/features/tag/schemas';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
@@ -25,14 +25,14 @@ export const tagBadgeVariants = cva(
 
 interface TagBadgeProps {
     className?: string;
-    tag: TTagQuery['select'];
+    tag: TTag;
     onClick?: () => void;
     onDelete?: () => void;
 }
 
 export const TagBadge: React.FC<TagBadgeProps & VariantProps<typeof tagBadgeVariants>> = ({
     tag,
-    onClick,
+    // onClick,
     onDelete,
     className,
     size,

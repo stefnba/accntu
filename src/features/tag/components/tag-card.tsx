@@ -8,14 +8,14 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTagUpsertModal } from '@/features/tag/hooks';
-import { TTagQuery } from '@/features/tag/schemas';
+import { TTag } from '@/features/tag/schemas';
 import { cn } from '@/lib/utils';
 import { IconDotsVertical } from '@tabler/icons-react';
 import { Edit, Eye, Link, Trash2 } from 'lucide-react';
 
 interface TagCardProps {
     className?: string;
-    tag: TTagQuery['select'];
+    tag: TTag;
     onClick: () => void;
 }
 
@@ -27,7 +27,7 @@ interface TagCardProps {
  * @returns A card component that displays a tag.
  */
 export const TagCard: React.FC<TagCardProps> = ({ tag, onClick, className }) => {
-    const { openModal } = useTagUpsertModal();
+    const { modal, setTagId } = useTagUpsertModal();
 
     return (
         <div className={cn('flex items-center w-full', className)}>
@@ -67,7 +67,8 @@ export const TagCard: React.FC<TagCardProps> = ({ tag, onClick, className }) => 
                                 <DropdownMenuItem
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        openModal({ mode: 'update', tagId: tag.id });
+                                        modal.open('update');
+                                        setTagId(tag.id);
                                     }}
                                 >
                                     <Edit className="mr-2 h-4 w-4" />

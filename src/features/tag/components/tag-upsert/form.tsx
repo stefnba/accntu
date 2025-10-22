@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@/components/feedback';
-import { FormColorSelect, useUpsertForm } from '@/components/form';
+import { useUpsertForm } from '@/components/form';
 import { Button } from '@/components/ui/button';
 import { useTagEndpoints } from '@/features/tag/api';
 import { useTagUpsertModal } from '@/features/tag/hooks';
@@ -11,8 +11,7 @@ export const TagUpsertForm = () => {
     // ================================
     // Hooks
     // ================================
-
-    const { tagId, closeModal } = useTagUpsertModal();
+    const { tagId, modal } = useTagUpsertModal();
 
     // ================================
     // Queries
@@ -28,7 +27,7 @@ export const TagUpsertForm = () => {
     // Form
     // ================================
 
-    const { form, Form, Input, SubmitButton } = useUpsertForm({
+    const { Form, Input, SubmitButton, ColorSelect } = useUpsertForm({
         create: {
             schema: tagSchemas.create.form,
             defaultValues: {
@@ -42,7 +41,7 @@ export const TagUpsertForm = () => {
                     },
                     {
                         onSuccess: () => {
-                            closeModal();
+                            modal.close();
                             toast.success('Tag created successfully');
                         },
                     }
@@ -51,7 +50,7 @@ export const TagUpsertForm = () => {
         },
         update: {
             schema: tagSchemas.updateById.form,
-            defaultValues: tag || {
+            defaultValues: {
                 name: '',
                 color: '',
             },
@@ -64,7 +63,7 @@ export const TagUpsertForm = () => {
                     },
                     {
                         onSuccess: () => {
-                            closeModal();
+                            modal.close();
                             toast.success('Tag updated successfully');
                         },
                     }
@@ -77,10 +76,10 @@ export const TagUpsertForm = () => {
         <Form className="">
             <Input name="name" label="Name" placeholder="Enter tag name" autoFocus />
 
-            <FormColorSelect form={form} cols={8} name="color" label="Color" showClear />
+            <ColorSelect cols={8} name="color" label="Color" showClear />
 
             <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={closeModal}>
+                <Button variant="outline" onClick={modal.close}>
                     Cancel
                 </Button>
                 <SubmitButton>{tagId ? 'Update Tag' : 'Create Tag'}</SubmitButton>

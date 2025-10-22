@@ -44,7 +44,7 @@ export function TagManager() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTagId, setEditingTagId] = useState<string>();
     const [deleteTagId, setDeleteTagId] = useState<string>();
-    const { openModal, isModalOpen, modalView } = useTagUpsertModal();
+    const { modal } = useTagUpsertModal();
 
     const { data: tags = [], isLoading } = useTagEndpoints.getAll({ query: { search } });
     const deleteMutation = useTagEndpoints.delete();
