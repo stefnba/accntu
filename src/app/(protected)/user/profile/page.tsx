@@ -2,7 +2,7 @@ import { getNavItem, userNavItems } from '@/app/(protected)/user/utils';
 import { MainContent } from '@/components/layout/main';
 import { CurrentUserProfile } from '@/features/user/components/profile/current-profile';
 import { ProfileCard } from '@/features/user/components/profile/profile-card';
-import { ProfileUpdateModal } from '@/features/user/components/profile/profile-update-modal';
+import { ProfileNameUpdateModal } from '@/features/user/components/profile/profile-name-update-modal';
 
 const item = getNavItem(userNavItems, '/user/profile');
 
@@ -19,7 +19,8 @@ export default function ProfilePage() {
                 <CurrentUserProfile />
                 <ProfileCard />
             </div>
-            <ProfileUpdateModal />
+
+            <ProfileNameUpdateModal />
         </MainContent>
     );
 }

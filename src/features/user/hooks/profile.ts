@@ -1,21 +1,24 @@
-import { useQueryStateModal, useStepModal } from '@/hooks';
+import { useResponsiveModal } from '@/components/responsive-modal/hooks';
 
-export const useProfileUpdateModal = ({ onClose }: { onClose?: () => void } = {}) => {
-    const modal = useQueryStateModal({
-        views: ['name', 'email', 'picture'] as const,
-        onClose() {
-            pictureStep.resetStep();
-            onClose?.();
-        },
+/*
+ * A hook to manage the profile name update modal.
+ */
+export const useProfileNameUpdateModal = () => {
+    const modal = useResponsiveModal({
+        key: 'profile-name',
     });
 
-    const pictureStep = useStepModal({
-        steps: ['select', 'edit', 'uploading', 'complete'] as const,
-        initialStep: 'select',
+    return modal;
+};
+
+/**
+ * A hook to manage the profile picture update modal.
+ */
+export const useProfilePictureUpdateModal = () => {
+    const modal = useResponsiveModal({
+        key: 'profile-picture',
+        views: ['select', 'edit', 'uploading', 'complete'],
     });
 
-    return {
-        ...modal,
-        ...pictureStep,
-    };
+    return modal;
 };
