@@ -151,7 +151,7 @@ export const BankDetailsView = ({ bankId }: BankDetailsViewProps) => {
 
             {/* Content */}
             <div className="bg-gray-50">
-                {currentView === 'overview' && <BankDetailsOverview bank={bank} bankId={bankId} />}
+                {currentView === 'overview' && <BankDetailsOverview bankId={bankId} />}
                 {currentView === 'activity' && <BankDetailsRecentActivity bank={bank} />}
                 {currentView === 'settings' && <BankDetailsSettings bank={bank} />}
                 {currentView === 'analytics' && <BankDetailsAnalytics />}

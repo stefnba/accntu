@@ -3,16 +3,22 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Description, Subtitle } from '@/components/ui/font';
+import { useConnectedBankEndpoints } from '@/features/bank/api';
 import { CreditCard } from 'lucide-react';
 import { AccountCard } from '../bank-cards';
 // import { TConnectedBankWithRelations } from '@/server/db';
 
 interface BankDetailsOverviewProps {
-    bank: TConnectedBankWithRelations;
     bankId: string;
 }
 
-export const BankDetailsOverview = ({ bank, bankId }: BankDetailsOverviewProps) => {
+export const BankDetailsOverview = ({ bankId }: BankDetailsOverviewProps) => {
+    const { data: bank } = useConnectedBankEndpoints.getById({ param: { id: bankId } });
+
+    if (!bank) {
+        return null;
+    }
+
     return (
         <div className="space-y-8">
             {/* Overview Stats */}

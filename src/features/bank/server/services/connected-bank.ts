@@ -41,11 +41,14 @@ export const connectedBankServices = createFeatureServices
                 });
 
                 // if no connected bank was found, throw an error
-                if (!connectedBanks) {
-                    throw new Error('Failed to create connected bank');
+                if (!connectedBanks || connectedBanks.length === 0) {
+                    throw AppErrors.operation('CREATE_FAILED', {
+                        message: 'Failed to create connected bank',
+                        layer: 'service',
+                    });
                 }
 
-                connectedBankId = connectedBanks[0]?.id;
+                connectedBankId = connectedBanks[0].id;
             }
 
             if (!connectedBankId) {
@@ -60,7 +63,7 @@ export const connectedBankServices = createFeatureServices
                     connectedBankAccountServices.create({
                         userId,
                         data: {
-                            connectedBankId: connectedBankId!,
+                            connectedBankId,
                             globalBankAccountId: account.globalBankAccountId,
                         },
                     })

@@ -38,7 +38,7 @@ const AddBankCard = () => {
 };
 
 export const ConnectedBanksList = () => {
-    const { data: banks, isLoading, error } = useConnectedBankEndpoints.getAll({});
+    const { data: banks, isLoading, error } = useConnectedBankEndpoints.getAll({ query: {} });
 
     if (isLoading) {
         return (

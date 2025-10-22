@@ -1,17 +1,18 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useAdminGlobalBankEndpoints } from '@/features/admin/api/global-bank';
-import { Building2, Coins, CreditCard, Eye, Globe, MapPin, Plus, Settings } from 'lucide-react';
-import Link from 'next/link';
+import { BankCard } from '@/features/bank/components/bank-card/bank-card';
+import { BankLogo } from '@/features/bank/components/bank-logo';
+import { Building2, CreditCard, Globe, Settings } from 'lucide-react';
+import { Route } from 'next';
 
 interface GlobalBankListProps {
-    onAdd?: () => void;
+    className?: string;
 }
 
-export const GlobalBankList = ({ onAdd }: GlobalBankListProps) => {
+export const GlobalBankList: React.FC<GlobalBankListProps> = () => {
     const { data: globalBanks, isLoading } = useAdminGlobalBankEndpoints.getAll({
         query: {},
     });
@@ -57,98 +58,43 @@ export const GlobalBankList = ({ onAdd }: GlobalBankListProps) => {
                 <p className="text-gray-500 mb-6 max-w-md mx-auto">
                     Get started by adding your first global bank template
                 </p>
-                {onAdd && (
-                    <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Bank
-                    </Button>
-                )}
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            {globalBanks.map((bank) => (
-                <Card
-                    key={bank.id}
-                    className="group hover:shadow-md transition-all duration-200 border-gray-200 hover:border-blue-300"
-                >
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                {bank.logo ? (
-                                    <div
-                                        className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border"
-                                        style={{
-                                            backgroundColor: bank.color || '#f8fafc',
-                                        }}
-                                    >
-                                        <img
-                                            src={bank.logo}
-                                            alt={bank.name}
-                                            className="w-8 h-8 object-contain"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
-                                        <Building2 className="h-6 w-6 text-gray-600" />
-                                    </div>
-                                )}
-                                <div className="space-y-1">
-                                    <h3 className="font-semibold text-gray-900">{bank.name}</h3>
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="flex items-center gap-1 bg-gray-100 text-gray-700"
-                                        >
-                                            <MapPin className="h-3 w-3" />
-                                            {bank.country}
-                                        </Badge>
-                                        <Badge
-                                            variant="outline"
-                                            className="flex items-center gap-1 border-gray-200"
-                                        >
-                                            <Coins className="h-3 w-3" />
-                                            {bank.currency}
-                                        </Badge>
-                                        {bank.providerSource && (
-                                            <Badge
-                                                variant="outline"
-                                                className="flex items-center gap-1 border-gray-200"
-                                            >
-                                                {getProviderIcon(bank.providerSource)}
-                                                {bank.providerSource}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Badge
-                                    variant={bank.isActive ? 'default' : 'destructive'}
-                                    className={
-                                        bank.isActive
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-red-100 text-red-800'
-                                    }
-                                >
-                                    {bank.isActive ? 'Active' : 'Inactive'}
-                                </Badge>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    asChild
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50 hover:text-blue-600"
-                                >
-                                    <Link href={`/admin/banks/${bank.id}`}>
-                                        <Eye className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+            {globalBanks.map(({ id, name, logo, color }) => (
+                // <Link key={id} href={`/admin/banks/${id}`}>
+                <BankCard key={id} href={`/admin/banks/${id}` as Route}>
+                    <BankCard.Icon>
+                        <BankLogo logoUrl={logo} color={color} size="lg" />
+                    </BankCard.Icon>
+                    <BankCard.Header>
+                        <BankCard.Title>{name}</BankCard.Title>
+                    </BankCard.Header>
+                    <BankCard.ActionsDropdown>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                // e.preventDefault();
+                                e.stopPropagation();
+                                alert('ddd');
+                            }}
+                        >
+                            ddd
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                // e.preventDefault();
+                                e.stopPropagation();
+                                alert('ddd2');
+                            }}
+                        >
+                            ddd
+                        </DropdownMenuItem>
+                    </BankCard.ActionsDropdown>
+                </BankCard>
+                // </Link>
             ))}
         </div>
     );

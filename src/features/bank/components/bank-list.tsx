@@ -15,7 +15,7 @@ interface BankListProps {
 export const BankList: React.FC<BankListProps> = ({ className }) => {
     const { openModal } = useAddBankModal();
 
-    const { data: banksData = [], isLoading, error } = useConnectedBankEndpoints.getAll({});
+    const { data: banksData = [], isLoading, error } = useConnectedBankEndpoints.getAll({ query: {} });
 
     const handleEdit = (id: string) => {};
 
@@ -63,7 +63,7 @@ export const BankList: React.FC<BankListProps> = ({ className }) => {
                     </p>
                 </div>
                 <div className="max-w-sm w-full">
-                    <AddBankCard onAddBank={openModal} />
+                    <AddBankCard />
                 </div>
             </div>
         );
@@ -72,7 +72,7 @@ export const BankList: React.FC<BankListProps> = ({ className }) => {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <AddBankCard onAddBank={openModal} />
+                <AddBankCard />
                 {banksData.map((account: any) => (
                     <BankCard
                         key={account.id}
