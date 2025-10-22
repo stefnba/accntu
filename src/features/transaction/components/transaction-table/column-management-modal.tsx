@@ -2,15 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { ResponsiveModal } from '@/components/responsive-modal';
 import { Separator } from '@/components/ui/separator';
 import { useTransactionTable } from '@/features/transaction/hooks';
 import { useColumnManagementModal } from '@/features/transaction/hooks/column-management';
@@ -169,18 +162,18 @@ export const ColumnManagementModal: React.FC = () => {
 
     return (
         <ResponsiveModal open={isOpen} onOpenChange={close}>
-            <DialogContent className="">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <IconLayoutColumns className="h-5 w-5" />
-                        Manage Columns
-                    </DialogTitle>
-                    <DialogDescription>
-                        Customize which columns are visible and their order. Drag and drop to
-                        reorder columns.
-                    </DialogDescription>
-                </DialogHeader>
+            <ResponsiveModal.Header>
+                <ResponsiveModal.Title className="flex items-center gap-2">
+                    <IconLayoutColumns className="h-5 w-5" />
+                    Manage Columns
+                </ResponsiveModal.Title>
+                <ResponsiveModal.Description>
+                    Customize which columns are visible and their order. Drag and drop to reorder
+                    columns.
+                </ResponsiveModal.Description>
+            </ResponsiveModal.Header>
 
+            <ResponsiveModal.Content>
                 <div className="space-y-4">
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>
@@ -220,13 +213,13 @@ export const ColumnManagementModal: React.FC = () => {
                         </DndContext>
                     </div>
                 </div>
+            </ResponsiveModal.Content>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={close}>
-                        Close
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
+            <ResponsiveModal.Footer>
+                <Button type="button" variant="outline" onClick={close}>
+                    Close
+                </Button>
+            </ResponsiveModal.Footer>
         </ResponsiveModal>
     );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { InferQueryStateModalViewOptions, useQueryStateModal } from '@/hooks';
+import { useResponsiveModal } from '@/components/responsive-modal';
 import { parseAsString, useQueryState } from 'nuqs';
 import { create } from 'zustand';
 
@@ -31,25 +31,26 @@ export const useTagSelectorModal = create<{
 export const useTagUpsertModal = () => {
     const [tagId, setTagId] = useQueryState('tagId', parseAsString);
 
-    const modalActions = useQueryStateModal({
-        views: ['create', 'update'] as const,
+    const modal = useResponsiveModal({
+        key: 'tag',
+        views: ['create', 'update'],
         onClose: () => {
             setTagId(null);
         },
     });
 
     return {
-        ...modalActions,
+        isModalOpen: modal.isOpen,
+        closeModal: modal.close,
+        modalView: modal.view,
         openModal: ({
             mode = 'create',
             tagId,
         }: { mode: 'create'; tagId?: null } | { mode: 'update'; tagId: string }) => {
-            modalActions.openModal(mode);
+            modal.open(mode);
             setTagId(tagId || null);
         },
         tagId,
         setTagId,
     };
 };
-
-export type TagUpsertModalViews = InferQueryStateModalViewOptions<typeof useTagUpsertModal>;

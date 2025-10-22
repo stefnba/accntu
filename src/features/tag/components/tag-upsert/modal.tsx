@@ -1,24 +1,23 @@
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { ResponsiveModal } from '@/components/responsive-modal';
 import { TagUpsertForm } from '@/features/tag/components/tag-upsert/form';
 
 import { useTagUpsertModal } from '@/features/tag/hooks';
 
 export const TagUpsertModal = () => {
-    // ================================
-    // Hooks
-    // ================================
     const { isModalOpen, closeModal, tagId } = useTagUpsertModal();
 
     const isEditMode = Boolean(tagId);
 
     return (
-        <ResponsiveModal
-            title={isEditMode ? 'Edit Tag' : 'Create New Tag'}
-            open={isModalOpen}
-            onOpenChange={closeModal}
-            size="lg"
-        >
-            <TagUpsertForm />
+        <ResponsiveModal open={isModalOpen} onOpenChange={closeModal} size="lg">
+            <ResponsiveModal.Header>
+                <ResponsiveModal.Title>
+                    {isEditMode ? 'Edit Tag' : 'Create New Tag'}
+                </ResponsiveModal.Title>
+            </ResponsiveModal.Header>
+            <ResponsiveModal.Content>
+                <TagUpsertForm />
+            </ResponsiveModal.Content>
         </ResponsiveModal>
     );
 };

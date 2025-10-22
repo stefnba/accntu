@@ -1,5 +1,7 @@
-import { useQueryStateModal } from '@/hooks';
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+'use client';
+
+import { useResponsiveModal } from '@/components/responsive-modal';
+import { parseAsString, useQueryState } from 'nuqs';
 import { create } from 'zustand';
 
 /**
@@ -7,40 +9,44 @@ import { create } from 'zustand';
  * @returns The label modal state and actions
  */
 export const useLabelUpsertModal = () => {
-    const views = ['create', 'update'] as const;
-
     // labelId for update
     const [labelId, setLabelId] = useQueryState('labelId', parseAsString.withDefault(''));
 
     // parentId for child label
     const [parentId, setParentId] = useQueryState('parentId', parseAsString.withDefault(''));
 
-    // view: form, parent, icon
-    const [view, setView] = useQueryState(
-        'view',
-        parseAsStringLiteral(['form', 'parent', 'icon']).withDefault('form')
-    );
-
-    const modalActions = useQueryStateModal({
-        views,
+    // Main modal with create/update views
+    const modal = useResponsiveModal({
+        key: 'label',
+        views: ['create', 'update'],
         onClose: () => {
             setLabelId(null);
             setParentId(null);
         },
     });
 
+    // Sub-views within the modal: form, parent, icon
+    const subViewModal = useResponsiveModal({
+        key: 'view',
+        views: ['form', 'parent', 'icon'],
+        defaultView: 'form',
+    });
+
     return {
-        ...modalActions,
+        isModalOpen: modal.isOpen,
+        closeModal: modal.close,
+        modalView: modal.view,
         openModal: ({
             view,
             labelId,
+            parentId,
         }: {
-            view: (typeof views)[number];
+            view: 'create' | 'update';
             labelId?: string | null;
             parentId?: string | null;
         }) => {
-            modalActions.openModal(view);
-            setView('form');
+            modal.open(view);
+            subViewModal.open('form');
             setLabelId(labelId || null);
             setParentId(parentId || null);
         },
@@ -48,9 +54,11 @@ export const useLabelUpsertModal = () => {
         parentId: parentId || null,
         setLabelId,
         setParentId,
-        // view: form, parent, icon
-        view,
-        setView,
+        // Sub-views: form, parent, icon
+        view: subViewModal.view,
+        setView: subViewModal.open,
+        // View component for sub-views
+        View: subViewModal.View,
     };
 };
 

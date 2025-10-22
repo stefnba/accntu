@@ -1,6 +1,6 @@
 'use client';
 
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { ResponsiveModal } from '@/components/responsive-modal';
 import { useConnectedBankEndpoints, useGlobalBankEndpoints } from '@/features/bank/api';
 import { useAddBankModal } from '@/features/bank/hooks';
 import { AccountSelectionStep } from './account-selection-step';
@@ -65,46 +65,79 @@ export const AddBankModal = ({ onSuccess }: AddBankModalProps) => {
         });
     };
 
-    // Render current step
-    const renderCurrentStep = () => {
-        switch (currentStep) {
-            case 'intro':
-                return <IntroStep />;
+    // Get View component from modal if available
+    const View =
+        currentStep === 'intro' ||
+        currentStep === 'country' ||
+        currentStep === 'bank-selection' ||
+        currentStep === 'account-selection' ||
+        currentStep === 'loading' ||
+        currentStep === 'success'
+            ? ({ name, children }: { name: string; children: React.ReactNode }) => {
+                  if (currentStep !== name) return null;
+                  return <>{children}</>;
+              }
+            : null;
 
-            case 'country':
-                return <CountryStep />;
-
-            case 'bank-selection':
-                return <BankSelectionStep />;
-
-            case 'account-selection':
-                return selectedBankId ? (
-                    <AccountSelectionStep onContinue={handleCreateAccounts} />
-                ) : null;
-
-            case 'loading':
-                return <LoadingStep message="Creating your bank accounts..." />;
-
-            case 'success':
-                return (
-                    <SuccessStep
-                        onContinue={handleClose}
-                        accountCount={selectedAccountIds.length}
-                    />
-                );
-
-            default:
-                return <IntroStep />;
-        }
-    };
+    if (!View) return null;
 
     return (
-        <ResponsiveModal
-            open={modalOpen}
-            onOpenChange={setModalOpen}
-            title={currentStep === 'intro' ? 'Connect Bank Account' : undefined}
-        >
-            <div className="min-h-[400px]">{renderCurrentStep()}</div>
+        <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen}>
+            <View name="intro">
+                <ResponsiveModal.Header>
+                    <ResponsiveModal.Title>Connect Bank Account</ResponsiveModal.Title>
+                </ResponsiveModal.Header>
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        <IntroStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="country">
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        <CountryStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="bank-selection">
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        <BankSelectionStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="account-selection">
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        {selectedBankId && (
+                            <AccountSelectionStep onContinue={handleCreateAccounts} />
+                        )}
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="loading">
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        <LoadingStep message="Creating your bank accounts..." />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="success">
+                <ResponsiveModal.Content>
+                    <div className="min-h-[400px]">
+                        <SuccessStep
+                            onContinue={handleClose}
+                            accountCount={selectedAccountIds.length}
+                        />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
         </ResponsiveModal>
     );
 };

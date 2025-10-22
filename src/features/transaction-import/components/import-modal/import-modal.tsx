@@ -1,6 +1,6 @@
 'use client';
 
-import { ResponsiveModal } from '@/components/ui/responsive-modal';
+import { ResponsiveModal } from '@/components/responsive-modal';
 import { useImportModal } from '@/features/transaction-import/hooks';
 import { Banknote, CheckCircle2, Upload, Zap } from 'lucide-react';
 
@@ -58,27 +58,45 @@ export const ImportModal: React.FC<ImportModalProps> = ({ onSuccess }) => {
         setModalOpen(open);
     };
 
-    const renderCurrentStep = () => {
-        switch (currentStep) {
-            case 'accountSelection':
-                return <AccountSelectionStep />;
-            case 'upload':
-                return <UploadStep />;
-            case 'processing':
-                return <ProcessingAndPreviewStep />;
-            case 'success':
-                return <SuccessStep onContinue={handleClose} />;
-            default:
-                return;
-        }
+    // Simple View component for conditional rendering
+    const View = ({ name, children }: { name: string; children: React.ReactNode }) => {
+        if (currentStep !== name) return null;
+        return <>{children}</>;
     };
 
     return (
         <ResponsiveModal size="auto" open={modalOpen} onOpenChange={handleOpenChange}>
-            {/* Content with better spacing and transitions */}
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6 ">
-                <div className="transition-all duration-300 ease-in-out">{renderCurrentStep()}</div>
-            </div>
+            <View name="accountSelection">
+                <ResponsiveModal.Content>
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 transition-all duration-300 ease-in-out">
+                        <AccountSelectionStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="upload">
+                <ResponsiveModal.Content>
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 transition-all duration-300 ease-in-out">
+                        <UploadStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="processing">
+                <ResponsiveModal.Content>
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 transition-all duration-300 ease-in-out">
+                        <ProcessingAndPreviewStep />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
+
+            <View name="success">
+                <ResponsiveModal.Content>
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 transition-all duration-300 ease-in-out">
+                        <SuccessStep onContinue={handleClose} />
+                    </div>
+                </ResponsiveModal.Content>
+            </View>
         </ResponsiveModal>
     );
 };
