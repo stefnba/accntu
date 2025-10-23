@@ -84,7 +84,8 @@ async function runFileBenchmark() {
                     
                     console.log(`   ${method.toUpperCase().padEnd(6)}: ${(end - start).toFixed(2)}ms (${result.rows[0]?.total || 'unknown'} rows)`);
                 } catch (error) {
-                    console.log(`   ${method.toUpperCase().padEnd(6)}: ❌ Failed - ${error.message}`);
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    console.log(`   ${method.toUpperCase().padEnd(6)}: ❌ Failed - ${errorMessage}`);
                 }
             }
             
@@ -99,7 +100,8 @@ async function runFileBenchmark() {
                 
                 console.log(`   AUTO  : ${(autoEnd - autoStart).toFixed(2)}ms (chose optimal method)`);
             } catch (error) {
-                console.log(`   AUTO  : ❌ Failed - ${error.message}`);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.log(`   AUTO  : ❌ Failed - ${errorMessage}`);
             }
         }
         
@@ -139,7 +141,8 @@ async function runFileBenchmark() {
                 
                 console.log(`   ${method.name.padEnd(12)}: ${(end - start).toFixed(2)}ms (${result.rows.length} groups)`);
             } catch (error) {
-                console.log(`   ${method.name.padEnd(12)}: ❌ Failed - ${error.message}`);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.log(`   ${method.name.padEnd(12)}: ❌ Failed - ${errorMessage}`);
             }
         }
         
