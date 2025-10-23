@@ -1,7 +1,6 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service/';
-// import { coreCrudServiceHandler } from '@/server/lib/service/crud';
 
 export const tagServices = createFeatureServices
     .registerSchema(tagSchemas)
