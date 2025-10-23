@@ -22,15 +22,15 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTransactionEndpoints } from '@/features/transaction/api';
+import { TTransaction } from '@/features/transaction/server/db/queries';
 import { IconEdit } from '@tabler/icons-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-// import { TransactionWithRelations } from '@/features/transaction/schemas';
 
 interface BulkUpdateDrawerProps {
     isOpen: boolean;
     onClose: () => void;
-    selectedTransactions: TransactionWithRelations[];
+    selectedTransactions: TTransaction[];
     filterOptions?: {
         labels?: Array<{ id: string; name: string; color: string | null }>;
     };
@@ -105,7 +105,7 @@ export const TransactionBulkUpdateDrawer = ({
             // Update each transaction individually
             const updatePromises = selectedTransactions.map((transaction) =>
                 updateTransaction({
-                    params: { id: transaction.id },
+                    param: { id: transaction.id },
                     json: updateData,
                 })
             );
