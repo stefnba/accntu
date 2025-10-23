@@ -3,6 +3,31 @@ import { participant } from '@/features/participant/server/db/tables';
 import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
 import { z } from 'zod';
 
+/**
+ * Reusable schema for optional email fields that properly handles HTML form behavior.
+ *
+ * HTML form inputs return empty strings ("") when cleared, but Zod's .optional() treats
+ * fields as potentially undefined, not empty strings. This schema bridges that gap by:
+ * - Accepting empty strings, null, or undefined values
+ * - Transforming empty strings to undefined for clean type inference
+ * - Only validating email format when a value actually exists
+ * - Providing clear error messages for invalid email formats
+ *
+ * @example
+ * ```typescript
+ * const schema = z.object({
+ *   email: optionalEmail, // Can be empty or a valid email
+ * });
+ * ```
+ */
+export const optionalEmail = z
+    .string()
+    .optional()
+    .transform((val) => (val === '' || !val ? undefined : val))
+    .refine((val) => !val || z.email().safeParse(val).success, {
+        message: 'Invalid email format',
+    });
+
 export const { schemas: participantSchemas } = createFeatureSchemas
     .registerTable(participant)
     .omit({
@@ -16,7 +41,7 @@ export const { schemas: participantSchemas } = createFeatureSchemas
     .transform((base) =>
         base
             .extend({
-                email: z.email().optional(),
+                email: optionalEmail,
                 name: z.string().min(1, 'Name cannot be empty'),
             })
             .omit({
