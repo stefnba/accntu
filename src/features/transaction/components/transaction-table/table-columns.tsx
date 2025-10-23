@@ -2,8 +2,9 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TagBadge } from '@/features/tag/components/tag-badge';
 import { useTransactionPeek } from '@/features/transaction/hooks';
-import { TTransaction } from '@/features/transaction/server/db/queries';
+import { TTransaction as TTransactionQuery } from '@/features/transaction/server/db/queries';
 import { formatCurrency } from '@/features/transaction/utils';
 import { formatDate } from '@/lib/utils/date-formatter';
 import { IconArrowsUpDown, IconCalendar } from '@tabler/icons-react';
@@ -11,6 +12,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { LabelEditCell, TagEditCell, TypeEditCell } from './label-edit-cell';
 import { TransactionActionsMenu } from './transaction-actions-menu';
 
+export type TTransaction = TTransactionQuery;
 export type TransactionWithRelations = TTransaction;
 
 /**
@@ -199,22 +201,9 @@ export const transactionColumns: TransactionColumnDef[] = [
 
             return (
                 <div className="flex flex-wrap gap-1 max-w-[200px]">
-                    {tags
-                        .slice(0, 2)
-                        .map((tag: { id: string; name: string; color: string }) => (
-                            <Badge
-                                key={tag.id}
-                                variant="secondary"
-                                className="text-xs"
-                                style={{
-                                    backgroundColor: `${tag.color}20`,
-                                    borderColor: tag.color,
-                                    color: tag.color,
-                                }}
-                            >
-                                {tag.name}
-                            </Badge>
-                        ))}
+                    {tags.slice(0, 2).map((tag) => (
+                        <TagBadge size="sm" key={tag.id} tag={tag} />
+                    ))}
                     {tags.length > 2 && (
                         <Badge variant="outline" className="text-xs">
                             +{tags.length - 2}

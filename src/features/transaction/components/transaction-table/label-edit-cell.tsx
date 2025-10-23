@@ -18,8 +18,8 @@ import {
     TransactionTypeBadge,
     TTransactionType,
 } from '@/features/transaction/components/type';
+import { TTransaction } from '@/features/transaction/server/db/queries';
 import { useState } from 'react';
-import type { TTransaction } from './table-columns';
 
 interface TagEditCellProps {
     transaction: TTransaction;
@@ -34,7 +34,10 @@ export const TagEditCell = ({ transaction }: TagEditCellProps) => {
         <div
             className="cursor-pointer hover:bg-muted/30 p-1 rounded min-h-[24px] flex items-center gap-1"
             onClick={() =>
-                open({ transactionId: transaction.id, tagsIds: currentTags?.map((tag) => tag.id) })
+                open({
+                    transactionId: transaction.id,
+                    tagsIds: currentTags?.map((tag) => tag.id),
+                })
             }
         >
             {currentTags?.length ? (
