@@ -134,7 +134,7 @@ export const TransactionQuickInfo = ({ transactionId }: TransactionQuickInfoProp
                             <div className="text-sm">
                                 <span className="text-muted-foreground">Spending:</span>{' '}
                                 {formatCurrency(
-                                    parseFloat(transaction.spendingAmount),
+                                    Number(transaction.spendingAmount),
                                     transaction.spendingCurrency
                                 )}
                             </div>
@@ -142,7 +142,7 @@ export const TransactionQuickInfo = ({ transactionId }: TransactionQuickInfoProp
                                 <div className="text-sm">
                                     <span className="text-muted-foreground">Account:</span>{' '}
                                     {formatCurrency(
-                                        parseFloat(transaction.accountAmount),
+                                        Number(transaction.accountAmount),
                                         transaction.accountCurrency
                                     )}
                                 </div>
@@ -151,7 +151,7 @@ export const TransactionQuickInfo = ({ transactionId }: TransactionQuickInfoProp
                                 <div className="text-sm">
                                     <span className="text-muted-foreground">User:</span>{' '}
                                     {formatCurrency(
-                                        parseFloat(transaction.userAmount),
+                                        Number(transaction.userAmount),
                                         transaction.userCurrency
                                     )}
                                 </div>

@@ -48,7 +48,7 @@ export const PeekHeader = () => {
 
             <div className={`text-2xl font-bold ${getTypeColor(transaction.type)}`}>
                 {formatCurrency(
-                    getAmountWithSign(parseFloat(transaction.spendingAmount), transaction.type),
+                    getAmountWithSign(Number(transaction.spendingAmount), transaction.type),
                     transaction.spendingCurrency
                 )}
             </div>

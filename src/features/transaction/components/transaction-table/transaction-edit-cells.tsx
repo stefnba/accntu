@@ -47,14 +47,14 @@ export const EditableTextCell = ({
 
         try {
             await updateTransaction({
-                params: { id: transaction.id },
+                param: { id: transaction.id },
                 json: { [field]: editValue || null },
             });
 
             toast.success(`${field} updated`);
             setIsEditing(false);
             onEditComplete?.();
-        } catch (error) {
+        } catch {
             toast.error(`Failed to update ${field}`);
         }
     };
@@ -127,14 +127,14 @@ export const EditableAmountCell = ({
 
         try {
             await updateTransaction({
-                params: { id: transaction.id },
+                param: { id: transaction.id },
                 json: { [field]: String(numericValue) },
             });
 
             toast.success('Amount updated');
             setIsEditing(false);
             onEditComplete?.();
-        } catch (error) {
+        } catch {
             toast.error('Failed to update amount');
         }
     };
@@ -208,14 +208,14 @@ export const EditableSelectCell = ({
 
         try {
             await updateTransaction({
-                params: { id: transaction.id },
+                param: { id: transaction.id },
                 json: { [field]: newValue === 'none' ? null : newValue },
             });
 
             toast.success(`${field} updated`);
             setIsEditing(false);
             onEditComplete?.();
-        } catch (error) {
+        } catch {
             toast.error(`Failed to update ${field}`);
         }
     };

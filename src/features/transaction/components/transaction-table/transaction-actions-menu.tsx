@@ -41,7 +41,7 @@ export const TransactionActionsMenu = ({ transactionId }: TransactionActionsMenu
     // =========================
     const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
-    const { open: openLabelSelector } = useLabelSelectorModal();
+    const { openModal: openLabelSelector } = useLabelSelectorModal();
     const { open: openTagSelector } = useTagSelectorModal();
 
     // =========================
