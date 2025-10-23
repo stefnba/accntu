@@ -9,11 +9,7 @@ import { participantSchemas } from '@/features/participant/schemas';
 import toast from 'react-hot-toast';
 
 export function ParticipantUpsertForm() {
-    const { modal, participantId } = useUpsertParticipantModal({
-        onOpen: () => {
-            form.reset();
-        },
-    });
+    const { modal, participantId } = useUpsertParticipantModal();
     const { mutate: createParticipant } = useParticipantEndpoints.create();
     const { mutate: updateParticipant } = useParticipantEndpoints.update();
 

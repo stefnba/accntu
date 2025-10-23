@@ -16,7 +16,18 @@ export const useUpsertParticipantModal = ({ onOpen }: { onOpen?: () => void } = 
     const [participantId, setParticipantId] = useQueryState('participantId', parseAsString);
 
     return {
-        modal,
+        modal: {
+            ...modal,
+            open: (view: 'create' | { participantId: string; view: 'update' } = 'create') => {
+                if (typeof view === 'string') {
+                    modal.open(view);
+                } else if (view?.participantId) {
+                    modal.open(view.view);
+                    setParticipantId(view.participantId);
+                }
+                setParticipantId(null);
+            },
+        },
         participantId,
         setParticipantId,
     };
