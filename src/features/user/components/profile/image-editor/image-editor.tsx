@@ -14,12 +14,20 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import Cropper from 'react-easy-crop';
+import { errorToast } from '@/components/feedback';
+
+interface CroppedAreaPixels {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+}
 
 export interface ImageEditData {
     rotation: number;
     zoom: number;
     crop: { x: number; y: number };
-    croppedAreaPixels: any;
+    croppedAreaPixels: CroppedAreaPixels | null;
 }
 
 interface ImageEditorProps {
@@ -32,12 +40,22 @@ export function ImageEditor({ src, onEditChange, onProcessedImageChange }: Image
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [rotation, setRotation] = useState(0);
     const [zoom, setZoom] = useState(1);
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+    const generateCroppedImage = useCallback(
+        async (editData: ImageEditData) => {
+            const result = await getCroppedImg(src, editData.croppedAreaPixels, editData.rotation);
+
+            if (result.success && result.url) {
+                onProcessedImageChange(result.url);
+            } else if (result.error) {
+                errorToast(result.error);
+            }
+        },
+        [src, onProcessedImageChange]
+    );
 
     const handleCropComplete = useCallback(
-        (croppedArea: any, croppedAreaPixels: any) => {
-            setCroppedAreaPixels(croppedAreaPixels);
-
+        (_croppedArea: unknown, croppedAreaPixels: CroppedAreaPixels) => {
             const editData: ImageEditData = {
                 rotation,
                 zoom,
@@ -48,23 +66,7 @@ export function ImageEditor({ src, onEditChange, onProcessedImageChange }: Image
             onEditChange(editData);
             generateCroppedImage(editData);
         },
-        [crop, rotation, zoom, onEditChange]
-    );
-
-    const generateCroppedImage = useCallback(
-        async (editData: ImageEditData) => {
-            try {
-                const croppedImage = await getCroppedImg(
-                    src,
-                    editData.croppedAreaPixels,
-                    editData.rotation
-                );
-                onProcessedImageChange(croppedImage);
-            } catch (error) {
-                console.error('Error generating cropped image:', error);
-            }
-        },
-        [src, onProcessedImageChange]
+        [crop, rotation, zoom, onEditChange, generateCroppedImage]
     );
 
     const handleRotate = useCallback(
@@ -197,12 +199,23 @@ export function ImageEditor({ src, onEditChange, onProcessedImageChange }: Image
     );
 }
 
-// Helper function to generate cropped image
-const getCroppedImg = (imageSrc: string, pixelCrop: any, rotation = 0): Promise<string> => {
-    return new Promise((resolve, reject) => {
+type CropResult =
+    | { success: true; url: string; error?: never }
+    | { success: false; error: string; url?: never };
+
+const getCroppedImg = (
+    imageSrc: string,
+    pixelCrop: CroppedAreaPixels | null,
+    rotation = 0
+): Promise<CropResult> => {
+    return new Promise((resolve) => {
+        if (!pixelCrop || pixelCrop.width <= 0 || pixelCrop.height <= 0) {
+            resolve({ success: false, error: 'Invalid crop dimensions. Please try again.' });
+            return;
+        }
+
         const image = new Image();
 
-        // Only set crossOrigin for external URLs, not for blob URLs
         if (!imageSrc.startsWith('blob:')) {
             image.crossOrigin = 'anonymous';
         }
@@ -210,30 +223,30 @@ const getCroppedImg = (imageSrc: string, pixelCrop: any, rotation = 0): Promise<
         image.addEventListener('load', () => {
             try {
                 const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
                 if (!ctx) {
-                    reject(new Error('Canvas context not available'));
+                    resolve({
+                        success: false,
+                        error: 'Unable to process image. Your browser may not support this feature.',
+                    });
                     return;
                 }
 
-                // Set canvas size to the crop size
-                canvas.width = pixelCrop.width;
-                canvas.height = pixelCrop.height;
+                const safeWidth = Math.max(1, Math.min(4096, Math.floor(pixelCrop.width)));
+                const safeHeight = Math.max(1, Math.min(4096, Math.floor(pixelCrop.height)));
 
-                // Clear the canvas
+                canvas.width = safeWidth;
+                canvas.height = safeHeight;
+
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Save the canvas state
                 ctx.save();
 
-                // Move to center for rotation
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
                 ctx.translate(centerX, centerY);
                 ctx.rotate((rotation * Math.PI) / 180);
 
-                // Draw the cropped portion of the image
                 ctx.drawImage(
                     image,
                     pixelCrop.x,
@@ -246,32 +259,51 @@ const getCroppedImg = (imageSrc: string, pixelCrop: any, rotation = 0): Promise<
                     pixelCrop.height
                 );
 
-                // Restore the canvas state
                 ctx.restore();
 
-                // Convert to blob
-                canvas.toBlob(
-                    (blob) => {
-                        if (blob) {
-                            const url = URL.createObjectURL(blob);
-                            resolve(url);
-                        } else {
-                            reject(new Error('Canvas toBlob failed'));
-                        }
-                    },
-                    'image/jpeg',
-                    0.9
-                );
-            } catch (error) {
-                reject(error);
+                const fallbackToDataURL = () => {
+                    try {
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                        resolve({ success: true, url: dataUrl });
+                    } catch {
+                        resolve({
+                            success: false,
+                            error: 'Failed to process image. Please try a different image.',
+                        });
+                    }
+                };
+
+                if (typeof canvas.toBlob === 'function') {
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                const url = URL.createObjectURL(blob);
+                                resolve({ success: true, url });
+                            } else {
+                                fallbackToDataURL();
+                            }
+                        },
+                        'image/jpeg',
+                        0.9
+                    );
+                } else {
+                    fallbackToDataURL();
+                }
+            } catch {
+                resolve({
+                    success: false,
+                    error: 'An error occurred while processing the image. Please try again.',
+                });
             }
         });
 
-        image.addEventListener('error', (error) => {
-            reject(new Error(`Failed to load image: ${error}`));
+        image.addEventListener('error', () => {
+            resolve({
+                success: false,
+                error: 'Failed to load image. Please try uploading a different image.',
+            });
         });
 
-        // Set the source last to trigger loading
         image.src = imageSrc;
     });
 };
