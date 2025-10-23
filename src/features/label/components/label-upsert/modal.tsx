@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@/components/feedback';
-import { FormColorSelect, useUpsertForm } from '@/components/form';
+import { useUpsertForm } from '@/components/form';
 import { ResponsiveModal } from '@/components/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { useLabelUpsertModal } from '@/features/label/hooks';
 import { labelServiceSchemas } from '@/features/label/schemas';
 
 export const LabelUpsertModal = () => {
-    const { isModalOpen, closeModal, labelId, view, View, setView, setParentId, parentId } =
+    const { isModalOpen, closeModal, labelId, View, setView, setParentId, parentId } =
         useLabelUpsertModal();
 
     const isEditMode = Boolean(labelId);
@@ -25,7 +25,7 @@ export const LabelUpsertModal = () => {
         { enabled: !!labelId }
     );
 
-    const { form, Form, Input, SubmitButton } = useUpsertForm({
+    const { Form, Input, SubmitButton, ColorSelect } = useUpsertForm({
         create: {
             schema: labelServiceSchemas.insert,
             defaultValues: {
@@ -102,6 +102,7 @@ export const LabelUpsertModal = () => {
 
     return (
         <ResponsiveModal open={isModalOpen} onOpenChange={closeModal} size="lg">
+            {/* Create view */}
             <View name="form">
                 <Form>
                     <ResponsiveModal.Header>
@@ -118,14 +119,7 @@ export const LabelUpsertModal = () => {
                                 autoFocus
                             />
 
-                            <FormColorSelect
-                                cols={8}
-                                // todo change any to proper type
-                                form={form as any}
-                                name="color"
-                                label="Color"
-                                showClear
-                            />
+                            <ColorSelect cols={8} name="color" label="Color" />
 
                             <div className="space-y-2">
                                 <Label>Parent Label</Label>
@@ -161,6 +155,7 @@ export const LabelUpsertModal = () => {
                 </Form>
             </View>
 
+            {/* Parent view */}
             <View name="parent">
                 <ResponsiveModal.Header>
                     <ResponsiveModal.Title>Select Parent Label</ResponsiveModal.Title>
@@ -175,6 +170,7 @@ export const LabelUpsertModal = () => {
                 </ResponsiveModal.Footer>
             </View>
 
+            {/* Icon view */}
             <View name="icon">
                 <ResponsiveModal.Header>
                     <ResponsiveModal.Title>Select Icon</ResponsiveModal.Title>
