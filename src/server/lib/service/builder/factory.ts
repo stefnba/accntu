@@ -22,6 +22,7 @@
  */
 
 import { InferServiceSchemas, TOperationSchemaObject } from '@/lib/schemas/types';
+import { QueryBuilder } from '@/server/lib/db/query/builder';
 import { QueryFn } from '@/server/lib/db/query/builder/types';
 import { ServiceBuilder } from '@/server/lib/service/builder/core';
 import { wrapServiceWithHandler } from '@/server/lib/service/builder/utils';
@@ -107,12 +108,12 @@ export class ServiceBuilderFactory<
      *     });
      * ```
      */
-    registerQueries<Q extends Record<string, QueryFn>>(queries: Q) {
-        return new ServiceBuilderFactory<TSchemas, TQueries & Q>({
+    registerQueries<Q extends QueryBuilder>(queries: Q) {
+        return new ServiceBuilderFactory<TSchemas, TQueries & Q['queries']>({
             schemas: this.schemas,
             queries: {
                 ...this.queries,
-                ...queries,
+                ...queries.queries,
             },
         });
     }

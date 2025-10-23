@@ -5,8 +5,8 @@ import { createServiceBuilder } from '@/server/lib/service/builder/factory';
 const quick = createServiceBuilder
     .registerSchemas(tagSchemas)
     .registerSchemas(tagToTransactionSchemas)
-    .registerQueries(tagQueries.queries)
-    .registerQueries(tagToTransactionQueries.queries)
+    .registerQueries(tagQueries)
+    .registerQueries(tagToTransactionQueries)
     .registerCoreServices()
     .addService('assignToTransaction', ({ queries }) => ({
         operation: 'create tag to transaction',
