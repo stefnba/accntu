@@ -1,10 +1,10 @@
 import { Badge } from '@/components/ui/badge';
-import { TTag } from '@/features/tag/schemas';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TTag } from '@/features/tag/schemas';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 export const tagBadgeVariants = cva(

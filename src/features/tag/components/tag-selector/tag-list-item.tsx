@@ -2,11 +2,11 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { TTagQuery } from '@/features/tag/schemas';
+import type { TTag } from '@/features/tag/server/db/queries';
 import { cn } from '@/lib/utils';
 
 interface TagListItemProps {
-    tag: TTagQuery['select'];
+    tag: TTag;
     isSelected: boolean;
     onToggle: (tagId: string) => void;
     searchTerm: string;
