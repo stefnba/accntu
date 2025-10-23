@@ -1,14 +1,20 @@
-import { tagSchemas } from '@/features/tag/schemas';
-import { tagQueries } from '@/features/tag/server/db/queries';
-import { ServiceBuilderFactory } from '@/server/lib/service/builder/factory';
+import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
+import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
+import { createServiceBuilder } from '@/server/lib/service/builder/factory';
 
-const quick = new ServiceBuilderFactory({
-    schemas: {},
-    queries: {},
-})
+const quick = createServiceBuilder
     .registerSchemas(tagSchemas)
+    .registerSchemas(tagToTransactionSchemas)
     .registerQueries(tagQueries.queries)
+    .registerQueries(tagToTransactionQueries.queries)
     .registerCoreServices()
+    .addService('assignToTransaction', ({ queries }) => ({
+        operation: 'create tag to transaction',
+        returnHandler: 'nonNull',
+        fn: async (input) => {
+            return await queries.assignToTransaction(input);
+        },
+    }))
     .build();
 
 const run = async () => {

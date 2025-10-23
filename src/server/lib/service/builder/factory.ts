@@ -196,3 +196,8 @@ export class ServiceBuilderFactory<
         });
     }
 }
+
+export const createServiceBuilder = new ServiceBuilderFactory({
+    schemas: {},
+    queries: {},
+});

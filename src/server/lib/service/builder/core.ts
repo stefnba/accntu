@@ -15,11 +15,11 @@
  * const services = builder
  *     .addService('archive', ({ queries }) => ({
  *         returnHandler: 'nonNull',
- *         serviceFn: async (input) => await queries.archive(input),
+ *         fn: async (input) => await queries.archive(input),
  *     }))
  *     .addService('restore', ({ queries, services }) => ({
  *         returnHandler: 'nonNull',
- *         serviceFn: async (input) => {
+ *         fn: async (input) => {
  *             // Can use previously added services
  *             const archived = await services.archive(input);
  *             return await queries.restore({ id: archived.id });
@@ -102,14 +102,14 @@ export class ServiceBuilder<
      * .addService('archiveById', ({ queries }) => ({
      *     operation: 'Archive Item',
      *     returnHandler: 'nonNull',
-     *     serviceFn: async (input) => {
+     *     fn: async (input) => {
      *         return await queries.archive(input);
      *     },
      * }))
      * ```
      */
     addService<
-        K extends keyof TSchemas & string,
+        K extends (keyof TSchemas & string) | ({} & string),
         TOutput,
         TInput = K extends keyof InferServiceSchemas<TSchemas>
             ? InferServiceSchemas<TSchemas>[K]
@@ -123,7 +123,7 @@ export class ServiceBuilder<
         }) => {
             operation?: string;
             returnHandler: 'nonNull';
-            serviceFn: ServiceFn<TInput, TOutput>;
+            fn: ServiceFn<TInput, TOutput>;
         }
     ): ServiceBuilder<
         TSchemas,
@@ -150,7 +150,7 @@ export class ServiceBuilder<
      * .addService('findByName', ({ queries }) => ({
      *     operation: 'Find Item By Name',
      *     returnHandler: 'nullable',
-     *     serviceFn: async (input) => {
+     *     fn: async (input) => {
      *         // May return null if not found
      *         return await queries.findByName(input);
      *     },
@@ -172,7 +172,7 @@ export class ServiceBuilder<
         }) => {
             operation?: string;
             returnHandler: 'nullable';
-            serviceFn: ServiceFn<TInput, TOutput>;
+            fn: ServiceFn<TInput, TOutput>;
         }
     ): ServiceBuilder<TSchemas, TServices & Record<K, ServiceFn<TInput, TOutput | null>>, TQueries>;
 
@@ -181,7 +181,7 @@ export class ServiceBuilder<
      *
      * This method:
      * 1. Calls the serviceDefinition function with queries, schemas, and services
-     * 2. Extracts the serviceFn, returnHandler, and optional operation name
+     * 2. Extracts the fn, returnHandler, and optional operation name
      * 3. Wraps the service with appropriate validation based on returnHandler
      * 4. Creates a new ServiceBuilder instance with the added service
      *
@@ -202,7 +202,7 @@ export class ServiceBuilder<
         }) => {
             operation?: string;
             returnHandler: 'nonNull' | 'nullable';
-            serviceFn: ServiceFn<TInput, TOutput>;
+            fn: ServiceFn<TInput, TOutput>;
         }
     ): ServiceBuilder<TSchemas, TServices & Record<K, ServiceFn<TInput, TOutput>>, TQueries> {
         // Execute the service definition to get the configuration
@@ -212,13 +212,13 @@ export class ServiceBuilder<
             services: this.services,
         });
 
-        const { serviceFn, returnHandler = 'nonNull', operation } = definition;
+        const { fn, returnHandler = 'nonNull', operation } = definition;
 
         // Wrap the service with the appropriate handler
         const wrappedService =
             returnHandler === 'nonNull'
-                ? wrapServiceWithHandler(serviceFn, 'nonNull', operation)
-                : wrapServiceWithHandler(serviceFn, 'nullable', operation);
+                ? wrapServiceWithHandler(fn, 'nonNull', operation)
+                : wrapServiceWithHandler(fn, 'nullable', operation);
 
         // Return a new builder instance with the added service
         return new ServiceBuilder<
