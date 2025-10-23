@@ -76,7 +76,7 @@ export const TagUpsertForm = () => {
         <Form className="">
             <Input name="name" label="Name" placeholder="Enter tag name" autoFocus />
 
-            <ColorSelect cols={8} name="color" label="Color" showClear />
+            <ColorSelect cols={8} name="color" label="Color" />
 
             <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={modal.close}>
