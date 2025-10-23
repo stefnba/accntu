@@ -14,21 +14,14 @@ export const { schemas: participantSchemas } = createFeatureSchemas
         totalTransactions: true,
     })
     .transform((base) =>
-        base.extend({
-            email: z.email().optional().nullable(),
-            name: z.string().min(1, 'Name cannot be empty'),
-            linkedUserId: z
-                .string()
-                .trim()
-                .optional()
-                .nullable()
-                .transform((val) => {
-                    if (val?.length === 0) {
-                        return null;
-                    }
-                    return val;
-                }),
-        })
+        base
+            .extend({
+                email: z.email().optional(),
+                name: z.string().min(1, 'Name cannot be empty'),
+            })
+            .omit({
+                linkedUserId: true,
+            })
     )
     .setUserIdField('userId')
     .setIdFields({ id: true })

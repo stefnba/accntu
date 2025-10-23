@@ -1,31 +1,35 @@
 'use client';
 
 import { useUpsertForm } from '@/components/form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/responsive-modal';
+import { Button } from '@/components/ui/button';
 import { useParticipantEndpoints } from '@/features/participant/api';
-import { useCreateUpdateParticipantModal } from '@/features/participant/hooks';
+import { useUpsertParticipantModal } from '@/features/participant/hooks';
 import { participantSchemas } from '@/features/participant/schemas';
 import toast from 'react-hot-toast';
 
 export function ParticipantUpsertForm() {
-    const { modalIsOpen, setModal, participantId, closeModal } = useCreateUpdateParticipantModal();
+    const { modal, participantId } = useUpsertParticipantModal({
+        onOpen: () => {
+            form.reset();
+        },
+    });
     const { mutate: createParticipant } = useParticipantEndpoints.create();
     const { mutate: updateParticipant } = useParticipantEndpoints.update();
 
-    const { Form, Input, SubmitButton } = useUpsertForm({
+    const { form, Input, SubmitButton, Form } = useUpsertForm({
         create: {
             schema: participantSchemas.create.form,
             defaultValues: {
                 name: '',
                 email: '',
-                linkedUserId: '',
             },
             onSubmit: (data) => {
                 createParticipant(
                     { json: data },
                     {
                         onSuccess() {
-                            closeModal();
+                            modal.close();
                             toast.success('Participant created successfully');
                         },
                     }
@@ -37,14 +41,13 @@ export function ParticipantUpsertForm() {
             defaultValues: {
                 name: '',
                 email: '',
-                linkedUserId: '',
             },
             onSubmit: (data) => {
                 updateParticipant(
-                    { param: { id: participantId }, json: data },
+                    { param: { id: participantId! }, json: data },
                     {
                         onSuccess() {
-                            closeModal();
+                            modal.close();
                             toast.success('Participant updated successfully');
                         },
                     }
@@ -55,19 +58,24 @@ export function ParticipantUpsertForm() {
     });
 
     return (
-        <Dialog open={modalIsOpen} onOpenChange={setModal}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>
-                        {participantId ? 'Edit Participant' : 'Add Participant'}
-                    </DialogTitle>
-                </DialogHeader>
-                <Form>
-                    <Input name="name" label="Name" />
-                    <Input name="email" label="Email" type="email" />
+        <ResponsiveModal open={modal.isOpen} onOpenChange={modal.close} size="lg">
+            <ResponsiveModal.Header>
+                <ResponsiveModal.Title>
+                    {participantId ? 'Edit Participant' : 'Add Participant'}
+                </ResponsiveModal.Title>
+            </ResponsiveModal.Header>
+            <Form>
+                <ResponsiveModal.Content className="space-y-8">
+                    <Input name="name" label="Name" aria-label="Participant name" autoFocus />
+                    <Input name="email" label="Email" type="email" aria-label="Participant email" />
+                </ResponsiveModal.Content>
+                <ResponsiveModal.Footer>
+                    <Button variant="outline" onClick={modal.close}>
+                        Cancel
+                    </Button>
                     <SubmitButton>{participantId ? 'Update' : 'Add'}</SubmitButton>
-                </Form>
-            </DialogContent>
-        </Dialog>
+                </ResponsiveModal.Footer>
+            </Form>
+        </ResponsiveModal>
     );
 }

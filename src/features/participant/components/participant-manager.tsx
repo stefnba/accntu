@@ -14,11 +14,9 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ParticipantUpsertForm } from '@/features/participant/components/participant-form';
-import { useCreateUpdateParticipantModal } from '@/features/participant/hooks';
 import toast from 'react-hot-toast';
 
 export function ParticipantManager() {
-    const { setModal } = useCreateUpdateParticipantModal();
     const { data: participants } = useParticipantEndpoints.getAll({ query: {} });
     const { mutate: deleteParticipant } = useParticipantEndpoints.delete();
 

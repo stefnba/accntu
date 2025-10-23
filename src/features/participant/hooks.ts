@@ -1,33 +1,22 @@
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import { useResponsiveModal } from '@/components/responsive-modal';
+import { parseAsString, useQueryState } from 'nuqs';
 
 /**
  * Hook to manage the add/update participant modal state
  */
-export const useCreateUpdateParticipantModal = () => {
-    const [modalIsOpen, setModalOpen] = useQueryState('m', parseAsBoolean.withDefault(false));
-    const [participantId, setParticipantId] = useQueryState(
-        'participantId',
-        parseAsString.withDefault('')
-    );
-
-    const openModal = () => {
-        setModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setModalOpen(false);
-    };
-    
-    return {
-        // Modal state
-        modalIsOpen,
-        setModal: (open: boolean) => {
-            setModalOpen(open);
+export const useUpsertParticipantModal = ({ onOpen }: { onOpen?: () => void } = {}) => {
+    const modal = useResponsiveModal({
+        key: 'participant',
+        views: ['create', 'update'],
+        onOpen: () => {
+            onOpen?.();
         },
-        openModal,
-        closeModal,
+    });
 
-        // Participant state
+    const [participantId, setParticipantId] = useQueryState('participantId', parseAsString);
+
+    return {
+        modal,
         participantId,
         setParticipantId,
     };
