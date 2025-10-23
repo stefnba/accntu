@@ -26,7 +26,7 @@ export const SampleDataSection: React.FC<SampleDataSectionProps> = ({ accountId 
 
     const { Form, Textarea, SubmitButton } = useForm({
         schema: z.object({
-            sampleTransformData: z.string(),
+            sampleTransformData: z.string().optional().nullable(),
         }),
         defaultValues: {
             sampleTransformData: '',
