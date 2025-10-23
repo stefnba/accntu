@@ -1,5 +1,6 @@
 'use client';
 
+import { BackButton } from '@/components/back-button';
 import { toast } from '@/components/feedback';
 import { useUpsertForm } from '@/components/form';
 import { ResponsiveModal } from '@/components/responsive-modal';
@@ -25,7 +26,7 @@ export const LabelUpsertModal = () => {
         { enabled: !!labelId }
     );
 
-    const { Form, Input, SubmitButton, ColorSelect } = useUpsertForm({
+    const { form, Form, Input, SubmitButton, ColorSelect } = useUpsertForm({
         create: {
             schema: labelServiceSchemas.insert,
             defaultValues: {
@@ -93,6 +94,7 @@ export const LabelUpsertModal = () => {
 
     const handleParentSelect = (selectedLabelId: string | null) => {
         setParentId(selectedLabelId);
+        form.setValue('parentId', selectedLabelId, { shouldDirty: true });
         setView('form');
     };
 
@@ -159,6 +161,12 @@ export const LabelUpsertModal = () => {
             <View name="parent">
                 <ResponsiveModal.Header>
                     <ResponsiveModal.Title>Select Parent Label</ResponsiveModal.Title>
+                    <ResponsiveModal.Description>
+                        Select a parent label to create a child label
+                    </ResponsiveModal.Description>
+                    <div className="mb-4">
+                        <BackButton onClick={() => setView('form')} />
+                    </div>
                 </ResponsiveModal.Header>
                 <ResponsiveModal.Content>
                     <LabelSelectorContent onSelect={handleParentSelect} />

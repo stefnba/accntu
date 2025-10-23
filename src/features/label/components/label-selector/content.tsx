@@ -88,13 +88,15 @@ export const LabelSelectorContent: React.FC<LabelSelectorContentProps> = ({
                 </div>
             )}
 
-            <Input
-                placeholder="Search labels..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-                autoFocus
-            />
+            <div className="py-2">
+                <Input
+                    placeholder="Search labels..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                    autoFocus
+                />
+            </div>
 
             {parentId && parentLabel && (
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">

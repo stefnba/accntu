@@ -37,7 +37,7 @@ export const LabelUpsertParentBadge: React.FC<LabelUpsertParentBadgeProps> = ({
 }) => {
     const { setView } = useLabelUpsertModal();
 
-    const { data: labels = [] } = useLabelEndpoints.getAllFlattened({});
+    const { data: labels = [] } = useLabelEndpoints.getAllFlattened({ query: { search: '' } });
 
     const parentLabel = labels.find((l) => l.id === currentParentId);
 
