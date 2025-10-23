@@ -4,7 +4,7 @@ import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
 import { transactionSchemas } from '@/features/transaction/schemas';
 import { transaction } from '@/features/transaction/server/db/tables';
 import { db } from '@/server/db';
-import { createFeatureQueries } from '@/server/lib/db/query';
+import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 
 export const transactionQueries = createFeatureQueries
@@ -274,6 +274,8 @@ export const transactionQueries = createFeatureQueries
             return deletedTransaction;
         },
     });
+
+export type TTransaction = InferFeatureType<typeof transactionQueries>;
 
 // Legacy functions that may still be used elsewhere
 
