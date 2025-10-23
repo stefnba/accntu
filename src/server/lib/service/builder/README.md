@@ -27,7 +27,6 @@ Built Services
 1. **ServiceBuilderFactory** - Entry point for registering schemas and queries
 2. **ServiceBuilder** - Fluent builder for adding custom services
 3. **wrapServiceWithHandler** - Utility for wrapping services with validation
-4. **Type Definitions** - Comprehensive TypeScript types for type safety
 
 ## Usage
 
@@ -214,7 +213,6 @@ builder/
 ├── core.ts       # ServiceBuilder class (adds custom services)
 ├── factory.ts    # ServiceBuilderFactory class (registers schemas/queries)
 ├── utils.ts      # wrapServiceWithHandler utility
-├── types.ts      # Type definitions
 ├── example.ts    # Usage example
 └── README.md     # This file
 ```
