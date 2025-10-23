@@ -1,5 +1,5 @@
 import * as Icons from '@/components/icons';
-import { IconDatabase, IconFileWord, IconReport } from '@tabler/icons-react';
+import { IconDatabase, IconFileWord, IconReport, IconUsers } from '@tabler/icons-react';
 import { Route } from 'next';
 import { IconType } from 'react-icons';
 
@@ -87,6 +87,11 @@ export const secondaryRoutes: TAppRoute[] = [
         label: 'Buckets',
         path: '/buckets',
         icon: IconFileWord,
+    },
+    {
+        label: 'Participants',
+        path: '/participants',
+        icon: IconUsers,
     },
 ];
 
