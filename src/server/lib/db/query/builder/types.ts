@@ -50,14 +50,24 @@ export type InferFeatureTypeFromRecord<
         : never;
 
 /**
+ * Unwraps null/undefined from the top level of a type only, preserving nullable fields.
+ * This is different from NonNullable which recursively removes null from nested properties.
+ *
+ * @template T - The type to unwrap
+ * @example UnwrapNullable<User | null> // User (with nullable fields preserved)
+ */
+export type UnwrapNullable<T> = T extends null | undefined ? never : T;
+
+/**
  * Universal type inference for feature entity types.
  * Works with both QueryBuilder instances and query function records.
- * Automatically handles array unwrapping to get the base entity type.
+ * Automatically handles array unwrapping and null unwrapping at the root level only.
+ * Preserves nullable fields within the entity (e.g., optional/nullable columns).
  *
  * @template T - The QueryBuilder or query functions record
  * @template TKey - The query key to infer from (defaults to 'getById')
- * @example InferFeatureType<typeof userQueries> // User
- * @example InferFeatureType<typeof userQueryBuilder, 'getMany'> // User
+ * @example InferFeatureType<typeof userQueries> // User (with nullable fields preserved)
+ * @example InferFeatureType<typeof userQueryBuilder, 'getMany'> // User[]
  */
 export type InferFeatureType<
     T extends QueryBuilder,
@@ -65,12 +75,12 @@ export type InferFeatureType<
 > = T extends QueryBuilder
     ? T extends QueryBuilder<any, infer TQueries>
         ? TKey extends keyof TQueries
-            ? NonNullable<InferFeatureTypeFromRecord<TQueries, TKey>>
+            ? UnwrapNullable<InferFeatureTypeFromRecord<TQueries, TKey>>
             : never
         : never
     : T extends Record<string, QueryFn>
       ? TKey extends keyof T
-          ? NonNullable<InferFeatureTypeFromRecord<T, TKey>>
+          ? UnwrapNullable<InferFeatureTypeFromRecord<T, TKey>>
           : never
       : never;
 
@@ -96,7 +106,7 @@ export type TCoreQueries<
             data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
                 RequiredOnly<T['$inferInsert']>;
         },
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }
     >;
     /**
      * Create many records in the table
@@ -108,14 +118,14 @@ export type TCoreQueries<
                     RequiredOnly<T['$inferInsert']>
             >;
         },
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }[]
     >;
     /**
      * Get a record by the given identifiers
      */
     getById: QueryFn<
         TByIdInput<T, TIdFields, TUserIdField>,
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] } | null
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> } | null
     >;
     /**
      * Get many records by the given identifiers
@@ -133,7 +143,7 @@ export type TCoreQueries<
                   userId: GetColumnData<T['_']['columns'][TUserIdField]>;
               }
             : object),
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }[]
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }[]
     >;
     /**
      * Update a record by the given identifiers
@@ -142,13 +152,13 @@ export type TCoreQueries<
         TByIdInput<T, TIdFields, TUserIdField> & {
             data: Partial<Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]>>;
         },
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }
     >;
     /**
      * Remove a record by the given identifiers
      */
     removeById: QueryFn<
         TByIdInput<T, TIdFields, TUserIdField>,
-        { [K in TReturnColumns[number]]: T['_']['columns'][K]['_']['data'] }
+        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }
     >;
 };
