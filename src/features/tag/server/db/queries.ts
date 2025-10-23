@@ -1,6 +1,6 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
-import { db } from '@/server/db';
 import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
+import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { eq } from 'drizzle-orm';
 
