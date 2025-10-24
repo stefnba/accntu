@@ -1,13 +1,13 @@
 import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import { typedEntries } from '@/lib/utils';
-import type { QueryFn, TCoreQueries } from '@/server/lib/db/query/builder/types';
-import { CrudQueryBuilder } from '@/server/lib/db/query/crud/core';
+import type { QueryFn, TCoreQueries } from '@/server/lib/db/query/feature-queries/types';
+import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { withTableFilters } from '@/server/lib/db/query/filters';
 import { SQL, Table } from 'drizzle-orm';
-import { QueryBuilder } from './core';
+import { FeatureQueryBuilder } from './core';
 import { defaultIdFiltersIdentifier, userIdIdentifier } from './helpers';
 
-class FeatureQueries<
+class FeatureQueryFactory<
     const TSchemas extends Record<string, TOperationSchemaObject> = Record<
         string,
         TOperationSchemaObject
@@ -24,7 +24,7 @@ class FeatureQueries<
      * @param schemas - The schemas to register
      */
     registerSchema<T extends Record<string, TOperationSchemaObject>>(schemas: T) {
-        return new FeatureQueries<TSchemas & T>({
+        return new FeatureQueryFactory<TSchemas & T>({
             schemas: {
                 ...this.schemas,
                 ...schemas,
@@ -169,7 +169,7 @@ class FeatureQueries<
             userIdField,
         } = config;
 
-        const q = new CrudQueryBuilder(table);
+        const q = new TableOperationsBuilder(table);
 
         const queries: TCoreQueries<
             TSchemas,
@@ -273,7 +273,7 @@ class FeatureQueries<
                 }),
         };
 
-        return new QueryBuilder<
+        return new FeatureQueryBuilder<
             TSchemas,
             TCoreQueries<
                 TSchemas,
@@ -301,7 +301,7 @@ class FeatureQueries<
             ? InferQuerySchemas<TSchemas>[K]
             : never,
     >(key: K, config: { fn: QueryFn<TInput, TOutput>; operation?: string }) {
-        return new QueryBuilder<TSchemas>({
+        return new FeatureQueryBuilder<TSchemas>({
             schemas: this.schemas,
             queries: {},
         }).addQuery(key, config);
@@ -309,8 +309,24 @@ class FeatureQueries<
 }
 
 /**
- * Factory function to create a feature query collection.
+ * Factory singleton for building feature-level database queries.
+ *
+ * This factory provides a fluent interface for:
+ * 1. Registering feature schemas for type inference
+ * 2. Registering core CRUD queries (create, getById, getMany, updateById, removeById)
+ * 3. Adding custom queries specific to your feature
+ *
+ * @example
+ * ```typescript
+ * export const tagQueries = featureQueryFactory
+ *   .registerSchema(tagSchemas)
+ *   .registerCoreQueries(tagTable, {
+ *     userIdField: 'userId',
+ *     idFields: ['id'],
+ *     allowedUpsertColumns: ['name', 'color']
+ *   });
+ * ```
  */
-export const createFeatureQueries = new FeatureQueries({
+export const featureQueryFactory = new FeatureQueryFactory({
     schemas: {},
 });

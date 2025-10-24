@@ -1,6 +1,6 @@
-# CRUD Query Builder
+# Table Operations
 
-The **CRUD Query Builder** is a **generic, low-level** abstraction for database operations. It builds and executes SQL queries without knowing anything about your feature's business logic.
+The **Table Operations** layer provides generic, low-level database CRUD operations. It builds and executes SQL queries without knowing anything about your feature's business logic.
 
 ## Purpose
 
@@ -11,7 +11,7 @@ The **CRUD Query Builder** is a **generic, low-level** abstraction for database 
 
 ## When to Use
 
-Typically, you **don't use this directly**. The Query Builder (feature-level) uses it internally. However, you can use it for:
+Typically, you **don't use this directly**. The Feature Queries layer uses it internally. However, you can use it for:
 
 - Custom complex queries
 - Bulk operations
@@ -20,13 +20,13 @@ Typically, you **don't use this directly**. The Query Builder (feature-level) us
 ## Example (Direct Usage)
 
 ```typescript
-import { CrudQueryBuilder } from '@/server/lib/db/query/crud/core';
+import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations/core';
 import { tagTable } from '@/features/tag/server/db/tables';
 
-const crud = new CrudQueryBuilder(tagTable);
+const tableOps = new TableOperationsBuilder(tagTable);
 
 // Create a record
-const newTag = await crud.createRecord({
+const newTag = await tableOps.createRecord({
     data: {
         id: 'tag-1',
         userId: 'user-123',
@@ -40,7 +40,7 @@ const newTag = await crud.createRecord({
 });
 
 // Get a single record by identifiers
-const tag = await crud.getFirstRecord({
+const tag = await tableOps.getFirstRecord({
     identifiers: [
         { field: 'id', value: 'tag-1' },
         { field: 'userId', value: 'user-123' },
@@ -49,7 +49,7 @@ const tag = await crud.getFirstRecord({
 });
 
 // Get many records with filters
-const tags = await crud.getManyRecords({
+const tags = await tableOps.getManyRecords({
     identifiers: [
         { field: 'userId', value: 'user-123' },
         { field: 'isActive', value: true },
@@ -58,7 +58,7 @@ const tags = await crud.getManyRecords({
 });
 
 // Update a record
-const updated = await crud.updateRecord({
+const updated = await tableOps.updateRecord({
     data: { name: 'Updated Name' },
     identifiers: [
         { field: 'id', value: 'tag-1' },
@@ -67,7 +67,7 @@ const updated = await crud.updateRecord({
 });
 
 // Soft delete (set isActive = false)
-const deleted = await crud.removeRecord({
+const deleted = await tableOps.removeRecord({
     identifiers: [{ field: 'id', value: 'tag-1' }],
     softDelete: true,
 });
@@ -77,7 +77,7 @@ const deleted = await crud.removeRecord({
 
 ```typescript
 // Upsert: Update if exists, insert if not
-await crud.createRecord({
+await tableOps.createRecord({
     data: { name: 'Work', userId: 'user-123' },
     onConflict: {
         type: 'update',
@@ -87,13 +87,13 @@ await crud.createRecord({
 });
 
 // Ignore duplicates
-await crud.createRecord({
+await tableOps.createRecord({
     data: { name: 'Work', userId: 'user-123' },
     onConflict: 'ignore',
 });
 
 // Fail on conflict (default)
-await crud.createRecord({
+await tableOps.createRecord({
     data: { name: 'Work', userId: 'user-123' },
     onConflict: 'fail',
 });
@@ -128,13 +128,13 @@ updateRecord({
 });
 ```
 
-## Relationship to Query Builder
+## Relationship to Feature Queries
 
 ```
-Query Builder (Feature-Level)
+Feature Queries (Feature-Level)
     ↓ Knows about: users, schemas, filters
     ↓
-CRUD Builder (Generic Database)
+Table Operations (Generic Database)
     ↓ Knows about: tables, columns, SQL
     ↓
 Database (PostgreSQL)
@@ -142,13 +142,13 @@ Database (PostgreSQL)
 
 ### What Each Layer Handles
 
-**Query Builder** (feature-level):
+**Feature Queries** (feature-level):
 
 - Extract userId from `{ data, userId }`
 - Apply feature filters (search, status)
 - Handle pagination/ordering logic
 
-**CRUD Builder** (generic database):
+**Table Operations** (generic database):
 
 - Build SQL: `INSERT INTO table (...) VALUES (...)`
 - Execute queries with error handling
@@ -157,13 +157,13 @@ Database (PostgreSQL)
 ## Example: How Layers Work Together
 
 ```typescript
-// You call Query Builder:
+// You call Feature Queries:
 tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' })
 
-// ↓ Query Builder extracts and merges:
-crudBuilder.createRecord({ data: { name: 'Work', userId: 'user-123' } })
+// ↓ Feature Queries extract and merge:
+tableOps.createRecord({ data: { name: 'Work', userId: 'user-123' } })
 
-// ↓ CRUD Builder generates SQL:
+// ↓ Table Operations generate SQL:
 db.insert(tagTable).values({ name: 'Work', userId: 'user-123' })
 
 // ↓ SQL executed:
@@ -183,7 +183,11 @@ INSERT INTO tag (name, user_id) VALUES ('Work', 'user-123')
 - `deactivateRecord()` - Set isActive = false
 - `deleteRecord()` - Hard delete (bypass soft delete)
 
+## Architecture Classes
+
+- **`TableOperationsBuilder`**: Main class for table CRUD operations
+
 ## See Also
 
-- **Query Builder**: [../builder/README.md](../builder/README.md) - Feature-level abstraction
-- **Feature Queries**: [@/src/features/CLAUDE.md](../../../../features/CLAUDE.md) - How to use in features
+- **Feature Queries**: [../feature-queries/README.md](../feature-queries/README.md) - Feature-level abstraction
+- **Feature Architecture**: [@/src/features/CLAUDE.md](../../../../features/CLAUDE.md) - How to use in features

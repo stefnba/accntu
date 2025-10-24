@@ -1,4 +1,4 @@
-export { createFeatureQueries } from './builder';
+export { featureQueryFactory, featureQueryFactory as createFeatureQueries } from './feature-queries';
 export { dbQueryFnHandler, withDbQuery } from './handler';
 
-export type { InferFeatureType } from './builder';
+export type { InferFeatureType } from './feature-queries';

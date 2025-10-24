@@ -1,8 +1,8 @@
 import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 
-import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/crud/types';
+import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/table-operations/types';
 import { GetColumnData, InferInsertModel, Table } from 'drizzle-orm';
-import { QueryBuilder } from './core';
+import { FeatureQueryBuilder } from './core';
 
 /**
  * Standard function signature for all database query functions.
@@ -14,18 +14,18 @@ import { QueryBuilder } from './core';
 export type QueryFn<Input = any, Output = any> = (args: Input) => Promise<Output>;
 
 /**
- * Infer the feature entity type from a QueryBuilder instance.
+ * Infer the feature entity type from a FeatureQueryBuilder instance.
  * Extracts the return type from a specific query, handling both single items and arrays.
  *
- * @template TQueryBuilder - The QueryBuilder instance type
+ * @template TFeatureQueryBuilder - The FeatureQueryBuilder instance type
  * @template TKey - The query key to infer from (defaults to 'getById')
- * @example InferFeatureTypeFromQueryBuilder<typeof userQueries, 'getById'> // User
+ * @example InferFeatureTypeFromFeatureQueryBuilder<typeof userQueries, 'getById'> // User
  */
-export type InferFeatureTypeFromQueryBuilder<
-    TQueryBuilder extends QueryBuilder<any, any>,
-    TKey extends keyof TQueryBuilder['queries'] = 'getById',
+export type InferFeatureTypeFromFeatureQueryBuilder<
+    TFeatureQueryBuilder extends FeatureQueryBuilder<any, any>,
+    TKey extends keyof TFeatureQueryBuilder['queries'] = 'getById',
 > =
-    TQueryBuilder['queries'][TKey] extends QueryFn<any, infer TReturn>
+    TFeatureQueryBuilder['queries'][TKey] extends QueryFn<any, infer TReturn>
         ? TReturn extends (infer U)[]
             ? U
             : TReturn
@@ -60,20 +60,20 @@ export type UnwrapNullable<T> = T extends null | undefined ? never : T;
 
 /**
  * Universal type inference for feature entity types.
- * Works with both QueryBuilder instances and query function records.
+ * Works with both FeatureQueryBuilder instances and query function records.
  * Automatically handles array unwrapping and null unwrapping at the root level only.
  * Preserves nullable fields within the entity (e.g., optional/nullable columns).
  *
- * @template T - The QueryBuilder or query functions record
+ * @template T - The FeatureQueryBuilder or query functions record
  * @template TKey - The query key to infer from (defaults to 'getById')
  * @example InferFeatureType<typeof userQueries> // User (with nullable fields preserved)
- * @example InferFeatureType<typeof userQueryBuilder, 'getMany'> // User[]
+ * @example InferFeatureType<typeof userFeatureQueryBuilder, 'getMany'> // User[]
  */
 export type InferFeatureType<
-    T extends QueryBuilder,
+    T extends FeatureQueryBuilder,
     TKey extends keyof T['queries'] | (string & {}) = 'getById',
-> = T extends QueryBuilder
-    ? T extends QueryBuilder<any, infer TQueries>
+> = T extends FeatureQueryBuilder
+    ? T extends FeatureQueryBuilder<any, infer TQueries>
         ? TKey extends keyof TQueries
             ? UnwrapNullable<InferFeatureTypeFromRecord<TQueries, TKey>>
             : never

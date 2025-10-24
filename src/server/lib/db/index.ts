@@ -1,4 +1,5 @@
 export {
+    featureQueryFactory,
     createFeatureQueries,
     dbQueryFnHandler,
     withDbQuery,

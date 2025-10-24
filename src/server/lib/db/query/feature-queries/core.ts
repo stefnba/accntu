@@ -1,8 +1,38 @@
 import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
-import type { QueryFn } from '@/server/lib/db/query/builder/types';
+import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 
-export class QueryBuilder<
+/**
+ * FeatureQueryBuilder - Feature-level query orchestration builder.
+ *
+ * This class wraps TableQueryBuilder with feature-specific logic such as:
+ * - User authentication (userId extraction and filtering)
+ * - Feature-specific filters (search, status, etc.)
+ * - Pagination and ordering
+ * - Schema-based type inference
+ *
+ * Use this for:
+ * - Standard feature CRUD operations
+ * - Adding custom queries to features
+ * - Type-safe query composition
+ *
+ * @template TSchemas - Record of operation schemas for type inference
+ * @template TQueryObject - Record of registered query functions
+ *
+ * @example
+ * ```typescript
+ * const queries = new FeatureQueryBuilder({ schemas: tagSchemas, queries: {} })
+ *   .addQuery('getByName', {
+ *     operation: 'get tag by name',
+ *     fn: async ({ name, userId }) => {
+ *       return await db.query.tag.findFirst({
+ *         where: and(eq(tag.name, name), eq(tag.userId, userId))
+ *       });
+ *     }
+ *   });
+ * ```
+ */
+export class FeatureQueryBuilder<
     const TSchemas extends Record<string, TOperationSchemaObject> = Record<
         string,
         TOperationSchemaObject
@@ -34,8 +64,8 @@ export class QueryBuilder<
             // table: this.table,
         });
 
-        // Return a new QueryBuilder with the wrapped query
-        return new QueryBuilder<
+        // Return a new FeatureQueryBuilder with the wrapped query
+        return new FeatureQueryBuilder<
             // TTable,
             TSchemas,
             TQueryObject & Record<K, QueryFn<TInput, TOutput>>
@@ -50,10 +80,10 @@ export class QueryBuilder<
     }
 
     /**
-     * Add a query to the QueryBuilder
+     * Add a query to the FeatureQueryBuilder
      * @param key - The key of the query must be a key of the schemas and not already in the queries
      * @param query - The query function
-     * @returns A new QueryBuilder with the added query
+     * @returns A new FeatureQueryBuilder with the added query
      */
     addQuery<
         const K extends Exclude<keyof TSchemas & string, keyof TQueryObject>,
@@ -66,12 +96,12 @@ export class QueryBuilder<
     }
 
     /**
-     * Remove a query from the QueryBuilder
+     * Remove a query from the FeatureQueryBuilder
      * @param key - The key of the query to remove
-     * @returns A new QueryBuilder with the removed query
+     * @returns A new FeatureQueryBuilder with the removed query
      */
     removeQuery<const K extends keyof TQueryObject & string>(key: K) {
-        return new QueryBuilder<TSchemas, Omit<TQueryObject, K>>({
+        return new FeatureQueryBuilder<TSchemas, Omit<TQueryObject, K>>({
             schemas: this.schemas,
             queries: {
                 ...this.queries,
@@ -81,10 +111,10 @@ export class QueryBuilder<
     }
 
     /**
-     * Overwrite a query in the QueryBuilder
+     * Overwrite a query in the FeatureQueryBuilder
      * @param key - The key of the query to override
      * @param config - The config of the query
-     * @returns A new QueryBuilder with the overridden query
+     * @returns A new FeatureQueryBuilder with the overridden query
      */
     overwriteQuery<
         const K extends keyof TQueryObject & string,
@@ -95,7 +125,7 @@ export class QueryBuilder<
     >(
         key: K,
         config: { fn: QueryFn<TInput, TOutput>; operation?: string }
-    ): QueryBuilder<TSchemas, Omit<TQueryObject, K> & Record<K, QueryFn<TInput, TOutput>>> {
+    ): FeatureQueryBuilder<TSchemas, Omit<TQueryObject, K> & Record<K, QueryFn<TInput, TOutput>>> {
         return this._addQuery<K, TOutput, TInput>(key, config);
     }
 }

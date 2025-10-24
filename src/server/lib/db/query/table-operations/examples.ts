@@ -1,8 +1,8 @@
 import { tag } from '@/server/db/tables';
-import { CrudQueryBuilder } from './core';
+import { TableOperationsBuilder } from './core';
 
 async function runExamples() {
-    const queries = new CrudQueryBuilder(tag);
+    const queries = new TableOperationsBuilder(tag);
 
     // Example 1: Simple ignore conflict
     const example1 = await queries.createRecord({

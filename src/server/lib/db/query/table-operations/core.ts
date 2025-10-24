@@ -5,7 +5,7 @@ import {
     TOnConflict,
     TTableColumns,
     TValidTableForFrom,
-} from '@/server/lib/db/query/crud/types';
+} from '@/server/lib/db/query/table-operations/types';
 import { withDbQuery } from '@/server/lib/db/query/handler';
 import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import type { ColumnsSelection } from 'drizzle-orm';
@@ -27,7 +27,33 @@ import type {
     PgQueryResultHKT,
 } from 'drizzle-orm/pg-core';
 
-export class CrudQueryBuilder<T extends Table> {
+/**
+ * TableOperationsBuilder - Generic low-level database CRUD operations builder.
+ *
+ * This class provides type-safe methods for performing basic database operations
+ * on any table without knowledge of feature-specific business logic.
+ *
+ * Use this when:
+ * - Building custom complex queries
+ * - Need direct table operations
+ * - Advanced conflict handling
+ *
+ * Most features should use FeatureQueryBuilder instead, which wraps this class
+ * with feature-specific logic (userId extraction, filters, pagination).
+ *
+ * @template T - The Drizzle table type
+ *
+ * @example
+ * ```typescript
+ * const tableOps = new TableOperationsBuilder(userTable);
+ *
+ * const user = await tableOps.createRecord({
+ *   data: { name: 'John', email: 'john@example.com' },
+ *   returnColumns: ['id', 'name']
+ * });
+ * ```
+ */
+export class TableOperationsBuilder<T extends Table> {
     constructor(public table: T) {}
 
     // ================================
