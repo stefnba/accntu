@@ -166,17 +166,18 @@ const tag = await services.findByName({...});
 
 ## Core Services
 
-When you call `.registerCoreServices()`, five standard CRUD services are automatically created:
+When you call `.registerCoreServices()`, six standard CRUD services are automatically created:
 
 | Service      | Null Handling | Purpose                                           |
 | ------------ | ------------- | ------------------------------------------------- |
 | `getById`    | throws        | Fetch a single record by ID (throws if not found) |
 | `create`     | throws        | Create a new record (throws on failure)           |
+| `createMany` | unwrapped     | Create multiple records (returns array)           |
 | `getMany`    | unwrapped     | Fetch multiple records (returns empty array `[]`) |
 | `updateById` | throws        | Update a record by ID (throws if not found)       |
 | `removeById` | throws        | Remove a record by ID (throws if not found)       |
 
-**Note:** `getMany` uses `throwOnNull: false` because it always returns an array (empty `[]` when no records), never `null`. This preserves the `Tag[]` type without adding `| null`.
+**Note:** `createMany` and `getMany` use `throwOnNull: false` because they always return arrays (empty `[]` when no records), never `null`. This preserves the array type without adding `| null`.
 
 ## Type Safety
 

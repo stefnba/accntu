@@ -281,7 +281,7 @@ export class ServiceBuilderFactory<
     }
 }
 
-export const createServiceBuilder = (name?: string) =>
+export const createFeatureServices = (name?: string) =>
     new ServiceBuilderFactory({
         schemas: {},
         queries: {},
