@@ -1,13 +1,14 @@
-# Service Factory System
+# Service Builder System
 
-A type-safe service factory system for building business logic layers that coordinate between API endpoints and database queries. This system provides consistent patterns for implementing business rules, validation, and cross-entity operations while maintaining full type safety.
+A type-safe service builder system for building business logic layers that coordinate between API endpoints and database queries. This system provides consistent patterns for implementing business rules, validation, and cross-entity operations while maintaining full type safety.
 
 ## Overview
 
-The service factory system consists of:
+The service builder system consists of:
 
 - **`createFeatureServices`** - Entry point for building service collections
-- **`FeatureServices`** - Core class for registering schemas and queries
+- **`ServiceBuilderFactory`** - Factory class for registering schemas and queries
+- **`ServiceBuilder`** - Builder class for adding custom services
 - **Schema integration** - Direct integration with schema factory for input validation
 - **Query integration** - Seamless integration with query factory for data access
 - **Type safety** - Full TypeScript inference from schemas to service functions
@@ -29,14 +30,17 @@ import { tagSchemas } from '@/features/tag/schemas';
 import { tagQueries } from '@/features/tag/server/db/queries';
 
 // Build service collection from schemas and queries
-export const tagServices = createFeatureServices
-    .registerSchema(tagSchemas)
-    .registerQuery(tagQueries)
-    .defineServices(({ queries, schemas }) => ({
-        /**
-         * Create a new tag with business logic validation
-         */
-        create: async (input) => {
+export const tagServices = createFeatureServices('tag')
+    .registerSchemas(tagSchemas)
+    .registerQueries(tagQueries)
+    .registerCoreServices() // Auto-generates getById, create, getMany, updateById, removeById, createMany
+    /**
+     * Add custom service with business logic validation
+     */
+    .addService('createWithValidation', ({ queries }) => ({
+        operation: 'create tag with validation',
+        throwOnNull: true,
+        fn: async (input) => {
             // Add business logic here
             if (input.data.name.toLowerCase() === 'spam') {
                 throw new Error('Invalid tag name');
@@ -45,20 +49,20 @@ export const tagServices = createFeatureServices
             // Call query layer
             return await queries.create(input);
         },
-
-        /**
-         * Get many tags - simple pass-through
-         */
-        getMany: async (input) => {
-            return await queries.getMany(input);
-        },
-    }));
+    }))
+    .build();
 
 // Type inference works automatically
 const newTag = await tagServices.create({
     data: { name: 'Work', color: '#FF0000' },
     userId: 'user123',
 }); // Fully typed!
+
+const tags = await tagServices.getMany({
+    userId: 'user123',
+    filters: {},
+    pagination: { page: 1, pageSize: 10 },
+}); // Also fully typed!
 ```
 
 ## Core Concepts
@@ -93,67 +97,132 @@ const { schemas } = createFeatureSchemas
     }));
 
 // 2. Query provides data access
-const queries = createFeatureQueries.registerSchema(schemas).addQuery('create', {
-    fn: async ({ data, userId }) => {
-        /* database operation */
-    },
+const queries = createFeatureQueries.registerSchema(schemas).registerCoreQueries(userTable, {
+    idFields: ['id'],
+    userIdField: 'userId',
 });
 
 // 3. Service coordinates business logic
-const services = createFeatureServices
-    .registerSchema(schemas)
-    .registerQuery(queries)
-    .defineServices(({ queries }) => ({
-        create: async (input) => {
+const services = createFeatureServices('user')
+    .registerSchemas(schemas)
+    .registerQueries(queries)
+    .registerCoreServices() // Auto-generates CRUD services
+    .addService('customOperation', ({ queries }) => ({
+        operation: 'custom operation',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic + query call
-            return await queries.create(input);
+            return await queries.customOperation(input);
         },
-    }));
+    }))
+    .build();
 ```
 
 ## API Reference
 
 ### Factory Functions
 
-#### `createFeatureServices.registerSchema(schemas)`
+#### `createFeatureServices(name?: string)`
 
-Register operation schemas from the schema factory system.
+Create a new service builder with optional feature name for better error messages.
 
 ```typescript
-const services = createFeatureServices
-  .registerSchema(userSchemas)  // Schemas from schema factory
-  .registerQuery(...)
-  .defineServices(...);
+const services = createFeatureServices('user')
+  .registerSchemas(...)
+  .registerQueries(...)
+  .registerCoreServices()
+  .build();
 ```
 
-#### `createFeatureServices.registerQuery(queries)`
+#### `.registerSchemas(schemas)`
 
-Register query functions from the query factory system.
+Register operation schemas from the schema factory system. Can be called multiple times.
 
 ```typescript
-const services = createFeatureServices
-  .registerSchema(schemas)
-  .registerQuery(userQueries)  // Query builder or query object
-  .defineServices(...);
+const services = createFeatureServices('user')
+  .registerSchemas(userSchemas)  // First schema set
+  .registerSchemas(userProfileSchemas)  // Additional schemas
+  .registerQueries(...)
+  .registerCoreServices()
+  .build();
 ```
 
-### Service Definition
+#### `.registerQueries(queries)`
 
-#### `.defineServices(fn)`
-
-Define service functions that implement business logic.
+Register query functions from the query factory system. Can be called multiple times.
 
 ```typescript
-const services = createFeatureServices
-    .registerSchema(schemas)
-    .registerQuery(queries)
-    .defineServices(({ queries, schemas }) => ({
-        // Define your service functions here
-        operationName: async (input) => {
+const services = createFeatureServices('user')
+    .registerSchemas(schemas)
+    .registerQueries(userQueries) // First query set
+    .registerQueries(userProfileQueries) // Additional queries
+    .registerCoreServices()
+    .build();
+```
+
+#### `.registerCoreServices()`
+
+Auto-generates standard CRUD services with proper error handling:
+
+- `getById` - Fetch single record by ID (throws if not found)
+- `create` - Create new record (throws on failure)
+- `createMany` - Create multiple records
+- `getMany` - Fetch multiple records (returns empty array)
+- `updateById` - Update record by ID (throws if not found)
+- `removeById` - Remove record by ID (throws if not found)
+
+```typescript
+const services = createFeatureServices('user')
+    .registerSchemas(schemas)
+    .registerQueries(queries)
+    .registerCoreServices() // Adds all 6 CRUD services
+    .build();
+```
+
+### Custom Service Definition
+
+#### `.addService(key, definition)`
+
+Add a custom service or override a core service with business logic.
+
+```typescript
+const services = createFeatureServices('user')
+    .registerSchemas(schemas)
+    .registerQueries(queries)
+    .registerCoreServices()
+    .addService('customOperation', ({ queries, schemas, services }) => ({
+        operation: 'Descriptive operation name',
+        throwOnNull: true, // or false to allow null returns
+        fn: async (input) => {
             // Business logic implementation
             // Input is automatically typed from schemas
+            // Can access queries, schemas, and other services
+            return await queries.customOperation(input);
         },
-    }));
+    }))
+    .build();
+```
+
+**Parameters:**
+
+- `throwOnNull: true` (default) - Service throws error if result is null/undefined. Return type is `NonNullable<T>`.
+- `throwOnNull: false` - Service returns result as-is, preserving the exact return type from your function.
+- `operation` - Optional descriptive name for error messages.
+
+#### `.build()`
+
+Build and return the final services object with all registered services.
+
+```typescript
+const services = createFeatureServices('user')
+    .registerSchemas(schemas)
+    .registerQueries(queries)
+    .registerCoreServices()
+    .addService('custom', ...)
+    .build();  // Returns { getById, create, getMany, custom, ... }
+
+// Now use the services
+const user = await services.getById({ ids: { id: '123' }, userId: 'user-1' });
 ```
 
 ## Examples
@@ -161,14 +230,17 @@ const services = createFeatureServices
 ### Basic CRUD Services
 
 ```typescript
-export const userServices = createFeatureServices
-    .registerSchema(userSchemas)
-    .registerQuery(userQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create a new user with validation
-         */
-        create: async (input) => {
+export const userServices = createFeatureServices('user')
+    .registerSchemas(userSchemas)
+    .registerQueries(userQueries)
+    .registerCoreServices() // Provides: getById, create, getMany, updateById, removeById, createMany
+    /**
+     * Override create with custom validation
+     */
+    .addService('create', ({ queries }) => ({
+        operation: 'create user with validation',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic validation
             if (input.data.email.endsWith('@spam.com')) {
                 throw new Error('Email domain not allowed');
@@ -187,27 +259,19 @@ export const userServices = createFeatureServices
             // Create user
             return await queries.create(input);
         },
-
-        /**
-         * Get user by ID - simple pass-through
-         */
-        getById: async (input) => {
-            return await queries.getById(input);
-        },
-
-        /**
-         * Update user with business rules
-         */
-        updateById: async (input) => {
-            // Verify user exists and user owns it
-            const existingUser = await queries.getById({
+    }))
+    /**
+     * Override updateById with business rules
+     */
+    .addService('updateById', ({ queries, services }) => ({
+        operation: 'update user with validation',
+        throwOnNull: true,
+        fn: async (input) => {
+            // Verify user exists (using core service)
+            const existingUser = await services.getById({
                 ids: input.ids,
                 userId: input.userId,
             });
-
-            if (!existingUser) {
-                throw new Error('User not found');
-            }
 
             // Business rule: Can't change email to existing email
             if (input.data.email && input.data.email !== existingUser.email) {
@@ -223,41 +287,41 @@ export const userServices = createFeatureServices
 
             return await queries.updateById(input);
         },
-
-        /**
-         * Soft delete user
-         */
-        removeById: async (input) => {
-            // Could add business logic like:
+    }))
+    /**
+     * Add custom service for soft delete with side effects
+     */
+    .addService('softDelete', ({ queries }) => ({
+        operation: 'soft delete user',
+        throwOnNull: true,
+        fn: async (input) => {
+            // Business logic:
             // - Check if user has active subscriptions
             // - Send notification email
             // - Clean up related data
 
             return await queries.removeById(input);
         },
-    }));
+    }))
+    .build();
 ```
 
 ### Cross-Entity Business Logic
 
 ```typescript
-export const tagServices = createFeatureServices
-    .registerSchema(tagSchemas)
-    .registerSchema(tagToTransactionSchemas) // Multiple schemas
-    .registerQuery(tagQueries)
-    .registerQuery(tagToTransactionQueries) // Multiple query collections
-    .defineServices(({ queries }) => ({
-        /**
-         * Create tag - simple operation
-         */
-        create: async (input) => {
-            return await queries.create(input);
-        },
-
-        /**
-         * Assign tags to transaction - complex cross-entity operation
-         */
-        assignToTransaction: async (input) => {
+export const tagServices = createFeatureServices('tag')
+    .registerSchemas(tagSchemas)
+    .registerSchemas(tagToTransactionSchemas) // Multiple schemas
+    .registerQueries(tagQueries)
+    .registerQueries(tagToTransactionQueries) // Multiple query collections
+    .registerCoreServices() // Auto-generates CRUD for tags
+    /**
+     * Assign tags to transaction - complex cross-entity operation
+     */
+    .addService('assignToTransaction', ({ queries }) => ({
+        operation: 'assign tags to transaction',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic: Verify user owns the transaction
             const transaction = await transactionServices.getById({
                 ids: { id: input.transactionId },
@@ -288,20 +352,24 @@ export const tagServices = createFeatureServices
             // Execute the assignment
             return await queries.assignToTransaction(input);
         },
-    }));
+    }))
+    .build();
 ```
 
 ### Advanced Business Logic with External Services
 
 ```typescript
-export const transactionServices = createFeatureServices
-    .registerSchema(transactionSchemas)
-    .registerQuery(transactionQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create transaction with currency conversion
-         */
-        create: async (input) => {
+export const transactionServices = createFeatureServices('transaction')
+    .registerSchemas(transactionSchemas)
+    .registerQueries(transactionQueries)
+    .registerCoreServices()
+    /**
+     * Override create with currency conversion
+     */
+    .addService('create', ({ queries }) => ({
+        operation: 'create transaction with currency conversion',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic: Convert currency if needed
             if (input.data.currency !== 'USD') {
                 const exchangeRate = await currencyService.getExchangeRate({
@@ -333,11 +401,14 @@ export const transactionServices = createFeatureServices
 
             return transaction;
         },
-
-        /**
-         * Bulk import with validation and deduplication
-         */
-        bulkImport: async (input) => {
+    }))
+    /**
+     * Bulk import with validation and deduplication
+     */
+    .addService('bulkImport', ({ queries }) => ({
+        operation: 'bulk import transactions',
+        throwOnNull: false,
+        fn: async (input) => {
             const { transactions, userId } = input;
 
             // Business logic: Validate batch size
@@ -367,20 +438,24 @@ export const transactionServices = createFeatureServices
                 userId,
             });
         },
-    }));
+    }))
+    .build();
 ```
 
 ### Integration with Third-Party Services
 
 ```typescript
-export const userServices = createFeatureServices
-    .registerSchema(userSchemas)
-    .registerQuery(userQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create user with email verification
-         */
-        create: async (input) => {
+export const userServices = createFeatureServices('user')
+    .registerSchemas(userSchemas)
+    .registerQueries(userQueries)
+    .registerCoreServices()
+    /**
+     * Override create with email verification
+     */
+    .addService('create', ({ queries }) => ({
+        operation: 'create user with email verification',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic: Validate email with external service
             const emailValid = await emailValidationService.verify(input.data.email);
             if (!emailValid.isValid) {
@@ -403,11 +478,14 @@ export const userServices = createFeatureServices
 
             return user;
         },
-
-        /**
-         * Update user profile with image processing
-         */
-        updateProfile: async (input) => {
+    }))
+    /**
+     * Update user profile with image processing
+     */
+    .addService('updateProfile', ({ queries }) => ({
+        operation: 'update user profile',
+        throwOnNull: true,
+        fn: async (input) => {
             // Business logic: Process profile image if provided
             if (input.data.profileImageUrl) {
                 const processedImage = await imageService.process({
@@ -426,7 +504,8 @@ export const userServices = createFeatureServices
 
             return user;
         },
-    }));
+    }))
+    .build();
 ```
 
 ## Security Patterns
@@ -623,14 +702,17 @@ Services integrate seamlessly with Hono API endpoints:
 
 ```typescript
 // Service definition
-export const userServices = createFeatureServices
-    .registerSchema(userSchemas)
-    .registerQuery(userQueries)
-    .defineServices(({ queries }) => ({
-        create: async (input) => {
+export const userServices = createFeatureServices('user')
+    .registerSchemas(userSchemas)
+    .registerQueries(userQueries)
+    .registerCoreServices()
+    .addService('create', ({ queries }) => ({
+        throwOnNull: true,
+        fn: async (input) => {
             /* implementation */
         },
-    }));
+    }))
+    .build();
 
 // API endpoint
 import { userServices } from './services';
@@ -675,4 +757,33 @@ const app = new Hono().post('/users', zValidator('json', CreateUserSchema), asyn
 
 10. **Testing Focus**: Services are the primary unit for testing business logic
 
-The service factory system provides a clean, type-safe way to implement business logic while maintaining separation of concerns and enabling comprehensive testing of your application's core functionality.
+## Migration from Old Factory
+
+If you're migrating from the old factory system:
+
+**Old API:**
+
+```typescript
+createFeatureServices
+    .registerSchema(schemas)      // singular
+    .registerQuery(queries)       // singular
+    .defineServices(({ queries }) => ({
+        create: async (input) => { ... }
+    }));
+```
+
+**New Builder API:**
+
+```typescript
+createFeatureServices('featureName')  // accepts name
+    .registerSchemas(schemas)         // plural
+    .registerQueries(queries)         // plural
+    .registerCoreServices()           // auto-generates CRUD
+    .addService('create', ({ queries }) => ({
+        throwOnNull: true,
+        fn: async (input) => { ... }
+    }))
+    .build();                         // must call build()
+```
+
+The service builder system provides a clean, type-safe way to implement business logic while maintaining separation of concerns and enabling comprehensive testing of your application's core functionality.
