@@ -197,12 +197,22 @@ class FeatureQueryFactory<
                 });
             },
             /**
-             * Create many records in the table
+             * Create many records in the table.
+             *
+             * Handles the nested input structure { data: [...], userId: '...' } by mapping the userId to each record.
              */
             createMany: (input) => {
+                // Merge userId into each record if userIdField is defined
+                const data =
+                    userIdField && userIdField in input
+                        ? input.data.map((item) => ({
+                              ...item,
+                              [userIdField]: input[userIdField as keyof typeof input],
+                          }))
+                        : input.data;
+
                 return q.createManyRecords<TReturnColumns>({
-                    data: input.data,
-                    // overrideValues: userIdValueExtracted,
+                    data,
                     returnColumns,
                 });
             },

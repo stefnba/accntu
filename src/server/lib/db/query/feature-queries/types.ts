@@ -124,6 +124,41 @@ export type TCreateInput<
       : never;
 
 /**
+ * Helper type to create the proper input shape for createMany operations.
+ * Similar to TCreateInput but data is an array of records.
+ * Restricts input to allowedUpsertColumns and handles userId field separately.
+ *
+ * @template T - The table type
+ * @template TUserIdField - The userId field name (if any)
+ * @template TAllowedUpsertColumns - The columns that can be set during create/update
+ *
+ * When TUserIdField is defined: { data: Array<Pick<InsertModel, AllowedColumns> & Omit<Required, userId>>, userId: string }
+ * When TUserIdField is undefined: { data: Array<Pick<InsertModel, AllowedColumns> & Required> }
+ */
+export type TCreateManyInput<
+    T extends Table,
+    TUserIdField extends GetTableColumnKeys<T> | undefined,
+    TAllowedUpsertColumns extends ReadonlyArray<keyof T['$inferInsert']> = ReadonlyArray<
+        keyof T['$inferInsert']
+    >,
+> = TUserIdField extends undefined
+    ? {
+          data: Array<
+              Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                  RequiredOnly<T['$inferInsert']>
+          >;
+      }
+    : TUserIdField extends GetTableColumnKeys<T>
+      ? {
+            data: Array<
+                Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                    Omit<RequiredOnly<T['$inferInsert']>, TUserIdField>
+            >;
+            userId: string;
+        }
+      : never;
+
+/**
  * The core queries for the feature query factory
  */
 export type TCoreQueries<
@@ -159,15 +194,30 @@ export type TCoreQueries<
     >;
 
     /**
-     * Create many records in the table
+     * Create many records in the table.
+     * Data param expected to be an array of records without the userId field if it exists.
+     * The userId field will be added by the query factory to each record.
+     *
+     * @example
+     * ```typescript
+     * {
+     *     data: [
+     *         { name: 'tag-1', color: '#111111' },
+     *         { name: 'tag-2', color: '#222222' }
+     *     ],
+     *     userId: 'user-123',
+     * }
+     * // Will be converted to:
+     * {
+     *     data: [
+     *         { name: 'tag-1', color: '#111111', userId: 'user-123' },
+     *         { name: 'tag-2', color: '#222222', userId: 'user-123' }
+     *     ]
+     * }
+     * ```
      */
     createMany: QueryFn<
-        {
-            data: Array<
-                Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                    RequiredOnly<T['$inferInsert']>
-            >;
-        },
+        TCreateManyInput<T, TUserIdField, TAllowedUpsertColumns>,
         { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }[]
     >;
     /**
