@@ -4,46 +4,33 @@ import { InferFeatureType } from '@/server/lib/db';
 import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
-export const labelServices = createFeatureServices
-    .registerSchema(labelSchemas)
-    .registerQuery(labelQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create a new label with automatic index assignment
-         */
-        create: async (input) => {
+export const labelServices = createFeatureServices('label')
+    .registerSchemas(labelSchemas)
+    .registerQueries(labelQueries)
+    .registerCoreServices()
+    /**
+     * Create a new label with automatic index assignment
+     */
+    .addService('create', ({ queries }) => ({
+        operation: 'create a new label',
+        fn: async (input) => {
             // Get next index for this parent level
             const parentId = input.data.parentId ?? null;
             const maxindexResult = await queries.getMaxIndex({ parentId, userId: input.userId });
 
             const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
             return await queries.create({
-                data: { ...input.data, userId: input.userId, index: nextindex },
-            });
-        },
-
-        /**
-         * Get many labels with optional filtering and pagination
-         */
-        getMany: async (input) => {
-            return await queries.getMany({
+                data: { ...input.data, index: nextindex, userId: input.userId },
                 userId: input.userId,
-                filters: input.filters,
-                pagination: input.pagination,
             });
         },
-
-        /**
-         * Get a label by ID
-         */
-        getById: async (input) => {
-            return await queries.getById({ ids: input.ids, userId: input.userId });
-        },
-
-        /**
-         * Update a label by ID
-         */
-        updateById: async (input) => {
+    }))
+    /**
+     * Update a label by ID
+     */
+    .addService('updateById', ({ queries }) => ({
+        operation: 'create a new label',
+        fn: async (input) => {
             // Check if the label exists and belongs to the user
             const existingLabel = await queries.getById({ ids: input.ids, userId: input.userId });
             if (!existingLabel) {
@@ -84,28 +71,25 @@ export const labelServices = createFeatureServices
                 userId: input.userId,
             });
         },
-
-        /**
-         * Remove a label by ID (soft delete)
-         */
-        removeById: async (input) => {
-            return await queries.removeById({ ids: input.ids, userId: input.userId });
-        },
-
-        /**
-         * Get flattened labels with hierarchy information
-         */
-        getFlattened: async (input) => {
+    }))
+    /**
+     * Get flattened labels with hierarchy information
+     */
+    .addService('getFlattened', ({ queries }) => ({
+        operation: 'remove a label by id',
+        fn: async (input) => {
             return await queries.getFlattened({
                 userId: input.userId,
                 filters: input.filters,
             });
         },
-
-        /**
-         * Reorder labels in bulk
-         */
-        reorder: async (input) => {
+    }))
+    /**
+     * Reorder labels in bulk
+     */
+    .addService('reorder', ({ queries }) => ({
+        operation: 'remove a label by id',
+        fn: async (input) => {
             return await queries.reorder({
                 items: input.items,
                 userId: input.userId,
