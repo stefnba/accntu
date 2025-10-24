@@ -3,6 +3,8 @@ import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/db/query/handler';
 import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import {
+    GetTableColumnDefinitions,
+    GetTableColumnKeys,
     TBooleanFilter,
     TOnConflict,
     TTableColumns,
@@ -71,7 +73,7 @@ export class TableOperationsBuilder<T extends Table> {
      * Get the columns of the table
      * @returns The columns of the table
      */
-    private getColumns(): T['_']['columns'] {
+    private getColumns(): GetTableColumnDefinitions<T> {
         return getTableColumns(this.table);
     }
 
@@ -80,7 +82,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param column - The column to get
      * @returns The column of the table
      */
-    private getColumn(column: keyof T['_']['columns']) {
+    private getColumn(column: GetTableColumnKeys<T>) {
         return this.getColumns()[column];
     }
 
@@ -101,15 +103,15 @@ export class TableOperationsBuilder<T extends Table> {
      * @param columns - The columns to select
      * @returns The columns for the select or insert query
      */
-    private buildSelectColumns<Cols extends Array<keyof T['_']['columns']>>(
+    private buildSelectColumns<Cols extends Array<GetTableColumnKeys<T>>>(
         columns?: Cols
-    ): { [K in Cols[number]]: T['_']['columns'][K] } {
+    ): { [K in Cols[number]]: GetTableColumnDefinitions<T>[K] } {
         const allColumns = this.getColumns();
 
         if (columns) {
             return columns.reduce(
                 (acc, col) => ({ ...acc, [col]: allColumns[col] }),
-                {} as { [K in Cols[number]]: T['_']['columns'][K] }
+                {} as { [K in Cols[number]]: GetTableColumnDefinitions<T>[K] }
             );
         }
 
@@ -120,7 +122,7 @@ export class TableOperationsBuilder<T extends Table> {
      * Get the names of the columns
      * @returns The names of the columns
      */
-    private getColumnNames() {
+    private getColumnNames(): GetTableColumnKeys<T>[] {
         const columns = this.getColumns();
         return typedKeys(columns);
     }
@@ -310,7 +312,7 @@ export class TableOperationsBuilder<T extends Table> {
         columns?: Cols;
         identifiers: Array<TBooleanFilter<T>>;
         filters?: (SQL | undefined)[];
-        orderBy?: Partial<Record<keyof T['_']['columns'], 'asc' | 'desc'>>;
+        orderBy?: Partial<Record<GetTableColumnKeys<T>, 'asc' | 'desc'>>;
         pagination?: {
             page?: number;
             pageSize?: number;
@@ -412,7 +414,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param data - The data to create the record with
      * @returns The created record from the table
      */
-    async createRecord<Cols extends Array<TTableColumns<T>>>({
+    async createRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         data,
         returnColumns,
         onConflict,
