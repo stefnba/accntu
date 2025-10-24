@@ -86,8 +86,8 @@ const services = new ServiceBuilderFactory({
     // Add a custom service
     .addService('myCustomOperation', ({ queries, schemas, services }) => ({
         operation: 'myCustomOperation',
-        returnHandler: 'nonNull', // or 'nullable'
-        serviceFn: async (input) => {
+        throwOnNull: true, // or false to allow null
+        fn: async (input) => {
             // Custom business logic
             const result = await queries.someQuery(input);
 
@@ -104,53 +104,79 @@ const services = new ServiceBuilderFactory({
 const result = await services.myCustomOperation({...});
 ```
 
-## Return Handlers
+## Null Handling
 
-Services must specify how to handle null/undefined return values:
+Services can configure how to handle null/undefined return values with the `throwOnNull` option:
 
-### `nonNull` Handler
+### `throwOnNull: true` (default)
 
-Use when the operation **must** return a value. Automatically throws an error if the result is null/undefined.
+**Strips null/undefined from the return type** and throws an error if the result is null/undefined.
+
+Use this when the operation **must** return a value (e.g., `getById`, `create`, `update`).
 
 ```typescript
 .addService('getById', ({ queries }) => ({
-    returnHandler: 'nonNull',
-    serviceFn: async (input) => {
+    throwOnNull: true,  // or omit for default
+    fn: async (input) => {
         return await queries.getById(input);
     },
 }))
 
+// Type: Tag (null/undefined removed)
 // Throws "Operation: Resource not found" if result is null
-const tag = await services.getById({...}); // Type: Tag (never null)
+const tag = await services.getById({...});
 ```
 
-### `nullable` Handler
+**How it works:** Applies `NonNullable<T>` to the return type, removing `null` and `undefined`.
 
-Use when the operation **may** return null/undefined (e.g., searches, optional lookups).
+### `throwOnNull: false`
+
+**Preserves the return type exactly as-is** from your function. No validation, no type modification.
+
+Use this when:
+
+- Your function returns a safe value that's never null (e.g., arrays: `[]`)
+- Your function explicitly handles nullable returns and declares it in the type
 
 ```typescript
+// Example 1: Function that returns empty array (never null)
+.addService('getMany', ({ queries }) => ({
+    throwOnNull: false,
+    fn: async (input) => {
+        return await queries.getMany(input);  // Returns Tag[]
+    },
+}))
+
+// Type: Tag[] (preserved as-is, no | null added)
+const tags = await services.getMany({...});
+
+// Example 2: Function that can return null (declares it in type)
 .addService('findByName', ({ queries }) => ({
-    returnHandler: 'nullable',
-    serviceFn: async (input) => {
+    throwOnNull: false,
+    fn: async (input): Promise<Tag | null> => {
         return await queries.findByName(input);
     },
 }))
 
-// Returns null if not found
-const tag = await services.findByName({...}); // Type: Tag | null
+// Type: Tag | null (preserved as declared)
+const tag = await services.findByName({...});
 ```
+
+**Key difference:** `throwOnNull: false` does **not** automatically add `| null` to the type. It preserves whatever your function returns.
 
 ## Core Services
 
-When you call `.registerCoreServices()`, three standard CRUD services are automatically created:
+When you call `.registerCoreServices()`, five standard CRUD services are automatically created:
 
-| Service   | Handler    | Purpose                                             |
-| --------- | ---------- | --------------------------------------------------- |
-| `getById` | `nonNull`  | Fetch a single record by ID (throws if not found)   |
-| `create`  | `nonNull`  | Create a new record (throws on failure)             |
-| `getMany` | `nullable` | Fetch multiple records (returns null if none found) |
+| Service      | Null Handling | Purpose                                           |
+| ------------ | ------------- | ------------------------------------------------- |
+| `getById`    | throws        | Fetch a single record by ID (throws if not found) |
+| `create`     | throws        | Create a new record (throws on failure)           |
+| `getMany`    | unwrapped     | Fetch multiple records (returns empty array `[]`) |
+| `updateById` | throws        | Update a record by ID (throws if not found)       |
+| `removeById` | throws        | Remove a record by ID (throws if not found)       |
 
-These services map directly to your registered queries with the same names.
+**Note:** `getMany` uses `throwOnNull: false` because it always returns an array (empty `[]` when no records), never `null`. This preserves the `Tag[]` type without adding `| null`.
 
 ## Type Safety
 
@@ -181,8 +207,8 @@ Services can depend on other services:
 
 ```typescript
 .addService('complexOperation', ({ queries, services }) => ({
-    returnHandler: 'nonNull',
-    serviceFn: async (input) => {
+    throwOnNull: true,
+    fn: async (input) => {
         // Use other services within your service
         const existing = await services.getById({...});
 
@@ -227,8 +253,8 @@ Services can call services from other features through the composition pattern:
 import { userServices } from '@/features/user/server/services';
 
 .addService('createWithOwner', ({ queries, services }) => ({
-    returnHandler: 'nonNull',
-    serviceFn: async (input) => {
+    throwOnNull: true,
+    fn: async (input) => {
         // Call service from another feature
         const owner = await userServices.getById({...});
 
@@ -243,17 +269,17 @@ import { userServices } from '@/features/user/server/services';
 
 ### Error Handling
 
-The `nonNull` handler automatically provides error messages:
+Services with `throwOnNull: true` automatically provide error messages:
 
 ```typescript
 // If result is null, throws:
-// Error: "getById service: Resource not found"
+// Error: "getById: Resource not found"
 
 // Customize the error message:
 .addService('getById', ({ queries }) => ({
     operation: 'Get Tag By ID', // Custom operation name
-    returnHandler: 'nonNull',
-    serviceFn: async (input) => {
+    throwOnNull: true,
+    fn: async (input) => {
         return await queries.getById(input);
     },
 }))

@@ -10,23 +10,23 @@ const quick = createServiceBuilder('quick')
     .registerCoreServices()
     .addService('assignToTransaction', ({ queries }) => ({
         operation: 'create tag to transaction',
-        returnHandler: 'nonNull',
+        throwOnNull: true,
         fn: async (input) => {
             return await queries.assignToTransaction(input);
         },
     }))
-    .addService('getById', ({ queries }) => ({
-        operation: 'get tag by id',
-        returnHandler: 'nonNull',
-        fn: async (input) => {
-            if (input.ids.id === 'urzwx524rabolqzj808nm0vg') {
-                return {
-                    adsf: 33,
-                };
-            }
-            return null;
-        },
-    }))
+    // .addService('getById', ({ queries }) => ({
+    //     operation: 'get tag by id',
+    //     throwOnNull: false,
+    //     fn: async (input) => {
+    //         if (input.ids.id === 'urzwx524rabolqzj808nm0vg') {
+    //             return {
+    //                 adsf: 33,
+    //             };
+    //         }
+    //         return null;
+    //     },
+    // }))
     .build();
 
 const run = async () => {

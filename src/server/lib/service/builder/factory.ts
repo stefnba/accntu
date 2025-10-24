@@ -14,8 +14,8 @@
  *     .registerQueries(myQueries)
  *     .registerCoreServices()
  *     .addService('custom', ({ queries }) => ({
- *         returnHandler: 'nonNull',
- *         serviceFn: async (input) => await queries.custom(input),
+ *         throwOnNull: true,
+ *         fn: async (input) => await queries.custom(input),
  *     }))
  *     .build();
  * ```
@@ -133,12 +133,14 @@ export class ServiceBuilderFactory<
     }
 
     /**
-     * Registers the three core CRUD services and returns a ServiceBuilder.
+     * Registers the five core CRUD services and returns a ServiceBuilder.
      *
      * Creates and registers these standard services:
-     * - **getById**: Fetch a single record by ID (nonNull handler - throws if not found)
-     * - **create**: Create a new record (nonNull handler - throws on failure)
-     * - **getMany**: Fetch multiple records with filtering/pagination (nullable handler)
+     * - **getById**: Fetch a single record by ID (throws if not found)
+     * - **create**: Create a new record (throws on failure)
+     * - **getMany**: Fetch multiple records (returns empty array `[]`)
+     * - **updateById**: Update a record by ID (throws if not found)
+     * - **removeById**: Remove a record by ID (throws if not found)
      *
      * After calling this method, you can:
      * - Add custom services via `.addService()`
@@ -176,7 +178,7 @@ export class ServiceBuilderFactory<
 
         /**
          * Get many records in the table with optional filtering and pagination.
-         * Returns null if no records are found (nullable handler).
+         * Returns an empty array if no records are found.
          */
         const getMany: ServiceFn<
             InferServiceSchemas<TSchemas>['getMany'],
@@ -220,23 +222,33 @@ export class ServiceBuilderFactory<
 
         // Wrap core services with appropriate handlers
         const coreServices = {
-            getById: wrapServiceWithHandler(getById, 'nonNull', {
+            getById: wrapServiceWithHandler({
+                serviceFn: getById,
+                throwOnNull: true,
                 operation: 'getById',
                 resource: this.name,
             }),
-            create: wrapServiceWithHandler(create, 'nonNull', {
+            create: wrapServiceWithHandler({
+                serviceFn: create,
+                throwOnNull: true,
                 operation: 'create',
                 resource: this.name,
             }),
-            getMany: wrapServiceWithHandler(getMany, 'nullable', {
+            getMany: wrapServiceWithHandler({
+                serviceFn: getMany,
+                throwOnNull: false,
                 operation: 'getMany',
                 resource: this.name,
             }),
-            updateById: wrapServiceWithHandler(updateById, 'nonNull', {
+            updateById: wrapServiceWithHandler({
+                serviceFn: updateById,
+                throwOnNull: true,
                 operation: 'updateById',
                 resource: this.name,
             }),
-            removeById: wrapServiceWithHandler(removeById, 'nonNull', {
+            removeById: wrapServiceWithHandler({
+                serviceFn: removeById,
+                throwOnNull: true,
                 operation: 'removeById',
                 resource: this.name,
             }),

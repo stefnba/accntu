@@ -2,7 +2,7 @@
  * Utility functions for wrapping service functions with validation handlers.
  *
  * This module provides the core wrapping logic that enables automatic validation
- * of service return values based on the specified handler type.
+ * of service return values based on null-handling configuration.
  */
 
 import {
@@ -13,78 +13,96 @@ import {
 
 import { AppErrors } from '@/server/lib/error';
 
-type TWrapServiceWithHandlerDetails = {
-    operation?: string;
-    resource?: string;
-};
-
 /**
- * Wraps a service function with a validation handler.
+ * Wraps a service function with optional null validation.
  *
- * This function provides two modes of operation:
+ * Accepts a configuration object to specify the service function and its null-handling behavior.
  *
- * 1. **nonNull mode**: Validates that the service returns a non-null/undefined value.
- *    Throws an error if the result is null or undefined.
- *
- * 2. **nullable mode**: Allows the service to return null or undefined without validation.
- *    The service function is returned as-is with no wrapper.
+ * **Null Handling Modes:**
+ * - `throwOnNull: true` (default): Validates that the service returns a non-null/undefined value.
+ *   Throws an error if the result is null or undefined. Return type is `NonNullable<T>`.
+ * - `throwOnNull: false`: Returns the service function as-is with no wrapper.
+ *   Preserves the original return type without modification (no `| null` added).
  *
  * @template S - Service function type to wrap
- * @param serviceFn - The service function to wrap
- * @param returnHandler - Type of handler to apply
- * @param operation - Optional operation name for error messages
+ * @param config - Configuration object
+ * @param config.serviceFn - The service function to wrap
+ * @param config.throwOnNull - Whether to throw an error when result is null/undefined (default: true)
+ * @param config.operation - Optional operation name for error messages
+ * @param config.resource - Optional resource name for error messages
  * @returns Wrapped service function with appropriate return type
  *
  * @example
  * ```typescript
- * // NonNull handler - throws if result is null
- * const wrappedNonNull = wrapServiceWithHandler(
- *     async (input) => await db.getById(input),
- *     'nonNull',
- *     'Get User'
- * );
+ * // Throw on null (strips null/undefined from type)
+ * const wrappedStrict = wrapServiceWithHandler({
+ *     serviceFn: async (input) => await db.getById(input),  // Returns: User | null
+ *     throwOnNull: true,
+ *     operation: 'Get User',
+ * });
+ * // Return type: User (NonNullable<User | null>)
  * // If result is null, throws: "Get User: Resource not found"
  *
- * // Nullable handler - allows null results
- * const wrappedNullable = wrapServiceWithHandler(
- *     async (input) => await db.findOptional(input),
- *     'nullable'
- * );
- * // Returns null if not found, no error thrown
+ * // Throw on null (default when omitted)
+ * const wrappedDefault = wrapServiceWithHandler({
+ *     serviceFn: async (input) => await db.getById(input),
+ *     operation: 'Get User',
+ * });
+ * // Also throws on null (default behavior)
+ *
+ * // Preserve type as-is (no validation, no type modification)
+ * const wrappedArray = wrapServiceWithHandler({
+ *     serviceFn: async (input) => await db.getMany(input),  // Returns: User[]
+ *     throwOnNull: false,
+ * });
+ * // Return type: User[] (preserved as-is, no | null added)
  * ```
  */
+// Overload: throwOnNull is true or omitted (defaults to true) → strips null/undefined
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic constraint requires `any` for flexible type inference
-export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
-    serviceFn: S,
-    returnHandler: 'nonNull',
-    details?: TWrapServiceWithHandlerDetails
-): ServiceFn<InferServiceInput<S>, NonNullable<InferServiceOutput<S>>>;
+export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(config: {
+    serviceFn: S;
+    throwOnNull?: true;
+    operation?: string;
+    resource?: string;
+}): ServiceFn<InferServiceInput<S>, NonNullable<InferServiceOutput<S>>>;
+// Overload: throwOnNull is explicitly false → preserves return type as-is
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic constraint requires `any` for flexible type inference
-export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
-    serviceFn: S,
-    returnHandler: 'nullable',
-    details?: TWrapServiceWithHandlerDetails
-): ServiceFn<InferServiceInput<S>, InferServiceOutput<S>>;
+export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(config: {
+    serviceFn: S;
+    throwOnNull: false;
+    operation?: string;
+    resource?: string;
+}): ServiceFn<InferServiceInput<S>, InferServiceOutput<S>>;
+// Implementation
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic constraint requires `any` for flexible type inference
-export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
-    serviceFn: S,
-    returnHandler: 'nonNull' | 'nullable' = 'nullable',
-    details?: TWrapServiceWithHandlerDetails
-) {
-    if (returnHandler === 'nonNull') {
+export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(config: {
+    serviceFn: S;
+    throwOnNull?: boolean;
+    operation?: string;
+    resource?: string;
+}) {
+    const { serviceFn, throwOnNull = true, operation, resource } = config;
+
+    if (throwOnNull) {
         // Wrap with validation that throws if result is null/undefined
         return async (input: InferServiceInput<S>) => {
             const result = await serviceFn(input);
-            const operation = details?.operation || 'Service Operation';
-            const resource = details?.resource ? `${details.resource} ` : '';
-            return validateRecordExists(result, `${operation}: ${resource}Resource not found`, {
-                ...details,
-                input: input,
-            });
+            const operationName = operation || 'Service Operation';
+            const resourceName = resource ? `${resource} ` : '';
+            return validateRecordExists(
+                result,
+                `${operationName}: ${resourceName}Resource not found`,
+                {
+                    operation,
+                    resource,
+                    input: input,
+                }
+            );
         };
     }
 
-    // For nullable handlers, return the service function as-is
+    // For non-throwing mode, return the service function as-is
     return serviceFn;
 }
 

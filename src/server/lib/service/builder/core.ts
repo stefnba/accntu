@@ -92,9 +92,9 @@ export class ServiceBuilder<
     /**
      * Adds a custom service to the service layer.
      *
-     * The service can have either a 'nonNull' or 'nullable' return handler:
-     * - **nonNull**: Service throws an error if it returns null/undefined
-     * - **nullable**: Service can return null/undefined without error
+     * Configure null-handling behavior with the `throwOnNull` option:
+     * - **throwOnNull: true** (default): Service throws an error if it returns null/undefined
+     * - **throwOnNull: false**: Service can return null/undefined without error
      *
      * When overriding an existing service (e.g., from registerCoreServices),
      * the new return type completely replaces the old one.
@@ -102,7 +102,7 @@ export class ServiceBuilder<
      * @template K - Service key (must match a key in TSchemas)
      * @template TInput - Input type (automatically inferred from schema)
      * @template TOutput - Raw output type of the service
-     * @template THandler - Return handler type ('nonNull' | 'nullable')
+     * @template TThrowOnNull - Whether to throw on null (boolean)
      *
      * @param key - Unique identifier for the service
      * @param serviceDefinition - Function that receives queries/schemas/services and returns service config
@@ -110,22 +110,28 @@ export class ServiceBuilder<
      *
      * @example
      * ```typescript
-     * // NonNull handler
+     * // Throw on null (explicit true)
      * .addService('getById', ({ queries }) => ({
      *     operation: 'Get Item By ID',
-     *     returnHandler: 'nonNull',
+     *     throwOnNull: true,
      *     fn: async (input) => await queries.getById(input),
      * }))
      *
-     * // Nullable handler
+     * // Throw on null (default when omitted)
+     * .addService('getById', ({ queries }) => ({
+     *     operation: 'Get Item By ID',
+     *     fn: async (input) => await queries.getById(input),
+     * }))
+     *
+     * // Allow null returns
      * .addService('findByName', ({ queries }) => ({
-     *     returnHandler: 'nullable',
+     *     throwOnNull: false,
      *     fn: async (input) => await queries.findByName(input),
      * }))
      *
      * // Override existing service with new return type
      * .addService('getById', () => ({
-     *     returnHandler: 'nonNull',
+     *     throwOnNull: true,
      *     fn: async (input) => ({ customField: 123 }),
      * }))
      * ```
@@ -136,7 +142,7 @@ export class ServiceBuilder<
             ? InferServiceSchemas<TSchemas>[K]
             : never,
         TOutput = unknown,
-        THandler extends 'nonNull' | 'nullable' = 'nonNull' | 'nullable',
+        TThrowOnNull extends boolean = boolean,
     >(
         key: K,
         serviceDefinition: (input: {
@@ -145,7 +151,7 @@ export class ServiceBuilder<
             services: TServices;
         }) => {
             operation?: string;
-            returnHandler: THandler;
+            throwOnNull?: TThrowOnNull;
             fn: ServiceFn<TInput, TOutput>;
         }
     ) {
@@ -156,31 +162,30 @@ export class ServiceBuilder<
             services: this.services,
         });
 
-        const { fn, returnHandler = 'nonNull', operation } = definition;
+        const { fn, throwOnNull = true, operation } = definition;
 
         // Wrap the service with the appropriate handler
-        const wrappedService =
-            returnHandler === 'nonNull'
-                ? wrapServiceWithHandler(fn, 'nonNull', {
-                      operation: operation || key,
-                      resource: this.name,
-                  })
-                : wrapServiceWithHandler(fn, 'nullable', {
-                      operation: operation || key,
-                      resource: this.name,
-                  });
+        const wrappedService = throwOnNull
+            ? wrapServiceWithHandler({
+                  serviceFn: fn,
+                  throwOnNull: true,
+                  operation: operation || key,
+                  resource: this.name,
+              })
+            : wrapServiceWithHandler({
+                  serviceFn: fn,
+                  throwOnNull: false,
+                  operation: operation || key,
+                  resource: this.name,
+              });
 
         // Return a new builder instance with the added service
-
         return new ServiceBuilder<
             TSchemas,
             Omit<TServices, K> &
                 Record<
                     K,
-                    ServiceFn<
-                        TInput,
-                        THandler extends 'nonNull' ? NonNullable<TOutput> : TOutput | null
-                    >
+                    ServiceFn<TInput, TThrowOnNull extends true ? NonNullable<TOutput> : TOutput>
                 >,
             TQueries
         >({
