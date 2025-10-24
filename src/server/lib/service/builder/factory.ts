@@ -220,11 +220,26 @@ export class ServiceBuilderFactory<
 
         // Wrap core services with appropriate handlers
         const coreServices = {
-            getById: wrapServiceWithHandler(getById, 'nonNull', 'getById service'),
-            create: wrapServiceWithHandler(create, 'nonNull', 'create service'),
-            getMany: wrapServiceWithHandler(getMany, 'nullable', 'getMany service'),
-            updateById: wrapServiceWithHandler(updateById, 'nonNull', 'updateById service'),
-            removeById: wrapServiceWithHandler(removeById, 'nonNull', 'removeById service'),
+            getById: wrapServiceWithHandler(getById, 'nonNull', {
+                operation: 'getById',
+                resource: this.name,
+            }),
+            create: wrapServiceWithHandler(create, 'nonNull', {
+                operation: 'create',
+                resource: this.name,
+            }),
+            getMany: wrapServiceWithHandler(getMany, 'nullable', {
+                operation: 'getMany',
+                resource: this.name,
+            }),
+            updateById: wrapServiceWithHandler(updateById, 'nonNull', {
+                operation: 'updateById',
+                resource: this.name,
+            }),
+            removeById: wrapServiceWithHandler(removeById, 'nonNull', {
+                operation: 'removeById',
+                resource: this.name,
+            }),
         };
 
         // Return a ServiceBuilder instance for adding custom services

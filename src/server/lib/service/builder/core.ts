@@ -59,6 +59,9 @@ export class ServiceBuilder<
     /** Available query functions that services can wrap */
     queries: TQueries;
 
+    /** The name of the service builder */
+    name?: string;
+
     /**
      * Creates a new ServiceBuilder instance.
      *
@@ -73,14 +76,17 @@ export class ServiceBuilder<
         schemas,
         services,
         queries,
+        name,
     }: {
         schemas: TSchemas;
         services: TServices;
         queries: TQueries;
+        name?: string;
     }) {
         this.schemas = schemas;
         this.services = services;
         this.queries = queries;
+        this.name = name;
     }
 
     /**
@@ -217,8 +223,14 @@ export class ServiceBuilder<
         // Wrap the service with the appropriate handler
         const wrappedService =
             returnHandler === 'nonNull'
-                ? wrapServiceWithHandler(fn, 'nonNull', operation)
-                : wrapServiceWithHandler(fn, 'nullable', operation);
+                ? wrapServiceWithHandler(fn, 'nonNull', {
+                      operation: operation || key,
+                      resource: this.name,
+                  })
+                : wrapServiceWithHandler(fn, 'nullable', {
+                      operation: operation || key,
+                      resource: this.name,
+                  });
 
         // Return a new builder instance with the added service
         return new ServiceBuilder<

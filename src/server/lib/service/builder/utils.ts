@@ -5,26 +5,18 @@
  * of service return values based on the specified handler type.
  */
 
-import { ServiceFn } from '@/server/lib/service/builder/types';
-import { validateExists } from '@/server/lib/service/handler/helpers';
+import {
+    InferServiceInput,
+    InferServiceOutput,
+    ServiceFn,
+} from '@/server/lib/service/builder/types';
 
-/**
- * Extracts the input type from a ServiceFn type.
- *
- * @template T - Service function type
- * @returns Input type of the service function
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for type inference in generic constraints
-type InferServiceInput<T> = T extends ServiceFn<infer I, any> ? I : never;
+import { AppErrors } from '@/server/lib/error';
 
-/**
- * Extracts the output type from a ServiceFn type.
- *
- * @template T - Service function type
- * @returns Output type of the service function
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for type inference in generic constraints
-type InferServiceOutput<T> = T extends ServiceFn<any, infer O> ? O : never;
+type TWrapServiceWithHandlerDetails = {
+    operation?: string;
+    resource?: string;
+};
 
 /**
  * Wraps a service function with a validation handler.
@@ -65,31 +57,56 @@ type InferServiceOutput<T> = T extends ServiceFn<any, infer O> ? O : never;
 export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
     serviceFn: S,
     returnHandler: 'nonNull',
-    operation?: string
+    details?: TWrapServiceWithHandlerDetails
 ): ServiceFn<InferServiceInput<S>, NonNullable<InferServiceOutput<S>>>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic constraint requires `any` for flexible type inference
 export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
     serviceFn: S,
     returnHandler: 'nullable',
-    operation?: string
+    details?: TWrapServiceWithHandlerDetails
 ): ServiceFn<InferServiceInput<S>, InferServiceOutput<S>>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic constraint requires `any` for flexible type inference
 export function wrapServiceWithHandler<S extends ServiceFn<any, any>>(
     serviceFn: S,
-    returnHandler: 'nonNull' | 'nullable',
-    operation?: string
+    returnHandler: 'nonNull' | 'nullable' = 'nullable',
+    details?: TWrapServiceWithHandlerDetails
 ) {
     if (returnHandler === 'nonNull') {
         // Wrap with validation that throws if result is null/undefined
         return async (input: InferServiceInput<S>) => {
             const result = await serviceFn(input);
-            return validateExists(
-                result as object | null,
-                `${operation || 'Operation'}: Resource not found`
-            );
+            const operation = details?.operation || 'Service Operation';
+            const resource = details?.resource ? `${details.resource} ` : '';
+            return validateRecordExists(result, `${operation}: ${resource}Resource not found`, {
+                ...details,
+                input: input,
+            });
         };
     }
 
     // For nullable handlers, return the service function as-is
     return serviceFn;
 }
+
+/*
+ * Validate if the record exists. If not, throw an error.
+ * @param record - The record to validate
+ * @param errorMessage - The error message to throw if the result does not exist
+ * @returns The result
+ */
+export const validateRecordExists = <T extends object>(
+    result: T | null,
+    errorMessage: string = 'Resource not found',
+    details: Record<string, unknown> = {}
+): T => {
+    // check if record is null or undefined
+    if (!result) {
+        // throw service error, central error handler will handle this
+        throw AppErrors.resource('NOT_FOUND', {
+            layer: 'service',
+            message: errorMessage,
+            details,
+        });
+    }
+    return result;
+};
