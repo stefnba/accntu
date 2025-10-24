@@ -91,6 +91,34 @@ export const { schemas: transactionImportSchemas } = createFeatureSchemas
                 param: idFieldsSchema,
             },
         };
+    })
+    .addCustom('activate', ({ idFieldsSchema, userIdField }) => {
+        const input = z.object({
+            ids: idFieldsSchema,
+            userId: userIdField,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
+    })
+    .addCustom('updateCounts', ({ idFieldsSchema, userIdField }) => {
+        const input = z.object({
+            ids: idFieldsSchema,
+            userId: userIdField,
+        });
+
+        return {
+            service: input,
+            query: input,
+            endpoint: {
+                param: idFieldsSchema,
+            },
+        };
     });
 
 export type TTransactionImportSchemas = InferSchemas<typeof transactionImportSchemas>;
