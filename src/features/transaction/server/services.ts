@@ -5,84 +5,17 @@ import {
 } from '@/features/transaction/schemas';
 import {
     createMany as createManyQuery,
-    getByKeys as getByKeysQuery,
     getFilterOptions as getFilterOptionsQuery,
     transactionQueries,
 } from '@/features/transaction/server/db/queries';
 import { InferFeatureType } from '@/server/lib/db';
 import { createFeatureServices } from '@/server/lib/service';
 
-export const transactionServices = createFeatureServices
-    .registerSchema(transactionSchemas)
-    .registerQuery(transactionQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create a new transaction
-         */
-        create: async (input) => {
-            return await queries.create({ data: input.data, userId: input.userId });
-        },
-
-        /**
-         * Get many transactions with filters and pagination
-         */
-        getMany: async (input) => {
-            return await queries.getMany({
-                userId: input.userId,
-                filters: input.filters,
-                pagination: input.pagination,
-            });
-        },
-
-        /**
-         * Get a transaction by ID
-         */
-        getById: async (input) => {
-            const transaction = await queries.getById({
-                ids: input.ids,
-                userId: input.userId,
-            });
-
-            if (!transaction) {
-                throw new Error('Transaction not found');
-            }
-
-            return transaction;
-        },
-
-        /**
-         * Update a transaction by ID
-         */
-        updateById: async (input) => {
-            return await queries.updateById({
-                ids: input.ids,
-                data: input.data,
-                userId: input.userId,
-            });
-        },
-
-        /**
-         * Remove a transaction by ID
-         */
-        removeById: async (input) => {
-            return await queries.removeById({
-                ids: input.ids,
-                userId: input.userId,
-            });
-        },
-    }));
-
-// Legacy functions for transaction import and other complex operations
-/**
- * Get transactions by their keys (for duplicate detection)
- * @param userId - The user ID
- * @param keys - Array of transaction keys
- * @returns The transactions
- */
-export const getByKeys = async ({ userId, keys }: { userId: string; keys: string[] }) => {
-    const transactions = await getByKeysQuery({ userId, keys });
-    return transactions;
-};
+export const transactionServices = createFeatureServices('transaction')
+    .registerSchemas(transactionSchemas)
+    .registerQueries(transactionQueries)
+    .registerCoreServices()
+    .build();
 
 /**
  * Get filter options for transaction table
