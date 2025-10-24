@@ -31,8 +31,8 @@
 
 import { InferServiceSchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
+import { ServiceFn } from '@/server/lib/service/builder/types';
 import { wrapServiceWithHandler } from '@/server/lib/service/builder/utils';
-import { ServiceFn } from '@/server/lib/service/factory/types';
 
 /**
  * Builder class for adding custom services to a service layer.

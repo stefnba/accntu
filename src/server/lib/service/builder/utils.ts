@@ -5,7 +5,7 @@
  * of service return values based on the specified handler type.
  */
 
-import { ServiceFn } from '@/server/lib/service/factory/types';
+import { ServiceFn } from '@/server/lib/service/builder/types';
 import { validateExists } from '@/server/lib/service/handler/helpers';
 
 /**

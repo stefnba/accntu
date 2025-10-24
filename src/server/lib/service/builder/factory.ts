@@ -25,8 +25,8 @@ import { InferServiceSchemas, TOperationSchemaObject } from '@/lib/schemas/types
 import { FeatureQueryBuilder } from '@/server/lib/db/query/feature-queries';
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { ServiceBuilder } from '@/server/lib/service/builder/core';
+import { ServiceFn } from '@/server/lib/service/builder/types';
 import { wrapServiceWithHandler } from '@/server/lib/service/builder/utils';
-import { ServiceFn } from '@/server/lib/service/factory/types';
 
 /**
  * Factory class for initializing the service builder with schemas and queries.
