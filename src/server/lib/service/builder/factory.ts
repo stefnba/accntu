@@ -133,11 +133,12 @@ export class ServiceBuilderFactory<
     }
 
     /**
-     * Registers the five core CRUD services and returns a ServiceBuilder.
+     * Registers the six core CRUD services and returns a ServiceBuilder.
      *
      * Creates and registers these standard services:
      * - **getById**: Fetch a single record by ID (throws if not found)
      * - **create**: Create a new record (throws on failure)
+     * - **createMany**: Create multiple records (throws on failure)
      * - **getMany**: Fetch multiple records (returns empty array `[]`)
      * - **updateById**: Update a record by ID (throws if not found)
      * - **removeById**: Remove a record by ID (throws if not found)
@@ -199,6 +200,17 @@ export class ServiceBuilderFactory<
         };
 
         /**
+         * Create many records in the table.
+         * Throws an error if the creation fails.
+         */
+        const createMany: ServiceFn<
+            InferServiceSchemas<TSchemas>['createMany'],
+            Awaited<ReturnType<TQueries['createMany']>>
+        > = async (args) => {
+            return await this.queries.createMany(args);
+        };
+
+        /**
          * Update a record by the given identifiers.
          * Throws an error if the update fails.
          */
@@ -232,6 +244,12 @@ export class ServiceBuilderFactory<
                 serviceFn: create,
                 throwOnNull: true,
                 operation: 'create',
+                resource: this.name,
+            }),
+            createMany: wrapServiceWithHandler({
+                serviceFn: createMany,
+                throwOnNull: false,
+                operation: 'createMany',
                 resource: this.name,
             }),
             getMany: wrapServiceWithHandler({
