@@ -1,6 +1,11 @@
 import { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 
-import { RequiredOnly, TByIdInput } from '@/server/lib/db/query/table-operations/types';
+import {
+    GetTableColumnDefinitions,
+    GetTableColumnKeys,
+    RequiredOnly,
+    TByIdInput,
+} from '@/server/lib/db/query/table-operations/types';
 import { GetColumnData, InferInsertModel, Table } from 'drizzle-orm';
 import { FeatureQueryBuilder } from './core';
 
@@ -88,6 +93,39 @@ export type InferFeatureType<
 // Core Crud Queries
 // ========================================
 
+/**
+ * Helper type to create the proper input shape for create operations.
+ * Restricts input to allowedUpsertColumns and handles userId field separately.
+ *
+ * @template T - The table type
+ * @template TUserIdField - The userId field name (if any)
+ * @template TAllowedUpsertColumns - The columns that can be set during create/update
+ *
+ * When TUserIdField is defined: { data: Pick<InsertModel, AllowedColumns> & Omit<Required, userId>, userId: string }
+ * When TUserIdField is undefined: { data: Pick<InsertModel, AllowedColumns> & Required }
+ */
+export type TCreateInput<
+    T extends Table,
+    TUserIdField extends GetTableColumnKeys<T> | undefined,
+    TAllowedUpsertColumns extends ReadonlyArray<keyof T['$inferInsert']> = ReadonlyArray<
+        keyof T['$inferInsert']
+    >,
+> = TUserIdField extends undefined
+    ? {
+          data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+              RequiredOnly<T['$inferInsert']>;
+      }
+    : TUserIdField extends GetTableColumnKeys<T>
+      ? {
+            data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
+                Omit<RequiredOnly<T['$inferInsert']>, TUserIdField>;
+            userId: string;
+        }
+      : never;
+
+/**
+ * The core queries for the feature query factory
+ */
 export type TCoreQueries<
     TSchemas extends Record<string, TOperationSchemaObject>,
     T extends Table,
@@ -99,21 +137,27 @@ export type TCoreQueries<
     >,
 > = {
     /**
-     * Create a record in the table
+     * Create a record in the table.
+     * Data param expected to be the data to create the record with, but without the userId field if it exists.
+     * The userId field will be added by the query factory to the input.
+     *
+     * @example
+     * ```typescript
+     * {
+     *     data: { name: 'tag-1', color: '#111111' },
+     *     userId: 'user-123',
+     * }
+     * // Will be converted to:
+     * {
+     *     data: { name: 'tag-1', color: '#111111', userId: 'user-123' },
+     * }
+     * ```
      */
     create: QueryFn<
-        {
-            data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                (TUserIdField extends keyof T['_']['columns']
-                    ? Omit<RequiredOnly<T['$inferInsert']>, TUserIdField>
-                    : RequiredOnly<T['$inferInsert']>);
-        } & (TUserIdField extends keyof T['_']['columns']
-            ? {
-                  userId: GetColumnData<T['_']['columns'][TUserIdField]>;
-              }
-            : object),
-        { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }
+        TCreateInput<T, TUserIdField, TAllowedUpsertColumns>,
+        { [K in TReturnColumns[number]]: GetColumnData<GetTableColumnDefinitions<T>[K], 'query'> }
     >;
+
     /**
      * Create many records in the table
      */
@@ -127,7 +171,8 @@ export type TCoreQueries<
         { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }[]
     >;
     /**
-     * Get a record by the given identifiers
+     * Get a record by the given identifiers.
+     * The query returns null if no record is found.
      */
     getById: QueryFn<
         TByIdInput<T, TIdFields, TUserIdField>,

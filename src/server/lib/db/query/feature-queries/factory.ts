@@ -1,8 +1,8 @@
 import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import { typedEntries } from '@/lib/utils';
 import type { QueryFn, TCoreQueries } from '@/server/lib/db/query/feature-queries/types';
-import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { withTableFilters } from '@/server/lib/db/query/filters';
+import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { SQL, Table } from 'drizzle-orm';
 import { FeatureQueryBuilder } from './core';
 import { defaultIdFiltersIdentifier, userIdIdentifier } from './helpers';
@@ -183,20 +183,29 @@ class FeatureQueryFactory<
              * Create a record in the table
              */
             create: (input) => {
-                const userIdValue =
-                    userIdField && userIdField in input && input[userIdField as keyof typeof input]
-                        ? { [userIdField]: input[userIdField as keyof typeof input] }
-                        : {};
+                // If userIdField is defined and part of input, then merge it with input.data
+                // This is safe because TCreateInput<T, TUserIdField, TAllowedUpsertColumns> guarantees
+                // that when userIdField is defined, input contains the userId property
+                const data =
+                    userIdField && userIdField in input
+                        ? { ...input.data, [userIdField]: input[userIdField as keyof typeof input] }
+                        : input.data;
 
                 return q.createRecord<TReturnColumns>({
-                    data: { ...input.data, ...userIdValue },
+                    data,
                     returnColumns,
                 });
             },
             /**
              * Create many records in the table
              */
-            createMany: (input) => q.createManyRecords({ data: input.data }),
+            createMany: (input) => {
+                return q.createManyRecords<TReturnColumns>({
+                    data: input.data,
+                    // overrideValues: userIdValueExtracted,
+                    returnColumns,
+                });
+            },
             /**
              * Get a record by the given identifiers
              */
