@@ -182,7 +182,17 @@ class FeatureQueries<
             /**
              * Create a record in the table
              */
-            create: (input) => q.createRecord<TReturnColumns>({ data: input.data, returnColumns }),
+            create: (input) => {
+                const userIdValue =
+                    userIdField && userIdField in input && input[userIdField as keyof typeof input]
+                        ? { [userIdField]: input[userIdField as keyof typeof input] }
+                        : {};
+
+                return q.createRecord<TReturnColumns>({
+                    data: { ...input.data, ...userIdValue },
+                    returnColumns,
+                });
+            },
             /**
              * Create many records in the table
              */

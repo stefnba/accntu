@@ -104,8 +104,14 @@ export type TCoreQueries<
     create: QueryFn<
         {
             data: Pick<InferInsertModel<T>, TAllowedUpsertColumns[number]> &
-                RequiredOnly<T['$inferInsert']>;
-        },
+                (TUserIdField extends keyof T['_']['columns']
+                    ? Omit<RequiredOnly<T['$inferInsert']>, TUserIdField>
+                    : RequiredOnly<T['$inferInsert']>);
+        } & (TUserIdField extends keyof T['_']['columns']
+            ? {
+                  userId: GetColumnData<T['_']['columns'][TUserIdField]>;
+              }
+            : object),
         { [K in TReturnColumns[number]]: GetColumnData<T['_']['columns'][K], 'query'> }
     >;
     /**
