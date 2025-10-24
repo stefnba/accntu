@@ -1,20 +1,18 @@
 import { userSchemas, userSettingsSchema } from '@/features/user/schemas';
 import { userQueries } from '@/features/user/server/db/queries';
-import { user } from '@/lib/auth/server/db/tables';
 import { db } from '@/server/db';
+import { user } from '@/server/db/tables';
 import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 import { eq } from 'drizzle-orm';
 
-export const userServices = createFeatureServices
-    .registerSchema(userSchemas)
-    .registerQuery(userQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Update user settings by ID
-         * Merges partial settings with existing settings before saving
-         */
-        updateSettingsById: async ({ ids, data }) => {
+export const userServices = createFeatureServices('user')
+    .registerSchemas(userSchemas)
+    .registerQueries(userQueries)
+    .addService('updateSettingsById', ({ queries }) => ({
+        operation: 'update user settings by id',
+        throwOnNull: true,
+        fn: async ({ data, ids }) => {
             if (!data.settings) {
                 throw AppErrors.validation('INVALID_INPUT', {
                     layer: 'service',
@@ -23,11 +21,7 @@ export const userServices = createFeatureServices
                 });
             }
 
-            const [existingUser] = await db
-                .select({ settings: user.settings })
-                .from(user)
-                .where(eq(user.id, ids.id))
-                .limit(1);
+            const [existingUser] = await db.select().from(user).where(eq(user.id, ids.id)).limit(1);
 
             if (!existingUser) {
                 throw AppErrors.resource('NOT_FOUND', {
@@ -38,7 +32,7 @@ export const userServices = createFeatureServices
             }
 
             const mergedSettings = {
-                ...existingUser.settings,
+                ...(existingUser.settings || {}),
                 ...data.settings,
             };
 
@@ -49,4 +43,5 @@ export const userServices = createFeatureServices
                 data: { settings: validatedSettings },
             });
         },
-    }));
+    }))
+    .build();
