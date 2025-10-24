@@ -193,7 +193,7 @@ export class ServiceBuilderFactory<
          * Throws an error if the creation fails.
          */
         const create: ServiceFn<
-            InferServiceSchemas<TSchemas>['create'],
+            Parameters<TQueries['create']>[0],
             Awaited<ReturnType<TQueries['create']>>
         > = async (args) => {
             return await this.queries.create(args);
@@ -204,7 +204,7 @@ export class ServiceBuilderFactory<
          * Throws an error if the creation fails.
          */
         const createMany: ServiceFn<
-            InferServiceSchemas<TSchemas>['createMany'],
+            Parameters<TQueries['createMany']>[0],
             Awaited<ReturnType<TQueries['createMany']>>
         > = async (args) => {
             return await this.queries.createMany(args);
