@@ -6,49 +6,17 @@ import { localUploadService } from '@/lib/upload/local/service';
 
 import { createFeatureServices } from '@/server/lib/service';
 
-export const globalBankAccountServices = createFeatureServices
-    .registerSchema(globalBankAccountSchemas)
-    .registerQuery(bankQueries.globalBankAccount)
-    .defineServices(({ queries }) => ({
-        create: async (input) => {
-            return await queries.create(input);
-        },
-        /**
-         * Get a global bank account by id
-         */
-        getById: async (input) => {
-            return await queries.getById(input);
-        },
-        /**
-         * Get many global bank accounts
-         */
-        getMany: async (input) => {
-            return await queries.getMany(input);
-        },
-        /**
-         * Update a global bank account by id
-         */
-        updateById: async (input) => {
-            return await queries.updateById(input);
-        },
-        /**
-         * Remove a global bank account by id
-         */
-        removeById: async (input) => {
-            return await queries.removeById(input);
-        },
-        /**
-         * Test a global bank account transformation query.
-         *
-         * This function will save the sample data to disk, transform the data, and return the result.
-         *
-         * The sample data is deleted from disk after the transformation is complete.
-         *
-         * @param id - The id of the global bank account
-         * @param data - The data to test the global bank account transformation query
-         * @returns The result of the global bank account transformation query
-         */
-        testTransform: async ({ globalBankAccountId }) => {
+export const globalBankAccountServices = createFeatureServices('globalBankAccount')
+    .registerSchemas(globalBankAccountSchemas)
+    .registerQueries(bankQueries.globalBankAccount)
+    .registerCoreServices()
+    /**
+     * Test a global bank account transformation query
+     */
+    .addService('testTransform', ({ queries }) => ({
+        operation: 'test global bank account transformation query',
+        throwOnNull: true,
+        fn: async ({ globalBankAccountId }) => {
             if (!globalBankAccountId) {
                 throw new Error('Global bank account id is required');
             }
@@ -99,4 +67,5 @@ export const globalBankAccountServices = createFeatureServices
                 }
             );
         },
-    }));
+    }))
+    .build();

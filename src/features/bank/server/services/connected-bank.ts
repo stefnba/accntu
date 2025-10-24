@@ -4,25 +4,28 @@ import { connectedBankAccountServices } from '@/features/bank/server/services/co
 import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
-export const connectedBankServices = createFeatureServices
-    .registerSchema(connectedBankSchemas)
-    .registerQuery(connectedBankQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
-         * @param userId - The user ID
-         * @param data - The data to create the connected bank with
-         * @returns The created connected bank
-         */
-        createWithAccounts: async ({ data, userId }) => {
+export const connectedBankServices = createFeatureServices('connectedBank')
+    .registerSchemas(connectedBankSchemas)
+    .registerQueries(connectedBankQueries)
+    .registerCoreServices()
+    /**
+     * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
+     * @param userId - The user ID
+     * @param data - The data to create the connected bank with
+     * @returns The created connected bank
+     */
+    .addService('createWithAccounts', ({ queries }) => ({
+        operation: 'create connected bank with accounts',
+        throwOnNull: true,
+        fn: async ({ data, userId }) => {
             const { globalBankId, connectedBankAccounts } = data;
             // return await queries.create(input);
 
             const newConnectedBank = await queries.create({
                 data: {
                     globalBankId,
-                    userId,
                 },
+                userId,
             });
 
             let connectedBankId = newConnectedBank?.id;
@@ -74,32 +77,5 @@ export const connectedBankServices = createFeatureServices
                 id: connectedBankId,
             };
         },
-        /**
-         * Get many connected banks
-         */
-        getMany: async (input) => {
-            return await queries.getMany(input);
-        },
-        /**
-         * Get a connected bank by id
-         */
-        getById: async (input) => {
-            const result = await queries.getById(input);
-            if (!result) {
-                throw new Error('Connected bank not found');
-            }
-            return result;
-        },
-        /**
-         * Update a connected bank by id
-         */
-        updateById: async (input) => {
-            return await queries.updateById(input);
-        },
-        /**
-         * Remove a connected bank by id
-         */
-        removeById: async (input) => {
-            return await queries.removeById(input);
-        },
-    }));
+    }))
+    .build();
