@@ -19,9 +19,12 @@ const quick = createServiceBuilder('quick')
         operation: 'get tag by id',
         returnHandler: 'nonNull',
         fn: async (input) => {
-            return {
-                adsf: 33,
-            };
+            if (input.ids.id === 'urzwx524rabolqzj808nm0vg') {
+                return {
+                    adsf: 33,
+                };
+            }
+            return null;
         },
     }))
     .build();
@@ -63,7 +66,7 @@ const run = async () => {
 
 const run2 = async () => {
     const a = await quick.getById({
-        ids: { id: 'urzwx524rabolqzj808nm0vg' },
+        ids: { id: '-urzwx524rabolqzj808nm0vg' },
         userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
     });
     console.log('a', a);

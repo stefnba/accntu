@@ -90,36 +90,53 @@ export class ServiceBuilder<
     }
 
     /**
-     * Adds a custom service with a nonNull return handler.
+     * Adds a custom service to the service layer.
      *
-     * Creates a new service that wraps a query or implements custom business logic.
-     * The service is automatically wrapped to throw an error if it returns null/undefined.
+     * The service can have either a 'nonNull' or 'nullable' return handler:
+     * - **nonNull**: Service throws an error if it returns null/undefined
+     * - **nullable**: Service can return null/undefined without error
+     *
+     * When overriding an existing service (e.g., from registerCoreServices),
+     * the new return type completely replaces the old one.
      *
      * @template K - Service key (must match a key in TSchemas)
-     * @template TOutput - Raw output type of the service
      * @template TInput - Input type (automatically inferred from schema)
+     * @template TOutput - Raw output type of the service
+     * @template THandler - Return handler type ('nonNull' | 'nullable')
      *
-     * @param key - Unique identifier for the service (should match schema key)
+     * @param key - Unique identifier for the service
      * @param serviceDefinition - Function that receives queries/schemas/services and returns service config
-     * @returns New ServiceBuilder instance with the added service
+     * @returns New ServiceBuilder instance with the added/overridden service
      *
      * @example
      * ```typescript
-     * .addService('archiveById', ({ queries }) => ({
-     *     operation: 'Archive Item',
+     * // NonNull handler
+     * .addService('getById', ({ queries }) => ({
+     *     operation: 'Get Item By ID',
      *     returnHandler: 'nonNull',
-     *     fn: async (input) => {
-     *         return await queries.archive(input);
-     *     },
+     *     fn: async (input) => await queries.getById(input),
+     * }))
+     *
+     * // Nullable handler
+     * .addService('findByName', ({ queries }) => ({
+     *     returnHandler: 'nullable',
+     *     fn: async (input) => await queries.findByName(input),
+     * }))
+     *
+     * // Override existing service with new return type
+     * .addService('getById', () => ({
+     *     returnHandler: 'nonNull',
+     *     fn: async (input) => ({ customField: 123 }),
      * }))
      * ```
      */
     addService<
         K extends (keyof TSchemas & string) | ({} & string),
-        TOutput,
         TInput = K extends keyof InferServiceSchemas<TSchemas>
             ? InferServiceSchemas<TSchemas>[K]
             : never,
+        TOutput = unknown,
+        THandler extends 'nonNull' | 'nullable' = 'nonNull' | 'nullable',
     >(
         key: K,
         serviceDefinition: (input: {
@@ -128,89 +145,10 @@ export class ServiceBuilder<
             services: TServices;
         }) => {
             operation?: string;
-            returnHandler: 'nonNull';
+            returnHandler: THandler;
             fn: ServiceFn<TInput, TOutput>;
         }
-    ): ServiceBuilder<
-        TSchemas,
-        TServices & Record<K, ServiceFn<TInput, NonNullable<TOutput>>>,
-        TQueries
-    >;
-
-    /**
-     * Adds a custom service with a nullable return handler.
-     *
-     * Creates a new service that can return null/undefined without throwing an error.
-     * Useful for optional lookups, searches, or operations that may not find results.
-     *
-     * @template K - Service key (must match a key in TSchemas)
-     * @template TOutput - Raw output type of the service (can include null/undefined)
-     * @template TInput - Input type (automatically inferred from schema)
-     *
-     * @param key - Unique identifier for the service (should match schema key)
-     * @param serviceDefinition - Function that receives queries/schemas/services and returns service config
-     * @returns New ServiceBuilder instance with the added service
-     *
-     * @example
-     * ```typescript
-     * .addService('findByName', ({ queries }) => ({
-     *     operation: 'Find Item By Name',
-     *     returnHandler: 'nullable',
-     *     fn: async (input) => {
-     *         // May return null if not found
-     *         return await queries.findByName(input);
-     *     },
-     * }))
-     * ```
-     */
-    addService<
-        K extends keyof TSchemas & string,
-        TOutput,
-        TInput = K extends keyof InferServiceSchemas<TSchemas>
-            ? InferServiceSchemas<TSchemas>[K]
-            : never,
-    >(
-        key: K,
-        serviceDefinition: (input: {
-            queries: TQueries;
-            schemas: TSchemas;
-            services: TServices;
-        }) => {
-            operation?: string;
-            returnHandler: 'nullable';
-            fn: ServiceFn<TInput, TOutput>;
-        }
-    ): ServiceBuilder<TSchemas, TServices & Record<K, ServiceFn<TInput, TOutput | null>>, TQueries>;
-
-    /**
-     * Implementation method for addService (handles both nonNull and nullable cases).
-     *
-     * This method:
-     * 1. Calls the serviceDefinition function with queries, schemas, and services
-     * 2. Extracts the fn, returnHandler, and optional operation name
-     * 3. Wraps the service with appropriate validation based on returnHandler
-     * 4. Creates a new ServiceBuilder instance with the added service
-     *
-     * @internal
-     */
-    addService<
-        K extends keyof TSchemas & string,
-        TOutput,
-        TInput = K extends keyof InferServiceSchemas<TSchemas>
-            ? InferServiceSchemas<TSchemas>[K]
-            : never,
-    >(
-        key: K,
-        serviceDefinition: (input: {
-            queries: TQueries;
-            schemas: TSchemas;
-            services: TServices;
-        }) => {
-            operation?: string;
-            returnHandler: 'nonNull' | 'nullable';
-            fn: ServiceFn<TInput, TOutput>;
-        }
-    ): ServiceBuilder<TSchemas, TServices & Record<K, ServiceFn<TInput, TOutput>>, TQueries> {
+    ) {
         // Execute the service definition to get the configuration
         const definition = serviceDefinition({
             queries: this.queries,
@@ -233,9 +171,17 @@ export class ServiceBuilder<
                   });
 
         // Return a new builder instance with the added service
+
         return new ServiceBuilder<
             TSchemas,
-            TServices & Record<K, ServiceFn<TInput, TOutput>>,
+            Omit<TServices, K> &
+                Record<
+                    K,
+                    ServiceFn<
+                        TInput,
+                        THandler extends 'nonNull' ? NonNullable<TOutput> : TOutput | null
+                    >
+                >,
             TQueries
         >({
             schemas: this.schemas,
