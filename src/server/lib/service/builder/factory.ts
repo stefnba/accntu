@@ -22,8 +22,8 @@
  */
 
 import { InferServiceSchemas, TOperationSchemaObject } from '@/lib/schemas/types';
-import { QueryBuilder } from '@/server/lib/db/query/builder';
-import { QueryFn } from '@/server/lib/db/query/builder/types';
+import { FeatureQueryBuilder } from '@/server/lib/db/query/feature-queries';
+import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { ServiceBuilder } from '@/server/lib/service/builder/core';
 import { wrapServiceWithHandler } from '@/server/lib/service/builder/utils';
 import { ServiceFn } from '@/server/lib/service/factory/types';
@@ -49,15 +49,27 @@ export class ServiceBuilderFactory<
     /** Registered query functions that services will wrap */
     queries: TQueries;
 
+    /** The name of the service builder */
+    name?: string;
+
     /**
      * Creates a new ServiceBuilderFactory instance.
      *
      * @param schemas - Initial schemas (typically empty object {})
      * @param queries - Initial queries (typically empty object {})
      */
-    constructor({ schemas, queries }: { schemas: TSchemas; queries: TQueries }) {
+    constructor({
+        schemas,
+        queries,
+        name,
+    }: {
+        schemas: TSchemas;
+        queries: TQueries;
+        name?: string;
+    }) {
         this.schemas = schemas;
         this.queries = queries;
+        this.name = name;
     }
 
     /**
@@ -86,6 +98,7 @@ export class ServiceBuilderFactory<
                 ...schemas,
             },
             queries: this.queries,
+            name: this.name,
         });
     }
 
@@ -108,13 +121,14 @@ export class ServiceBuilderFactory<
      *     });
      * ```
      */
-    registerQueries<Q extends QueryBuilder>(queries: Q) {
+    registerQueries<Q extends FeatureQueryBuilder>(queries: Q) {
         return new ServiceBuilderFactory<TSchemas, TQueries & Q['queries']>({
             schemas: this.schemas,
             queries: {
                 ...this.queries,
                 ...queries.queries,
             },
+            name: this.name,
         });
     }
 
@@ -161,6 +175,17 @@ export class ServiceBuilderFactory<
         };
 
         /**
+         * Get many records in the table with optional filtering and pagination.
+         * Returns null if no records are found (nullable handler).
+         */
+        const getMany: ServiceFn<
+            InferServiceSchemas<TSchemas>['getMany'],
+            Awaited<ReturnType<TQueries['getMany']>>
+        > = async (args) => {
+            return await this.queries.getMany(args);
+        };
+
+        /**
          * Create a record in the table.
          * Throws an error if the creation fails.
          */
@@ -172,14 +197,25 @@ export class ServiceBuilderFactory<
         };
 
         /**
-         * Get many records in the table with optional filtering and pagination.
-         * Returns null if no records are found (nullable handler).
+         * Update a record by the given identifiers.
+         * Throws an error if the update fails.
          */
-        const getMany: ServiceFn<
-            InferServiceSchemas<TSchemas>['getMany'],
-            Awaited<ReturnType<TQueries['getMany']>>
+        const updateById: ServiceFn<
+            InferServiceSchemas<TSchemas>['updateById'],
+            Awaited<ReturnType<TQueries['updateById']>>
         > = async (args) => {
-            return await this.queries.getMany(args);
+            return await this.queries.updateById(args);
+        };
+
+        /**
+         * Remove a record by the given identifiers.
+         * Throws an error if the removal fails.
+         */
+        const removeById: ServiceFn<
+            InferServiceSchemas<TSchemas>['removeById'],
+            Awaited<ReturnType<TQueries['removeById']>>
+        > = async (args) => {
+            return await this.queries.removeById(args);
         };
 
         // Wrap core services with appropriate handlers
@@ -187,6 +223,8 @@ export class ServiceBuilderFactory<
             getById: wrapServiceWithHandler(getById, 'nonNull', 'getById service'),
             create: wrapServiceWithHandler(create, 'nonNull', 'create service'),
             getMany: wrapServiceWithHandler(getMany, 'nullable', 'getMany service'),
+            updateById: wrapServiceWithHandler(updateById, 'nonNull', 'updateById service'),
+            removeById: wrapServiceWithHandler(removeById, 'nonNull', 'removeById service'),
         };
 
         // Return a ServiceBuilder instance for adding custom services
@@ -198,7 +236,9 @@ export class ServiceBuilderFactory<
     }
 }
 
-export const createServiceBuilder = new ServiceBuilderFactory({
-    schemas: {},
-    queries: {},
-});
+export const createServiceBuilder = (name?: string) =>
+    new ServiceBuilderFactory({
+        schemas: {},
+        queries: {},
+        name,
+    });
