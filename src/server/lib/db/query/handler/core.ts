@@ -1,4 +1,4 @@
-import type { QueryFn } from '@/server/lib/db/query/builder/types';
+import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { handleDbQueryError } from '@/server/lib/db/query/handler/error';
 import { AppErrors } from '@/server/lib/error';
 import { z } from 'zod';
