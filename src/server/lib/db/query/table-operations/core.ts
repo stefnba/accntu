@@ -1,13 +1,13 @@
 import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
+import { withDbQuery } from '@/server/lib/db/query/handler';
+import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import {
     TBooleanFilter,
     TOnConflict,
     TTableColumns,
     TValidTableForFrom,
 } from '@/server/lib/db/query/table-operations/types';
-import { withDbQuery } from '@/server/lib/db/query/handler';
-import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import type { ColumnsSelection } from 'drizzle-orm';
 import {
     and,
@@ -38,10 +38,17 @@ import type {
  * - Need direct table operations
  * - Advanced conflict handling
  *
- * Most features should use FeatureQueryBuilder instead, which wraps this class
- * with feature-specific logic (userId extraction, filters, pagination).
- *
- * @template T - The Drizzle table type
+ * The following methods are available:
+ * - createRecord
+ * - createManyRecords
+ * - getFirstRecord
+ * - getManyRecords
+ * - updateRecord
+ * - updateManyRecords
+ * - removeRecord
+ * - deactivateRecord
+ * - activateRecord
+ * - deleteRecord
  *
  * @example
  * ```typescript
