@@ -1,19 +1,27 @@
 import { COMMON_FIELDS } from '@/server/lib/db/table/config';
 
-export function commonTableFields<K extends keyof typeof COMMON_FIELDS>(options: {
+/**
+ * Factory function to generate common table fields.
+ * @param options - The options to generate the common table fields
+ * @param options.exclude - The fields to exclude from the common table fields
+ * @param options.include - The fields to include in the common table fields
+ *
+ *  @example
+ * ```typescript
+ * const tag = pgTable('tag', {
+ *     ...createCommonTableFields(),
+ *     name: text().notNull(),
+ * });
+ * ```
+ */
+export function createCommonTableFields<K extends keyof typeof COMMON_FIELDS>(options: {
     exclude: K[];
 }): Omit<typeof COMMON_FIELDS, K>;
-
-export function commonTableFields<K extends keyof typeof COMMON_FIELDS>(options: {
+export function createCommonTableFields<K extends keyof typeof COMMON_FIELDS>(options: {
     include: K[];
 }): Pick<typeof COMMON_FIELDS, K>;
-
-export function commonTableFields(): typeof COMMON_FIELDS;
-
-/**
- * Common table fields
- */
-export function commonTableFields<K extends keyof typeof COMMON_FIELDS>(
+export function createCommonTableFields(): typeof COMMON_FIELDS;
+export function createCommonTableFields<K extends keyof typeof COMMON_FIELDS>(
     options: {
         exclude?: K[];
         include?: K[];

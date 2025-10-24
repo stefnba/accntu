@@ -6,7 +6,7 @@ import { PgTable, pgTable } from 'drizzle-orm/pg-core';
 // Core
 // ================================
 
-export { commonTableFields } from '@/server/lib/db/table/core';
+export { createCommonTableFields } from '@/server/lib/db/table/core';
 
 // ================================
 // Types

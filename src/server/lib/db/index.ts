@@ -1,8 +1,8 @@
 export {
-    featureQueryFactory,
     createFeatureQueries,
     dbQueryFnHandler,
+    featureQueryFactory,
     withDbQuery,
     type InferFeatureType,
 } from './query';
-export { commonTableFields } from './table';
+export { createCommonTableFields } from './table';

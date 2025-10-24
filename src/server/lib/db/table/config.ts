@@ -3,7 +3,14 @@ import { createId } from '@paralleldrive/cuid2';
 import { boolean, text, timestamp } from 'drizzle-orm/pg-core';
 
 /**
- * Common table fields
+ * Common table fields for our tables
+ * @example
+ * ```typescript
+ * const tag = pgTable('tag', {
+ *     ...createCommonTableFields(),
+ *     name: text().notNull(),
+ * });
+ * ```
  */
 export const COMMON_FIELDS = {
     id: text()
