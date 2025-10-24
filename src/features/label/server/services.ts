@@ -95,7 +95,8 @@ export const labelServices = createFeatureServices('label')
                 userId: input.userId,
             });
         },
-    }));
+    }))
+    .build();
 
 // Helper function to check for circular hierarchy
 async function checkCircularHierarchy({

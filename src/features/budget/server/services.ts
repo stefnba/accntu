@@ -263,51 +263,19 @@ const calculateSplitAmount = async ({
 // Service Factory
 // ====================
 
-export const budgetServices = createFeatureServices
-    .registerSchema(transactionBudgetSchemas)
-    .registerSchema(transactionBudgetToParticipantSchemas)
-    .registerQuery(transactionBudgetQueries)
-    .registerQuery(transactionBudgetToParticipantQueries)
-    .defineServices(({ queries }) => ({
-        /**
-         * Create a new transaction budget
-         */
-        create: async ({ data, userId }) => {
-            return await queries.create({ data, userId });
-        },
-
-        /**
-         * Get a transaction budget by ID
-         */
-        getById: async ({ ids, userId }) => {
-            return await queries.getById({ ids, userId });
-        },
-
-        /**
-         * Get many transaction budgets
-         */
-        getMany: async ({ userId, filters, pagination }) => {
-            return await queries.getMany({ userId, filters, pagination });
-        },
-
-        /**
-         * Update a transaction budget by ID
-         */
-        updateById: async ({ data, ids, userId }) => {
-            return await queries.updateById({ ids, data, userId });
-        },
-
-        /**
-         * Remove a transaction budget by ID
-         */
-        removeById: async ({ ids, userId }) => {
-            return await queries.removeById({ ids, userId });
-        },
-
-        /**
-         * Calculate and store budget for a transaction
-         */
-        calculateAndStore: async ({ transactionId, userId }) => {
+export const budgetServices = createFeatureServices('budget')
+    .registerSchemas(transactionBudgetSchemas)
+    .registerSchemas(transactionBudgetToParticipantSchemas)
+    .registerQueries(transactionBudgetQueries)
+    .registerQueries(transactionBudgetToParticipantQueries)
+    .registerCoreServices()
+    /**
+     * Calculate and store budget for a transaction
+     */
+    .addService('calculateAndStore', ({ queries }) => ({
+        operation: 'calculate and store budget',
+        throwOnNull: false,
+        fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
             const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
             if (!calculationResult) {
@@ -374,18 +342,24 @@ export const budgetServices = createFeatureServices
 
             return budgetRecord;
         },
-
-        /**
-         * Mark transaction budgets for recalculation
-         */
-        markForRecalculation: async ({ transactionId }) => {
+    }))
+    /**
+     * Mark transaction budgets for recalculation
+     */
+    .addService('markForRecalculation', ({ queries }) => ({
+        operation: 'mark for recalculation',
+        throwOnNull: false,
+        fn: async ({ transactionId }: { transactionId: string }) => {
             return await queries.markForRecalculation({ transactionId });
         },
-
-        /**
-         * Recalculate transaction budget (combines mark + calculate + store)
-         */
-        recalculate: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+    }))
+    /**
+     * Recalculate transaction budget (combines mark + calculate + store)
+     */
+    .addService('recalculate', ({ queries }) => ({
+        operation: 'recalculate budget',
+        throwOnNull: false,
+        fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
             await queries.markForRecalculation({ transactionId });
 
             const calculationResult = await calculateTransactionBudget({ transactionId, userId });
@@ -447,22 +421,5 @@ export const budgetServices = createFeatureServices
 
             return budgetRecord;
         },
-
-        /**
-         * Process all pending recalculations
-         */
-        // processPendingRecalculations: async () => {
-        //     const pendingBudgets = await queries.getPendingRecalculation();
-
-        //     const results = [];
-        //     for (const budget of pendingBudgets) {
-        //         const result = await budgetServices.calculateAndStore({
-        //             transactionId: budget.transactionId,
-        //             userId: budget.userId,
-        //         });
-        //         results.push(result);
-        //     }
-
-        //     return results;
-        // },
-    }));
+    }))
+    .build();
