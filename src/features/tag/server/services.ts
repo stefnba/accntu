@@ -5,13 +5,13 @@ import { createFeatureServices } from '@/server/lib/service/';
 export const tagServices = createFeatureServices
     .registerSchema(tagSchemas)
     .registerSchema(tagToTransactionSchemas)
-    .registerQuery(tagQueries)
-    .registerQuery(tagToTransactionQueries)
+    .registerQuery(tagQueries.queries)
+    .registerQuery(tagToTransactionQueries.queries)
     .defineServices(({ queries }) => ({
         /**
          * Create a tag
          */
-        create: async ({ data, userId }) => await queries.create({ data: { ...data, userId } }),
+        create: async ({ data, userId }) => await queries.create({ data, userId }),
 
         /**
          * Get a tag by ID
