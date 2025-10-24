@@ -29,20 +29,21 @@ export type RequiredOnly<T> = {
  */
 export type TByIdInput<
     T extends Table,
-    TIdFields extends Array<keyof T['_']['columns']>,
-    TUserIdField extends keyof T['_']['columns'] | undefined = undefined,
-> = TUserIdField extends keyof T['_']['columns']
-    ? {
-          ids: {
-              [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
+    TIdFields extends Array<GetTableColumnKeys<T>>,
+    TUserIdField extends GetTableColumnKeys<T> | undefined = undefined,
+> =
+    TUserIdField extends GetTableColumnKeys<T>
+        ? {
+              ids: {
+                  [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
+              };
+              userId: GetColumnData<T['_']['columns'][TUserIdField]>;
+          }
+        : {
+              ids: {
+                  [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
+              };
           };
-          userId: GetColumnData<T['_']['columns'][TUserIdField]>;
-      }
-    : {
-          ids: {
-              [K in TIdFields[number]]: GetColumnData<T['_']['columns'][K]>;
-          };
-      };
 
 /**
  * The on conflict type for the create and update record query
