@@ -279,6 +279,72 @@ export class ServiceBuilderFactory<
             services: coreServices,
         });
     }
+
+    /**
+     * Adds a custom service to the service layer.
+     *
+     * If we don't call registerCoreServices() first, then we can add a first custom services using this method, which returns a ServiceBuilder instance with the added service.
+     *
+     * @example
+     * ```typescript
+     * const builder = new ServiceBuilderFactory({ schemas: {}, queries: {} })
+     *     .addService('custom', ({ queries }) => ({
+     *         operation: 'custom',
+     *         throwOnNull: true,
+     *         fn: async (input) => await queries.custom(input),
+     *     }));
+     * ```
+     */
+    addService<
+        K extends (keyof TSchemas & string) | ({} & string),
+        TInput = K extends keyof InferServiceSchemas<TSchemas>
+            ? InferServiceSchemas<TSchemas>[K]
+            : never,
+        TOutput = unknown,
+        TThrowOnNull extends boolean = boolean,
+    >(
+        key: K,
+        serviceDefinition: (input: { queries: TQueries; schemas: TSchemas }) => {
+            operation?: string;
+            throwOnNull?: TThrowOnNull;
+            fn: ServiceFn<TInput, TOutput>;
+        }
+    ) {
+        // Execute the service definition to get the configuration
+        const definition = serviceDefinition({
+            queries: this.queries,
+            schemas: this.schemas,
+        });
+
+        const { fn, throwOnNull = true, operation } = definition;
+
+        // Wrap the service with the appropriate handler
+        const wrappedService: ServiceFn<TInput, TOutput> = throwOnNull
+            ? wrapServiceWithHandler({
+                  serviceFn: fn,
+                  throwOnNull: true,
+                  operation: operation || key,
+                  resource: this.name,
+              })
+            : wrapServiceWithHandler({
+                  serviceFn: fn,
+                  throwOnNull: false,
+                  operation: operation || key,
+                  resource: this.name,
+              });
+
+        // Create a new record of services with the added service
+        //
+        const services = {} as Record<K, ServiceFn<TInput, TOutput>>;
+        services[key] = wrappedService;
+
+        // Return a new builder instance with the added service
+        return new ServiceBuilder<TSchemas, Record<K, ServiceFn<TInput, TOutput>>, TQueries>({
+            schemas: this.schemas,
+            queries: this.queries,
+            services,
+        });
+    }
 }
 
 export const createFeatureServices = (name?: string) =>
