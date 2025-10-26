@@ -2,6 +2,8 @@
 
 The **Table Operations** layer provides generic, low-level database CRUD operations. It builds and executes SQL queries without knowing anything about your feature's business logic.
 
+This layer acts as a further abstraction for building SQL queries using the Drizzle ORM syntax.
+
 ## Purpose
 
 - **Build SQL queries** (INSERT, SELECT, UPDATE, DELETE)
@@ -11,11 +13,13 @@ The **Table Operations** layer provides generic, low-level database CRUD operati
 
 ## When to Use
 
-Typically, you **don't use this directly**. The Feature Queries layer uses it internally. However, you can use it for:
+In our feature-based architecture, the Table Operations layer is typically not used directly. Instead, we rely on the [Feature Query layer](../feature-queries/README.md) to define default and custom queries, which internally utilizes Table Operations.
 
-- Custom complex queries
-- Bulk operations
-- Advanced conflict handling
+However, you may choose to use Table Operations directly in scenarios such as:
+
+- Creating custom, complex queries
+- Performing bulk operations
+- Implementing advanced conflict resolution
 
 ## Example (Direct Usage)
 
@@ -130,7 +134,7 @@ updateRecord({
 
 ## Relationship to Feature Queries
 
-```
+```text
 Feature Queries (Feature-Level)
     ↓ Knows about: users, schemas, filters
     ↓
@@ -139,20 +143,6 @@ Table Operations (Generic Database)
     ↓
 Database (PostgreSQL)
 ```
-
-### What Each Layer Handles
-
-**Feature Queries** (feature-level):
-
-- Extract userId from `{ data, userId }`
-- Apply feature filters (search, status)
-- Handle pagination/ordering logic
-
-**Table Operations** (generic database):
-
-- Build SQL: `INSERT INTO table (...) VALUES (...)`
-- Execute queries with error handling
-- Return typed results
 
 ## Example: How Layers Work Together
 
@@ -163,7 +153,7 @@ tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' })
 // ↓ Feature Queries extract and merge:
 tableOps.createRecord({ data: { name: 'Work', userId: 'user-123' } })
 
-// ↓ Table Operations generate SQL:
+// ↓ Table Operations generate drizzle syntax:
 db.insert(tagTable).values({ name: 'Work', userId: 'user-123' })
 
 // ↓ SQL executed:
@@ -190,4 +180,3 @@ INSERT INTO tag (name, user_id) VALUES ('Work', 'user-123')
 ## See Also
 
 - **Feature Queries**: [../feature-queries/README.md](../feature-queries/README.md) - Feature-level abstraction
-- **Feature Architecture**: [@/src/features/CLAUDE.md](../../../../features/CLAUDE.md) - How to use in features
