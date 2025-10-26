@@ -18,12 +18,13 @@ Use when you want to **execute a query immediately** with error handling.
 ```typescript
 import { withDbQuery } from '@/server/lib/db/query/handler';
 
-// Direct execution
+// Direct execution with operation context
 const user = await withDbQuery({
     queryFn: async () => {
         return await db.select().from(users).where(eq(users.id, userId)).limit(1);
     },
     operation: 'get user by ID',
+    table: 'user', // Optional: adds table context to error messages
 });
 ```
 
@@ -73,11 +74,12 @@ try {
             /* query */
         },
         operation: 'create user',
+        table: 'user', // Optional: for better error messages
     });
 } catch (error) {
     // Errors are automatically formatted with:
     // - Proper error codes (UNIQUE_VIOLATION, FOREIGN_KEY_VIOLATION, etc.)
-    // - Operation context in error message
+    // - Operation and table context in error message
     // - Original error details preserved
     // - Development-mode logging
 }
@@ -112,7 +114,8 @@ async createRecord({ data }) {
                 .returning();
             return record;
         },
-        operation: 'create record for table ' + this.getTableName(),
+        operation: this.getOperationDescription('createRecord'),
+        table: this.tableName,
     });
 }
 ```

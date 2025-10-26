@@ -103,14 +103,16 @@ export function dbQueryFnHandler<TInput, TOutput>(
 export async function withDbQuery<T>({
     queryFn,
     operation = 'database operation',
+    table,
 }: {
     queryFn: () => Promise<T>;
     operation?: string;
+    table?: string;
 }) {
     try {
         // Execute the query and return the result
         return await queryFn();
     } catch (error) {
-        throw handleDbQueryError(error, operation);
+        throw handleDbQueryError(error, { operation, table });
     }
 }

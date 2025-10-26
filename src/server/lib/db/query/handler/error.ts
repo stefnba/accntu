@@ -2,6 +2,13 @@ import { AppErrors } from '@/server/lib/error';
 import { DrizzleQueryError } from 'drizzle-orm';
 import postgres from 'postgres';
 
+export type THandleDbQueryDetailsParams = {
+    /** The table name being queried (for error context) */
+    table?: string;
+    /** The operation being performed (for error context) */
+    operation?: string;
+};
+
 /**
  * Handle database query errors with PostgreSQL-specific error code detection
  *
@@ -25,8 +32,12 @@ import postgres from 'postgres';
  * }
  * ```
  */
-export const handleDbQueryError = (error: unknown, operation?: string): never => {
-    const operationContext = operation ? ` during '${operation}'` : '';
+export const handleDbQueryError = (
+    error: unknown,
+    details: THandleDbQueryDetailsParams = {}
+): never => {
+    const operationContext = details.operation ? ` during '${details.operation}'` : '';
+    const tableContext = details.table ? ` in table '${details.table}'` : '';
 
     // check for drizzle query error
     if (error instanceof DrizzleQueryError) {
@@ -35,6 +46,8 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
         // todo clean sensitive data from params
         const errorObj = {
             drizzleError: { query: drizzleError.query, params: drizzleError.params },
+            table: details.table,
+            operation: details.operation,
         };
 
         // check for postgres error
@@ -64,7 +77,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                 // Unique constraint violation
                 case '23505':
                     throw AppErrors.db('UNIQUE_VIOLATION', {
-                        message: `Unique constraint violation${operationContext}: ${message}`,
+                        message: `Unique constraint violation${operationContext}${tableContext}: ${message}`,
                         cause: error,
                         layer: 'db',
                         details: { ...errorObj },
@@ -72,7 +85,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                 // Foreign key constraint violation
                 case '23503':
                     throw AppErrors.db('FOREIGN_KEY_VIOLATION', {
-                        message: `Foreign key constraint violation${operationContext}: ${message}`,
+                        message: `Foreign key constraint violation${operationContext}${tableContext}: ${message}`,
                         cause: error,
                         layer: 'db',
                         details: { ...errorObj },
@@ -80,7 +93,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                 // Not-null constraint violation
                 case '23502':
                     throw AppErrors.db('QUERY_FAILED', {
-                        message: `Not-null constraint violation${operationContext}: ${message}`,
+                        message: `Not-null constraint violation${operationContext}${tableContext}: ${message}`,
                         cause: error,
                         layer: 'db',
                         details: { ...errorObj },
@@ -89,7 +102,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                 case '42601':
                     console.log('Syntax error', error);
                     throw AppErrors.db('SYNTAX_ERROR', {
-                        message: `Syntax error${operationContext}: ${message}`,
+                        message: `Syntax error${operationContext}${tableContext}: ${message}`,
                         cause: error,
                         layer: 'db',
                         details: {
@@ -98,7 +111,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
                     });
                 default:
                     throw AppErrors.db('QUERY_FAILED', {
-                        message: `Database query failed${operationContext}: ${message}`,
+                        message: `Database query failed${operationContext}${tableContext}: ${message}`,
                         cause: error,
                         layer: 'db',
                         details: { ...errorObj },
@@ -107,7 +120,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
         }
 
         throw AppErrors.db('QUERY_FAILED', {
-            message: `Database query failed${operationContext}: ${error.message}`,
+            message: `Database query failed${operationContext}${tableContext}: ${error.message}`,
             cause: error,
             layer: 'db',
         });
@@ -116,7 +129,7 @@ export const handleDbQueryError = (error: unknown, operation?: string): never =>
     // Handle connection errors
     if (error instanceof Error && 'code' in error && error.code === 'ECONNREFUSED') {
         throw AppErrors.db('CONNECTION_ERROR', {
-            message: `Database connection refused${operationContext}`,
+            message: `Database connection refused${operationContext}${tableContext}: ${error.message}`,
             cause: error,
             layer: 'db',
         });
