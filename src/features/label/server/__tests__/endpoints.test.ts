@@ -15,7 +15,7 @@ const validateLabelResponse = (label: any) => {
     expect(label).toHaveProperty('isActive');
     expect(label).toHaveProperty('createdAt');
     expect(label).toHaveProperty('updatedAt');
-    
+
     expect(typeof label.id).toBe('string');
     expect(typeof label.name).toBe('string');
     expect(typeof label.index).toBe('number');
@@ -48,7 +48,7 @@ describe('Label API Endpoints', () => {
             const res = await client.api.labels.$get({ query: {} }, { headers: auth.authHeaders });
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const labels = await res.json();
                 expect(Array.isArray(labels)).toBe(true);
@@ -73,14 +73,14 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const label = await res.json();
-                validateLabelResponse(label);
-                expect(label.name).toBe(labelData.name);
-                expect(label.color).toBe(labelData.color);
-                expect(typeof label.index).toBe('number'); // Index may be auto-assigned
-                createdLabelId = label.id;
+                validateLabelResponse(label.data);
+                expect(label.data.name).toBe(labelData.name);
+                expect(label.data.color).toBe(labelData.color);
+                expect(typeof label.data.index).toBe('number'); // Index may be auto-assigned
+                createdLabelId = label.data.id;
             }
         });
 
@@ -93,7 +93,7 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const label = await res.json();
                 validateLabelResponse(label);
@@ -115,7 +115,7 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const label = await res.json();
                 validateLabelResponse(label);
@@ -133,9 +133,9 @@ describe('Label API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect([200, 201, 500]).toContain(res.status); // 200/201 for success, 500 for server errors
-            
-            if (res.status === 200) {
+            expect(res.status).toBe(201);
+
+            if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toEqual({ success: true });
             }
@@ -170,7 +170,6 @@ describe('Label API Endpoints', () => {
                     json: {
                         name: 'Test',
                         color: 'invalid-color',
-                        index: 0,
                     },
                 },
                 { headers: auth.authHeaders }
@@ -185,7 +184,6 @@ describe('Label API Endpoints', () => {
                     json: {
                         name: '', // Empty name
                         color: '#6366f1',
-                        index: 0,
                     },
                 },
                 { headers: auth.authHeaders }
@@ -206,19 +204,18 @@ describe('Label API Endpoints', () => {
                     json: {
                         name: 'Parent Label',
                         color: '#ff6b6b',
-                        index: 0,
                     },
                 },
                 { headers: auth.authHeaders }
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const label = await res.json();
-                validateLabelResponse(label);
-                expect(label.name).toBe('Parent Label');
-                parentLabelId = label.id;
+                validateLabelResponse(label.data);
+                expect(label.data.name).toBe('Parent Label');
+                parentLabelId = label.data.id;
             }
         });
 
@@ -231,20 +228,19 @@ describe('Label API Endpoints', () => {
                         name: 'Child Label',
                         color: '#4ecdc4',
                         parentId: parentLabelId,
-                        index: 0,
                     },
                 },
                 { headers: auth.authHeaders }
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const label = await res.json();
-                validateLabelResponse(label);
-                expect(label.name).toBe('Child Label');
-                expect(label.parentId).toBe(parentLabelId);
-                childLabelId = label.id;
+                validateLabelResponse(label.data);
+                expect(label.data.name).toBe('Child Label');
+                expect(label.data.parentId).toBe(parentLabelId);
+                childLabelId = label.data.id;
             }
         });
 
@@ -275,7 +271,7 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const labels = await res.json();
                 expect(Array.isArray(labels)).toBe(true);
@@ -325,7 +321,7 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const labels = await res.json();
                 expect(Array.isArray(labels)).toBe(true);
@@ -343,7 +339,7 @@ describe('Label API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const labels = await res.json();
                 expect(Array.isArray(labels)).toBe(true);
@@ -376,7 +372,7 @@ describe('Label API Endpoints', () => {
 
             if (res.status === 201) {
                 const label = await res.json();
-                userALabelId = label.id;
+                userALabelId = label.data.id;
             }
         });
 
@@ -469,7 +465,7 @@ describe('Label API Endpoints', () => {
 
             if (parentRes.status === 201) {
                 const parent = await parentRes.json();
-                parentLabelId = parent.id;
+                parentLabelId = parent.data.id;
 
                 // Create child label
                 const childData = {
@@ -486,7 +482,7 @@ describe('Label API Endpoints', () => {
 
                 if (childRes.status === 201) {
                     const child = await childRes.json();
-                    childLabelId = child.id;
+                    childLabelId = child.data.id;
 
                     // Create grandchild label
                     const grandchildData = {
@@ -503,7 +499,7 @@ describe('Label API Endpoints', () => {
 
                     if (grandchildRes.status === 201) {
                         const grandchild = await grandchildRes.json();
-                        grandchildLabelId = grandchild.id;
+                        grandchildLabelId = grandchild.data.id;
                     }
                 }
             }
