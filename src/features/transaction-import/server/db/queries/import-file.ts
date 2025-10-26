@@ -4,7 +4,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const transactionImportFileQueries = createFeatureQueries
+export const transactionImportFileQueries = createFeatureQueries('transaction-import-file')
     .registerSchema(transactionImportFileSchemas)
     /**
      * Get many transaction import files

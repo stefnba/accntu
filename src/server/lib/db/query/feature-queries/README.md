@@ -1,6 +1,6 @@
 # Feature Queries
 
-The **Feature Queries** layer provides feature-level query orchestration. It bridges your feature schemas with low-level table operations, handling user authentication, filters, and pagination.
+The **Feature Queries** layer provides query orchestration for our feature-based project. It bridges our feature schemas with standard and custom table operations and simplifies input type safety.
 
 ## Purpose
 
@@ -18,10 +18,10 @@ Use Feature Queries when registering core CRUD queries for a feature table.
 ```typescript
 import { tagTable } from '@/features/tag/server/db/tables';
 import { tagSchemas } from '@/features/tag/schemas';
-import { featureQueryFactory } from '@/server/lib/db';
+import { createFeatureQueries } from '@/server/lib/db';
 
 // Register core queries (create, getById, getMany, updateById, removeById)
-export const tagQueries = featureQueryFactory
+export const tagQueries = createFeatureQueries('tag')
     .registerSchema(tagSchemas)
     .registerCoreQueries(tagTable, {
         // Which fields identify a single record
@@ -42,9 +42,7 @@ export const tagQueries = featureQueryFactory
         queryConfig: {
             getMany: {
                 // Custom filters for getMany operation
-                filters: (filters, f) => [
-                    f.ilike('name', filters?.search),
-                ],
+                filters: (filters, f) => [f.ilike('name', filters?.search)],
             },
         },
     });
@@ -66,7 +64,7 @@ const tags = await tagQueries.queries.getMany({
 
 ```typescript
 // You call:
-tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' })
+tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' });
 
 // Feature Queries Layer:
 // 1. Extracts userId from input
@@ -74,7 +72,7 @@ tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' })
 // 3. Calls Table Operations: tableOps.createRecord({ data: {...} })
 
 // You call:
-tagQueries.queries.getById({ ids: { id: 'tag-1' }, userId: 'user-123' })
+tagQueries.queries.getById({ ids: { id: 'tag-1' }, userId: 'user-123' });
 
 // Feature Queries Layer:
 // 1. Extracts userId as an identifier
@@ -84,7 +82,7 @@ tagQueries.queries.getById({ ids: { id: 'tag-1' }, userId: 'user-123' })
 
 ## Relationship to Table Operations
 
-```
+```text
 Feature Queries (Feature-Level)
     ↓
     - Handles userId extraction/merging
@@ -98,14 +96,11 @@ Table Operations (Generic Database Operations)
     - Executes database operations
 ```
 
-**Key Difference**: Feature Queries know about your **feature** (users, filters, schemas). Table Operations only know about **tables** (columns, rows, SQL).
-
 ## Architecture Classes
 
 - **`FeatureQueryBuilder`**: Main class for building feature queries
-- **`featureQueryFactory`**: Factory function for easy instantiation
+- **`createFeatureQueries`**: Factory function for easy instantiation with optional feature name parameter
 
 ## See Also
 
 - **Table Operations**: [../table-operations/README.md](../table-operations/README.md) - Low-level database operations
-- **Feature Architecture**: [@/src/features/CLAUDE.md](../../../../features/CLAUDE.md) - How to use in features

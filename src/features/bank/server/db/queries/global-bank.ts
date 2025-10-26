@@ -3,7 +3,7 @@ import { globalBank } from '@/features/bank/server/db/tables';
 
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
-export const globalBankQueries = createFeatureQueries
+export const globalBankQueries = createFeatureQueries('global-bank')
     .registerSchema(globalBankSchemas)
     .registerCoreQueries(globalBank, {
         idFields: ['id'],

@@ -2,7 +2,7 @@ import { participantSchemas } from '@/features/participant/schemas';
 import { participant } from '@/features/participant/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
-export const participantQueries = createFeatureQueries
+export const participantQueries = createFeatureQueries('participant')
     .registerSchema(participantSchemas)
     .registerCoreQueries(participant, {
         idFields: ['id'],

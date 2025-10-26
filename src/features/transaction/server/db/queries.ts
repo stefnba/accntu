@@ -7,7 +7,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 
-export const transactionQueries = createFeatureQueries
+export const transactionQueries = createFeatureQueries('transaction')
     .registerSchema(transactionSchemas)
     /**
      * Get many transactions with filters and relations

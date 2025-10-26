@@ -5,7 +5,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const connectedBankQueries = createFeatureQueries
+export const connectedBankQueries = createFeatureQueries('connected-bank')
     .registerSchema(connectedBankSchemas)
     .registerCoreQueries(connectedBank, {
         idFields: ['id'],

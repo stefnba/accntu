@@ -11,7 +11,7 @@ import {
 import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
-export const transactionBudgetQueries = createFeatureQueries
+export const transactionBudgetQueries = createFeatureQueries('transaction-budget')
     .registerSchema(transactionBudgetSchemas)
     /**
      * Get all transaction budgets for a user
@@ -182,7 +182,7 @@ export const transactionBudgetQueries = createFeatureQueries
         },
     });
 
-export const transactionBudgetToParticipantQueries = createFeatureQueries
+export const transactionBudgetToParticipantQueries = createFeatureQueries('transaction-budget-to-participant')
     .registerSchema(transactionBudgetToParticipantSchemas)
     /**
      * Get all participants for a transaction budget

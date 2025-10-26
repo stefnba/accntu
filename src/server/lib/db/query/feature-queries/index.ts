@@ -1,22 +1,19 @@
 /**
  * Feature Queries - Feature-level query orchestration.
  *
- * This module provides the FeatureQueryBuilder and factory singleton for building
+ * This module provides the FeatureQueryBuilder and factory for building
  * feature-specific database queries with user authentication, filters, and pagination.
  *
  * @example
  * ```typescript
- * import { featureQueryFactory } from '@/server/lib/db/query/feature-queries';
+ * import { createFeatureQueries } from '@/server/lib/db/query/feature-queries';
  *
- * export const tagQueries = featureQueryFactory
+ * export const tagQueries = createFeatureQueries('tag')
  *   .registerSchema(tagSchemas)
  *   .registerCoreQueries(tagTable, { userIdField: 'userId', idFields: ['id'] });
  * ```
  */
 
 export { FeatureQueryBuilder } from './core';
-export { featureQueryFactory } from './factory';
+export { createFeatureQueries } from './factory';
 export type { InferFeatureType, QueryFn, TCoreQueries } from './types';
-
-// Legacy export for backwards compatibility (deprecated)
-export { featureQueryFactory as createFeatureQueries } from './factory';

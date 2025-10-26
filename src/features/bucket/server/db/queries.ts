@@ -2,7 +2,7 @@ import { bucketSchemas } from '@/features/bucket/schemas';
 import { bucket } from '@/features/bucket/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
-export const bucketQueries = createFeatureQueries
+export const bucketQueries = createFeatureQueries('bucket')
     .registerSchema(bucketSchemas)
     .registerCoreQueries(bucket, {
         idFields: ['id'],

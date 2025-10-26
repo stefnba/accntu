@@ -14,9 +14,11 @@ class FeatureQueryFactory<
     >,
 > {
     schemas: TSchemas;
+    name?: string;
 
-    constructor({ schemas }: { schemas: TSchemas }) {
+    constructor({ schemas, name }: { schemas: TSchemas; name?: string }) {
         this.schemas = schemas;
+        this.name = name;
     }
 
     /**
@@ -29,6 +31,7 @@ class FeatureQueryFactory<
                 ...this.schemas,
                 ...schemas,
             },
+            name: this.name,
         });
     }
 
@@ -328,16 +331,18 @@ class FeatureQueryFactory<
 }
 
 /**
- * Factory singleton for building feature-level database queries.
+ * Creates a new feature query factory instance for building type-safe database queries.
  *
  * This factory provides a fluent interface for:
  * 1. Registering feature schemas for type inference
  * 2. Registering core CRUD queries (create, getById, getMany, updateById, removeById)
  * 3. Adding custom queries specific to your feature
  *
+ * @param name - Optional name for the feature (useful for debugging and logging)
+ *
  * @example
  * ```typescript
- * export const tagQueries = featureQueryFactory
+ * export const tagQueries = createFeatureQueries('tag')
  *   .registerSchema(tagSchemas)
  *   .registerCoreQueries(tagTable, {
  *     userIdField: 'userId',
@@ -346,6 +351,8 @@ class FeatureQueryFactory<
  *   });
  * ```
  */
-export const featureQueryFactory = new FeatureQueryFactory({
-    schemas: {},
-});
+export const createFeatureQueries = (name?: string) =>
+    new FeatureQueryFactory({
+        schemas: {},
+        name,
+    });

@@ -4,7 +4,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { eq } from 'drizzle-orm';
 
-export const tagQueries = createFeatureQueries.registerSchema(tagSchemas).registerCoreQueries(tag, {
+export const tagQueries = createFeatureQueries('tag').registerSchema(tagSchemas).registerCoreQueries(tag, {
     idFields: ['id'],
     defaultIdFilters: {
         isActive: true,
@@ -18,7 +18,7 @@ export const tagQueries = createFeatureQueries.registerSchema(tagSchemas).regist
     },
 });
 
-export const tagToTransactionQueries = createFeatureQueries
+export const tagToTransactionQueries = createFeatureQueries('tag-to-transaction')
     .registerSchema(tagToTransactionSchemas)
     /**
      * Assign tags to a transaction

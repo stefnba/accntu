@@ -3,7 +3,7 @@ import { label } from '@/features/label/server/db/tables';
 import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
-export const labelQueries = createFeatureQueries
+export const labelQueries = createFeatureQueries('label')
     .registerSchema(labelSchemas)
     .registerCoreQueries(label, {
         idFields: ['id'],

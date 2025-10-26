@@ -4,7 +4,7 @@ import { db } from '@/server/db';
 import { createFeatureQueries } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const userQueries = createFeatureQueries
+export const userQueries = createFeatureQueries('user')
     .registerSchema(userSchemas)
     /**
      * Update user settings by ID

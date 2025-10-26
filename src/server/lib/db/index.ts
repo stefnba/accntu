@@ -1,7 +1,6 @@
 export {
     createFeatureQueries,
     dbQueryFnHandler,
-    featureQueryFactory,
     withDbQuery,
     type InferFeatureType,
 } from './query';
