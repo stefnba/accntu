@@ -10,6 +10,12 @@ export const { schemas: bucketSchemas } = createFeatureSchemas
         isActive: true,
         id: true,
         userId: true,
+        totalTransactions: true,
+        openTransactions: true,
+        settledTransactions: true,
+        totalAmount: true,
+        openAmount: true,
+        settledAmount: true,
     })
     .transform((base) =>
         base.extend({

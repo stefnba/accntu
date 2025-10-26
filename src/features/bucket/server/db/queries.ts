@@ -7,6 +7,7 @@ export const bucketQueries = createFeatureQueries('bucket')
     .registerCoreQueries(bucket, {
         idFields: ['id'],
         userIdField: 'userId',
+        allowedUpsertColumns: ['title', 'type', 'status'],
         defaultIdFilters: {
             isActive: true,
         },

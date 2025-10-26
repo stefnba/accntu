@@ -7,6 +7,7 @@ export const participantQueries = createFeatureQueries('participant')
     .registerCoreQueries(participant, {
         idFields: ['id'],
         userIdField: 'userId',
+        allowedUpsertColumns: ['name', 'email'],
         defaultIdFilters: {
             isActive: true,
         },
