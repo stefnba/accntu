@@ -7,6 +7,7 @@ import {
     GetTableColumnKeys,
     TBooleanFilter,
     TOnConflict,
+    TStandardTableOperation,
     TTableColumns,
     TValidTableForFrom,
 } from '@/server/lib/db/query/table-operations/types';
@@ -63,7 +64,11 @@ import type {
  * ```
  */
 export class TableOperationsBuilder<T extends Table> {
-    constructor(public table: T) {}
+    private readonly tableName: string;
+
+    constructor(public table: T) {
+        this.tableName = getTableName(this.table);
+    }
 
     // ================================
     // Helpers
@@ -133,6 +138,15 @@ export class TableOperationsBuilder<T extends Table> {
      */
     private getTableName() {
         return getTableName(this.table);
+    }
+
+    /**
+     * Get the operation description
+     * @param operation - The operation to get the description for
+     * @returns The operation description
+     */
+    private getOperationDescription(operation: TStandardTableOperation) {
+        return `Standard table operation: '${operation}' for table '${this.tableName}'`;
     }
 
     /**
@@ -269,11 +283,14 @@ export class TableOperationsBuilder<T extends Table> {
     // ================================
 
     /**
-     * Get the record from the table
-     * @param identifiers - The identifiers of the record
-     * @param columns - The columns of the record
+     * Get first record from the table matching the given identifiers.
      *
-     * @returns The record from the table or null if not found
+     * This method uses Drizzle's `.limit(1)` for optimal performance when you only need
+     * a single record. For multiple records, use `getManyRecords` instead.
+     *
+     * @param identifiers - The identifier filters to match the record
+     * @param columns - Optional columns to return (defaults to all columns)
+     * @returns The first matching record or null if not found
      *
      * @example
      * ```typescript
@@ -290,15 +307,30 @@ export class TableOperationsBuilder<T extends Table> {
         identifiers: Array<TBooleanFilter<T>>;
         columns?: Cols;
     }) {
-        // Normal getManyRecords with pageSize 1 (which limits the result to 1 record)
-        const records = await this.getManyRecords({
-            identifiers,
-            columns,
-            pagination: { page: 1, pageSize: 1 },
-        });
+        if (!isTable(this.table)) {
+            throw new Error('Model is not a table');
+        }
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not found
-        return records[0] ?? null;
+        const filterConditions = this.buildIdentifierFilters(identifiers);
+        const selectedColumns = this.buildSelectColumns(columns);
+
+        // Type assertion is safe here: we know table is a regular table (validated by isTable check)
+        // and not a data-modifying subquery that would trigger Drizzle's TableLikeHasEmptySelection constraint
+        const table = this.table as TValidTableForFrom<T>;
+
+        return withDbQuery({
+            queryFn: async () => {
+                const [record] = await db
+                    .select(selectedColumns)
+                    .from(table)
+                    .where(and(...filterConditions))
+                    .limit(1);
+
+                return record ?? null;
+            },
+            operation: this.getOperationDescription('getFirstRecord'),
+            table: this.tableName,
+        });
     }
 
     /**
@@ -343,12 +375,11 @@ export class TableOperationsBuilder<T extends Table> {
             throw new Error('Model is not a table');
         }
 
-        // Type assertion is safe here: we know _model is a regular table (validated by isTable check)
+        // Type assertion is safe here: we know table is a regular table (validated by isTable check)
         // and not a data-modifying subquery that would trigger Drizzle's TableLikeHasEmptySelection constraint
-        let query = db
-            .select(this.buildSelectColumns(columns))
-            .from(this.table as TValidTableForFrom<T>)
-            .$dynamic();
+        const table = this.table as TValidTableForFrom<T>;
+
+        let query = db.select(this.buildSelectColumns(columns)).from(table).$dynamic();
 
         // filters
         const idFilters = this.buildIdentifierFilters(identifiers);
@@ -367,7 +398,11 @@ export class TableOperationsBuilder<T extends Table> {
             });
         }
 
-        return await query;
+        return withDbQuery({
+            queryFn: async () => await query,
+            operation: this.getOperationDescription('getManyRecords'),
+            table: this.tableName,
+        });
     }
 
     // ================================
@@ -391,14 +426,21 @@ export class TableOperationsBuilder<T extends Table> {
         returnColumns?: Cols;
     }) {
         const filterConditions = this.buildIdentifierFilters(identifiers);
-        const updatedRecord = await db
-            .update(this.table)
-            .set(data)
-            .where(and(...filterConditions))
-            .returning(this.buildSelectColumns(returnColumns));
+        const columns = this.buildSelectColumns(returnColumns);
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not found
-        return updatedRecord[0] ?? null;
+        return withDbQuery({
+            queryFn: async () => {
+                const updatedRecord = await db
+                    .update(this.table)
+                    .set(data)
+                    .where(and(...filterConditions))
+                    .returning(columns);
+
+                return updatedRecord[0] ?? null;
+            },
+            operation: this.getOperationDescription('updateRecord'),
+            table: this.tableName,
+        });
     }
 
     /**
@@ -418,11 +460,19 @@ export class TableOperationsBuilder<T extends Table> {
         returnColumns?: Cols;
     }) {
         const filterConditions = this.buildIdentifierFilters(identifiers);
-        return db
-            .update(this.table)
-            .set(data)
-            .where(and(...filterConditions))
-            .returning(this.buildSelectColumns(returnColumns));
+        const columns = this.buildSelectColumns(returnColumns);
+
+        return withDbQuery({
+            queryFn: async () => {
+                return await db
+                    .update(this.table)
+                    .set(data)
+                    .where(and(...filterConditions))
+                    .returning(columns);
+            },
+            operation: this.getOperationDescription('updateManyRecords'),
+            table: this.tableName,
+        });
     }
 
     // ================================
@@ -461,7 +511,8 @@ export class TableOperationsBuilder<T extends Table> {
 
                 return newRecord[0];
             },
-            operation: 'create record for table ' + this.getTableName(),
+            operation: this.getOperationDescription('createRecord'),
+            table: this.tableName,
         });
 
         // return queryFnHandler({
@@ -545,7 +596,11 @@ export class TableOperationsBuilder<T extends Table> {
         let query = db.insert(this.table).values(localData).$dynamic();
         query = this.buildOnConflict(query, onConflict);
 
-        return await query.returning(columns);
+        return withDbQuery({
+            queryFn: async () => await query.returning(columns),
+            operation: this.getOperationDescription('createManyRecords'),
+            table: this.tableName,
+        });
     }
 
     // ================================
@@ -589,14 +644,19 @@ export class TableOperationsBuilder<T extends Table> {
         const filterConditions = this.buildIdentifierFilters(identifiers);
         const columns = this.buildSelectColumns(returnColumns);
 
-        const deactivatedRecord = await db
-            .update(this.table)
-            .set({ isActive: false })
-            .where(and(...filterConditions))
-            .returning(columns);
+        return withDbQuery({
+            queryFn: async () => {
+                const deactivatedRecord = await db
+                    .update(this.table)
+                    .set({ isActive: false })
+                    .where(and(...filterConditions))
+                    .returning(columns);
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not created
-        return deactivatedRecord[0] ?? null;
+                return deactivatedRecord[0] ?? null;
+            },
+            operation: this.getOperationDescription('deactivateRecord'),
+            table: this.tableName,
+        });
     }
 
     /**
@@ -615,14 +675,19 @@ export class TableOperationsBuilder<T extends Table> {
         const filterConditions = this.buildIdentifierFilters(identifiers);
         const columns = this.buildSelectColumns(returnColumns);
 
-        const activatedRecord = await db
-            .update(this.table)
-            .set({ isActive: true })
-            .where(and(...filterConditions))
-            .returning(columns);
+        return withDbQuery({
+            queryFn: async () => {
+                const activatedRecord = await db
+                    .update(this.table)
+                    .set({ isActive: true })
+                    .where(and(...filterConditions))
+                    .returning(columns);
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not created
-        return activatedRecord[0] ?? null;
+                return activatedRecord[0] ?? null;
+            },
+            operation: this.getOperationDescription('activateRecord'),
+            table: this.tableName,
+        });
     }
 
     /**
@@ -641,12 +706,17 @@ export class TableOperationsBuilder<T extends Table> {
         const filterConditions = this.buildIdentifierFilters(identifiers);
         const columns = this.buildSelectColumns(returnColumns);
 
-        const deletedRecord = await db
-            .delete(this.table)
-            .where(and(...filterConditions))
-            .returning(columns);
+        return withDbQuery({
+            queryFn: async () => {
+                const deletedRecord = await db
+                    .delete(this.table)
+                    .where(and(...filterConditions))
+                    .returning(columns);
 
-        // The query layer returns object or null. The service layer will handle the error if the record is not created
-        return deletedRecord[0] ?? null;
+                return deletedRecord[0] ?? null;
+            },
+            operation: this.getOperationDescription('deleteRecord'),
+            table: this.tableName,
+        });
     }
 }

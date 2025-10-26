@@ -8,7 +8,7 @@ This layer acts as a further abstraction for building SQL queries using the Driz
 
 - **Build SQL queries** (INSERT, SELECT, UPDATE, DELETE)
 - **Handle conflict resolution** (upsert, ignore duplicates)
-- **Execute database operations** with error handling
+- **Execute database operations** with error handling using [`withDbQuery`](../handler/README.md) handler.
 - **Return typed results** based on selected columns
 
 ## When to Use
@@ -164,7 +164,7 @@ INSERT INTO tag (name, user_id) VALUES ('Work', 'user-123')
 
 - `createRecord()` - Insert single record
 - `createManyRecords()` - Insert multiple records
-- `getFirstRecord()` - Get single record by identifiers
+- `getFirstRecord()` - Get single record by identifiers (optimized with `.limit(1)`)
 - `getManyRecords()` - Get multiple records with filters/pagination
 - `updateRecord()` - Update single record
 - `updateManyRecords()` - Update multiple records
@@ -172,6 +172,8 @@ INSERT INTO tag (name, user_id) VALUES ('Work', 'user-123')
 - `activateRecord()` - Set isActive = true
 - `deactivateRecord()` - Set isActive = false
 - `deleteRecord()` - Hard delete (bypass soft delete)
+
+**All methods include automatic error handling via `withDbQuery` with descriptive operation names for debugging.**
 
 ## Architecture Classes
 

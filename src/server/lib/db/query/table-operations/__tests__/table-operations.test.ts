@@ -703,4 +703,335 @@ describe('TableOperationsBuilder', () => {
             expect(result?.id).toBe(created.id);
         });
     });
+
+    describe('Error Handling', () => {
+        describe('Create Operations Error Handling', () => {
+            it('should throw proper error for unique constraint violation', async () => {
+                const uniqueName = 'unique-error-test-' + Date.now();
+                const data = {
+                    id: createId(),
+                    userId: testUser.id,
+                    name: uniqueName,
+                    color: '#111111',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isActive: true,
+                    transactionCount: 0,
+                };
+
+                await tableOps.createRecord({ data });
+
+                try {
+                    await tableOps.createRecord({
+                        data: {
+                            ...data,
+                            id: createId(),
+                        },
+                    });
+                    fail('Should have thrown error for unique constraint violation');
+                } catch (error) {
+                    expect(error).toBeDefined();
+                    expect(error instanceof Error).toBe(true);
+                    const errorMessage = (error as Error).message;
+                    expect(errorMessage).toBeTruthy();
+                }
+            });
+
+            it('should throw error for createMany with duplicate data', async () => {
+                const uniqueName = 'bulk-unique-error-' + Date.now();
+
+                const duplicateData = [
+                    {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: uniqueName,
+                        color: '#111111',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                    {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: uniqueName,
+                        color: '#222222',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                ];
+
+                try {
+                    await tableOps.createManyRecords({
+                        data: duplicateData,
+                        onConflict: 'fail',
+                    });
+                    fail('Should have thrown error for duplicate constraint');
+                } catch (error) {
+                    expect(error).toBeDefined();
+                    expect(error instanceof Error).toBe(true);
+                }
+            });
+
+            it('should throw error for invalid data types', async () => {
+                try {
+                    await tableOps.createRecord({
+                        data: {
+                            id: createId(),
+                            userId: testUser.id,
+                            name: 'invalid-type-test',
+                            color: '#111111',
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            isActive: true,
+                            transactionCount: 'invalid' as unknown as number,
+                        },
+                    });
+                    fail('Should have thrown error for invalid data type');
+                } catch (error) {
+                    expect(error).toBeDefined();
+                    expect(error instanceof Error).toBe(true);
+                }
+            });
+        });
+
+        describe('Get Operations - Graceful Handling', () => {
+            it('should not throw error for getFirstRecord with empty identifiers', async () => {
+                const result = await tableOps.getFirstRecord({
+                    identifiers: [],
+                });
+
+                expect(result).toBeDefined();
+            });
+
+            it('should not throw error for getManyRecords with invalid pagination', async () => {
+                const result = await tableOps.getManyRecords({
+                    identifiers: [{ field: 'userId', value: testUser.id }],
+                    pagination: { page: -1, pageSize: 0 },
+                });
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should return null (not throw) for getFirstRecord with non-matching identifiers', async () => {
+                const result = await tableOps.getFirstRecord({
+                    identifiers: [
+                        { field: 'id', value: 'definitely-does-not-exist' },
+                        { field: 'userId', value: 'also-does-not-exist' },
+                    ],
+                });
+
+                expect(result).toBeNull();
+            });
+
+            it('should return empty array (not throw) for getManyRecords with non-matching identifiers', async () => {
+                const result = await tableOps.getManyRecords({
+                    identifiers: [
+                        { field: 'id', value: 'definitely-does-not-exist-' + Date.now() },
+                    ],
+                });
+
+                expect(Array.isArray(result)).toBe(true);
+                expect(result).toHaveLength(0);
+            });
+        });
+
+        describe('Update Operations Error Handling', () => {
+            it('should throw error for updateRecord with constraint violation', async () => {
+                const name1 = 'update-constraint-1-' + Date.now();
+                const name2 = 'update-constraint-2-' + Date.now();
+
+                const record1 = await tableOps.createRecord({
+                    data: {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: name1,
+                        color: '#111111',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                });
+
+                await tableOps.createRecord({
+                    data: {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: name2,
+                        color: '#222222',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                });
+
+                try {
+                    await tableOps.updateRecord({
+                        identifiers: [{ field: 'id', value: record1.id }],
+                        data: { name: name2 },
+                    });
+                    fail('Should have thrown error for unique constraint violation');
+                } catch (error) {
+                    expect(error).toBeDefined();
+                    expect(error instanceof Error).toBe(true);
+                }
+            });
+
+            it('should return null (not throw) when updating non-existent record', async () => {
+                const result = await tableOps.updateRecord({
+                    identifiers: [{ field: 'id', value: 'non-existent-' + Date.now() }],
+                    data: { color: '#FFFFFF' },
+                });
+
+                expect(result).toBeNull();
+            });
+
+            it('should return empty array (not throw) for updateMany with no matches', async () => {
+                const result = await tableOps.updateManyRecords({
+                    identifiers: [
+                        { field: 'userId', value: 'user-does-not-exist' },
+                        { field: 'name', value: 'also-does-not-exist' },
+                    ],
+                    data: { color: '#000000' },
+                });
+
+                expect(result).toHaveLength(0);
+            });
+        });
+
+        describe('Delete Operations - Graceful Handling', () => {
+            it('should return null (not throw) for deactivate of non-existent record', async () => {
+                const result = await tableOps.deactivateRecord({
+                    identifiers: [{ field: 'id', value: 'does-not-exist' }],
+                });
+
+                expect(result).toBeNull();
+            });
+
+            it('should return null (not throw) for activate of non-existent record', async () => {
+                const result = await tableOps.activateRecord({
+                    identifiers: [{ field: 'id', value: 'does-not-exist' }],
+                });
+
+                expect(result).toBeNull();
+            });
+
+            it('should return null (not throw) for delete of non-existent record', async () => {
+                const result = await tableOps.deleteRecord({
+                    identifiers: [{ field: 'id', value: 'does-not-exist' }],
+                });
+
+                expect(result).toBeNull();
+            });
+
+            it('should not throw on multiple deactivate attempts', async () => {
+                const created = await tableOps.createRecord({
+                    data: {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: 'double-deactivate-' + Date.now(),
+                        color: '#AAAAAA',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                });
+
+                const first = await tableOps.deactivateRecord({
+                    identifiers: [{ field: 'id', value: created.id }],
+                });
+
+                expect(first?.isActive).toBe(false);
+
+                const second = await tableOps.deactivateRecord({
+                    identifiers: [{ field: 'id', value: created.id }],
+                });
+
+                expect(second?.isActive).toBe(false);
+            });
+
+            it('should return null (not throw) for delete after already deleted', async () => {
+                const created = await tableOps.createRecord({
+                    data: {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: 'double-delete-' + Date.now(),
+                        color: '#BBBBBB',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                });
+
+                await tableOps.deleteRecord({
+                    identifiers: [{ field: 'id', value: created.id }],
+                });
+
+                const secondDelete = await tableOps.deleteRecord({
+                    identifiers: [{ field: 'id', value: created.id }],
+                });
+
+                expect(secondDelete).toBeNull();
+            });
+        });
+
+        describe('Edge Cases', () => {
+            it('should not throw on empty identifiers array in update', async () => {
+                const result = await tableOps.updateRecord({
+                    identifiers: [],
+                    data: { color: '#FFFFFF' },
+                });
+
+                expect(result).toBeDefined();
+            });
+
+            it('should throw descriptive error for empty data in createMany', async () => {
+                try {
+                    await tableOps.createManyRecords({
+                        data: [],
+                    });
+                    fail('Should have thrown error for empty data array');
+                } catch (error) {
+                    expect(error).toBeDefined();
+                    expect(error instanceof Error).toBe(true);
+                    expect((error as Error).message).toContain('values()');
+                }
+            });
+
+            it('should not throw on very large pagination values', async () => {
+                const result = await tableOps.getManyRecords({
+                    identifiers: [{ field: 'userId', value: testUser.id }],
+                    pagination: { page: 999999, pageSize: 1000 },
+                });
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should not throw on special characters in string fields', async () => {
+                const specialName = "test-name-with-'quotes'-and-\"escapes\"";
+                const created = await tableOps.createRecord({
+                    data: {
+                        id: createId(),
+                        userId: testUser.id,
+                        name: specialName,
+                        color: '#CCCCCC',
+                        description: 'Special: !@#$%^&*()_+-=[]{}|;:,.<>?',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        isActive: true,
+                        transactionCount: 0,
+                    },
+                });
+
+                expect(created.name).toBe(specialName);
+                expect(created.description).toContain('Special:');
+            });
+        });
+    });
 });

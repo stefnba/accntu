@@ -2,6 +2,21 @@ import { DrizzleTypeError, GetColumnData, Table } from 'drizzle-orm';
 import { TableLikeHasEmptySelection } from 'drizzle-orm/pg-core';
 
 /**
+ * The standard table operation types the TableOperationsBuilder supports
+ */
+export type TStandardTableOperation =
+    | 'createRecord'
+    | 'createManyRecords'
+    | 'getFirstRecord'
+    | 'getManyRecords'
+    | 'updateRecord'
+    | 'updateManyRecords'
+    | 'removeRecord'
+    | 'deactivateRecord'
+    | 'activateRecord'
+    | 'deleteRecord';
+
+/**
  * Filter type for the CrudQueryBuilder.
  * Ensures that the field is a valid column in the table and the value is a valid type for the column.
  */
