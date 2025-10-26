@@ -267,18 +267,13 @@ export const GlobalBankManager = () => {
                                         )}
                                     </div>
 
-                                    {bank.integrationTypes && bank.integrationTypes.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                            {bank.integrationTypes.map((type: string) => (
-                                                <Badge
-                                                    key={type}
-                                                    variant="outline"
-                                                    className="text-xs border-blue-200 text-blue-700"
-                                                >
-                                                    {type.toUpperCase()}
-                                                </Badge>
-                                            ))}
-                                        </div>
+                                    {bank.integrationTypes && (
+                                        <Badge
+                                            variant="outline"
+                                            className="text-xs border-blue-200 text-blue-700"
+                                        >
+                                            {bank.integrationTypes.toUpperCase()}
+                                        </Badge>
                                     )}
                                 </div>
                             </CardContent>

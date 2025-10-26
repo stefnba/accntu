@@ -120,13 +120,13 @@ export const GlobalBankAccountList = ({ bankId, onAdd }: GlobalBankAccountListPr
                                             {getAccountTypeIcon(account.type)}
                                             {getAccountTypeLabel(account.type)}
                                         </Badge>
-                                        {account.csvColumns && (
+                                        {account.transformConfig && (
                                             <Badge
                                                 variant="outline"
                                                 className="flex items-center gap-1 border-green-200 text-green-700"
                                             >
                                                 <FileText className="h-3 w-3" />
-                                                CSV Config
+                                                Transform Config
                                             </Badge>
                                         )}
                                         <Badge
@@ -134,10 +134,10 @@ export const GlobalBankAccountList = ({ bankId, onAdd }: GlobalBankAccountListPr
                                             className="flex items-center gap-1 border-blue-200 text-blue-700"
                                         >
                                             <Database className="h-3 w-3" />
-                                            {account.csvColumns
-                                                ? Object.keys(account.csvColumns).length
+                                            {account.transformConfig?.idColumns
+                                                ? account.transformConfig.idColumns.length
                                                 : 0}{' '}
-                                            columns
+                                            ID columns
                                         </Badge>
                                     </div>
                                     {account.description && (
