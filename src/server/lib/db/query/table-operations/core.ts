@@ -272,8 +272,16 @@ export class TableOperationsBuilder<T extends Table> {
      * Get the record from the table
      * @param identifiers - The identifiers of the record
      * @param columns - The columns of the record
-     * @param throwOnNotFound - Whether to throw an error if the record is not found
-     * @returns The record from the table
+     *
+     * @returns The record from the table or null if not found
+     *
+     * @example
+     * ```typescript
+     * const record = await tableOps.getFirstRecord({
+     *     identifiers: [{ field: 'id', value: '123' }],
+     *     columns: ['id', 'name'],
+     * });
+     * ```
      */
     async getFirstRecord<Cols extends Array<TTableColumns<T>>>({
         identifiers,
@@ -281,9 +289,8 @@ export class TableOperationsBuilder<T extends Table> {
     }: {
         identifiers: Array<TBooleanFilter<T>>;
         columns?: Cols;
-        throwOnNotFound?: boolean;
     }) {
-        // Normal getManyRecords with pageSize 1
+        // Normal getManyRecords with pageSize 1 (which limits the result to 1 record)
         const records = await this.getManyRecords({
             identifiers,
             columns,
@@ -301,6 +308,19 @@ export class TableOperationsBuilder<T extends Table> {
      * @param orderBy - The order by of the records
      * @param filters - The filters of the records
      * @param pagination - The pagination of the records
+     *
+     * @returns The records from the table
+     *
+     * @example
+     * ```typescript
+     * const records = await tableOps.getManyRecords({
+     *     identifiers: [{ field: 'id', value: '123' }],
+     *     columns: ['id', 'name'],
+     *     orderBy: { createdAt: 'desc' },
+     *     filters: [eq(tag.name, 'Work')],
+     *     pagination: { page: 1, pageSize: 10 },
+     * });
+     * ```
      */
     async getManyRecords<Cols extends Array<TTableColumns<T>>>({
         identifiers,
