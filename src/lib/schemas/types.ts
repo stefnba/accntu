@@ -250,14 +250,7 @@ export type InferQuerySchemas<T extends Record<string, TOperationSchemaObject>> 
  * @template TType - The type of schema to build
  * @returns The schema
  */
-export type BuildSchemaFromTable<
+export type InferZodSchemaFromDrizzleTable<
     TTable extends Table,
     TType extends 'insert' | 'select' | 'update' = 'insert',
 > = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
-
-/**
- * Infer the columns of a Drizzle table
- * @template TTable - The source Drizzle table
- * @returns The columns of the Drizzle table
- */
-export type InferTableColumns<TTable extends Table> = readonly (keyof TTable['_']['columns'])[];
