@@ -269,7 +269,13 @@ export class FeatureQueryBuilder<
      *   .addQuery('customQuery', ...)
      * ```
      */
-    standardQueries<Config extends TStandardQueryConfig<TTable>>(config: Config) {
+    standardQueries<
+        const TAllowAllColumns extends boolean = false,
+        Config extends TStandardQueryConfig<TTable, TAllowAllColumns> = TStandardQueryConfig<
+            TTable,
+            TAllowAllColumns
+        >,
+    >(config: { allowAllColumns?: TAllowAllColumns } & Config) {
         return new StandardQueryBuilder<TTable, Config, Q, S>({
             table: this.table,
             baseQueries: this.queries,

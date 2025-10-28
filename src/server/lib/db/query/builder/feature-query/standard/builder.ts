@@ -59,7 +59,7 @@ import { Table } from 'drizzle-orm';
 
 export class StandardQueryBuilder<
     TTable extends Table,
-    Config extends TStandardQueryConfig<TTable>,
+    Config extends TStandardQueryConfig<TTable, boolean>,
     BaseQueries extends Record<string, QueryFn>,
     BaseSchemas extends Record<string, TOperationSchemaObject>,
     StandardQueries extends Record<string, QueryFn> = Record<string, never>,

@@ -97,7 +97,7 @@ type TIdFilters<TTable extends Table> = {
  */
 export type ResolveDefaultAllowedColumns<
     TTable extends Table,
-    Config extends TStandardQueryConfig<TTable>,
+    Config extends TStandardQueryConfig<TTable, boolean>,
 > = Config['defaults'] extends { allowedUpsertColumns: infer A }
     ? A extends ReadonlyArray<GetTableInsertKeys<TTable>>
         ? A
@@ -126,7 +126,7 @@ export type ResolveDefaultAllowedColumns<
  */
 export type ResolveDefaultReturnColumns<
     TTable extends Table,
-    Config extends TStandardQueryConfig<TTable>,
+    Config extends TStandardQueryConfig<TTable, boolean>,
 > = Config['defaults'] extends { returnColumns: infer R }
     ? R extends Array<GetTableColumnKeys<TTable>>
         ? R
@@ -157,7 +157,7 @@ export type ResolveDefaultReturnColumns<
  */
 export type TStandardQueryConfigDefaults<
     TTable extends Table,
-    OnlyAllowCustomFields extends boolean = true,
+    TAllowAllColumns extends boolean = false,
 > = {
     /**
      * Default filters applied to ALL queries (e.g., soft delete, tenant isolation).
@@ -204,9 +204,7 @@ export type TStandardQueryConfigDefaults<
      * ```
      */
     allowedUpsertColumns?: ReadonlyArray<
-        OnlyAllowCustomFields extends true
-            ? GetCustomInsertKeys<TTable>
-            : GetTableInsertKeys<TTable>
+        TAllowAllColumns extends false ? GetCustomInsertKeys<TTable> : GetTableInsertKeys<TTable>
     >;
 };
 
@@ -226,7 +224,7 @@ export type TStandardQueryConfigDefaults<
  * })
  * ```
  */
-export type TStandardQueryConfig<TTable extends Table> = {
+export type TStandardQueryConfig<TTable extends Table, TAllowAllColumns extends boolean = false> = {
     /**
      * Array of column names that uniquely identify a record.
      *
@@ -274,7 +272,7 @@ export type TStandardQueryConfig<TTable extends Table> = {
      * }
      * ```
      */
-    defaults?: TStandardQueryConfigDefaults<TTable>;
+    defaults?: TStandardQueryConfigDefaults<TTable, TAllowAllColumns>;
 };
 
 // ========================================
