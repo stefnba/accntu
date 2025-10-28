@@ -160,6 +160,22 @@ FeatureQueryBuilder<{}, TSchemas, TTable>
 FeatureQueryBuilder<{ create: ..., getById: ..., custom: QueryFn<...> }, TSchemas, TTable>
 ```
 
+### Type Safety & Utilities
+
+The builder leverages shared utility types from `table-operations/types.ts` for consistency:
+
+- **`GetTableColumnKeys<T>`** - Column name union (replaces `keyof T['_']['columns']`)
+- **`GetTableColumnDefinitions<T>`** - Full column definitions (replaces `T['_']['columns']`)
+- **`TBooleanFilter<T>`** - Type-safe filter objects
+- **`TOnConflict<T>`** - Conflict resolution strategies
+
+**Benefits:**
+
+- ✅ Consistency across all query builders
+- ✅ Single source of truth for type definitions
+- ✅ Easier maintenance and refactoring
+- ✅ Better IntelliSense with `Prettify<T>` utility
+
 ## Usage Guide
 
 ### Basic Example
@@ -177,10 +193,10 @@ export const userQueries = createFeatureQueries(userTable)
         defaults: {
             idFilters: { isActive: true },
             returnColumns: ['id', 'name', 'email'],
+            allowedUpsertColumns: ['name', 'email', 'role'],
         },
     })
     .create({
-        allowedColumns: ['name', 'email', 'role'],
         returnColumns: ['id', 'name', 'email', 'createdAt'],
     })
     .getById({
@@ -234,7 +250,9 @@ const fetchedUser = await userQueries.queries.getById({
       deletedAt: null
     },
     // Default columns to return (can be overridden per query)
-    returnColumns: ['id', 'name', 'email']
+    returnColumns: ['id', 'name', 'email'],
+    // Default columns allowed for create/upsert (can be overridden per query)
+    allowedUpsertColumns: ['name', 'email', 'role']
   }
 })
 ```
@@ -244,14 +262,18 @@ const fetchedUser = await userQueries.queries.getById({
 ```typescript
 // Create
 .create({
-  allowedColumns: ['name', 'email'],  // Whitelist for security
-  returnColumns: ['id', 'name', 'createdAt'],  // What to return
-  onConflict: 'ignore' | 'update' | {...}  // Conflict handling
+  allowedColumns: ['name', 'email'],  // Optional: Whitelist for security (uses defaults if not specified)
+  returnColumns: ['id', 'name', 'createdAt'],  // Optional: What to return (uses defaults if not specified)
+  onConflict: 'ignore' | 'update' | {...}  // Optional: Conflict handling
 })
+
+// Or rely entirely on defaults
+.create()  // Uses config.defaults.allowedUpsertColumns and returnColumns
 
 // GetById
 .getById({
-  returnColumns: ['id', 'name', 'email']  // What to return
+  returnColumns: ['id', 'name', 'email'],  // Optional: What to return (uses defaults if not specified)
+  idFilters: { isActive: true }  // Optional: Override default idFilters for this query
 })
 
 // Future: GetMany, UpdateById, RemoveById, CreateMany
@@ -535,9 +557,15 @@ returnColumns: ['id', 'name', 'email', 'createdAt'];
       deletedAt: null  // Soft delete support
     },
     // Default columns to return (can be overridden per query)
-    returnColumns: ['id', 'name', 'email', 'createdAt']
+    returnColumns: ['id', 'name', 'email', 'createdAt'],
+    // Default columns allowed for create/upsert (can be overridden per query)
+    allowedUpsertColumns: ['name', 'email', 'role', 'status']
   }
 })
+
+// Then you can create records without repeating the allowed columns
+.create({ onConflict: 'update' })  // Uses defaults
+.create({ allowedColumns: ['name'] })  // Override for specific case
 ```
 
 ### 5. Leverage TableOps for Custom Queries

@@ -9,9 +9,13 @@ export { createFeatureQueries } from './factory';
 export { StandardQueryBuilder } from './standard/builder';
 
 export type {
+    GetCustomColumnKeys,
+    GetCustomInsertKeys,
+    ResolveDefaultAllowedColumns,
+    ResolveDefaultReturnColumns,
     TCreateQueryOptions,
     TGetByIdQueryOptions,
     TStandardQueryConfig,
-    TStandardQueryConfigDefaults
+    TStandardQueryConfigDefaults,
+    TUpdateByIdQueryOptions,
 } from './standard/types';
-
