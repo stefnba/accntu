@@ -10,10 +10,11 @@ const b = createFeatureQueries(tag)
         defaults: {
             idFilters: { isActive: true },
             returnColumns: ['id', 'name', 'color', 'isActive', 'userId'],
+            allowedUpsertColumns: ['name', 'color', 'description'],
         },
     })
     .create({
-        allowedColumns: ['name', 'color'],
+        // allowedColumns: ['name', 'color'],
         // returnColumns: ['id', 'name', 'color', 'createdAt'],
     })
     .getById({
@@ -32,6 +33,7 @@ const aa = await b.queries.create({
     data: {
         name: 'test1111adddflkasdf',
         color: '#111111',
+        description: 'dddd',
     },
     userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
 });
