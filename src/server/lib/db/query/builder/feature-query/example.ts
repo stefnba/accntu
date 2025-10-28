@@ -7,11 +7,14 @@ const b = createFeatureQueries(tag)
     .standardQueries({
         idColumns: ['id'],
         userIdColumn: 'userId',
-        defaultIdFilters: { isActive: true },
+        defaults: {
+            idFilters: { isActive: true },
+            returnColumns: ['id', 'name', 'color', 'isActive', 'userId'],
+        },
     })
     .create({
         allowedColumns: ['name', 'color'],
-        returnColumns: ['id', 'name', 'color', 'createdAt'],
+        // returnColumns: ['id', 'name', 'color', 'createdAt'],
     })
     .getById({
         returnColumns: ['id', 'name', 'color', 'userId'],
@@ -27,15 +30,15 @@ const b = createFeatureQueries(tag)
 
 const aa = await b.queries.create({
     data: {
-        name: 'test',
+        name: 'test1111adddflkasdf',
         color: '#111111',
     },
-    userId: '123',
+    userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
 });
 
 const fetchedTag = await b.queries.getById({
     ids: { id: aa.id },
-    userId: '123',
+    userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
 });
 
 const bb = await b.queries.removeById({

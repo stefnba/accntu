@@ -52,7 +52,10 @@ The Feature Query Builder provides a modern, fluent interface for constructing d
 .standardQueries({
   idColumns: ['id'],
   userIdColumn: 'userId',
-  defaultIdFilters: { isActive: true }
+  defaults: {
+    idFilters: { isActive: true },
+    returnColumns: ['id', 'name', 'email']
+  }
 })
   .create({
     allowedColumns: ['name', 'email'],
@@ -112,13 +115,13 @@ Custom queries still use `dbQueryFnHandler` because they're user-provided functi
 
 **New Approach**:
 
-- Global config (idColumns, userIdColumn, defaultIdFilters)
+- Global config (idColumns, userIdColumn, defaults)
 - Per-query config (allowedColumns, returnColumns, onConflict)
-- Clear separation of concerns
+- Clear separation of concerns with default values support
 
 ## Architecture
 
-```
+```text
 FeatureQueryBuilder (Main Builder)
 ├── registerSchema() - Add operation schemas
 ├── registerTable() - Set/change table
@@ -162,20 +165,19 @@ FeatureQueryBuilder<{ create: ..., getById: ..., custom: QueryFn<...> }, TSchema
 ### Basic Example
 
 ```typescript
-import { createFeatureQueryBuilder } from '@/server/lib/db/query/builder';
+import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
 import { userTable } from '@/server/db/tables';
 import { userSchemas } from '@/features/user/schemas';
 
-export const userQueries = new FeatureQueryBuilder({
-    queries: {},
-    schemas: {},
-    table: userTable,
-})
+export const userQueries = createFeatureQueries(userTable)
     .registerSchema(userSchemas)
     .standardQueries({
         idColumns: ['id'],
         userIdColumn: 'userId',
-        defaultIdFilters: { isActive: true },
+        defaults: {
+            idFilters: { isActive: true },
+            returnColumns: ['id', 'name', 'email'],
+        },
     })
     .create({
         allowedColumns: ['name', 'email', 'role'],
@@ -224,10 +226,15 @@ const fetchedUser = await userQueries.queries.getById({
   // Optional: Column for user-based filtering (multi-tenancy)
   userIdColumn: 'userId',
 
-  // Optional: Default filters applied to ALL queries
-  defaultIdFilters: {
-    isActive: true,
-    deletedAt: null
+  // Optional: Default configuration for all queries
+  defaults: {
+    // Default filters applied to ALL queries
+    idFilters: {
+      isActive: true,
+      deletedAt: null
+    },
+    // Default columns to return (can be overridden per query)
+    returnColumns: ['id', 'name', 'email']
   }
 })
 ```
@@ -309,7 +316,10 @@ export const tagQueries = createFeatureQueries('tag')
         returnColumns: ['id', 'name', 'color'],
         allowedUpsertColumns: ['name', 'color'],
         softDelete: true,
-        defaultIdFilters: { isActive: true },
+        defaults: {
+            idFilters: { isActive: true },
+            returnColumns: ['id', 'name', 'color'],
+        },
         queryConfig: {
             getMany: {
                 filters: (filters, f) => [f.ilike('name', filters?.search)],
@@ -333,16 +343,15 @@ export const tagQueries = createFeatureQueries('tag')
 
 ```typescript
 // Progressive, flexible configuration
-export const tagQueries = new FeatureQueryBuilder({
-  queries: {},
-  schemas: {},
-  table: tagTable
-})
+export const tagQueries = createFeatureQueries(tagTable)
   .registerSchema(tagSchemas)
   .standardQueries({
     idColumns: ['id'],
     userIdColumn: 'userId',
-    defaultIdFilters: { isActive: true }
+    defaults: {
+      idFilters: { isActive: true },
+      returnColumns: ['id', 'name', 'color']
+    }
   })
     .create({
       allowedColumns: ['name', 'color'],
@@ -408,13 +417,9 @@ export const tagQueries = createFeatureQueries('tag')
 **After**:
 
 ```typescript
-import { FeatureQueryBuilder } from '@/server/lib/db/query/builder/feature-query';
+import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
 
-export const tagQueries = new FeatureQueryBuilder({
-    queries: {},
-    schemas: {},
-    table: tagTable,
-})
+export const tagQueries = createFeatureQueries(tagTable)
     .registerSchema(tagSchemas)
     .standardQueries({
         idColumns: ['id'],
@@ -516,16 +521,21 @@ returnColumns: ['id', 'name', 'email', 'createdAt'];
 })
 ```
 
-### 4. Use Default Filters Wisely
+### 4. Use Default Configuration Wisely
 
 ```typescript
-// ✅ Apply filters that should ALWAYS be enforced
+// ✅ Apply defaults that should be used across all standard queries
 .standardQueries({
   idColumns: ['id'],
   userIdColumn: 'userId',
-  defaultIdFilters: {
-    isActive: true,  // Never fetch inactive records
-    deletedAt: null  // Soft delete support
+  defaults: {
+    // Filters that should ALWAYS be enforced
+    idFilters: {
+      isActive: true,  // Never fetch inactive records
+      deletedAt: null  // Soft delete support
+    },
+    // Default columns to return (can be overridden per query)
+    returnColumns: ['id', 'name', 'email', 'createdAt']
   }
 })
 ```

@@ -60,6 +60,9 @@ export class FeatureQueryBuilder<
     /** Shared table operations builder for all queries */
     tableOperations: TableOperationsBuilder<TTable>;
 
+    /** Name for the feature query builder (derived from table name or explicit config, useful for debugging and logging) */
+    name: string;
+
     /**
      * Creates a new FeatureQueryBuilder instance.
      *
@@ -68,11 +71,23 @@ export class FeatureQueryBuilder<
      * @param queries - Initial query functions (usually empty {})
      * @param schemas - Initial schemas (usually empty {})
      * @param table - Drizzle table definition
+     * @param name - Name for debugging/logging (derived from table name or explicit config)
      */
-    constructor({ queries, schemas, table }: { queries: Q; schemas: S; table: TTable }) {
+    constructor({
+        queries,
+        schemas,
+        table,
+        name,
+    }: {
+        queries: Q;
+        schemas: S;
+        table: TTable;
+        name: string;
+    }) {
         this.queries = queries;
         this.schemas = schemas;
         this.table = table;
+        this.name = name;
         // Create shared TableOperationsBuilder instance for all queries
         this.tableOperations = new TableOperationsBuilder(table);
     }
@@ -97,6 +112,7 @@ export class FeatureQueryBuilder<
             queries: this.queries,
             schemas: this.schemas,
             table: table,
+            name: this.name,
         });
     }
 
@@ -123,6 +139,7 @@ export class FeatureQueryBuilder<
             queries: this.queries,
             schemas: { ...this.schemas, ...schemas },
             table: this.table,
+            name: this.name,
         });
     }
 
@@ -187,6 +204,7 @@ export class FeatureQueryBuilder<
             queries: { ...this.queries, [key]: wrappedQueryFn },
             schemas: this.schemas,
             table: this.table,
+            name: this.name,
         });
     }
 
@@ -217,6 +235,7 @@ export class FeatureQueryBuilder<
             queries: queries,
             schemas: this.schemas,
             table: this.table,
+            name: this.name,
         });
     }
 
@@ -239,7 +258,10 @@ export class FeatureQueryBuilder<
      *   .standardQueries({
      *     idColumns: ['id'],
      *     userIdColumn: 'userId',
-     *     defaultIdFilters: { isActive: true }
+     *     defaults: {
+     *       idFilters: { isActive: true },
+     *       returnColumns: ['id', 'name', 'email']
+     *     }
      *   })
      *     .create({ allowedColumns: ['name'], returnColumns: ['id', 'name'] })
      *     .getById({ returnColumns: ['id', 'name', 'email'] })
@@ -248,12 +270,13 @@ export class FeatureQueryBuilder<
      * ```
      */
     standardQueries<Config extends TStandardQueryConfig<TTable>>(config: Config) {
-        return new StandardQueryBuilder<TTable, Config, Q, S>(
-            this.table,
-            this.queries,
-            this.schemas,
+        return new StandardQueryBuilder<TTable, Config, Q, S>({
+            table: this.table,
+            baseQueries: this.queries,
+            baseSchemas: this.schemas,
             config,
-            this.tableOperations
-        );
+            tableOps: this.tableOperations,
+            name: this.name,
+        });
     }
 }
