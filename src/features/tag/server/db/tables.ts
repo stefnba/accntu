@@ -1,5 +1,5 @@
 import { transaction } from '@/features/transaction/server/db/tables';
-import { createCommonTableFields } from '@/server/lib/db/table';
+import { createSystemTableFields } from '@/server/lib/db/table';
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-core';
 
@@ -9,7 +9,7 @@ import { integer, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-
 export const tag = pgTable(
     'tag',
     {
-        ...createCommonTableFields(),
+        ...createSystemTableFields(),
         name: text().notNull(),
         description: text(),
         color: text().notNull().default('#6366f1'), // Hex color for UI
@@ -27,7 +27,7 @@ export const tagToTransaction = pgTable(
         tagId: text()
             .notNull()
             .references(() => tag.id, { onDelete: 'cascade' }),
-        ...createCommonTableFields({ include: ['createdAt', 'updatedAt'] }),
+        ...createSystemTableFields({ include: ['createdAt', 'updatedAt'] }),
     },
     (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })]
 );

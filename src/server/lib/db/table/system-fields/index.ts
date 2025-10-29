@@ -3,10 +3,11 @@ import { InferSelectModel } from 'drizzle-orm';
 import { PgTable, pgTable } from 'drizzle-orm/pg-core';
 
 // ================================
-// System fields
+// Core
 // ================================
 
-export { createSystemTableFields, SYSTEM_FIELDS } from '@/server/lib/db/table/system-fields';
+export { SYSTEM_FIELDS } from '@/server/lib/db/table/system-fields/config';
+export { createSystemTableFields } from '@/server/lib/db/table/system-fields/core';
 
 // ================================
 // Types

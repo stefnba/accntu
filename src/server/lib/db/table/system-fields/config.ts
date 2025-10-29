@@ -3,16 +3,26 @@ import { createId } from '@paralleldrive/cuid2';
 import { boolean, text, timestamp } from 'drizzle-orm/pg-core';
 
 /**
- * Common table fields for our tables
+ * System table fields for our tables. These are system-managed fields included in all tables.
+ * These fields are:
+ * - id: The primary key of the table
+ * - userId: The user id of the table
+ * - isActive: The active status of the table (soft delete)
+ * - createdAt: The creation timestamp of the table
+ * - updatedAt: The last update timestamp of the table
+ *
+ * **Important:** These fields are typically system-managed and should NOT be included in
+ * `allowedUpsertColumns` for create/update operations.
+ *
  * @example
  * ```typescript
  * const tag = pgTable('tag', {
- *     ...createCommonTableFields(),
+ *     ...createSystemTableFields(),
  *     name: text().notNull(),
  * });
  * ```
  */
-export const COMMON_FIELDS = {
+export const SYSTEM_FIELDS = {
     id: text()
         .primaryKey()
         .notNull()

@@ -4,4 +4,4 @@ export {
     withDbQuery,
     type InferFeatureType,
 } from './query';
-export { createCommonTableFields } from './table';
+export { createSystemTableFields } from './table';
