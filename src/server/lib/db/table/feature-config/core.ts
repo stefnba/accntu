@@ -107,6 +107,11 @@ export class FeatureTableConfig<
         return this.selectSchema;
     }
 
+    /** Get the Drizzle table definition */
+    getTable(): TTable {
+        return this.table;
+    }
+
     /**
      * Get an array of column names that will be returned in queries.
      *
