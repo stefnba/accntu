@@ -1,12 +1,8 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { pickFields } from '@/server/lib/db/table/table-config';
 import { Table } from 'drizzle-orm';
-import {
-    BuildSchema,
-    createInsertSchema,
-    createSelectSchema,
-    createUpdateSchema,
-} from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
 
 export class FeatureTableConfigBuilder<
@@ -59,21 +55,15 @@ export class FeatureTableConfigBuilder<
      * Returns the raw Zod shape for the specified table operation type.
      * Overloads allow correct return type per usage.
      */
+    private getRawSchemaFromTable(type: 'insert'): InferTableSchema<TTable, 'insert'>['shape'];
+    private getRawSchemaFromTable(type: 'select'): InferTableSchema<TTable, 'select'>['shape'];
+    private getRawSchemaFromTable(type: 'update'): InferTableSchema<TTable, 'update'>['shape'];
     private getRawSchemaFromTable(
-        type: 'insert'
-    ): BuildSchema<'insert', TTable['_']['columns'], undefined, undefined>['shape'];
-    private getRawSchemaFromTable(
-        type: 'select'
-    ): BuildSchema<'select', TTable['_']['columns'], undefined, undefined>['shape'];
-    private getRawSchemaFromTable(
-        type: 'update'
-    ): BuildSchema<'update', TTable['_']['columns'], undefined, undefined>['shape'];
-    private getRawSchemaFromTable(
-        type: 'insert' | 'select' | 'update' = 'insert' as const
+        type: 'insert' | 'select' | 'update' = 'insert'
     ):
-        | BuildSchema<'insert', TTable['_']['columns'], undefined, undefined>['shape']
-        | BuildSchema<'select', TTable['_']['columns'], undefined, undefined>['shape']
-        | BuildSchema<'update', TTable['_']['columns'], undefined, undefined>['shape'] {
+        | InferTableSchema<TTable, 'insert'>['shape']
+        | InferTableSchema<TTable, 'select'>['shape']
+        | InferTableSchema<TTable, 'update'>['shape'] {
         if (type === 'insert') {
             return createInsertSchema(this.table).shape;
         }
@@ -87,14 +77,9 @@ export class FeatureTableConfigBuilder<
         return createInsertSchema(this.table).shape;
     }
 
-    setIds<
-        const TFields extends (keyof BuildSchema<
-            'insert',
-            TTable['_']['columns'],
-            undefined,
-            undefined
-        >['shape'])[],
-    >(fields: TFields) {
+    setIds<const TFields extends (keyof InferTableSchema<TTable, 'insert'>['shape'])[]>(
+        fields: TFields
+    ) {
         const idSchema = pickFields(
             z.object(this.getRawSchemaFromTable('insert')),
             fields
@@ -118,14 +103,9 @@ export class FeatureTableConfigBuilder<
         });
     }
 
-    setUserId<
-        const TFields extends keyof BuildSchema<
-            'insert',
-            TTable['_']['columns'],
-            undefined,
-            undefined
-        >['shape'],
-    >(field: TFields) {
+    setUserId<const TFields extends keyof InferTableSchema<TTable, 'insert'>['shape']>(
+        field: TFields
+    ) {
         const userIdSchema = pickFields(z.object(this.getRawSchemaFromTable('insert')), [
             field,
         ]).required().shape;
@@ -212,12 +192,7 @@ export class FeatureTableConfigBuilder<
     }
 
     defineReturnColumns<
-        const TFields extends (keyof BuildSchema<
-            'select',
-            TTable['_']['columns'],
-            undefined,
-            undefined
-        >['shape'])[],
+        const TFields extends (keyof InferTableSchema<TTable, 'select'>['shape'])[],
     >(fields: TFields) {
         const selectSchema = pickFields(
             z.object(this.getRawSchemaFromTable('select')),
