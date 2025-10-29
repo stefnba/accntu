@@ -1,3 +1,3 @@
 export { FeatureTableConfig, FeatureTableConfigBuilder } from './core';
-export type { InferSchemaIfExists } from './core';
 export { createFeatureTableConfig } from './factory';
+export type { InferSchemaIfExists } from './types';

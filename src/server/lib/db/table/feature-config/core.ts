@@ -1,25 +1,10 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { typedKeys } from '@/lib/utils';
 import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { pickFields } from '@/server/lib/db/table/table-config';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
-
-/**
- * Helper type to infer schema value, returning undefined if schema is empty.
- * Use this for consumer-facing type inference to get clean undefined semantics.
- *
- * @example
- * ```typescript
- * const config = createFeatureTableConfig(table).build();
- * type IdType = InferSchemaIfExists<typeof config.idSchema>; // undefined
- *
- * const config2 = createFeatureTableConfig(table).setIds(['id']).build();
- * type IdType2 = InferSchemaIfExists<typeof config2.idSchema>; // { id: string }
- * ```
- */
-export type InferSchemaIfExists<T> =
-    T extends z.ZodObject<infer S> ? (keyof S extends never ? undefined : z.infer<T>) : undefined;
 
 /**
  * Final immutable configuration class for a feature table.
@@ -46,8 +31,6 @@ export class FeatureTableConfig<
     readonly selectSchema: z.ZodObject<TSelectSchema>;
 
     /**
-     * Constructor with zero type assertions!
-     * All properties and parameters use concrete ZodObject types.
      */
     constructor(config: {
         table: TTable;
@@ -65,6 +48,31 @@ export class FeatureTableConfig<
         this.insertSchema = config.insertSchema;
         this.updateSchema = config.updateSchema;
         this.selectSchema = config.selectSchema;
+    }
+
+    getBaseSchema(): z.ZodObject<TBase> {
+        return this.baseSchema;
+    }
+
+    getInsertSchema(): z.ZodObject<TInsertSchema> {
+        return this.insertSchema;
+    }
+
+    getUpdateSchema(): z.ZodObject<TUpdateSchema> {
+        return this.updateSchema;
+    }
+
+    getSelectSchema(): z.ZodObject<TSelectSchema> {
+        return this.selectSchema;
+    }
+
+    /**
+     * Returns an array of keys from the selectSchema Zod object.
+     * This yields all column keys for the table's "select" shape.
+     */
+    getReturnColumns(): Array<keyof z.infer<z.ZodObject<TSelectSchema>>> {
+        // todo: check if this is type safe
+        return typedKeys(this.selectSchema) as Array<keyof z.infer<z.ZodObject<TSelectSchema>>>;
     }
 
     /**
