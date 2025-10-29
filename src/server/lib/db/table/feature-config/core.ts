@@ -8,10 +8,32 @@ import z from 'zod';
 
 /**
  * Final immutable configuration class for a feature table.
- * Contains all schemas and table reference needed for CRUD operations.
  *
- * Uses EmptySchema ({}) instead of undefined for optional schemas,
- * enabling zero-assertion type safety throughout the codebase.
+ * Contains all Zod schemas and table reference needed for type-safe CRUD operations.
+ * Created via FeatureTableConfigBuilder.build() - not instantiated directly.
+ *
+ * **Key Features:**
+ * - All schemas are ZodObject (never undefined) for zero-assertion type safety
+ * - Immutable - all properties are readonly
+ * - Type guards (hasIds, hasUserId) for runtime type narrowing
+ * - Helper methods to access schemas
+ *
+ * @example
+ * ```ts
+ * const config = createFeatureTableConfig(myTable)
+ *   .setIds(['id'])
+ *   .setUserId('userId')
+ *   .build();
+ *
+ * // Access schemas
+ * const insertSchema = config.getInsertSchema();
+ * const columns = config.getReturnColumns(); // ['id', 'name', ...]
+ *
+ * // Type guards
+ * if (config.hasIds()) {
+ *   // idSchema is guaranteed non-empty here
+ * }
+ * ```
  */
 export class FeatureTableConfig<
     TTable extends Table,
@@ -22,15 +44,30 @@ export class FeatureTableConfig<
     TUpdateSchema extends TZodShape = InferTableSchema<TTable, 'update'>['shape'],
     TSelectSchema extends TZodShape = InferTableSchema<TTable, 'select'>['shape'],
 > {
+    /** The Drizzle table definition */
     readonly table: TTable;
+
+    /** Schema for ID fields (empty if not configured via .setIds) */
     readonly idSchema: z.ZodObject<TIdSchema>;
+
+    /** Schema for user ID field (empty if not configured via .setUserId) */
     readonly userIdSchema: z.ZodObject<TUserIdSchema>;
+
+    /** Base schema - all available fields before restrictions */
     readonly baseSchema: z.ZodObject<TBase>;
+
+    /** Schema for insert operations (configurable via .defineUpsertData) */
     readonly insertSchema: z.ZodObject<TInsertSchema>;
+
+    /** Schema for update operations (partial, configurable via .defineUpsertData) */
     readonly updateSchema: z.ZodObject<TUpdateSchema>;
+
+    /** Schema for select operations (configurable via .defineReturnColumns) */
     readonly selectSchema: z.ZodObject<TSelectSchema>;
 
     /**
+     * @internal
+     * Constructor is private - use FeatureTableConfigBuilder.build() instead.
      */
     constructor(config: {
         table: TTable;
@@ -50,33 +87,58 @@ export class FeatureTableConfig<
         this.selectSchema = config.selectSchema;
     }
 
+    /** Get the base Zod schema containing all available fields */
     getBaseSchema(): z.ZodObject<TBase> {
         return this.baseSchema;
     }
 
+    /** Get the Zod schema for insert operations */
     getInsertSchema(): z.ZodObject<TInsertSchema> {
         return this.insertSchema;
     }
 
+    /** Get the Zod schema for update operations (partial) */
     getUpdateSchema(): z.ZodObject<TUpdateSchema> {
         return this.updateSchema;
     }
 
+    /** Get the Zod schema for select operations */
     getSelectSchema(): z.ZodObject<TSelectSchema> {
         return this.selectSchema;
     }
 
     /**
-     * Returns an array of keys from the selectSchema Zod object.
-     * This yields all column keys for the table's "select" shape.
+     * Get an array of column names that will be returned in queries.
+     *
+     * @returns Array of column keys from the select schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(tag)
+     *   .defineReturnColumns(['id', 'name'])
+     *   .build();
+     *
+     * const columns = config.getReturnColumns(); // ['id', 'name']
+     * ```
      */
     getReturnColumns(): Array<keyof z.infer<z.ZodObject<TSelectSchema>>> {
-        // todo: check if this is type safe
-        return typedKeys(this.selectSchema) as Array<keyof z.infer<z.ZodObject<TSelectSchema>>>;
+        return typedKeys(this.selectSchema.shape) as Array<
+            keyof z.infer<z.ZodObject<TSelectSchema>>
+        >;
     }
 
     /**
-     * Type guard to check if this config has ID schema defined (non-empty).
+     * Type guard: Check if ID schema is configured (non-empty).
+     *
+     * After this check, TypeScript knows idSchema contains actual fields.
+     *
+     * @example
+     * ```ts
+     * if (config.hasIds()) {
+     *   // TypeScript knows idSchema is non-empty
+     *   const ids = config.idSchema; // ZodObject with ID fields
+     * }
+     * ```
      */
     hasIds(): this is FeatureTableConfig<
         TTable,
@@ -91,7 +153,17 @@ export class FeatureTableConfig<
     }
 
     /**
-     * Type guard to check if this config has user ID schema defined (non-empty).
+     * Type guard: Check if user ID schema is configured (non-empty).
+     *
+     * After this check, TypeScript knows userIdSchema contains a field.
+     *
+     * @example
+     * ```ts
+     * if (config.hasUserId()) {
+     *   // TypeScript knows userIdSchema is non-empty
+     *   const userId = config.userIdSchema; // ZodObject with userId field
+     * }
+     * ```
      */
     hasUserId(): this is FeatureTableConfig<
         TTable,
@@ -107,8 +179,28 @@ export class FeatureTableConfig<
 }
 
 /**
- * Builder for creating feature table configurations.
- * Uses fluent API to define ID fields, schemas, and column restrictions.
+ * Builder for creating feature table configurations using a fluent API.
+ *
+ * Provides methods to configure:
+ * - ID fields (.setIds)
+ * - User ID field for row-level security (.setUserId)
+ * - Which fields can be inserted/updated (.defineUpsertData)
+ * - Which columns are returned in queries (.defineReturnColumns)
+ *
+ * **Important:** Use the factory function `createFeatureTableConfig(table)` instead
+ * of calling `FeatureTableConfigBuilder.create()` directly.
+ *
+ * @example
+ * ```ts
+ * import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
+ *
+ * const config = createFeatureTableConfig(myTable)
+ *   .setIds(['id'])              // Define primary key field(s)
+ *   .setUserId('userId')         // Define user ID for RLS
+ *   .defineUpsertData(['name', 'description']) // Limit insertable fields
+ *   .defineReturnColumns(['id', 'name'])       // Specify return columns
+ *   .build();                    // Build immutable config
+ * ```
  */
 export class FeatureTableConfigBuilder<
     TTable extends Table,
@@ -130,7 +222,7 @@ export class FeatureTableConfigBuilder<
     /**
      * @internal
      * Private constructor - only called by static create() and builder methods.
-     * Zero type assertions! All types match perfectly.
+     * All assignments are type-safe with zero assertions!
      */
     private constructor(config: {
         table: TTable;
@@ -150,6 +242,16 @@ export class FeatureTableConfigBuilder<
         this.selectSchemaObj = config.selectSchemaObj;
     }
 
+    /**
+     * Create a new builder instance for a Drizzle table.
+     *
+     * @internal Use `createFeatureTableConfig(table)` factory instead.
+     *
+     * Initializes with:
+     * - Empty ID and user ID schemas
+     * - All table fields available for insert/update
+     * - All table columns available for select
+     */
     static create<TTable extends Table>(table: TTable) {
         type TBase = InferTableSchema<TTable, 'insert'>['shape'];
         type TInsertSchema = InferTableSchema<TTable, 'insert'>['shape'];
@@ -175,10 +277,7 @@ export class FeatureTableConfigBuilder<
         });
     }
 
-    /**
-     * Returns the raw Zod shape for the specified table operation type.
-     * Overloads allow correct return type per usage.
-     */
+    /** @internal Helper to get raw Zod shape for insert/select/update operations */
     private getRawSchemaFromTable(type: 'insert'): InferTableSchema<TTable, 'insert'>['shape'];
     private getRawSchemaFromTable(type: 'select'): InferTableSchema<TTable, 'select'>['shape'];
     private getRawSchemaFromTable(type: 'update'): InferTableSchema<TTable, 'update'>['shape'];
@@ -197,13 +296,30 @@ export class FeatureTableConfigBuilder<
         if (type === 'update') {
             return createUpdateSchema(this.table).shape;
         }
-        // Fallback, should never hit, but default to 'insert'
         return createInsertSchema(this.table).shape;
     }
 
     /**
-     * Define which fields are used as IDs for this table.
-     * These fields will be used for query operations like getById.
+     * Define which field(s) are used as primary keys.
+     *
+     * Used for operations like getById, deleteById, etc.
+     * Supports composite keys by passing multiple fields.
+     *
+     * @param fields - Array of column names that form the primary key
+     * @returns New builder instance with ID schema configured
+     *
+     * @example
+     * ```ts
+     * // Single ID field
+     * const config = createFeatureTableConfig(table)
+     *   .setIds(['id'])
+     *   .build();
+     *
+     * // Composite key
+     * const config = createFeatureTableConfig(table)
+     *   .setIds(['tenantId', 'id'])
+     *   .build();
+     * ```
      */
     setIds<const TFields extends (keyof InferTableSchema<TTable, 'select'>['shape'])[]>(
         fields: TFields
@@ -235,8 +351,23 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which field is used as the user ID for row-level security.
-     * This field will be used to filter queries by the authenticated user.
+     * Define which field contains the user ID for row-level security (RLS).
+     *
+     * This field will be automatically used to filter queries so users only
+     * see/modify their own data.
+     *
+     * @param field - Column name containing the user/owner ID
+     * @returns New builder instance with user ID schema configured
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .setUserId('userId')
+     *   .build();
+     *
+     * // Now queries will automatically filter by userId
+     * // e.g., WHERE userId = currentUser.id
+     * ```
      */
     setUserId<const TField extends keyof InferTableSchema<TTable, 'select'>['shape']>(
         field: TField
@@ -267,8 +398,24 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Restrict the base schema to only include specific fields.
-     * This will also update insert and update schemas to use the restricted base.
+     * Define which fields can be inserted/updated (upsert operations).
+     *
+     * Restricts both insert and update operations to only the specified fields.
+     * Also updates the base schema to match. Use this when you want the same
+     * fields for both insert and update.
+     *
+     * @param fields - Array of field names allowed for upsert
+     * @returns New builder instance with restricted schemas
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .defineUpsertData(['name', 'description', 'color'])
+     *   .build();
+     *
+     * // Users can only insert/update name, description, color
+     * // Fields like id, createdAt, etc. are protected
+     * ```
      */
     defineUpsertData<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const baseSchemaObj = pickFields(this.baseSchemaObj, fields);
@@ -293,8 +440,21 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which fields are allowed for insert operations.
-     * This creates a subset of the base schema for insertions.
+     * Define which fields are allowed for insert operations only.
+     *
+     * Use this when insert fields differ from update fields.
+     * For same fields in both, use `.defineUpsertData()` instead.
+     *
+     * @param fields - Array of field names allowed for inserts
+     * @returns New builder instance with restricted insert schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .defineInsertData(['name', 'email', 'role'])
+     *   .defineUpdateData(['name', 'email'])  // role can't be updated
+     *   .build();
+     * ```
      */
     defineInsertData<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const insertSchemaObj = pickFields(this.baseSchemaObj, fields);
@@ -319,8 +479,23 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which fields are allowed for update operations.
-     * This creates a subset of the base schema for updates (automatically partial).
+     * Define which fields are allowed for update operations only.
+     *
+     * The resulting schema is automatically partial (all fields optional).
+     * Use this when update fields differ from insert fields.
+     *
+     * @param fields - Array of field names allowed for updates
+     * @returns New builder instance with restricted update schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .defineInsertData(['name', 'email', 'role'])
+     *   .defineUpdateData(['name', 'email'])  // can't update role
+     *   .build();
+     *
+     * // Update schema will be: { name?: string; email?: string }
+     * ```
      */
     defineUpdateData<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const updateSchemaObj = pickFields(this.baseSchemaObj, fields).partial();
@@ -345,8 +520,23 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which columns should be returned in select operations.
-     * This restricts the output to specific fields from the table.
+     * Define which columns should be returned in query results.
+     *
+     * Restricts select operations to only return the specified columns.
+     * Useful for excluding sensitive fields or optimizing query performance.
+     *
+     * @param fields - Array of column names to include in results
+     * @returns New builder instance with restricted select schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(userTable)
+     *   .defineReturnColumns(['id', 'name', 'email'])
+     *   .build();
+     *
+     * // Query results will only include: { id, name, email }
+     * // password, createdAt, etc. won't be returned
+     * ```
      */
     defineReturnColumns<
         const TFields extends (keyof InferTableSchema<TTable, 'select'>['shape'])[],
@@ -377,7 +567,24 @@ export class FeatureTableConfigBuilder<
 
     /**
      * Build the final immutable configuration object.
-     * Returns a FeatureTableConfig that can be passed to query builders and services.
+     *
+     * Creates a FeatureTableConfig instance with all configured schemas.
+     * This is the final step in the builder chain - returns an immutable config
+     * that can be passed to query builders, services, and other utilities.
+     *
+     * @returns Immutable FeatureTableConfig with all schemas finalized
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .setIds(['id'])
+     *   .setUserId('userId')
+     *   .defineUpsertData(['name', 'description'])
+     *   .build();  // Final step - creates immutable config
+     *
+     * // Now use config with query builders, services, etc.
+     * const query = createFeatureQuery(config);
+     * ```
      */
     build(): FeatureTableConfig<
         TTable,
