@@ -17,12 +17,9 @@ const insert = aaa.insertSchema;
 const update = aaa.updateSchema;
 const select = aaa.selectSchema;
 
-const rawSchema = aaa.rawSchema;
-
 type TIdSchema = typeof ids extends undefined ? undefined : z.infer<typeof ids>;
 type TUserIdSchema = typeof userIds extends undefined ? undefined : z.infer<typeof userIds>;
 type TBaseSchema = typeof base extends undefined ? undefined : z.infer<typeof base>;
-type TRawSchema = z.infer<typeof rawSchema>;
 type TInsertSchema = z.infer<typeof insert>;
 type TUpdateSchema = z.infer<typeof update>;
 type TSelectSchema = z.infer<typeof select>;

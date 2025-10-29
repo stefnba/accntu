@@ -13,14 +13,12 @@ export const createFeatureTableConfig = <TTable extends Table>(table: TTable) =>
         TTable,
         BuildSchema<'insert', TTable['_']['columns'], undefined, undefined>['shape'],
         BuildSchema<'insert', TTable['_']['columns'], undefined, undefined>['shape'],
-        BuildSchema<'insert', TTable['_']['columns'], undefined, undefined>['shape'],
         BuildSchema<'update', TTable['_']['columns'], undefined, undefined>['shape'],
         BuildSchema<'select', TTable['_']['columns'], undefined, undefined>['shape'],
         undefined,
         undefined
     >({
         table,
-        rawSchema: createInsertSchema(table).shape,
         baseSchema: createInsertSchema(table).shape,
         idSchema: z.object({}).shape,
         userIdSchema: z.object({}).shape,
