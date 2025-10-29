@@ -4,7 +4,7 @@ import {
     GetTableInsertKeys,
     TOnConflict,
 } from '@/server/lib/db/query/table-operations/types';
-import { CommonTableFieldKeys } from '@/server/lib/db/table';
+import { SystemTableFieldKeys } from '@/server/lib/db/table';
 import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 
@@ -13,25 +13,25 @@ import { Table } from 'drizzle-orm';
 // ========================================
 
 /**
- * Get only custom columns from a table (excludes system-managed COMMON_FIELDS).
+ * Get only custom columns from a table (excludes system-managed SYSTEM_FIELDS).
  *
  * Filters out: id, userId, isActive, createdAt, updatedAt
  * Use this when you want to restrict upsert operations to only custom columns.
  */
 export type GetCustomColumnKeys<TTable extends Table> = Exclude<
     GetTableColumnKeys<TTable>,
-    CommonTableFieldKeys
+    SystemTableFieldKeys
 >;
 
 /**
- * Get only custom insertable columns from a table (excludes system-managed COMMON_FIELDS).
+ * Get only custom insertable columns from a table (excludes system-managed SYSTEM_FIELDS).
  *
  * Filters out: id, userId, isActive, createdAt, updatedAt
  * Use this for create/update operations when you want to restrict to custom fields only.
  */
 export type GetCustomInsertKeys<TTable extends Table> = Exclude<
     GetTableInsertKeys<TTable>,
-    CommonTableFieldKeys
+    SystemTableFieldKeys
 >;
 
 /**

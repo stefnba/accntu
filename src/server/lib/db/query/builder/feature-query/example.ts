@@ -7,10 +7,12 @@ const b = createFeatureQueries(tag)
     .standardQueries({
         idColumns: ['id'],
         userIdColumn: 'userId',
+        allowAllColumns: true,
         defaults: {
             idFilters: { isActive: true },
             returnColumns: ['id', 'name', 'color', 'isActive', 'userId'],
-            allowedUpsertColumns: ['name', 'color', 'description'],
+            allowedUpsertColumns: ['name', 'color', 'description', 'userId'],
+            // upsertSchema: (baseSchema) => baseSchema.pick({name: true, color: true, description: true}),
         },
     })
     .create({

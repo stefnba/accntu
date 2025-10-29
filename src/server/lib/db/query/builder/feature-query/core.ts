@@ -37,10 +37,14 @@
 
 import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import { StandardQueryBuilder } from '@/server/lib/db/query/builder/feature-query/standard/builder';
-import { TStandardQueryConfig } from '@/server/lib/db/query/builder/feature-query/standard/types';
+import {
+    GetCustomInsertKeys,
+    TStandardQueryConfig,
+    TStandardQueryConfigDefaults,
+} from '@/server/lib/db/query/builder/feature-query/standard/types';
 import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
-import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
+import { GetTableInsertKeys, TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { Table } from 'drizzle-orm';
 
 export class FeatureQueryBuilder<
@@ -271,12 +275,40 @@ export class FeatureQueryBuilder<
      */
     standardQueries<
         const TAllowAllColumns extends boolean = false,
+        TAllowedUpsertColumns extends TAllowAllColumns extends true
+            ? ReadonlyArray<GetTableInsertKeys<TTable>>
+            : ReadonlyArray<GetCustomInsertKeys<TTable>> = TAllowAllColumns extends true
+            ? ReadonlyArray<GetTableInsertKeys<TTable>>
+            : ReadonlyArray<GetCustomInsertKeys<TTable>>,
         Config extends TStandardQueryConfig<TTable, TAllowAllColumns> = TStandardQueryConfig<
             TTable,
             TAllowAllColumns
         >,
-    >(config: { allowAllColumns?: TAllowAllColumns } & Config) {
-        return new StandardQueryBuilder<TTable, Config, Q, S>({
+    >(
+        config: {
+            allowAllColumns?: TAllowAllColumns;
+            defaults?: {
+                allowedUpsertColumns?: TAllowedUpsertColumns;
+            } & Omit<
+                TStandardQueryConfigDefaults<TTable, TAllowAllColumns>,
+                'allowedUpsertColumns'
+            >;
+        } & Omit<Config, 'defaults' | 'allowedUpsertColumns'>
+    ) {
+        return new StandardQueryBuilder<
+            TTable,
+            Omit<Config, 'defaults' | 'allowedUpsertColumns'> & {
+                allowedUpsertColumns?: TAllowedUpsertColumns;
+                defaults?: {
+                    allowedUpsertColumns?: TAllowedUpsertColumns;
+                } & Omit<
+                    TStandardQueryConfigDefaults<TTable, TAllowAllColumns>,
+                    'allowedUpsertColumns'
+                >;
+            },
+            Q,
+            S
+        >({
             table: this.table,
             baseQueries: this.queries,
             baseSchemas: this.schemas,
