@@ -1,2 +1,2 @@
-export type { FeatureTableConfigBuilder } from './core';
+export { FeatureTableConfig, FeatureTableConfigBuilder } from './core';
 export { createFeatureTableConfig } from './factory';
