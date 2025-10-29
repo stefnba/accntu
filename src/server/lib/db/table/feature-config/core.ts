@@ -1,62 +1,66 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { InferTableSchema } from '@/server/lib/db/table/feature-config/types';
+import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { pickFields } from '@/server/lib/db/table/table-config';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
 
 /**
+ * Helper type to infer schema value, returning undefined if schema is empty.
+ * Use this for consumer-facing type inference to get clean undefined semantics.
+ *
+ * @example
+ * ```typescript
+ * const config = createFeatureTableConfig(table).build();
+ * type IdType = InferSchemaIfExists<typeof config.idSchema>; // undefined
+ *
+ * const config2 = createFeatureTableConfig(table).setIds(['id']).build();
+ * type IdType2 = InferSchemaIfExists<typeof config2.idSchema>; // { id: string }
+ * ```
+ */
+export type InferSchemaIfExists<T> =
+    T extends z.ZodObject<infer S> ? (keyof S extends never ? undefined : z.infer<T>) : undefined;
+
+/**
  * Final immutable configuration class for a feature table.
  * Contains all schemas and table reference needed for CRUD operations.
+ *
+ * Uses EmptySchema ({}) instead of undefined for optional schemas,
+ * enabling zero-assertion type safety throughout the codebase.
  */
 export class FeatureTableConfig<
     TTable extends Table,
-    TIdSchema extends TZodShape | undefined,
-    TUserIdSchema extends TZodShape | undefined,
-    TBase extends TZodShape,
-    TInsertSchema extends TZodShape,
-    TUpdateSchema extends TZodShape,
-    TSelectSchema extends TZodShape,
+    TIdSchema extends TZodShape = EmptySchema,
+    TUserIdSchema extends TZodShape = EmptySchema,
+    TBase extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],
+    TInsertSchema extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],
+    TUpdateSchema extends TZodShape = InferTableSchema<TTable, 'update'>['shape'],
+    TSelectSchema extends TZodShape = InferTableSchema<TTable, 'select'>['shape'],
 > {
     readonly table: TTable;
-    readonly idSchema: TIdSchema extends undefined ? undefined : z.ZodObject<TIdSchema & {}>;
-    readonly userIdSchema: TUserIdSchema extends undefined
-        ? undefined
-        : z.ZodObject<TUserIdSchema & {}>;
+    readonly idSchema: z.ZodObject<TIdSchema>;
+    readonly userIdSchema: z.ZodObject<TUserIdSchema>;
     readonly baseSchema: z.ZodObject<TBase>;
     readonly insertSchema: z.ZodObject<TInsertSchema>;
     readonly updateSchema: z.ZodObject<TUpdateSchema>;
     readonly selectSchema: z.ZodObject<TSelectSchema>;
 
     /**
-     * @internal
-     * Constructor accepts simple runtime types (ZodObject | undefined).
-     * The builder ensures correct values are passed based on type parameters.
-     *
-     * Note: Minimal type assertions are needed here due to TypeScript limitation:
-     * - Properties have conditional types for external API precision
-     * - Constructor params use simple types for builder ergonomics
-     * - TypeScript can't verify this is safe without assertion
-     * - Safety is guaranteed by the builder's type-safe flow control
+     * Constructor with zero type assertions!
+     * All properties and parameters use concrete ZodObject types.
      */
     constructor(config: {
         table: TTable;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        idSchema: z.ZodObject<any> | undefined;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        userIdSchema: z.ZodObject<any> | undefined;
+        idSchema: z.ZodObject<TIdSchema>;
+        userIdSchema: z.ZodObject<TUserIdSchema>;
         baseSchema: z.ZodObject<TBase>;
         insertSchema: z.ZodObject<TInsertSchema>;
         updateSchema: z.ZodObject<TUpdateSchema>;
         selectSchema: z.ZodObject<TSelectSchema>;
     }) {
         this.table = config.table;
-        this.idSchema = config.idSchema as TIdSchema extends undefined
-            ? undefined
-            : z.ZodObject<TIdSchema & {}>;
-        this.userIdSchema = config.userIdSchema as TUserIdSchema extends undefined
-            ? undefined
-            : z.ZodObject<TUserIdSchema & {}>;
+        this.idSchema = config.idSchema;
+        this.userIdSchema = config.userIdSchema;
         this.baseSchema = config.baseSchema;
         this.insertSchema = config.insertSchema;
         this.updateSchema = config.updateSchema;
@@ -64,33 +68,33 @@ export class FeatureTableConfig<
     }
 
     /**
-     * Type guard to check if this config has ID schema defined.
+     * Type guard to check if this config has ID schema defined (non-empty).
      */
     hasIds(): this is FeatureTableConfig<
         TTable,
-        Exclude<TIdSchema, undefined>,
+        Exclude<TIdSchema, EmptySchema>,
         TUserIdSchema,
         TBase,
         TInsertSchema,
         TUpdateSchema,
         TSelectSchema
     > {
-        return this.idSchema !== undefined;
+        return Object.keys(this.idSchema.shape).length > 0;
     }
 
     /**
-     * Type guard to check if this config has user ID schema defined.
+     * Type guard to check if this config has user ID schema defined (non-empty).
      */
     hasUserId(): this is FeatureTableConfig<
         TTable,
         TIdSchema,
-        Exclude<TUserIdSchema, undefined>,
+        Exclude<TUserIdSchema, EmptySchema>,
         TBase,
         TInsertSchema,
         TUpdateSchema,
         TSelectSchema
     > {
-        return this.userIdSchema !== undefined;
+        return Object.keys(this.userIdSchema.shape).length > 0;
     }
 }
 
@@ -104,19 +108,12 @@ export class FeatureTableConfigBuilder<
     TInsertSchema extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],
     TUpdateSchema extends TZodShape = InferTableSchema<TTable, 'update'>['shape'],
     TSelectSchema extends TZodShape = InferTableSchema<TTable, 'select'>['shape'],
-    TIdSchema extends TZodShape | undefined = undefined,
-    TUserIdSchema extends TZodShape | undefined = undefined,
+    TIdSchema extends TZodShape = EmptySchema,
+    TUserIdSchema extends TZodShape = EmptySchema,
 > {
     private table: TTable;
-    /**
-     * Internal storage uses simple runtime types (ZodObject | undefined).
-     * Type parameters track schema types for external API type inference.
-     * This separation enables zero-assertion builder methods.
-     */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private idSchemaObj: z.ZodObject<any> | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private userIdSchemaObj: z.ZodObject<any> | undefined;
+    private idSchemaObj: z.ZodObject<TIdSchema>;
+    private userIdSchemaObj: z.ZodObject<TUserIdSchema>;
     private baseSchemaObj: z.ZodObject<TBase>;
     private insertSchemaObj: z.ZodObject<TInsertSchema>;
     private updateSchemaObj: z.ZodObject<TUpdateSchema>;
@@ -125,14 +122,12 @@ export class FeatureTableConfigBuilder<
     /**
      * @internal
      * Private constructor - only called by static create() and builder methods.
-     * All assignments are type-safe - no assertions needed!
+     * Zero type assertions! All types match perfectly.
      */
     private constructor(config: {
         table: TTable;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        idSchemaObj: z.ZodObject<any> | undefined;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        userIdSchemaObj: z.ZodObject<any> | undefined;
+        idSchemaObj: z.ZodObject<TIdSchema>;
+        userIdSchemaObj: z.ZodObject<TUserIdSchema>;
         baseSchemaObj: z.ZodObject<TBase>;
         insertSchemaObj: z.ZodObject<TInsertSchema>;
         updateSchemaObj: z.ZodObject<TUpdateSchema>;
@@ -159,12 +154,12 @@ export class FeatureTableConfigBuilder<
             TInsertSchema,
             TUpdateSchema,
             TSelectSchema,
-            undefined,
-            undefined
+            EmptySchema,
+            EmptySchema
         >({
             table,
-            idSchemaObj: undefined,
-            userIdSchemaObj: undefined,
+            idSchemaObj: z.object({}),
+            userIdSchemaObj: z.object({}),
             baseSchemaObj: z.object(createInsertSchema(table).shape),
             insertSchemaObj: z.object(createInsertSchema(table).shape),
             updateSchemaObj: z.object(createUpdateSchema(table).shape),
@@ -267,7 +262,7 @@ export class FeatureTableConfigBuilder<
      * Restrict the base schema to only include specific fields.
      * This will also update insert and update schemas to use the restricted base.
      */
-    restrictBase<const TFields extends (keyof TBase)[]>(fields: TFields) {
+    defineUpsertData<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const baseSchemaObj = pickFields(this.baseSchemaObj, fields);
 
         return new FeatureTableConfigBuilder<

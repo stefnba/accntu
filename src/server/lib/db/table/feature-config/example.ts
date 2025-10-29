@@ -1,26 +1,34 @@
 import { tag } from '@/server/db/tables';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import z from 'zod';
+import { InferSchemaIfExists, IsEmptySchema } from '@/server/lib/db/table/feature-config/types';
 
-const aaa = createFeatureTableConfig(tag)
-    // .setIds(['id'])
-    .setUserId('userId')
-    .restrictBase(['name', 'description', 'color'])
+const config = createFeatureTableConfig(tag)
+    .setIds(['id'])
+    // .setUserId('userId')
+    .defineUpsertData(['name', 'description', 'color'])
     .defineReturnColumns(['id', 'name', 'description', 'color', 'transactionCount'])
     .build();
 
-const ids = aaa.idSchema;
-const userIds = aaa.userIdSchema;
+// Schemas are always ZodObject (never undefined)
+const idSchema = config.idSchema;
+const userIdSchema = config.userIdSchema;
+const baseSchema = config.baseSchema;
+const insertSchema = config.insertSchema;
+const updateSchema = config.updateSchema;
+const selectSchema = config.selectSchema;
 
-// const base = aaa.baseSchema;
+// Use helper type for clean undefined semantics
+type TIdType = InferSchemaIfExists<typeof idSchema>; // { id: string }
+type TUserIdType = InferSchemaIfExists<typeof userIdSchema>; // undefined
 
-const insert = aaa.insertSchema;
-const update = aaa.updateSchema;
-const select = aaa.selectSchema;
+type TIsEmptySchema = IsEmptySchema<typeof userIdSchema>; // true
 
-type TIdSchema = typeof ids extends undefined ? undefined : z.infer<typeof ids>;
-type TUserIdSchema = typeof userIds extends undefined ? undefined : z.infer<typeof userIds>;
-// type TBaseSchema = typeof base extends undefined ? undefined : z.infer<typeof base>;
-// type TInsertSchema = z.infer<typeof insert>;
-// type TUpdateSchema = z.infer<typeof update>;
-type TSelectSchema = z.infer<typeof select>;
+// When not set, helper returns undefined
+const configNoIds = createFeatureTableConfig(tag).build();
+type TNoIdType = InferSchemaIfExists<typeof configNoIds.idSchema>; // undefined
+
+// Type guards work too
+if (config.hasIds()) {
+    // TypeScript knows idSchema is non-empty here
+    const _ids = config.idSchema;
+}
