@@ -1,7 +1,7 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedKeys } from '@/lib/utils';
+import { pickFields } from '@/lib/utils/zod';
 import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
-import { pickFields } from '@/server/lib/db/table/table-config';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';

@@ -1,4 +1,6 @@
-import type { z, ZodIssue } from 'zod';
+import { TZodShape } from '@/lib/schemas/types';
+import { typedFromEntries } from '@/lib/utils';
+import { core, util, z, ZodIssue, ZodObject } from 'zod';
 
 /**
  * Constructs readable error messages from Zod validation issues
@@ -37,4 +39,38 @@ export function parseZodError(error: z.ZodError, rawData: Record<string, any>): 
         message: issue.message,
         value: getValueFromPath(rawData, issue.path),
     }));
+}
+
+/**
+ * Utility to pick specific fields from a Zod object schema.
+ *
+ * This is a type-safe wrapper around Zod's .pick() method that ensures
+ * proper inference of the picked fields.
+ *
+ * @param schema - The source ZodObject to pick fields from
+ * @param fields - Array of field names to include in the result
+ * @returns New ZodObject containing only the specified fields
+ *
+ * @example
+ * ```ts
+ * const fullSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   email: z.string(),
+ *   password: z.string(),
+ * });
+ *
+ * const publicSchema = pickFields(fullSchema, ['id', 'name', 'email']);
+ * // Result: ZodObject<{ id: string; name: string; email: string }>
+ * ```
+ */
+export function pickFields<TSchema extends TZodShape, TKeys extends Array<keyof TSchema>>(
+    schema: z.ZodObject<TSchema>,
+    fields: TKeys
+): ZodObject<
+    util.Flatten<Pick<TSchema, Extract<keyof TSchema, keyof { [K in TKeys[number]]: true }>>>,
+    core.$strip
+> {
+    const mask: util.Mask<keyof TSchema> = typedFromEntries(fields.map((field) => [field, true]));
+    return schema.pick(mask);
 }
