@@ -1,5 +1,6 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedFromEntries } from '@/lib/utils';
+import { Prettify } from '@/types/utils';
 import { core, util, z, ZodIssue, ZodObject } from 'zod';
 
 /**
@@ -73,4 +74,37 @@ export function pickFields<TSchema extends TZodShape, TKeys extends Array<keyof 
 > {
     const mask: util.Mask<keyof TSchema> = typedFromEntries(fields.map((field) => [field, true]));
     return schema.pick(mask);
+}
+
+/**
+ * Utility to omit specific fields from a Zod object schema.
+ *
+ * This is a type-safe wrapper around Zod's .omit() method that ensures
+ * proper inference of the remaining fields.
+ *
+ * @param schema - The source ZodObject to omit fields from
+ * @param fields - Array of field names to exclude from the result
+ * @returns New ZodObject containing all fields except the specified ones
+ *
+ * @example
+ * ```ts
+ * const fullSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   email: z.string(),
+ *   password: z.string(),
+ * });
+ *
+ * const publicSchema = omitFields(fullSchema, ['password']);
+ * // Result: ZodObject<{ id: string; name: string; email: string }>
+ * ```
+ */
+export function omitFields<TSchema extends TZodShape, TKeys extends Array<keyof TSchema>>(
+    schema: z.ZodObject<TSchema>,
+    fields: TKeys
+): ZodObject<Prettify<Omit<TSchema, Extract<keyof TSchema, TKeys[number]>>>, core.$strip> {
+    const mask: { [K in TKeys[number]]: true } = typedFromEntries(
+        fields.map((field) => [field, true])
+    );
+    return schema.omit(mask);
 }
