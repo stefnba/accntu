@@ -108,3 +108,13 @@ export function omitFields<TSchema extends TZodShape, TKeys extends Array<keyof 
     );
     return schema.omit(mask);
 }
+
+/**
+ * Utility to get the fields of a Zod object schema as an array with type support.
+ *
+ * @param schema - The Zod object schema to get the fields from
+ * @returns An array of the fields of the schema with type support
+ */
+export const getFieldsAsArray = <T extends z.ZodObject>(schema: T): (keyof T['shape'])[] => {
+    return schema.keyof().options;
+};
