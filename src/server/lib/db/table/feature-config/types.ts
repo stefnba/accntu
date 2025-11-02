@@ -93,10 +93,10 @@ export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined :
  */
 export type InferCreateInput<
     TConfig extends {
-        insertSchema: z.ZodObject<TZodShape>;
+        insertDataSchema: z.ZodObject<TZodShape>;
         userIdSchema: z.ZodObject<TZodShape>;
     },
-    TData = z.infer<TConfig['insertSchema']>,
+    TData = z.infer<TConfig['insertDataSchema']>,
     TUserIdSchema = z.infer<TConfig['userIdSchema']>,
 > = Prettify<
     {
@@ -133,13 +133,13 @@ export type InferCreateInput<
  */
 export type InferUpdateInput<
     TConfig extends {
-        updateSchema: z.ZodObject<TZodShape>;
+        updateDataSchema: z.ZodObject<TZodShape>;
         idSchema: z.ZodObject<TZodShape>;
         userIdSchema: z.ZodObject<TZodShape>;
     },
 > = Prettify<
     {
-        data: z.infer<TConfig['updateSchema']>;
+        data: z.infer<TConfig['updateDataSchema']>;
     } & (InferOptionalSchema<TConfig['idSchema']> extends undefined
         ? object
         : { ids: z.infer<TConfig['idSchema']> }) &
@@ -197,7 +197,7 @@ export type InferUserIdInput<
 /**
  * Helper type: Extract the return column names from config.
  *
- * Uses structural typing to only require the selectSchema property.
+ * Uses structural typing to only require the selectReturnSchema property.
  * Returns a union of column names that were defined via .defineReturnColumns()
  *
  * @example
@@ -208,9 +208,9 @@ export type InferUserIdInput<
  */
 export type InferReturnColums<
     TConfig extends {
-        selectSchema: z.ZodObject<TZodShape>;
+        selectReturnSchema: z.ZodObject<TZodShape>;
     },
-> = keyof z.infer<TConfig['selectSchema']>;
+> = keyof z.infer<TConfig['selectReturnSchema']>;
 
 /**
  * Helper type: Infer the table type from a feature table config.
