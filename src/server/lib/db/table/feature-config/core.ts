@@ -35,7 +35,7 @@ import z from 'zod';
  * ```
  */
 export class FeatureTableConfig<
-    TTable extends Table,
+    TTable extends Table = Table,
     TIdSchema extends TZodShape = EmptySchema,
     TUserIdSchema extends TZodShape = EmptySchema,
     TBase extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],

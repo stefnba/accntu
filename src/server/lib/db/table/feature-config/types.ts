@@ -1,8 +1,37 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import z from 'zod';
+
+// ========================================
+// Types
+// ========================================
+
+/**
+ * Sentinel value representing an empty schema.
+ *
+ * Used instead of `undefined` to enable zero-assertion type safety.
+ * `Record<never, never>` ensures `keyof EmptySchema` is `never`, which makes
+ * the `IsEmptySchema` type helper work correctly.
+ */
+export type EmptySchema = Record<never, never>;
+
+/**
+ * Type alias for FeatureTableConfig with any generics.
+ *
+ * Primarily kept for backward compatibility and special cases where you need
+ * to constrain to the full FeatureTableConfig class rather than using structural typing.
+ * Most type helpers use structural constraints instead (e.g., `{ idSchema: z.ZodObject<...> }`)
+ * for better type flexibility and precision.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyFeatureTableConfig = FeatureTableConfig<any, any, any, any, any, any, any>;
+
+// ========================================
+// Infer utils
+// ========================================
 
 /**
  * Infer the Zod schema shape for a Drizzle table operation.
@@ -13,15 +42,6 @@ export type InferTableSchema<
     TTable extends Table,
     TType extends 'insert' | 'select' | 'update' = 'insert',
 > = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
-
-/**
- * Sentinel value representing an empty schema.
- *
- * Used instead of `undefined` to enable zero-assertion type safety.
- * `Record<never, never>` ensures `keyof EmptySchema` is `never`, which makes
- * the `IsEmptySchema` type helper work correctly.
- */
-export type EmptySchema = Record<never, never>;
 
 /**
  * Check if a Zod schema is empty (has no fields).
@@ -55,9 +75,12 @@ export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined :
 /**
  * Helper type: Infer the input shape for create operations.
  *
+ * Uses structural typing to only require the schemas actually needed.
+ * Separates the data object from userId when userIdSchema is configured.
+ *
  * Returns:
  * - `{ data: InsertData }` - Always includes data object with insert fields
- * - `& { userId: string }` - If config has userIdSchema set, adds userId field
+ * - `& { userId: string }` - Added only if config has userIdSchema set
  *
  * @example
  * ```ts
@@ -69,28 +92,31 @@ export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined :
  * ```
  */
 export type InferCreateInput<
-    TConfig extends FeatureTableConfig<
-        Table,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape
-    >,
-> = { data: z.infer<TConfig['insertSchema']> } & (InferOptionalSchema<
-    TConfig['userIdSchema']
-> extends undefined
-    ? object
-    : z.infer<TConfig['userIdSchema']>);
+    TConfig extends {
+        insertSchema: z.ZodObject<TZodShape>;
+        userIdSchema: z.ZodObject<TZodShape>;
+    },
+    TData = z.infer<TConfig['insertSchema']>,
+    TUserIdSchema = z.infer<TConfig['userIdSchema']>,
+> = Prettify<
+    {
+        data: InferOptionalSchema<TConfig['userIdSchema']> extends undefined
+            ? TData
+            : // omit userId field if userIdSchema is configured
+              Prettify<Omit<TData, keyof TUserIdSchema>>;
+    } & (InferOptionalSchema<TConfig['userIdSchema']> extends undefined ? object : TUserIdSchema)
+>;
 
 /**
  * Helper type: Infer the input shape for update operations.
  *
+ * Uses structural typing to only require the schemas actually needed.
+ * Combines data, ids, and userId based on what's configured.
+ *
  * Returns:
  * - `{ data: UpdateData }` - Always includes data object with partial update fields
- * - `& { ids: IdData }` - If config has idSchema set, adds ids object
- * - `& { userId: string }` - If config has userIdSchema set, adds userId field
+ * - `& { ids: IdData }` - Added only if config has idSchema set
+ * - `& { userId: string }` - Added only if config has userIdSchema set
  *
  * @example
  * ```ts
@@ -106,27 +132,72 @@ export type InferCreateInput<
  * ```
  */
 export type InferUpdateInput<
-    TConfig extends FeatureTableConfig<
-        Table,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape
-    >,
-> = {
-    data: z.infer<TConfig['updateSchema']>;
-} & (InferOptionalSchema<TConfig['idSchema']> extends undefined
-    ? object
-    : { ids: z.infer<TConfig['idSchema']> }) &
-    (InferOptionalSchema<TConfig['userIdSchema']> extends undefined
+    TConfig extends {
+        updateSchema: z.ZodObject<TZodShape>;
+        idSchema: z.ZodObject<TZodShape>;
+        userIdSchema: z.ZodObject<TZodShape>;
+    },
+> = Prettify<
+    {
+        data: z.infer<TConfig['updateSchema']>;
+    } & (InferOptionalSchema<TConfig['idSchema']> extends undefined
         ? object
-        : z.infer<TConfig['userIdSchema']>);
+        : { ids: z.infer<TConfig['idSchema']> }) &
+        (InferOptionalSchema<TConfig['userIdSchema']> extends undefined
+            ? object
+            : z.infer<TConfig['userIdSchema']>)
+>;
+
+/**
+ * Helper type: Infer the IDs input shape from config.
+ *
+ * Uses structural typing to only require the idSchema property.
+ * Returns an object with an `ids` property if the config has IDs configured,
+ * or an empty object if no IDs are configured.
+ *
+ * @example
+ * ```ts
+ * type IdsInput = InferIdsInput<typeof config>;
+ * // With IDs: { ids: { id: string } }
+ * // Without IDs: {}
+ * ```
+ */
+export type InferIdsInput<
+    TConfig extends {
+        idSchema: z.ZodObject<TZodShape>;
+    },
+> =
+    Prettify<InferOptionalSchema<TConfig['idSchema']>> extends undefined
+        ? object
+        : { ids: Prettify<z.infer<TConfig['idSchema']>> };
+
+/**
+ * Helper type: Infer the userId input shape from config.
+ *
+ * Uses structural typing to only require the userIdSchema property.
+ * Returns the userId object if configured (e.g., `{ userId: string }`),
+ * or an empty object if no userId is configured.
+ *
+ * @example
+ * ```ts
+ * type UserIdInput = InferUserIdInput<typeof config>;
+ * // With userId: { userId: string }
+ * // Without userId: {}
+ * ```
+ */
+export type InferUserIdInput<
+    TConfig extends {
+        userIdSchema: z.ZodObject<TZodShape>;
+    },
+> =
+    Prettify<InferOptionalSchema<TConfig['userIdSchema']>> extends undefined
+        ? object
+        : Prettify<z.infer<TConfig['userIdSchema']>>;
 
 /**
  * Helper type: Extract the return column names from config.
  *
+ * Uses structural typing to only require the selectSchema property.
  * Returns a union of column names that were defined via .defineReturnColumns()
  *
  * @example
@@ -136,13 +207,25 @@ export type InferUpdateInput<
  * ```
  */
 export type InferReturnColums<
-    TConfig extends FeatureTableConfig<
-        Table,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape
-    >,
+    TConfig extends {
+        selectSchema: z.ZodObject<TZodShape>;
+    },
 > = keyof z.infer<TConfig['selectSchema']>;
+
+/**
+ * Helper type: Infer the table type from a feature table config.
+ *
+ * Uses structural typing to only require the table property.
+ * Returns the underlying Drizzle table type.
+ *
+ * @example
+ * ```ts
+ * type TagTable = InferTableFromConfig<typeof config>;
+ * // Result: PgTableWithColumns<{ ... }>
+ * ```
+ */
+export type InferTableFromConfig<
+    TConfig extends {
+        table: Table;
+    },
+> = TConfig['table'];
