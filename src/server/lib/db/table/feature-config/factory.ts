@@ -22,8 +22,6 @@ import { Table } from 'drizzle-orm';
  *   .defineUpsertData(['name', 'description']) // Limit writable fields
  *   .defineReturnColumns(['id', 'name'])       // Limit returned columns
  *   .build();                          // Build immutable config
- *
- * // Use config with query builders, services, etc.
  * ```
  */
 export const createFeatureTableConfig = <TTable extends Table>(table: TTable) => {

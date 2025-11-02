@@ -1,6 +1,5 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { typedKeys } from '@/lib/utils';
-import { pickFields } from '@/lib/utils/zod';
+import { getFieldsAsArray, pickFields } from '@/lib/utils/zod';
 import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
@@ -112,6 +111,14 @@ export class FeatureTableConfig<
         return this.table;
     }
 
+    getUserIdFieldName(): keyof TUserIdSchema {
+        return getFieldsAsArray(this.userIdSchema)[0];
+    }
+
+    getIdsFieldNames(): (keyof TIdSchema)[] {
+        return getFieldsAsArray(this.idSchema);
+    }
+
     /**
      * Get an array of column names that will be returned in queries.
      *
@@ -126,10 +133,8 @@ export class FeatureTableConfig<
      * const columns = config.getReturnColumns(); // ['id', 'name']
      * ```
      */
-    getReturnColumns(): Array<keyof z.infer<z.ZodObject<TSelectSchema>>> {
-        return typedKeys(this.selectSchema.shape) as Array<
-            keyof z.infer<z.ZodObject<TSelectSchema>>
-        >;
+    getReturnColumns(): (keyof TSelectSchema)[] {
+        return getFieldsAsArray(this.selectSchema);
     }
 
     /**
