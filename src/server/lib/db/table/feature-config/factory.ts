@@ -19,8 +19,8 @@ import { Table } from 'drizzle-orm';
  * const config = createFeatureTableConfig(myTable)
  *   .setIds(['id'])                    // Define primary key
  *   .setUserId('userId')               // Define user ID for RLS
- *   .defineUpsertData(['name', 'description']) // Limit writable fields
- *   .defineReturnColumns(['id', 'name'])       // Limit returned columns
+ *   .restrictUpsertFields(['name', 'description']) // Limit writable fields
+ *   .restrictReturnColumns(['id', 'name'])         // Limit returned columns
  *   .build();                          // Build immutable config
  * ```
  */

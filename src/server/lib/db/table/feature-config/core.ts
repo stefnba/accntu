@@ -104,17 +104,22 @@ export class FeatureTableConfig<
      * Get the name of the user ID field.
      *
      * Returns the field name configured via `.setUserId()`.
-     * If no user ID is configured, returns undefined.
      *
-     * @returns User ID field name or undefined
+     * @returns User ID field name, or undefined if no userId is configured
      *
      * @example
      * ```ts
-     * const fieldName = config.getUserIdFieldName(); // 'userId'
+     * const fieldName = config.getUserIdFieldName(); // 'userId' or undefined
+     *
+     * // Or with type guard:
+     * if (config.hasUserId()) {
+     *   const fieldName = config.getUserIdFieldName(); // 'userId'
+     * }
      * ```
      */
     getUserIdFieldName(): keyof TUserIdSchema {
-        return getFieldsAsArray(this.userIdSchema)[0];
+        const fields = getFieldsAsArray(this.userIdSchema);
+        return fields[0];
     }
 
     /**
@@ -123,15 +128,21 @@ export class FeatureTableConfig<
      * Returns an array of field names configured via `.setIds()`.
      * Useful for composite keys.
      *
-     * @returns Array of ID field names
+     * @returns Array of ID field names, or undefined if no IDs are configured
      *
      * @example
      * ```ts
-     * const idFields = config.getIdsFieldNames(); // ['id'] or ['tenantId', 'id']
+     * const idFields = config.getIdsFieldNames(); // ['id'] or undefined
+     *
+     * // Or with type guard:
+     * if (config.hasIds()) {
+     *   const idFields = config.getIdsFieldNames(); // ['id'] or ['tenantId', 'id']
+     * }
      * ```
      */
     getIdsFieldNames(): Array<keyof TIdSchema> {
-        return getFieldsAsArray(this.idSchema);
+        const fields = getFieldsAsArray(this.idSchema);
+        return fields;
     }
 
     /**
@@ -291,6 +302,32 @@ export class FeatureTableConfig<
     }
 
     /**
+     * @internal
+     * Helper to validate input against a Zod schema with consistent error formatting.
+     *
+     * @param schema - Zod schema to validate against
+     * @param input - Raw input to validate
+     * @param context - Description of what's being validated (for error messages)
+     * @returns Validated data
+     * @throws AppErrors.validation with formatted error details
+     */
+    private validateWithSchema<T>(schema: z.ZodSchema<T>, input: unknown, context: string): T {
+        const result = schema.safeParse(input);
+
+        if (!result.success) {
+            throw AppErrors.validation('INVALID_INPUT', {
+                message: `Failed to validate ${context}`,
+                details: {
+                    zodErrors: result.error.issues,
+                    context,
+                },
+            });
+        }
+
+        return result.data;
+    }
+
+    /**
      * Validate and transform input data for table insert operations.
      *
      * Performs two-stage validation:
@@ -313,30 +350,24 @@ export class FeatureTableConfig<
     validateDataForTableInsert(input: unknown): InferInsertModel<TTable> {
         // Stage 1: Validate against configured create input schema
         const configSchema = this.buildCreateInputSchema();
-        const configValidation = configSchema.safeParse(input);
-
-        if (!configValidation.success) {
-            throw AppErrors.validation('INVALID_INPUT', {
-                message: 'Failed to validate create input against configured schema',
-                details: { zodErrors: configValidation.error.issues },
-            });
-        }
+        const validatedInput = this.validateWithSchema(
+            configSchema,
+            input,
+            'create input against configured schema'
+        );
 
         // Stage 2: Validate against Drizzle's insert schema
         const insertSchema = createInsertSchema(this.table);
-        const insertValidation = insertSchema.safeParse(configValidation.data);
-
-        if (!insertValidation.success) {
-            throw AppErrors.validation('INVALID_INPUT', {
-                message: 'Failed to validate insert data against table schema',
-                details: { zodErrors: insertValidation.error.issues },
-            });
-        }
+        const validatedData = this.validateWithSchema(
+            insertSchema,
+            validatedInput,
+            'insert data against table schema'
+        );
 
         // Type safety note: Drizzle's createInsertSchema output types are extremely complex
         // and TypeScript struggles to infer the exact match, but the runtime type is correct
         // because safeParse guarantees the data matches InferInsertModel<TTable>
-        return insertValidation.data as InferInsertModel<TTable>;
+        return validatedData as InferInsertModel<TTable>;
     }
 
     /**
@@ -359,19 +390,16 @@ export class FeatureTableConfig<
      */
     validateUpdateDataForTableUpdate(input: unknown): InferTableSchema<TTable, 'update'> {
         const updateSchema = createUpdateSchema(this.table);
-        const validation = updateSchema.safeParse(input);
-
-        if (!validation.success) {
-            throw AppErrors.validation('INVALID_INPUT', {
-                message: 'Failed to validate update data against table schema',
-                details: { zodErrors: validation.error.issues },
-            });
-        }
+        const validatedData = this.validateWithSchema(
+            updateSchema,
+            input,
+            'update data against table schema'
+        );
 
         // Type safety note: Drizzle's createUpdateSchema output types are extremely complex
         // and TypeScript struggles to infer the exact match, but the runtime type is correct
         // because safeParse guarantees the data matches InferTableSchema<TTable, 'update'>
-        return validation.data as InferTableSchema<TTable, 'update'>;
+        return validatedData as InferTableSchema<TTable, 'update'>;
     }
 }
 
@@ -394,8 +422,8 @@ export class FeatureTableConfig<
  * const config = createFeatureTableConfig(myTable)
  *   .setIds(['id'])              // Define primary key field(s)
  *   .setUserId('userId')         // Define user ID for RLS
- *   .defineUpsertData(['name', 'description']) // Limit insertable fields
- *   .defineReturnColumns(['id', 'name'])       // Specify return columns
+ *   .restrictUpsertFields(['name', 'description']) // Limit insertable fields
+ *   .restrictReturnColumns(['id', 'name'])         // Specify return columns
  *   .build();                    // Build immutable config
  * ```
  */
@@ -497,10 +525,10 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Allow all columns for insert and update operations.
+     * Allow all fields for insert and update operations.
      *
-     * Resets any field restrictions set via `.defineUpsertData()`, `.defineInsertData()`,
-     * or `.defineUpdateData()`. Use this when you want to allow modifying all fields.
+     * Resets any field restrictions set via `.restrictUpsertFields()`, `.restrictInsertFields()`,
+     * or `.restrictUpdateFields()`. Use this when you want to allow modifying all fields.
      *
      * **Warning:** This overwrites previously specified insert/update schemas.
      *
@@ -509,12 +537,12 @@ export class FeatureTableConfigBuilder<
      * @example
      * ```ts
      * const config = createFeatureTableConfig(table)
-     *   .defineUpsertData(['name'])  // Restrict to name only
-     *   .allowAllColumns()           // Now allow all columns again
+     *   .restrictUpsertFields(['name'])  // Restrict to name only
+     *   .allowAllFields()                // Now allow all fields again
      *   .build();
      * ```
      */
-    allowAllColumns() {
+    allowAllFields() {
         const createSchema = createInsertSchema(this.table);
         const updateSchema = createUpdateSchema(this.table);
 
@@ -545,6 +573,7 @@ export class FeatureTableConfigBuilder<
      *
      * @param fields - Array of column names that form the primary key
      * @returns New builder instance with ID schema configured
+     * @throws Error if fields array is empty
      *
      * @example
      * ```ts
@@ -562,6 +591,12 @@ export class FeatureTableConfigBuilder<
     setIds<const TFields extends (keyof InferTableSchema<TTable, 'select'>['shape'])[]>(
         fields: TFields
     ) {
+        if (fields.length === 0) {
+            throw new Error(
+                `[FeatureTableConfigBuilder] setIds: must provide at least one ID field`
+            );
+        }
+
         const idSchemaObj = pickFields(
             z.object(this.getRawSchemaFromTable('select')),
             fields
@@ -712,7 +747,7 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which fields can be inserted/updated (upsert operations).
+     * Restrict which fields can be inserted/updated (upsert operations).
      *
      * Restricts both insert and update operations to only the specified fields.
      * Also updates the base schema to match. Use this when you want the same
@@ -724,14 +759,14 @@ export class FeatureTableConfigBuilder<
      * @example
      * ```ts
      * const config = createFeatureTableConfig(table)
-     *   .defineUpsertData(['name', 'description', 'color'])
+     *   .restrictUpsertFields(['name', 'description', 'color'])
      *   .build();
      *
      * // Users can only insert/update name, description, color
      * // Fields like id, createdAt, etc. are protected
      * ```
      */
-    defineUpsertData<const TFields extends (keyof TBase)[]>(fields: TFields) {
+    restrictUpsertFields<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const baseSchemaObj = pickFields(this.baseSchemaObj, fields);
 
         return new FeatureTableConfigBuilder<
@@ -754,10 +789,10 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which fields are allowed for insert operations only.
+     * Restrict which fields are allowed for insert operations only.
      *
      * Use this when insert fields differ from update fields.
-     * For same fields in both, use `.defineUpsertData()` instead.
+     * For same fields in both, use `.restrictUpsertFields()` instead.
      *
      * @param fields - Array of field names allowed for inserts
      * @returns New builder instance with restricted insert schema
@@ -765,12 +800,12 @@ export class FeatureTableConfigBuilder<
      * @example
      * ```ts
      * const config = createFeatureTableConfig(table)
-     *   .defineInsertData(['name', 'email', 'role'])
-     *   .defineUpdateData(['name', 'email'])  // role can't be updated
+     *   .restrictInsertFields(['name', 'email', 'role'])
+     *   .restrictUpdateFields(['name', 'email'])  // role can't be updated
      *   .build();
      * ```
      */
-    defineInsertData<const TFields extends (keyof TBase)[]>(fields: TFields) {
+    restrictInsertFields<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const insertDataSchemaObj = pickFields(this.baseSchemaObj, fields);
 
         return new FeatureTableConfigBuilder<
@@ -793,7 +828,7 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which fields are allowed for update operations only.
+     * Restrict which fields are allowed for update operations only.
      *
      * The resulting schema is automatically partial (all fields optional).
      * Use this when update fields differ from insert fields.
@@ -804,14 +839,14 @@ export class FeatureTableConfigBuilder<
      * @example
      * ```ts
      * const config = createFeatureTableConfig(table)
-     *   .defineInsertData(['name', 'email', 'role'])
-     *   .defineUpdateData(['name', 'email'])  // can't update role
+     *   .restrictInsertFields(['name', 'email', 'role'])
+     *   .restrictUpdateFields(['name', 'email'])  // can't update role
      *   .build();
      *
      * // Update schema will be: { name?: string; email?: string }
      * ```
      */
-    defineUpdateData<const TFields extends (keyof TBase)[]>(fields: TFields) {
+    restrictUpdateFields<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const updateDataSchemaObj = pickFields(this.baseSchemaObj, fields).partial();
 
         return new FeatureTableConfigBuilder<
@@ -834,27 +869,42 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Define which columns should be returned in query results.
+     * Restrict which columns should be returned in query results.
      *
      * Restricts select operations to only return the specified columns.
      * Useful for excluding sensitive fields or optimizing query performance.
      *
      * @param fields - Array of column names to include in results
      * @returns New builder instance with restricted select schema
+     * @throws Error if fields array is empty or contains duplicates
      *
      * @example
      * ```ts
      * const config = createFeatureTableConfig(userTable)
-     *   .defineReturnColumns(['id', 'name', 'email'])
+     *   .restrictReturnColumns(['id', 'name', 'email'])
      *   .build();
      *
      * // Query results will only include: { id, name, email }
      * // password, createdAt, etc. won't be returned
      * ```
      */
-    defineReturnColumns<
+    restrictReturnColumns<
         const TFields extends (keyof InferTableSchema<TTable, 'select'>['shape'])[],
     >(fields: TFields) {
+        if (fields.length === 0) {
+            throw new Error(
+                `[FeatureTableConfigBuilder] defineReturnColumns: must provide at least one column`
+            );
+        }
+
+        // Check for duplicates
+        const uniqueFields = new Set(fields);
+        if (uniqueFields.size !== fields.length) {
+            throw new Error(
+                `[FeatureTableConfigBuilder] defineReturnColumns: duplicate columns detected`
+            );
+        }
+
         const selectReturnSchemaObj = pickFields(
             z.object(this.getRawSchemaFromTable('select')),
             fields
@@ -969,6 +1019,9 @@ export class FeatureTableConfigBuilder<
      * This is the final step in the builder chain - returns an immutable config
      * that can be passed to query builders, services, and other utilities.
      *
+     * **Note:** This method logs warnings if common configurations (IDs, userId) are missing.
+     * Set appropriate values or explicitly remove them to suppress warnings.
+     *
      * @returns Immutable FeatureTableConfig with all schemas finalized
      *
      * @example
@@ -976,7 +1029,7 @@ export class FeatureTableConfigBuilder<
      * const config = createFeatureTableConfig(table)
      *   .setIds(['id'])
      *   .setUserId('userId')
-     *   .defineUpsertData(['name', 'description'])
+     *   .restrictUpsertFields(['name', 'description'])
      *   .build();  // Final step - creates immutable config
      *
      * // Now use config with query builders, services, etc.

@@ -22,7 +22,7 @@ The Feature Table Config Builder provides a declarative way to configure databas
 - **Type-safe schemas** for insert, update, and select operations
 - **Row-level security** (RLS) via userId configuration
 - **Composite primary keys** support
-- **Field-level access control** (restrict which fields can be modified/returned)
+- **Field-level access control** (control which fields can be modified/returned)
 - **Zero type assertions** using sentinel EmptySchema pattern
 - **Immutable configurations** for predictable behavior
 
@@ -97,8 +97,8 @@ Chain configuration methods for intuitive setup:
 const config = createFeatureTableConfig(tagTable)
     .setIds(['id'])
     .setUserId('userId')
-    .defineUpsertData(['name', 'description', 'color'])
-    .defineReturnColumns(['id', 'name', 'color', 'userId'])
+    .restrictUpsertFields(['name', 'description', 'color'])
+    .restrictReturnColumns(['id', 'name', 'color', 'userId'])
     .build();
 ```
 
@@ -126,8 +126,8 @@ import { tag } from '@/server/db/tables';
 const tagConfig = createFeatureTableConfig(tag)
     .setIds(['id']) // Primary key
     .setUserId('userId') // RLS field
-    .defineUpsertData(['name', 'color']) // Writable fields
-    .defineReturnColumns(['id', 'name']) // Returned columns
+    .restrictUpsertFields(['name', 'color']) // Writable fields
+    .restrictReturnColumns(['id', 'name']) // Returned columns
     .build();
 
 // Step 2: Access schemas directly or build input schemas
@@ -219,14 +219,14 @@ Control which fields can be inserted/updated.
 #### Upsert Data (Same fields for insert & update)
 
 ```typescript
-.defineUpsertData(['name', 'description', 'color'])
+.restrictUpsertFields(['name', 'description', 'color'])
 ```
 
 #### Separate Insert & Update
 
 ```typescript
-.defineInsertData(['name', 'email', 'role'])  // Can set role on create
-.defineUpdateData(['name', 'email'])          // Can't change role
+.restrictInsertFields(['name', 'email', 'role'])  // Can set role on create
+.restrictUpdateFields(['name', 'email'])          // Can't change role
 ```
 
 **Use Cases:**
@@ -240,7 +240,7 @@ Control which fields can be inserted/updated.
 Specify which columns are returned in query results.
 
 ```typescript
-.defineReturnColumns(['id', 'name', 'color', 'createdAt'])
+.restrictReturnColumns(['id', 'name', 'color', 'createdAt'])
 ```
 
 **Use Cases:**
@@ -288,6 +288,8 @@ const config = createFeatureTableConfig(myTable);
 ---
 
 ### Builder Methods
+
+#### Configuration Methods
 
 #### `.setIds(fields)`
 
@@ -346,12 +348,14 @@ Clear user ID configuration.
 
 ---
 
-#### `.defineUpsertData(fields)`
+#### Field Restriction Methods
 
-Set same fields for both insert and update.
+#### `.restrictUpsertFields(fields)`
+
+Restrict same fields for both insert and update.
 
 ```typescript
-.defineUpsertData(['name', 'description', 'color'])
+.restrictUpsertFields(['name', 'description', 'color'])
 ```
 
 **Parameters:**
@@ -362,12 +366,12 @@ Set same fields for both insert and update.
 
 ---
 
-#### `.defineInsertData(fields)`
+#### `.restrictInsertFields(fields)`
 
-Set fields allowed for insert only.
+Restrict fields allowed for insert only.
 
 ```typescript
-.defineInsertData(['name', 'email', 'role'])
+.restrictInsertFields(['name', 'email', 'role'])
 ```
 
 **Parameters:**
@@ -378,12 +382,12 @@ Set fields allowed for insert only.
 
 ---
 
-#### `.defineUpdateData(fields)`
+#### `.restrictUpdateFields(fields)`
 
-Set fields allowed for update only.
+Restrict fields allowed for update only.
 
 ```typescript
-.defineUpdateData(['name', 'email'])
+.restrictUpdateFields(['name', 'email'])
 ```
 
 **Parameters:**
@@ -394,12 +398,12 @@ Set fields allowed for update only.
 
 ---
 
-#### `.defineReturnColumns(fields)`
+#### `.restrictReturnColumns(fields)`
 
-Set columns returned in queries.
+Restrict columns returned in queries.
 
 ```typescript
-.defineReturnColumns(['id', 'name', 'email'])
+.restrictReturnColumns(['id', 'name', 'email'])
 ```
 
 **Parameters:**
@@ -407,6 +411,8 @@ Set columns returned in queries.
 - `fields` - Array of column names
 
 **Returns:** New builder instance
+
+**Throws:** Error if fields array is empty or contains duplicates
 
 ---
 
@@ -442,12 +448,12 @@ Exclude fields from base schema.
 
 ---
 
-#### `.allowAllColumns()`
+#### `.allowAllFields()`
 
-Reset to allow all columns for insert/update.
+Reset to allow all fields for insert/update operations.
 
 ```typescript
-.allowAllColumns()
+.allowAllFields()
 ```
 
 **Returns:** New builder instance
@@ -487,8 +493,16 @@ config.selectReturnSchema; // Select return schema
 Get the user ID field name.
 
 ```typescript
-const userIdField = config.getUserIdFieldName(); // 'userId'
+// Best practice: use type guard first
+if (config.hasUserId()) {
+    const userIdField = config.getUserIdFieldName(); // 'userId'
+}
+
+// Direct access (returns undefined at runtime if not configured)
+const userIdField = config.getUserIdFieldName(); // Type: 'userId' | never
 ```
+
+**Returns:** Field name (or `never` type if not configured). At runtime, returns `undefined` if not configured.
 
 ---
 
@@ -497,8 +511,16 @@ const userIdField = config.getUserIdFieldName(); // 'userId'
 Get array of ID field names.
 
 ```typescript
-const idFields = config.getIdsFieldNames(); // ['id'] or ['tenantId', 'id']
+// Best practice: use type guard first
+if (config.hasIds()) {
+    const idFields = config.getIdsFieldNames(); // ['id'] or ['tenantId', 'id']
+}
+
+// Direct access (returns empty array at runtime if not configured)
+const idFields = config.getIdsFieldNames(); // Type: Array<'id'> | Array<never>
 ```
+
+**Returns:** Array of field names (or `Array<never>` type if not configured). At runtime, returns empty array if not configured.
 
 ---
 
@@ -700,7 +722,7 @@ type IdSchema = InferOptionalSchema<typeof config.idSchema>;
 const junctionConfig = createFeatureTableConfig(tagToTransaction)
     .setIds(['tagId', 'transactionId'])
     .setUserId('userId')
-    .defineUpsertData(['metadata'])
+    .restrictUpsertFields(['metadata'])
     .build();
 
 // Usage
@@ -717,8 +739,8 @@ const input: InferIdsInput<typeof junctionConfig> = {
 ```typescript
 const userConfig = createFeatureTableConfig(user)
     .setIds(['id'])
-    .defineInsertData(['email', 'password', 'role']) // Can set role on create
-    .defineUpdateData(['email', 'displayName']) // Can't update role/password
+    .restrictInsertFields(['email', 'password', 'role']) // Can set role on create
+    .restrictUpdateFields(['email', 'displayName']) // Can't update role/password
     .build();
 ```
 
@@ -728,7 +750,7 @@ const userConfig = createFeatureTableConfig(user)
 const publicConfig = createFeatureTableConfig(publicData)
     .setIds(['id'])
     .removeUserId() // No userId filtering
-    .defineUpsertData(['title', 'content'])
+    .restrictUpsertFields(['title', 'content'])
     .build();
 
 type Input = InferCreateInput<typeof publicConfig>;
@@ -742,7 +764,7 @@ type Input = InferCreateInput<typeof publicConfig>;
 const config = createFeatureTableConfig(table)
     .omitBaseSchema(['transactionCount']) // Exclude computed field
     .pickBaseSchema(['name', 'description']) // Then pick specific fields
-    .defineUpsertData(['name', 'description'])
+    .restrictUpsertFields(['name', 'description'])
     .build();
 ```
 
@@ -754,9 +776,9 @@ let config = createFeatureTableConfig(table).setIds(['id']).setUserId('userId');
 
 // Add more restrictions later
 if (isRestrictedMode) {
-    config = config.defineUpsertData(['name']); // Only name editable
+    config = config.restrictUpsertFields(['name']); // Only name editable
 } else {
-    config = config.allowAllColumns(); // All columns editable
+    config = config.allowAllFields(); // All fields editable
 }
 
 const finalConfig = config.build();
@@ -780,18 +802,18 @@ Don't allow modification of system fields:
 
 ```typescript
 // ✅ Good
-.defineUpsertData(['name', 'description', 'color'])
+.restrictUpsertFields(['name', 'description', 'color'])
 
 // ❌ Bad (allows modifying system fields)
-.allowAllColumns()
+.allowAllFields()
 ```
 
 ### 3. **Separate Insert/Update When Needed**
 
 ```typescript
 // ✅ Good (role immutable after creation)
-.defineInsertData(['name', 'email', 'role'])
-.defineUpdateData(['name', 'email'])
+.restrictInsertFields(['name', 'email', 'role'])
+.restrictUpdateFields(['name', 'email'])
 ```
 
 ### 4. **Limit Return Columns**
@@ -800,10 +822,10 @@ Exclude sensitive or unnecessary fields:
 
 ```typescript
 // ✅ Good
-.defineReturnColumns(['id', 'name', 'email', 'createdAt'])
+.restrictReturnColumns(['id', 'name', 'email', 'createdAt'])
 
 // ❌ Bad (returns all fields including sensitive ones)
-// (omitting defineReturnColumns returns all by default)
+// (omitting restrictReturnColumns returns all by default)
 ```
 
 ### 5. **Use Type Inference Helpers**
@@ -858,8 +880,8 @@ export const tagConfig = createFeatureTableConfig(tag)
     .setIds(['id'])
     .setUserId('userId')
     .omitBaseSchema(['transactionCount']) // Computed field, not writable
-    .defineUpsertData(['name', 'description', 'color'])
-    .defineReturnColumns(['id', 'name', 'color', 'userId'])
+    .restrictUpsertFields(['name', 'description', 'color'])
+    .restrictReturnColumns(['id', 'name', 'color', 'userId'])
     .build();
 
 export type TagCreateInput = InferCreateInput<typeof tagConfig>;
@@ -875,7 +897,7 @@ import { createFeatureTableConfig } from './feature-config';
 export const tagToTransactionConfig = createFeatureTableConfig(tagToTransaction)
     .setIds(['tagId', 'transactionId']) // Composite key
     .setUserId('userId')
-    .defineUpsertData(['metadata'])
+    .restrictUpsertFields(['metadata'])
     .build();
 
 // Get both ID field names
@@ -892,7 +914,7 @@ import { createFeatureTableConfig } from './feature-config';
 export const settingsConfig = createFeatureTableConfig(settings)
     .setIds(['id'])
     .removeUserId() // No RLS
-    .defineUpsertData(['key', 'value', 'description'])
+    .restrictUpsertFields(['key', 'value', 'description'])
     .build();
 
 export type SettingsCreateInput = InferCreateInput<typeof settingsConfig>;
@@ -908,9 +930,9 @@ import { createFeatureTableConfig } from './feature-config';
 
 export const userConfig = createFeatureTableConfig(user)
     .setIds(['id'])
-    .defineInsertData(['email', 'password', 'role', 'displayName'])
-    .defineUpdateData(['email', 'displayName', 'avatar'])
-    .defineReturnColumns(['id', 'email', 'displayName', 'avatar', 'role'])
+    .restrictInsertFields(['email', 'password', 'role', 'displayName'])
+    .restrictUpdateFields(['email', 'displayName', 'avatar'])
+    .restrictReturnColumns(['id', 'email', 'displayName', 'avatar', 'role'])
     .build();
 
 // password can be set on create but not updated
@@ -923,10 +945,10 @@ export const userConfig = createFeatureTableConfig(user)
 const baseConfig = createFeatureTableConfig(document).setIds(['id']).setUserId('userId');
 
 // Admin mode: all fields editable
-export const adminDocumentConfig = baseConfig.allowAllColumns().build();
+export const adminDocumentConfig = baseConfig.allowAllFields().build();
 
 // User mode: restricted fields
-export const userDocumentConfig = baseConfig.defineUpsertData(['title', 'content']).build();
+export const userDocumentConfig = baseConfig.restrictUpsertFields(['title', 'content']).build();
 ```
 
 ---
@@ -952,12 +974,12 @@ type Input = InferCreateInput<typeof config>; // ✅ Works
 
 ---
 
-### Issue: Field not available in defineUpsertData
+### Issue: Field not available in restrictUpsertFields
 
 **Problem:**
 
 ```typescript
-.defineUpsertData(['name', 'transactionCount']) // transactionCount not found
+.restrictUpsertFields(['name', 'transactionCount']) // transactionCount not found
 ```
 
 **Solution:**
@@ -966,7 +988,7 @@ Check if field was omitted from base schema:
 ```typescript
 // Remove omitBaseSchema or don't omit that field
 .omitBaseSchema(['transactionCount'])  // This excludes it
-.defineUpsertData(['name', 'description'])  // Can't use transactionCount
+.restrictUpsertFields(['name', 'description'])  // Can't use transactionCount
 ```
 
 ---
@@ -1013,7 +1035,7 @@ const createSchema = z.object({
 const config = createFeatureTableConfig(table)
     .setIds(['id'])
     .setUserId('userId')
-    .defineUpsertData(['name', 'description'])
+    .restrictUpsertFields(['name', 'description'])
     .build();
 
 const createSchema = config.buildCreateInputSchema();

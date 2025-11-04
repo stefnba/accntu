@@ -2,7 +2,7 @@ import { tag } from '@/server/db/tables';
 import { StandardQueryBuilder } from '@/server/lib/db/query/builder/feature-query/standard/builder';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
-const config = createFeatureTableConfig(tag).defineReturnColumns(['id', 'description']).build();
+const config = createFeatureTableConfig(tag).restrictReturnColumns(['id', 'description']).build();
 
 const standard = StandardQueryBuilder.create(config, {
     defaultFilters: {

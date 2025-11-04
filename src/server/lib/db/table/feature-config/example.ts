@@ -20,8 +20,8 @@ const tagTableConfig = createFeatureTableConfig(tag)
     .omitBaseSchema(['transactionCount'])
     // .removeIds()
     // .removeUserId()
-    .defineReturnColumns(['name', 'color', 'userId', 'id'])
-    .defineUpsertData(['name', 'description', 'color'])
+    .restrictReturnColumns(['name', 'color', 'userId', 'id'])
+    .restrictUpsertFields(['name', 'description', 'color'])
     .build();
 
 export const tagTableConfigReturn = {
@@ -72,3 +72,4 @@ const tagToTransactionTableConfig = createFeatureTableConfig(tagToTransaction)
 
 export const tagToTransactionIdsFieldNames = tagToTransactionTableConfig.getIdsFieldNames();
 export const tagToTransactionUserIdFieldName = tagToTransactionTableConfig.getUserIdFieldName();
+console.log('tagToTransactionUserIdFieldName', tagToTransactionUserIdFieldName);

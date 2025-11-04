@@ -5,7 +5,7 @@ import { createFeatureQueries } from './factory';
 const USER_ID = 'kdot36uifwaveogao0o7umx3';
 
 const tagTableConfig = createFeatureTableConfig(tag)
-    .defineReturnColumns(['id', 'name', 'userId'])
+    .restrictReturnColumns(['id', 'name', 'userId'])
     .build();
 
 const tagQueries = createFeatureQueries('tag', tagTableConfig)
