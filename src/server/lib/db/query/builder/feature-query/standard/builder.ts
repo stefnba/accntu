@@ -14,7 +14,7 @@ import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { Prettify } from '@/types/utils';
 import { TStandardNewQueryConfig } from './types';
 
-import { SQL, Table } from 'drizzle-orm';
+import { InferInsertModel, SQL, Table } from 'drizzle-orm';
 import z from 'zod';
 
 export class StandardQueryBuilder<
@@ -120,7 +120,7 @@ export class StandardQueryBuilder<
             queryConfig: this.queryConfig,
         });
 
-        return b.create().getById().getMany().updateById().removeById();
+        return b.create().getById().getMany().updateById().removeById().createMany();
     }
 
     updateById() {
@@ -391,6 +391,67 @@ export class StandardQueryBuilder<
             TSelectReturnSchema,
             TTableConfig,
             TQueries & { create: typeof query }
+        >({
+            tableConfig: this.tableConfig,
+            queries,
+            queryConfig: this.queryConfig,
+        });
+    }
+
+    createMany() {
+        const inputSchema = this.tableConfig.buildCreateManyInputSchema();
+        const returnColumns = this.tableConfig.getReturnColumns();
+        type TInput = z.infer<typeof inputSchema>;
+
+        const query = async (input: TInput) => {
+            const parsed = inputSchema.safeParse(input);
+
+            if (parsed.error) {
+                throw new Error('Errore asjlksjdfkl');
+            }
+            const inputValid = parsed.data;
+
+            const insertData: { data: Array<InferInsertModel<TTable>>; userId?: string } = {
+                data: [],
+            };
+
+            if ('data' in inputValid) {
+                insertData.data = inputValid.data;
+            } else {
+                throw new Error('data must be in data');
+            }
+
+            if ('userId' in inputValid) {
+                insertData.userId = inputValid.userId;
+            }
+
+            // const validatedData = this.tableConfig.validateDataForTableInsert(insertData);
+
+            const d = insertData.data.map((item) => ({ ...item, userId: insertData.userId }));
+
+            console.log('insertData', d);
+
+            return this.tableOps.createManyRecords({
+                data: d,
+                returnColumns,
+            });
+        };
+
+        const queries = {
+            ...this.queries,
+            createMany: query,
+        };
+
+        return new StandardQueryBuilder<
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig,
+            TQueries & { createMany: typeof query }
         >({
             tableConfig: this.tableConfig,
             queries,

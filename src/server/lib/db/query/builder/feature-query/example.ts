@@ -62,6 +62,22 @@ const updateByIdResult = await updateById({
     userId: USER_ID,
 });
 console.log('updateByIdResult', updateByIdResult);
+// ====================
+// standard createMany
+// ====================
+const createMany = tagQueries.queries.createMany;
+const createManyResult = await createMany({
+    data: [
+        {
+            name: 'Test createMany Item 1 ' + Date.now(),
+        },
+        {
+            name: 'Test createMany Item 2 ' + Date.now(),
+        },
+    ],
+    userId: USER_ID,
+});
+console.log('getManyResult', createManyResult);
 
 // exit
 process.exit(0);

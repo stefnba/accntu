@@ -205,6 +205,10 @@ export class FeatureTableConfig<
         return z.object({ data: this.insertDataSchema }).extend(this.userIdSchema.shape);
     }
 
+    buildCreateManyInputSchema() {
+        return z.object({ data: z.array(this.insertDataSchema) }).extend(this.userIdSchema.shape);
+    }
+
     buildUpdateInputSchema() {
         return z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape).extend({
             ids: this.idSchema,
