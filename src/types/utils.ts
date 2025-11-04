@@ -20,3 +20,10 @@ export type RequiredBy<T, K extends keyof T> = Partial<T> & Required<Pick<T, K>>
 export type Prettify<T> = {
     [K in keyof T]: T[K];
 } & {};
+
+/**
+ * Extracts only required keys (non-optional) from a type
+ */
+export type ExtractRequiredKeys<T> = {
+    [K in keyof T]-?: undefined extends T[K] ? never : K;
+}[keyof T];
