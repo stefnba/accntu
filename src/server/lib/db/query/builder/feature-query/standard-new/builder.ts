@@ -1,12 +1,16 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedEntries, typedKeys } from '@/lib/utils';
-import { TStandardNewQueryConfig } from '@/server/lib/db/query/builder/feature-query/standard-new/types';
+import { TStandardNewQueryConfig } from '@/server/lib/db/query/builder/feature-query/standard-new-drei/types';
 import {
     defaultIdFiltersIdentifier,
     userIdIdentifier,
 } from '@/server/lib/db/query/feature-queries/helpers';
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
-import { InferTableColumnTypes, TBooleanFilter } from '@/server/lib/db/query/table-operations';
+import {
+    GetTableColumnKeys,
+    InferTableColumnTypes,
+    TBooleanFilter,
+} from '@/server/lib/db/query/table-operations';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations/core';
 import type { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import {
@@ -14,23 +18,15 @@ import {
     InferIdsInput,
     InferReturnColums,
     InferTableFromConfig,
-    InferUpdateInput,
     InferUserIdInput,
 } from '@/server/lib/db/table/feature-config/types';
 import { Prettify } from '@/types/utils';
-import { Table } from 'drizzle-orm';
+import { InferInsertModel } from 'drizzle-orm';
+import { createInsertSchema } from 'drizzle-zod';
 import z from 'zod';
 
 export class StandardQueryBuilder<
-    TConfig extends FeatureTableConfig<
-        Table,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape,
-        TZodShape
-    >,
+    TConfig extends FeatureTableConfig<any, any, any, any, any, any, any>,
     TStandardQueries extends Record<string, QueryFn<any, any>> = Record<string, never>,
     TStandardQueryConfig extends TStandardNewQueryConfig<
         InferTableFromConfig<TConfig>
@@ -43,6 +39,10 @@ export class StandardQueryBuilder<
 
     /** Shared table operations builder (reused from parent FeatureQueryBuilder) */
     private tableOps: TableOperationsBuilder<InferTableFromConfig<TConfig>>;
+
+    private selectReturnSchema: z.ZodObject<TConfig['selectReturnSchema']['shape']>;
+    // private userIdField: InferOptionalSchema<TConfig['userIdSchema']> extends undefined ? undefined : keyof InferOptionalSchema<TConfig['userIdSchema']>;
+    private userIdSchema: z.ZodObject<TConfig['userIdSchema']['shape']>;
 
     constructor({
         config,
@@ -58,26 +58,152 @@ export class StandardQueryBuilder<
         this.standardQueries = standardQueries;
         this.tableOps = new TableOperationsBuilder(this.table);
         this.standardQueryConfig = standardQueryConfig;
+        this.selectReturnSchema = config.selectReturnSchema;
+        this.userIdSchema = config.userIdSchema;
     }
 
-    create(options: { dataColumnSchema: z.ZodObject<TZodShape> }) {
-        const { dataColumnSchema } = options ?? {};
+    validateInputForInsertDefinedSchema = (
+        input: unknown
+    ): z.infer<typeof this.config.insertDataSchema> => {
+        const result = this.config.insertDataSchema.safeParse(input);
 
-        type TInput = InferCreateInput<TConfig>;
-        type TReturn = Prettify<
-            Pick<
-                InferTableColumnTypes<InferTableFromConfig<TConfig>>,
-                InferReturnColums<TConfig> &
-                    keyof InferTableColumnTypes<InferTableFromConfig<TConfig>>
-            >
-        >;
+        if (!result.success) {
+            throw new Error(`Invalid input data: ${result.error.message}`);
+        }
 
-        const createQuery: QueryFn<TInput, TReturn | null> = async (input: TInput) => {
-            return this.tableOps.createRecord({
-                data: input.data,
-                returnColumns: this.config.getReturnColumns(),
+        // Now result.data is properly typed!
+        return result.data;
+    };
+
+    getUserIdFieldName(): keyof TConfig['userIdSchema']['shape'] {
+        return typedKeys(this.userIdSchema.shape)[0];
+    }
+
+    create(options: { dataColumnSchema?: z.ZodObject<TZodShape> }) {
+        const { dataColumnSchema = z.object({}) } = options ?? {};
+
+        const returnColumns = this.config.getReturnColumns();
+        console.log('returnColumns', returnColumns);
+
+        const buildCreateInput = (
+            input: InferCreateInput<TConfig>
+        ): InferInsertModel<InferTableFromConfig<TConfig>> => {
+            const userIdField = this.getUserIdFieldName();
+
+            // insertDataSchema for drizzle table
+
+            // insertDataSchema for our defined insert schema
+            const insertDataSchema = this.config.insertDataSchema;
+
+            console.log('input', input);
+            console.log('userIdField', userIdField);
+
+            const validateInputForInsertTableSchema = (
+                input: unknown
+            ): asserts input is InferInsertModel<InferTableFromConfig<TConfig>> => {
+                const insertTableSchema = createInsertSchema(this.table);
+                const result = insertTableSchema.safeParse(input);
+
+                if (!result.success) {
+                    throw new Error(`Invalid input data: ${result.error.message}`);
+                }
+            };
+
+            const validateInputForInsert = (
+                input: unknown
+            ): InferInsertModel<InferTableFromConfig<TConfig>> => {
+                const insertTableSchema = createInsertSchema(this.table);
+                const result = insertTableSchema.safeParse(input);
+
+                console.log('result for insertTableSchema', result);
+
+                if (!result.success) {
+                    console.log('result', result.error);
+                    throw new Error('Invalid input data for insert schema');
+                }
+
+                return result.data;
+            };
+
+            // const validateInput = (
+            //     input: object
+            // ): input is InferInsertModel<InferTableFromConfig<TConfig>> => {
+            //     const result = insertTableSchema.safeParse(input);
+
+            //     if (!result.success) {
+            //         console.log('result', result.error);
+            //         return false;
+            //     }
+
+            //     return true;
+            // };
+
+            // validate input
+            if (!input || !input.data) {
+                throw new Error('Invalid input data');
+            }
+
+            // validate userId field if userIdSchema is configured
+            if (userIdField) {
+                if (userIdField in input && userIdField && typeof userIdField === 'string') {
+                    const userId = Reflect.get(input, userIdField); // get userId field value from input
+                    const inputData = {
+                        ...input.data,
+                        [userIdField]: userId,
+                    };
+
+                    // validate input data based on insert schema
+                    const validatedInput = validateInputForInsertTableSchema(inputData);
+
+                    return validatedInput;
+                } else {
+                    throw new Error(
+                        `UserId field name '${String(userIdField)}' is required in input when userIdSchema is configured`
+                    );
+                }
+            }
+
+            const validatedInput = validateInputForInsert(input.data);
+            console.log('validatedInput', validatedInput);
+
+            return validatedInput;
+        };
+
+        // type TReturn = Prettify<
+        //     Pick<
+        //         InferTableColumnTypes<InferTableFromConfig<TConfig>>,
+        //         InferReturnColums<TConfig> &
+        //             keyof InferTableColumnTypes<InferTableFromConfig<TConfig>>
+        //     >
+        // >;
+
+        const createQuery = async (input: InferCreateInput<TConfig>) => {
+            // Get userIdColumn if configured
+            // const userIdField = this.getUserIdFieldName();
+
+            // console.log('input', input);
+
+            // 1. validate input based on our defined insert schema
+            // const insertDataSchema = this.config.insertDataSchema;
+
+            // const validatedInput = insertDataSchema.safeParse(input.data);
+            // if (!validatedInput.success) {
+            //     console.log('validatedInput', validatedInput.error);
+            //     throw new Error('Invalid input data');
+            // }
+
+            const data = buildCreateInput(input);
+            console.log('data after buildCreateInput', data);
+
+            const result = await this.tableOps.createRecord<
+                Array<GetTableColumnKeys<InferTableFromConfig<TConfig>>>
+            >({
+                data,
+                returnColumns,
                 // onConflict: this.config.defaults.onConflict,
             });
+
+            return result;
         };
 
         const newStandardQueries = {
@@ -85,14 +211,13 @@ export class StandardQueryBuilder<
             create: createQuery,
         };
 
-        return new StandardQueryBuilder<
-            TConfig,
-            TStandardQueries & { create: QueryFn<TInput, TReturn | null> }
-        >({
-            config: this.config,
-            standardQueries: newStandardQueries,
-            standardQueryConfig: this.standardQueryConfig,
-        });
+        return new StandardQueryBuilder<TConfig, TStandardQueries & { create: typeof createQuery }>(
+            {
+                config: this.config,
+                standardQueries: newStandardQueries,
+                standardQueryConfig: this.standardQueryConfig,
+            }
+        );
     }
 
     getById() {
@@ -130,43 +255,43 @@ export class StandardQueryBuilder<
         });
     }
 
-    updateById() {
-        // type TInput = Prettify<InferIdsInput<TConfig> & Prettify<InferUserIdInput<TConfig>>>;
-        type TInput = Prettify<InferUpdateInput<TConfig>>;
-        type TReturn = Prettify<
-            Pick<
-                InferTableColumnTypes<InferTableFromConfig<TConfig>>,
-                InferReturnColums<TConfig> &
-                    keyof InferTableColumnTypes<InferTableFromConfig<TConfig>>
-            >
-        >;
+    // updateById() {
+    //     // type TInput = Prettify<InferIdsInput<TConfig> & Prettify<InferUserIdInput<TConfig>>>;
+    //     type TInput = Prettify<InferUpdateInput<TConfig>>;
+    //     type TReturn = Prettify<
+    //         Pick<
+    //             InferTableColumnTypes<InferTableFromConfig<TConfig>>,
+    //             InferReturnColums<TConfig> &
+    //                 keyof InferTableColumnTypes<InferTableFromConfig<TConfig>>
+    //         >
+    //     >;
 
-        const updateByIdQuery: QueryFn<TInput, TReturn | null> = async (input: TInput) => {
-            const identifiers = this.buildIdentifiers(input);
+    //     const updateByIdQuery: QueryFn<TInput, TReturn | null> = async (input: TInput) => {
+    //         const identifiers = this.buildIdentifiers(input);
 
-            const data = input.data;
+    //         const data = input.data;
 
-            return this.tableOps.updateRecord({
-                identifiers,
-                data,
-                returnColumns: this.config.getReturnColumns(),
-            });
-        };
+    //         return this.tableOps.updateRecord({
+    //             identifiers,
+    //             data,
+    //             returnColumns: this.config.getReturnColumns(),
+    //         });
+    //     };
 
-        const newStandardQueries = {
-            ...this.standardQueries,
-            updateById: updateByIdQuery,
-        };
+    //     const newStandardQueries = {
+    //         ...this.standardQueries,
+    //         updateById: updateByIdQuery,
+    //     };
 
-        return new StandardQueryBuilder<
-            TConfig,
-            TStandardQueries & { updateById: QueryFn<TInput, TReturn | null> }
-        >({
-            config: this.config,
-            standardQueries: newStandardQueries,
-            standardQueryConfig: this.standardQueryConfig,
-        });
-    }
+    //     return new StandardQueryBuilder<
+    //         TConfig,
+    //         TStandardQueries & { updateById: QueryFn<TInput, TReturn | null> }
+    //     >({
+    //         config: this.config,
+    //         standardQueries: newStandardQueries,
+    //         standardQueryConfig: this.standardQueryConfig,
+    //     });
+    // }
 
     // removeById() {
     //     type TInput = Prettify<InferIdsInput<TConfig> & Prettify<InferUserIdInput<TConfig>>>;
