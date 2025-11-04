@@ -38,8 +38,8 @@ import z from 'zod';
  *   .setUserId('userId')
  *   .build();
  *
- * // Access schemas
- * const insertDataSchema = config.getInsertDataSchema();
+ * // Access schemas directly via properties
+ * const insertDataSchema = config.insertDataSchema;
  * const columns = config.getReturnColumns(); // ['id', 'name', ...]
  *
  * // Type guards
@@ -100,35 +100,36 @@ export class FeatureTableConfig<
         this.selectReturnSchema = config.selectReturnSchema;
     }
 
-    /** Get the base Zod schema containing all available fields */
-    getBaseSchema(): z.ZodObject<TBase> {
-        return this.baseSchema;
-    }
-
-    /** Get the Zod schema for insert data operations */
-    getInsertDataSchema(): z.ZodObject<TInsertDataSchema> {
-        return this.insertDataSchema;
-    }
-
-    /** Get the Zod schema for update data operations (partial) */
-    getUpdateDataSchema(): z.ZodObject<TUpdateDataSchema> {
-        return this.updateDataSchema;
-    }
-
-    /** Get the Zod schema for select return operations */
-    getSelectReturnSchema(): z.ZodObject<TSelectReturnSchema> {
-        return this.selectReturnSchema;
-    }
-
-    /** Get the Drizzle table definition */
-    getTable(): TTable {
-        return this.table;
-    }
-
+    /**
+     * Get the name of the user ID field.
+     *
+     * Returns the field name configured via `.setUserId()`.
+     * If no user ID is configured, returns undefined.
+     *
+     * @returns User ID field name or undefined
+     *
+     * @example
+     * ```ts
+     * const fieldName = config.getUserIdFieldName(); // 'userId'
+     * ```
+     */
     getUserIdFieldName(): keyof TUserIdSchema {
         return getFieldsAsArray(this.userIdSchema)[0];
     }
 
+    /**
+     * Get the names of all ID fields.
+     *
+     * Returns an array of field names configured via `.setIds()`.
+     * Useful for composite keys.
+     *
+     * @returns Array of ID field names
+     *
+     * @example
+     * ```ts
+     * const idFields = config.getIdsFieldNames(); // ['id'] or ['tenantId', 'id']
+     * ```
+     */
     getIdsFieldNames(): Array<keyof TIdSchema> {
         return getFieldsAsArray(this.idSchema);
     }
@@ -189,33 +190,99 @@ export class FeatureTableConfig<
      * }
      * ```
      */
-    // hasUserId(): this is FeatureTableConfig<
-    //     TTable,
-    //     TIdSchema,
-    //     Exclude<TUserIdSchema, EmptySchema>,
-    //     TBase,
-    //     TInsertDataSchema,
-    //     TUpdateDataSchema,
-    //     TSelectReturnSchema
-    // > {
-    //     return Object.keys(this.userIdSchema.shape).length > 0;
-    // }
+    hasUserId(): this is FeatureTableConfig<
+        TTable,
+        TIdSchema,
+        Exclude<TUserIdSchema, EmptySchema>,
+        TBase,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema
+    > {
+        return Object.keys(this.userIdSchema.shape).length > 0;
+    }
 
+    /**
+     * Build a Zod schema for create/insert operations.
+     *
+     * Combines insert data schema with user ID schema (if configured).
+     * Used to validate input for creating new records.
+     *
+     * @returns Zod schema containing { data: InsertData, userId?: string }
+     *
+     * @example
+     * ```ts
+     * const createSchema = config.buildCreateInputSchema();
+     * const validated = createSchema.parse({
+     *   data: { name: 'New Item' },
+     *   userId: 'user-123'
+     * });
+     * ```
+     */
     buildCreateInputSchema() {
         return z.object({ data: this.insertDataSchema }).extend(this.userIdSchema.shape);
     }
 
+    /**
+     * Build a Zod schema for bulk create operations.
+     *
+     * Similar to buildCreateInputSchema but accepts an array of records.
+     * Combines array of insert data with user ID schema.
+     *
+     * @returns Zod schema containing { data: InsertData[], userId?: string }
+     *
+     * @example
+     * ```ts
+     * const createManySchema = config.buildCreateManyInputSchema();
+     * const validated = createManySchema.parse({
+     *   data: [{ name: 'Item 1' }, { name: 'Item 2' }],
+     *   userId: 'user-123'
+     * });
+     * ```
+     */
     buildCreateManyInputSchema() {
         return z.object({ data: z.array(this.insertDataSchema) }).extend(this.userIdSchema.shape);
     }
 
+    /**
+     * Build a Zod schema for update operations.
+     *
+     * Combines update data schema with ID schema and user ID schema.
+     * Used to validate input for updating existing records.
+     *
+     * @returns Zod schema containing { data: UpdateData, ids: {...}, userId?: string }
+     *
+     * @example
+     * ```ts
+     * const updateSchema = config.buildUpdateInputSchema();
+     * const validated = updateSchema.parse({
+     *   data: { name: 'Updated Name' },
+     *   ids: { id: 'item-123' },
+     *   userId: 'user-123'
+     * });
+     * ```
+     */
     buildUpdateInputSchema() {
         return z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape).extend({
             ids: this.idSchema,
         });
     }
 
-    buildIdentifierSChema() {
+    /**
+     * Build a Zod schema for identifier-based operations (get, delete, etc.).
+     *
+     * Combines ID fields and user ID field into a single schema for operations
+     * that need to identify specific records with user context.
+     *
+     * @returns Zod schema containing { ids: {...}, userId?: string }
+     *
+     * @example
+     * ```ts
+     * const identifierSchema = config.buildIdentifierSchema();
+     * // Result: z.object({ ids: { id: z.string() }, userId: z.string() })
+     * ```
+     */
+    buildIdentifierSchema() {
         return z
             .object({
                 ids: this.idSchema,
@@ -223,58 +290,88 @@ export class FeatureTableConfig<
             .extend(this.userIdSchema.shape);
     }
 
-    // buildUpdateInputSchemaCond(): IsEmptySchema<TIdSchema> extends true
-    //     ? z.ZodObject<{ data: z.ZodObject<TUpdateDataSchema> }, z.core.$strip>
-    //     : z.ZodObject<
-    //           { ids: z.ZodObject<TIdSchema>; data: z.ZodObject<TUpdateDataSchema> },
-    //           z.core.$strip
-    //       > {
-    //     // if (!this.hasIds()) {
-    //     //     throw Error('Id schema needs to be defined for update');
-    //     // }
-
-    //     const base = z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape);
-
-    //     if (Object.keys(this.idSchema.shape).length > 0) {
-    //         base.extend({
-    //             ids: this.idSchema,
-    //         });
-    //     }
-
-    //     return base;
-    // }
-
+    /**
+     * Validate and transform input data for table insert operations.
+     *
+     * Performs two-stage validation:
+     * 1. Validates against the configured create input schema
+     * 2. Validates against Drizzle's insert schema for the table
+     *
+     * @param input - Raw input data to validate
+     * @returns Validated data ready for database insertion
+     * @throws AppErrors.validation if validation fails
+     *
+     * @example
+     * ```ts
+     * const validData = config.validateDataForTableInsert({
+     *   data: { name: 'New Item' },
+     *   userId: 'user-123'
+     * });
+     * // Returns: { name: 'New Item', userId: 'user-123', createdAt: Date, ... }
+     * ```
+     */
     validateDataForTableInsert(input: unknown): InferInsertModel<TTable> {
-        // (1) validate with schema as configured
-        const schemaConfig = this.buildCreateInputSchema();
-        const validatedInput = schemaConfig.safeParse(input);
+        // Stage 1: Validate against configured create input schema
+        const configSchema = this.buildCreateInputSchema();
+        const configValidation = configSchema.safeParse(input);
 
-        if (validatedInput.error) {
-            console.log('', validatedInput.error);
+        if (!configValidation.success) {
+            throw AppErrors.validation('INVALID_INPUT', {
+                message: 'Failed to validate create input against configured schema',
+                details: { zodErrors: configValidation.error.issues },
+            });
         }
 
-        // (2) validate schema for actual insert
+        // Stage 2: Validate against Drizzle's insert schema
         const insertSchema = createInsertSchema(this.table);
-        const validatedInsertData = insertSchema.safeParse(validatedInput.data);
+        const insertValidation = insertSchema.safeParse(configValidation.data);
 
-        // todo check if this assertion is safe
-        if (validatedInsertData.success)
-            return validatedInsertData.data as InferInsertModel<TTable>;
+        if (!insertValidation.success) {
+            throw AppErrors.validation('INVALID_INPUT', {
+                message: 'Failed to validate insert data against table schema',
+                details: { zodErrors: insertValidation.error.issues },
+            });
+        }
 
-        console.error(validatedInsertData.error);
-
-        throw AppErrors.validation('INVALID_INPUT', {});
+        // Type safety note: Drizzle's createInsertSchema output types are extremely complex
+        // and TypeScript struggles to infer the exact match, but the runtime type is correct
+        // because safeParse guarantees the data matches InferInsertModel<TTable>
+        return insertValidation.data as InferInsertModel<TTable>;
     }
 
-    validateUpdateDataforTableUpdate(input: unknown): InferTableSchema<TTable, 'update'> {
-        const schema = createUpdateSchema(this.table);
-        const result = schema.safeParse(input);
-        // todo check if this assertion is safe
-        if (result.success) return result.data as InferTableSchema<TTable, 'update'>;
+    /**
+     * Validate and transform input data for table update operations.
+     *
+     * Validates the input against Drizzle's update schema for the table.
+     * Unlike insert, this only validates the data portion (partial update).
+     *
+     * @param input - Raw update data to validate
+     * @returns Validated partial data ready for database update
+     * @throws AppErrors.validation if validation fails
+     *
+     * @example
+     * ```ts
+     * const validData = config.validateUpdateDataForTableUpdate({
+     *   name: 'Updated Name'
+     * });
+     * // Returns: { name: 'Updated Name' }
+     * ```
+     */
+    validateUpdateDataForTableUpdate(input: unknown): InferTableSchema<TTable, 'update'> {
+        const updateSchema = createUpdateSchema(this.table);
+        const validation = updateSchema.safeParse(input);
 
-        console.error(result.error);
+        if (!validation.success) {
+            throw AppErrors.validation('INVALID_INPUT', {
+                message: 'Failed to validate update data against table schema',
+                details: { zodErrors: validation.error.issues },
+            });
+        }
 
-        throw AppErrors.validation('INVALID_INPUT', {});
+        // Type safety note: Drizzle's createUpdateSchema output types are extremely complex
+        // and TypeScript struggles to infer the exact match, but the runtime type is correct
+        // because safeParse guarantees the data matches InferTableSchema<TTable, 'update'>
+        return validation.data as InferTableSchema<TTable, 'update'>;
     }
 }
 
@@ -400,8 +497,22 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
+     * Allow all columns for insert and update operations.
      *
-     * Overwrites previously specified schemas for create and update data.
+     * Resets any field restrictions set via `.defineUpsertData()`, `.defineInsertData()`,
+     * or `.defineUpdateData()`. Use this when you want to allow modifying all fields.
+     *
+     * **Warning:** This overwrites previously specified insert/update schemas.
+     *
+     * @returns New builder instance with unrestricted insert/update schemas
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .defineUpsertData(['name'])  // Restrict to name only
+     *   .allowAllColumns()           // Now allow all columns again
+     *   .build();
+     * ```
      */
     allowAllColumns() {
         const createSchema = createInsertSchema(this.table);
@@ -475,6 +586,23 @@ export class FeatureTableConfigBuilder<
         });
     }
 
+    /**
+     * Remove ID schema configuration.
+     *
+     * Clears any ID fields previously set via `.setIds()`.
+     * Use this when you need to reconfigure IDs or when IDs aren't needed.
+     *
+     * @returns New builder instance with empty ID schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .setIds(['id'])      // Set ID
+     *   .removeIds()         // Remove it
+     *   .setIds(['newId'])   // Set a different ID
+     *   .build();
+     * ```
+     */
     removeIds() {
         type NewIdSchema = EmptySchema;
 
@@ -544,6 +672,23 @@ export class FeatureTableConfigBuilder<
         });
     }
 
+    /**
+     * Remove user ID schema configuration.
+     *
+     * Clears any user ID field previously set via `.setUserId()`.
+     * Use this when you need to reconfigure the user ID field or when RLS isn't needed.
+     *
+     * @returns New builder instance with empty user ID schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .setUserId('userId')         // Set user ID
+     *   .removeUserId()              // Remove it
+     *   .setUserId('ownerId')        // Set a different field
+     *   .build();
+     * ```
+     */
     removeUserId() {
         type NewUserIdSchema = EmptySchema;
 
@@ -734,6 +879,26 @@ export class FeatureTableConfigBuilder<
         });
     }
 
+    /**
+     * Pick specific fields for the base schema.
+     *
+     * Restricts the base schema to only the specified fields. This affects what
+     * fields are available for subsequent `.defineUpsertData()` calls.
+     *
+     * **Note:** This only affects the base schema, not insert/update/select schemas directly.
+     * Use this before calling `.defineUpsertData()` to limit available fields.
+     *
+     * @param fields - Array of field names to keep
+     * @returns New builder instance with restricted base schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .pickBaseSchema(['name', 'description', 'color'])
+     *   .defineUpsertData(['name', 'color']) // Can only pick from picked fields
+     *   .build();
+     * ```
+     */
     pickBaseSchema<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const baseSchemaObj = pickFields(this.baseSchemaObj, fields);
 
@@ -756,6 +921,25 @@ export class FeatureTableConfigBuilder<
         });
     }
 
+    /**
+     * Omit specific fields from the base schema.
+     *
+     * Excludes the specified fields from the base schema. This affects what
+     * fields are available for subsequent `.defineUpsertData()` calls.
+     *
+     * **Note:** This also updates insert and update schemas to match the new base schema.
+     *
+     * @param fields - Array of field names to exclude
+     * @returns New builder instance with restricted base schema
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .omitBaseSchema(['internalField', 'systemField'])
+     *   .defineUpsertData(['name', 'description']) // Omitted fields not available
+     *   .build();
+     * ```
+     */
     omitBaseSchema<const TFields extends (keyof TBase)[]>(fields: TFields) {
         const baseSchemaObj = omitFields(this.baseSchemaObj, fields);
 

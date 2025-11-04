@@ -232,7 +232,7 @@ export class StandardQueryBuilder<
 
     getById() {
         const returnColumns = this.tableConfig.getReturnColumns();
-        const schema = this.tableConfig.buildIdentifierSChema();
+        const schema = this.tableConfig.buildIdentifierSchema();
         type TInput = z.infer<typeof schema>;
 
         const query = async (input: TInput) => {
@@ -269,7 +269,7 @@ export class StandardQueryBuilder<
     }
 
     removeById() {
-        const schema = this.tableConfig.buildIdentifierSChema();
+        const schema = this.tableConfig.buildIdentifierSchema();
         type TInput = z.infer<typeof schema>;
 
         const query = async (input: TInput) => {
