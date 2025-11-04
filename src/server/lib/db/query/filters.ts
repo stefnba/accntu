@@ -1,3 +1,4 @@
+import { GetTableColumnKeys } from '@/server/lib/db/query/table-operations';
 import {
     Column,
     ColumnBaseConfig,
@@ -75,27 +76,27 @@ export const queryFilters = {
  */
 export const withTableFilters = <T extends Table>(table: T) => {
     return {
-        ilike: <TCol extends keyof T['_']['columns']>(
+        ilike: <TCol extends GetTableColumnKeys<T>>(
             field: TCol,
             value: (T['_']['columns'][TCol]['_']['data'] & string) | undefined
         ) => queryFilters.ilike(getTableColumns(table)[field], value),
-        like: <TCol extends keyof T['_']['columns']>(
+        like: <TCol extends GetTableColumnKeys<T>>(
             field: TCol,
             value: (T['_']['columns'][TCol]['_']['data'] & string) | undefined
         ) => queryFilters.like(getTableColumns(table)[field], value),
-        eq: <TCol extends keyof T['_']['columns']>(
+        eq: <TCol extends GetTableColumnKeys<T>>(
             field: TCol,
             value: T['_']['columns'][TCol]['_']['data'] | undefined
         ) => queryFilters.eq(getTableColumns(table)[field], value),
-        isNull: <TCol extends keyof T['_']['columns']>(field: TCol) =>
+        isNull: <TCol extends GetTableColumnKeys<T>>(field: TCol) =>
             queryFilters.isNull(getTableColumns(table)[field]),
-        isNotNull: <TCol extends keyof T['_']['columns']>(field: TCol) =>
+        isNotNull: <TCol extends GetTableColumnKeys<T>>(field: TCol) =>
             queryFilters.isNotNull(getTableColumns(table)[field]),
-        inArray: <TCol extends keyof T['_']['columns']>(
+        inArray: <TCol extends GetTableColumnKeys<T>>(
             field: TCol,
             value: (T['_']['columns'][TCol]['_']['data'] & string)[] | undefined
         ) => queryFilters.inArray(getTableColumns(table)[field], value),
-        notInArray: <TCol extends keyof T['_']['columns']>(
+        notInArray: <TCol extends GetTableColumnKeys<T>>(
             field: TCol,
             value: (T['_']['columns'][TCol]['_']['data'] & string)[] | undefined
         ) => queryFilters.notInArray(getTableColumns(table)[field], value),
