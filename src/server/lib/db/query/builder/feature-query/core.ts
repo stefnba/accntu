@@ -3,60 +3,55 @@
  *
  * This builder provides a fluent, type-safe interface for constructing database queries.
  * It supports both standard CRUD operations and custom queries with full TypeScript inference.
- *
- * Key improvements over the legacy approach:
- * - Progressive query registration (add one at a time)
- * - Simpler type inference (no complex nested generics)
- * - Separate builders for standard vs custom queries
- * - Method chaining with clear state transitions
- * - Single error handling layer (no double wrapping)
- *
- * @template Q - Record of registered query functions
- * @template S - Record of operation schemas for type inference
- * @template TTable - Drizzle table type
- *
- * @see StandardQueryBuilder - For building standard CRUD queries
- * @see {@link /src/server/lib/db/query/builder/feature-query/README.md} - Full documentation
- *
- * @example
- * ```typescript
- * const queries = new FeatureQueryBuilder({ queries: {}, schemas: {}, table: userTable })
- *   .registerSchema(userSchemas)
- *   .standardQueries({
- *     idColumns: ['id'],
- *     userIdColumn: 'userId'
- *   })
- *     .create({ allowedColumns: ['name', 'email'], returnColumns: ['id', 'name'] })
- *     .getById({ returnColumns: ['id', 'name', 'email'] })
- *     .done()
- *   .addQuery('customQuery', ({ tableOps }) => ({
- *     fn: async (input) => { ... }
- *   }));
- * ```
  */
 
-import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
-import { StandardQueryBuilder } from '@/server/lib/db/query/builder/feature-query/standard/builder';
+import type { InferQuerySchemas, TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
 import {
-    GetCustomInsertKeys,
-    TStandardQueryConfig,
-    TStandardQueryConfigDefaults,
-} from '@/server/lib/db/query/builder/feature-query/standard/types';
+    StandardQueryBuilder,
+    type TStandardNewQueryConfig,
+} from '@/server/lib/db/query/builder/feature-query/standard';
+
 import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
-import { GetTableInsertKeys, TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
+import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
+import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { Table } from 'drizzle-orm';
 
 export class FeatureQueryBuilder<
     const Q extends Record<string, QueryFn>,
     const S extends Record<string, TOperationSchemaObject>,
     const TTable extends Table,
+    const TBase extends TZodShape,
+    const TIdSchema extends TZodShape,
+    const TUserIdSchema extends TZodShape,
+    const TInsertDataSchema extends TZodShape,
+    const TUpdateDataSchema extends TZodShape,
+    const TSelectReturnSchema extends TZodShape,
+    const TTableConfig extends FeatureTableConfig<
+        TTable,
+        TIdSchema,
+        TUserIdSchema,
+        TBase,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema
+    > = FeatureTableConfig<
+        TTable,
+        TIdSchema,
+        TUserIdSchema,
+        TBase,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema
+    >,
 > {
     /** Collection of registered query functions */
     queries: Q;
 
     /** Operation schemas for input/output type inference */
     schemas: S;
+
+    tableConfig: TTableConfig;
 
     /** Drizzle table definition */
     table: TTable;
@@ -80,44 +75,21 @@ export class FeatureQueryBuilder<
     constructor({
         queries,
         schemas,
-        table,
+        config,
         name,
     }: {
         queries: Q;
         schemas: S;
-        table: TTable;
+        config: TTableConfig;
         name: string;
     }) {
         this.queries = queries;
         this.schemas = schemas;
-        this.table = table;
+        this.tableConfig = config;
+        this.table = config.table;
         this.name = name;
         // Create shared TableOperationsBuilder instance for all queries
-        this.tableOperations = new TableOperationsBuilder(table);
-    }
-
-    /**
-     * Register or switch to a different table.
-     *
-     * Creates a new builder instance with the specified table while preserving
-     * queries and schemas. Useful when building queries for related tables.
-     *
-     * @template TLocalTable - Type of the new table
-     * @param table - Drizzle table definition
-     * @returns New FeatureQueryBuilder with the new table type
-     *
-     * @example
-     * ```typescript
-     * builder.registerTable(userTable)
-     * ```
-     */
-    registerTable<const TLocalTable extends Table>(table: TLocalTable) {
-        return new FeatureQueryBuilder<Q, S, TLocalTable>({
-            queries: this.queries,
-            schemas: this.schemas,
-            table: table,
-            name: this.name,
-        });
+        this.tableOperations = new TableOperationsBuilder(config.table);
     }
 
     /**
@@ -139,10 +111,21 @@ export class FeatureQueryBuilder<
     registerSchema<const TLocalSchemas extends Record<string, TOperationSchemaObject>>(
         schemas: TLocalSchemas
     ) {
-        return new FeatureQueryBuilder<Q, S & TLocalSchemas, TTable>({
+        return new FeatureQueryBuilder<
+            Q,
+            S & TLocalSchemas,
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig
+        >({
             queries: this.queries,
             schemas: { ...this.schemas, ...schemas },
-            table: this.table,
+            config: this.tableConfig,
             name: this.name,
         });
     }
@@ -188,14 +171,22 @@ export class FeatureQueryBuilder<
                   fn: QueryFn<I, O>;
                   operation?: string;
               }
-            | (({ tableOps }: { tableOps: TableOperationsBuilder<TTable> }) => {
+            | (({
+                  tableOps,
+                  tableConfig,
+              }: {
+                  tableOps: TableOperationsBuilder<TTable>;
+                  tableConfig: TTableConfig;
+              }) => {
                   fn: QueryFn<I, O>;
                   operation?: string;
               })
     ) {
         // Extract fn and operation from config (handle both object and function)
         const { fn, operation } =
-            typeof config === 'function' ? config({ tableOps: this.tableOperations }) : config;
+            typeof config === 'function'
+                ? config({ tableOps: this.tableOperations, tableConfig: this.tableConfig })
+                : config;
 
         // Wrap the query with error handling (custom queries need this layer)
         const wrappedQueryFn = dbQueryFnHandler({
@@ -204,10 +195,21 @@ export class FeatureQueryBuilder<
         });
 
         // Return a new builder with the wrapped query added
-        return new FeatureQueryBuilder<Q & Record<K, QueryFn<I, O>>, S, TTable>({
+        return new FeatureQueryBuilder<
+            Q & Record<K, QueryFn<I, O>>,
+            S,
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig
+        >({
             queries: { ...this.queries, [key]: wrappedQueryFn },
             schemas: this.schemas,
-            table: this.table,
+            config: this.tableConfig,
             name: this.name,
         });
     }
@@ -235,85 +237,96 @@ export class FeatureQueryBuilder<
             queries[key] = this.queries[key];
         }
 
-        return new FeatureQueryBuilder<Pick<Q, K>, S, TTable>({
+        return new FeatureQueryBuilder<
+            Pick<Q, K>,
+            S,
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig
+        >({
             queries: queries,
             schemas: this.schemas,
-            table: this.table,
+            config: this.tableConfig,
             name: this.name,
         });
     }
 
-    /**
-     * Start building standard CRUD queries.
-     *
-     * Transitions to StandardQueryBuilder for progressive registration of
-     * standard operations (create, getById, getMany, updateById, removeById).
-     *
-     * Call individual methods on the returned builder, then call `.done()` to
-     * return to the main FeatureQueryBuilder.
-     *
-     * @template Config - Configuration type for standard queries
-     * @param config - Standard query configuration
-     * @returns StandardQueryBuilder for method chaining
-     *
-     * @example
-     * ```typescript
-     * builder
-     *   .standardQueries({
-     *     idColumns: ['id'],
-     *     userIdColumn: 'userId',
-     *     defaults: {
-     *       idFilters: { isActive: true },
-     *       returnColumns: ['id', 'name', 'email']
-     *     }
-     *   })
-     *     .create({ allowedColumns: ['name'], returnColumns: ['id', 'name'] })
-     *     .getById({ returnColumns: ['id', 'name', 'email'] })
-     *     .done() // Returns to FeatureQueryBuilder
-     *   .addQuery('customQuery', ...)
-     * ```
-     */
-    standardQueries<
-        const TAllowAllColumns extends boolean = false,
-        TAllowedUpsertColumns extends TAllowAllColumns extends true
-            ? ReadonlyArray<GetTableInsertKeys<TTable>>
-            : ReadonlyArray<GetCustomInsertKeys<TTable>> = TAllowAllColumns extends true
-            ? ReadonlyArray<GetTableInsertKeys<TTable>>
-            : ReadonlyArray<GetCustomInsertKeys<TTable>>,
-        Config extends TStandardQueryConfig<TTable, TAllowAllColumns> = TStandardQueryConfig<
+    withStandard(
+        standard: (
+            b: StandardQueryBuilder<
+                TTable,
+                TBase,
+                TIdSchema,
+                TUserIdSchema,
+                TInsertDataSchema,
+                TUpdateDataSchema,
+                TSelectReturnSchema
+            >
+        ) => StandardQueryBuilder<
             TTable,
-            TAllowAllColumns
-        >,
-    >(
-        config: {
-            allowAllColumns?: TAllowAllColumns;
-            defaults?: {
-                allowedUpsertColumns?: TAllowedUpsertColumns;
-            } & Omit<
-                TStandardQueryConfigDefaults<TTable, TAllowAllColumns>,
-                'allowedUpsertColumns'
-            >;
-        } & Omit<Config, 'defaults' | 'allowedUpsertColumns'>
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema
+        >
     ) {
-        return new StandardQueryBuilder<
+        const builder = standard(StandardQueryBuilder.create(this.tableConfig));
+        const standardQueries = builder.done();
+
+        return new FeatureQueryBuilder<
+            Q & typeof standardQueries,
+            S,
             TTable,
-            Omit<Config, 'defaults' | 'allowedUpsertColumns'> & {
-                allowedUpsertColumns?: TAllowedUpsertColumns;
-                defaults?: {
-                    allowedUpsertColumns?: TAllowedUpsertColumns;
-                } & Omit<
-                    TStandardQueryConfigDefaults<TTable, TAllowAllColumns>,
-                    'allowedUpsertColumns'
-                >;
-            },
-            Q,
-            S
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig
         >({
-            table: this.table,
-            baseQueries: this.queries,
-            baseSchemas: this.schemas,
-            config,
-            tableOps: this.tableOperations,
+            queries: { ...this.queries, ...standardQueries },
+            schemas: this.schemas,
+            config: this.tableConfig,
+            name: this.name,
+        });
+    }
+
+    registerAllStandard(config: TStandardNewQueryConfig<TTable> = {}) {
+        const builder = StandardQueryBuilder.create<
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema
+        >(this.tableConfig, config);
+
+        const standardQueries = builder.all().done();
+
+        return new FeatureQueryBuilder<
+            Q & typeof standardQueries,
+            S,
+            TTable,
+            TBase,
+            TIdSchema,
+            TUserIdSchema,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TTableConfig
+        >({
+            queries: { ...this.queries, ...standardQueries },
+            schemas: this.schemas,
+            config: this.tableConfig,
             name: this.name,
         });
     }

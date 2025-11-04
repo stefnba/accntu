@@ -1,17 +1,17 @@
 import { tag } from '@/server/db/tables';
-import { StandardBuilder } from '@/server/lib/db/query/builder/feature-query/standard-new-drei/builder';
+import { StandardQueryBuilder } from '@/server/lib/db/query/builder/feature-query/standard/builder';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
 const config = createFeatureTableConfig(tag).defineReturnColumns(['id', 'description']).build();
 
-const standard = StandardBuilder.create(config, {
+const standard = StandardQueryBuilder.create(config, {
     defaultFilters: {
         isActive: true,
     },
 })
     .all()
     .done();
-// const standard = StandardBuilder.create(config).create().getById().getMany().done();
+// const standard = StandardQueryBuilder.create(config).create().getById().getMany().done();
 
 // const a = await standard.create({
 //     data: {

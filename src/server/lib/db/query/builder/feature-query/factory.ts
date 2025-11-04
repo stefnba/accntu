@@ -1,6 +1,10 @@
 import { FeatureQueryBuilder } from '@/server/lib/db/query/builder/feature-query/core';
-import { Table } from 'drizzle-orm';
 
+import { TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
+import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+
+import { QueryFn } from '@/server/lib/db/query/feature-queries';
+import { Table } from 'drizzle-orm';
 /**
  * Factory function to create a new FeatureQueryBuilder instance.
  *
@@ -36,25 +40,72 @@ import { Table } from 'drizzle-orm';
  *     .done()
  * ```
  */
-export const createFeatureQueries = <T extends Table>(
-    tableOrConfig: T | { table: T; name?: string }
+// export const createFeatureQueriesOld = <T extends Table>(
+//     tableOrConfig: T | { table: T; name?: string }
+// ) => {
+//     // Extract table from config or use directly
+//     const table =
+//         typeof tableOrConfig === 'object' && 'table' in tableOrConfig
+//             ? tableOrConfig.table
+//             : tableOrConfig;
+
+//     // Derive name: explicit > table name > fallback
+//     const name =
+//         typeof tableOrConfig === 'object' && 'name' in tableOrConfig
+//             ? (tableOrConfig.name ?? table?._?.name ?? 'unknown')
+//             : (table?._?.name ?? 'unknown');
+
+//     return new FeatureQueryBuilder({
+//         schemas: {},
+//         queries: {},
+//         table,
+//         name,
+//     });
+// };
+
+export const createFeatureQueries = <
+    TTable extends Table,
+    TBase extends TZodShape,
+    TIdSchema extends TZodShape,
+    TUserIdSchema extends TZodShape,
+    TInsertDataSchema extends TZodShape,
+    TUpdateDataSchema extends TZodShape,
+    TSelectReturnSchema extends TZodShape,
+>(
+    name: string,
+    config: FeatureTableConfig<
+        TTable,
+        TIdSchema,
+        TUserIdSchema,
+        TBase,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema
+    >
 ) => {
-    // Extract table from config or use directly
-    const table =
-        typeof tableOrConfig === 'object' && 'table' in tableOrConfig
-            ? tableOrConfig.table
-            : tableOrConfig;
-
-    // Derive name: explicit > table name > fallback
-    const name =
-        typeof tableOrConfig === 'object' && 'name' in tableOrConfig
-            ? (tableOrConfig.name ?? table?._?.name ?? 'unknown')
-            : (table?._?.name ?? 'unknown');
-
-    return new FeatureQueryBuilder({
+    return new FeatureQueryBuilder<
+        Record<string, QueryFn>,
+        Record<string, TOperationSchemaObject>,
+        TTable,
+        TBase,
+        TIdSchema,
+        TUserIdSchema,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema,
+        FeatureTableConfig<
+            TTable,
+            TIdSchema,
+            TUserIdSchema,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema
+        >
+    >({
         schemas: {},
         queries: {},
-        table,
+        config,
         name,
     });
 };
