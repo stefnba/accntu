@@ -1,104 +1,74 @@
-import { tag } from '@/server/db/tables';
+import { tag, tagToTransaction } from '@/server/db/tables';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import {
     InferCreateInput,
+    InferIdsInput,
     InferOptionalSchema,
     InferReturnColums,
+    InferTableFromConfig,
     InferUpdateInput,
     IsEmptySchema,
 } from '@/server/lib/db/table/feature-config/types';
+import z from 'zod';
 
-/**
- * Example: Create a feature table configuration for the tag table.
- *
- * This fluent API allows you to:
- * - Define which fields are IDs (.setIds)
- * - Define which field is the user ID for row-level security (.setUserId)
- * - Restrict which fields can be inserted/updated (.defineUpsertData)
- * - Specify which columns to return in queries (.defineReturnColumns)
- */
-const config = createFeatureTableConfig(tag)
-    .setIds(['id'])
-    .setUserId('userId')
+// ================================================================
+// Tag Table Config Example
+// ================================================================
+
+//
+const tagTableConfig = createFeatureTableConfig(tag)
+    .omitBaseSchema(['transactionCount'])
+    // .removeIds()
+    // .removeUserId()
+    .defineReturnColumns(['name', 'color', 'userId', 'id'])
     .defineUpsertData(['name', 'description', 'color'])
-    .defineReturnColumns(['id', 'name', 'description', 'color', 'transactionCount'])
     .build();
 
-/**
- * All schemas are always ZodObject (never undefined).
- * This enables zero-assertion type safety internally.
- */
-const idSchema = config.idSchema;
-const userIdSchema = config.userIdSchema;
-const baseSchema = config.baseSchema;
-const insertSchema = config.insertSchema;
-const updateSchema = config.updateSchema;
-const selectSchema = config.selectSchema;
+export const tagTableConfigReturn = {
+    returnColums: tagTableConfig.getReturnColumns(),
+    userIdFieldName: tagTableConfig.getUserIdFieldName(),
+    idsFieldNames: tagTableConfig.getIdsFieldNames(),
+    // schemas
+    baseSchema: tagTableConfig.baseSchema,
+    idSchema: tagTableConfig.idSchema,
+    userIdSchema: tagTableConfig.userIdSchema,
+    insertDataSchema: tagTableConfig.insertDataSchema,
+    updateDataSchema: tagTableConfig.updateDataSchema,
+    selectReturnSchema: tagTableConfig.selectReturnSchema,
+    // input schemas
+    createSchema: tagTableConfig.buildCreateInputSchema(),
+    updateSchema: tagTableConfig.buildUpdateInputSchema(),
+} as const;
 
-/**
- * Use InferSchemaIfExists helper for clean undefined semantics.
- * Returns undefined if schema is empty, inferred type otherwise.
- */
-type TIdType = InferOptionalSchema<typeof idSchema>; // { id: string }
-type TUserIdType = InferOptionalSchema<typeof userIdSchema>; // { userId: string }
+export type TTagTableConfigReturn = {
+    // z.infer
+    ZodCreateSchema: z.infer<typeof tagTableConfigReturn.createSchema>;
+    ZodUpdateSchema: z.infer<typeof tagTableConfigReturn.updateSchema>;
+    ZodReturnSchema: z.infer<typeof tagTableConfigReturn.selectReturnSchema>;
 
-type TIsEmptySchema = IsEmptySchema<typeof userIdSchema>; // false (userId is set)
+    // our schema infer
+    CreateInput: InferCreateInput<typeof tagTableConfig>;
+    UpdateInput: InferUpdateInput<typeof tagTableConfig>;
+    IdsInput: InferIdsInput<typeof tagTableConfig>;
+    TTable: InferTableFromConfig<typeof tagTableConfig>;
+    ReturnColumns: InferReturnColums<typeof tagTableConfig>;
+    TIdsInput: InferIdsInput<typeof tagTableConfig>;
 
-/**
- * Example: When IDs are not configured, helper returns undefined
- */
-const configNoIds = createFeatureTableConfig(tag).build();
-type TNoIdType = InferOptionalSchema<typeof configNoIds.idSchema>; // undefined
-
-/**
- * Type guards allow runtime checks that narrow TypeScript types.
- *
- * @example
- * ```ts
- * if (config.hasIds()) {
- *   // TypeScript knows idSchema is non-empty here
- *   const ids = config.idSchema; // ZodObject with actual id fields
- * }
- * ```
- */
-if (config.hasIds()) {
-    // TypeScript knows idSchema is non-empty here
-    const _ids = config.idSchema;
-}
-
-// Example: Use the inferred types
-type Input = InferCreateInput<typeof config>;
-type UpdateInput = InferUpdateInput<typeof config>;
-
-// Example: Valid update input matching the inferred type
-const updateInput: UpdateInput = {
-    data: {
-        name: 'test',
-    },
-    ids: { id: '123' },
-    userId: 'test',
+    // optional schema
+    IdSchema: InferOptionalSchema<typeof tagTableConfigReturn.idSchema>;
+    userIdSchema: InferOptionalSchema<typeof tagTableConfigReturn.userIdSchema>;
 };
 
-/**
- * Example function using the inferred create input type.
- * TypeScript enforces the correct shape at compile time.
- */
-const createTag = (input: Input) => {
-    return input;
-};
+export type IdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.idSchema>;
+export type UserIdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.userIdSchema>;
 
-type ReturnColumns = InferReturnColums<typeof config>;
+// ================================================================
+// TagToTransaction Table Config Example
+// ================================================================
 
-// Example: Call with properly typed data
-createTag({
-    data: {
-        name: 'test',
-        description: 'test',
-        color: 'test',
-    },
-    userId: 'test',
-});
+const tagToTransactionTableConfig = createFeatureTableConfig(tagToTransaction)
+    .setIds(['tagId', 'transactionId'])
+    .build();
 
-// Example: Get the return columns array at runtime
-const returnColumns = config.getReturnColumns();
-console.log(returnColumns);
+export const tagToTransactionIdsFieldNames = tagToTransactionTableConfig.getIdsFieldNames();
+export const tagToTransactionUserIdFieldName = tagToTransactionTableConfig.getUserIdFieldName();

@@ -1,12 +1,17 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { getFieldsAsArray, omitFields, pickFields } from '@/lib/utils/zod';
+import {
+    getFieldsAsArray,
+    getFieldsAsArrayConstrained,
+    omitFields,
+    pickFields,
+} from '@/lib/utils/zod';
 import { SystemTableFieldKeys } from '@/server/lib/db/table';
 import {
     EmptySchema,
     InferDefaultSchemaForField,
     InferTableSchema,
 } from '@/server/lib/db/table/feature-config/types';
-import { getIdSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
+import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
 import { fieldsToMask } from '@/server/lib/db/table/system-fields/utils';
 import { AppErrors } from '@/server/lib/error';
 import { Prettify } from '@/types/utils';
@@ -142,8 +147,8 @@ export class FeatureTableConfig<
      * const columns = config.getReturnColumns(); // ['id', 'name']
      * ```
      */
-    getReturnColumns(): (keyof TSelectReturnSchema)[] {
-        return getFieldsAsArray(this.selectReturnSchema);
+    getReturnColumns(): Array<Extract<keyof TSelectReturnSchema, keyof TTable['_']['columns']>> {
+        return getFieldsAsArrayConstrained(this.selectReturnSchema, this.table);
     }
 
     /**
@@ -236,18 +241,23 @@ export class FeatureTableConfig<
     // }
 
     validateDataForTableInsert(input: unknown): InferInsertModel<TTable> {
-        // schema as configured
+        // (1) validate with schema as configured
         const schemaConfig = this.buildCreateInputSchema();
         const validatedInput = schemaConfig.safeParse(input);
 
-        // schema for actual insert
-        const schema = createInsertSchema(this.table);
+        if (validatedInput.error) {
+            console.log('', validatedInput.error);
+        }
 
-        const result = schema.safeParse(input);
+        // (2) validate schema for actual insert
+        const insertSchema = createInsertSchema(this.table);
+        const validatedInsertData = insertSchema.safeParse(validatedInput.data);
+
         // todo check if this assertion is safe
-        if (result.success) return result.data as InferInsertModel<TTable>;
+        if (validatedInsertData.success)
+            return validatedInsertData.data as InferInsertModel<TTable>;
 
-        console.error(result.error);
+        console.error(validatedInsertData.error);
 
         throw AppErrors.validation('INVALID_INPUT', {});
     }
@@ -341,8 +351,8 @@ export class FeatureTableConfigBuilder<
     static create<TTable extends Table>(table: TTable) {
         const baseSchemaObj = createInsertSchema(table).omit(fieldsToMask());
 
-        const idSchema = getIdSchemaForTableField(table, 'id');
-        const userSchema = getIdSchemaForTableField(table, 'userId');
+        const idSchema = getSchemaForTableField(table, 'id');
+        const userSchema = getSchemaForTableField(table, 'userId');
 
         return new FeatureTableConfigBuilder<
             TTable,

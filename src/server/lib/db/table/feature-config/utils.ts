@@ -1,7 +1,6 @@
-import {
-    EmptySchema,
-    InferDefaultSchemaForField,
-} from '@/server/lib/db/table/feature-config/types';
+import { TZodShape } from '@/lib/schemas/types';
+import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
+import { Prettify } from '@/types/utils';
 import { getTableColumns, Table } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
@@ -36,32 +35,43 @@ export const tableHasField = (
  * or an empty schema if the field doesn't exist. The return type is statically
  * determined based on whether the field exists in the table's type definition.
  *
+ * Uses function overloads to preserve type information about table columns,
+ * ensuring downstream type inference works correctly.
+ *
  * @param table - The Drizzle table instance
  * @param field - The column name to extract schema for
  * @returns A Zod schema containing the field (if it exists) or an empty schema
  *
  * @example
  * // Returns z.ZodObject<{ id: z.ZodNumber }> if 'id' exists
- * const idSchema = getIdSchemaForTableField(userTable, 'id');
+ * const idSchema = getSchemaForTableField(userTable, 'id');
  *
  * @example
  * // Returns z.ZodObject<{}> if 'nonExistent' doesn't exist
- * const emptySchema = getIdSchemaForTableField(userTable, 'nonExistent');
+ * const emptySchema = getSchemaForTableField(userTable, 'nonExistent');
  */
-export function getIdSchemaForTableField<TTable extends Table, TField extends string>(
+export function getSchemaForTableField<
+    TTable extends Table,
+    TField extends keyof TTable['_']['columns'] & string,
+>(
     table: TTable,
     field: TField
-): InferDefaultSchemaForField<TTable, TField> {
+): z.ZodObject<Prettify<Pick<InferTableSchema<TTable, 'select'>['shape'], TField>>>;
+
+export function getSchemaForTableField<TTable extends Table, TField extends string>(
+    table: TTable,
+    field: TField
+): z.ZodObject<EmptySchema>;
+
+export function getSchemaForTableField<TTable extends Table, TField extends string>(
+    table: TTable,
+    field: TField
+): z.ZodObject<TZodShape> {
     if (tableHasField(table, field)) {
         const fullSchema = createSelectSchema(table);
         const pickMask: Record<string, true> = { [field]: true };
-        // Safe when TField is a literal type: TypeScript evaluates the conditional type at
-        // compile time (checking if the literal extends keyof columns), while runtime logic
-        // verifies field existence. Both align when using literal strings like 'id' or 'userId'.
-        return fullSchema.pick(pickMask) as InferDefaultSchemaForField<TTable, TField>;
+        return fullSchema.pick(pickMask);
     }
 
-    // Safe when TField is a literal type not in columns: both compile-time and runtime
-    // agree the field doesn't exist, so returning EmptySchema is correct.
-    return z.object({}) as z.ZodObject<EmptySchema> as InferDefaultSchemaForField<TTable, TField>;
+    return z.object({});
 }
