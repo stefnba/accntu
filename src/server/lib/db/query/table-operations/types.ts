@@ -71,7 +71,7 @@ export type TOnConflict<T extends Table> =
     // Ignore conflicts with optional target specification
     | {
           type: 'ignore';
-          target?: Array<TTableColumns<T>> | TTableColumns<T>;
+          target?: Array<GetTableColumnKeys<T>> | GetTableColumnKeys<T>;
       }
     // Fail on conflicts (explicit - same as omitting onConflict)
     | {
@@ -80,14 +80,14 @@ export type TOnConflict<T extends Table> =
     // Update on conflicts with excluded values (full upsert)
     | {
           type: 'update';
-          target: Array<TTableColumns<T>> | TTableColumns<T>;
-          setExcluded?: Array<TTableColumns<T>>; // Use excluded.column values
+          target: Array<GetTableColumnKeys<T>> | GetTableColumnKeys<T>;
+          setExcluded?: Array<GetTableColumnKeys<T>>; // Use excluded.column values
           where?: Array<TBooleanFilter<T>>; // Optional conditions for the update
       }
     // Update on conflicts with custom set values
     | {
           type: 'updateSet';
-          target: Array<TTableColumns<T>> | TTableColumns<T>;
+          target: Array<GetTableColumnKeys<T>> | GetTableColumnKeys<T>;
           set: Partial<{
               [K in keyof T['_']['columns']]: GetColumnData<T['_']['columns'][K], 'raw'>;
           }>;
@@ -96,8 +96,8 @@ export type TOnConflict<T extends Table> =
     // Mixed update: some excluded values, some custom values
     | {
           type: 'updateMixed';
-          target: Array<TTableColumns<T>> | TTableColumns<T>;
-          setExcluded?: Array<TTableColumns<T>>; // Columns to use excluded values
+          target: Array<GetTableColumnKeys<T>> | GetTableColumnKeys<T>;
+          setExcluded?: Array<GetTableColumnKeys<T>>; // Columns to use excluded values
           set?: Partial<{
               [K in keyof T['_']['columns']]: GetColumnData<T['_']['columns'][K], 'raw'>;
           }>;
@@ -107,16 +107,6 @@ export type TOnConflict<T extends Table> =
 // ========================================
 // Drizzle Table Utilities
 // ========================================
-
-/**
- * The columns of a drizzle table
- * @example
- * ```typescript
- * type T = TTableColumns<typeof tag>;
- * // 'id' | 'name' | 'description' | 'createdAt' | 'updatedAt'
- * ```
- */
-export type TTableColumns<T extends Table> = keyof T['_']['columns'];
 
 /**
  * Get the full column definitions of a drizzle table
@@ -159,6 +149,23 @@ export type GetTableColumnDefinitions<T extends Table> = T['_']['columns'];
  * ```
  */
 export type GetTableColumnKeys<T extends Table> = keyof GetTableColumnDefinitions<T>;
+
+/**
+ * Get the keys of columns that can be inserted in a drizzle table
+ *
+ * This differs from GetTableColumnKeys for columns with defaults or auto-generation:
+ * - GetTableColumnKeys returns all columns (for SELECT)
+ * - GetTableInsertKeys returns insertable columns (for INSERT)
+ *
+ * @param T - The table to get the insert column keys from
+ * @example
+ * ```typescript
+ * type T = GetTableInsertKeys<typeof tag>;
+ * // 'name' | 'email' | 'description' | ...
+ * // May exclude auto-generated columns like 'id', 'createdAt'
+ * ```
+ */
+export type GetTableInsertKeys<T extends Table> = keyof T['$inferInsert'];
 
 /**
  * Infer the types of the columns of a drizzle table

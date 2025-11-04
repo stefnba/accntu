@@ -17,10 +17,15 @@
 
 export { TableOperationsBuilder } from './core';
 export type {
-    TBooleanFilter,
-    TOnConflict,
-    TTableColumns,
-    TValidTableForFrom,
+    GetTableColumnDefinitions,
+    GetTableColumnKeys,
+    GetTableInsertKeys,
+    InferTableColumnType,
+    InferTableColumnTypeAsObject,
+    InferTableColumnTypes,
     RequiredOnly,
+    TBooleanFilter,
     TByIdInput,
+    TOnConflict,
+    TValidTableForFrom,
 } from './types';

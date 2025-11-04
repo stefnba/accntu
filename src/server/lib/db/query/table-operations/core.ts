@@ -8,7 +8,6 @@ import {
     TBooleanFilter,
     TOnConflict,
     TStandardTableOperation,
-    TTableColumns,
     TValidTableForFrom,
 } from '@/server/lib/db/query/table-operations/types';
 import type { ColumnsSelection } from 'drizzle-orm';
@@ -300,7 +299,7 @@ export class TableOperationsBuilder<T extends Table> {
      * });
      * ```
      */
-    async getFirstRecord<Cols extends Array<TTableColumns<T>>>({
+    async getFirstRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         columns,
     }: {
@@ -354,7 +353,7 @@ export class TableOperationsBuilder<T extends Table> {
      * });
      * ```
      */
-    async getManyRecords<Cols extends Array<TTableColumns<T>>>({
+    async getManyRecords<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         columns,
         orderBy,
@@ -416,7 +415,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param returnColumns - The columns to return
      * @returns The updated record from the table
      */
-    async updateRecord<Cols extends Array<TTableColumns<T>>>({
+    async updateRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         data,
         identifiers,
         returnColumns,
@@ -450,7 +449,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param returnColumns - The columns to return
      * @returns The updated records from the table
      */
-    async updateManyRecords<Cols extends Array<TTableColumns<T>>>({
+    async updateManyRecords<Cols extends Array<GetTableColumnKeys<T>>>({
         data,
         identifiers,
         returnColumns,
@@ -572,7 +571,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param onConflict - The conflict resolution strategy
      * @returns The created records from the table
      */
-    async createManyRecords<Cols extends Array<TTableColumns<T>>>({
+    async createManyRecords<Cols extends Array<GetTableColumnKeys<T>>>({
         data,
         returnColumns,
         overrideValues,
@@ -612,7 +611,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param identifiers - The identifiers of the record
      * @returns The removed record from the table
      */
-    async removeRecord<Cols extends Array<TTableColumns<T>>>({
+    async removeRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         softDelete = true,
         returnColumns,
@@ -634,7 +633,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param returnColumns - The columns to return
      * @returns
      */
-    async deactivateRecord<Cols extends Array<TTableColumns<T>>>({
+    async deactivateRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         returnColumns,
     }: {
@@ -665,7 +664,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param returnColumns - The columns to return
      * @returns
      */
-    async activateRecord<Cols extends Array<TTableColumns<T>>>({
+    async activateRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         returnColumns,
     }: {
@@ -696,7 +695,7 @@ export class TableOperationsBuilder<T extends Table> {
      * @param returnColumns - The columns to return
      * @returns
      */
-    async deleteRecord<Cols extends Array<TTableColumns<T>>>({
+    async deleteRecord<Cols extends Array<GetTableColumnKeys<T>>>({
         identifiers,
         returnColumns,
     }: {
