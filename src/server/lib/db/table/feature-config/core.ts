@@ -10,12 +10,13 @@ import {
     EmptySchema,
     InferDefaultSchemaForField,
     InferTableSchema,
+    InferTableTypes,
 } from '@/server/lib/db/table/feature-config/types';
 import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
 import { fieldsToMask } from '@/server/lib/db/table/system-fields/utils';
 import { AppErrors } from '@/server/lib/error';
 import { Prettify } from '@/types/utils';
-import { InferInsertModel, Table } from 'drizzle-orm';
+import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
 
@@ -347,7 +348,7 @@ export class FeatureTableConfig<
      * // Returns: { name: 'New Item', userId: 'user-123', createdAt: Date, ... }
      * ```
      */
-    validateDataForTableInsert(input: unknown): InferInsertModel<TTable> {
+    validateDataForTableInsert(input: unknown): InferTableTypes<TTable, 'insert'> {
         // Stage 1: Validate against configured create input schema
         const configSchema = this.buildCreateInputSchema();
         const validatedInput = this.validateWithSchema(
@@ -356,50 +357,144 @@ export class FeatureTableConfig<
             'create input against configured schema'
         );
 
-        // Stage 2: Validate against Drizzle's insert schema
+        // Stage 2: Extract and merge data + userId
+        let insertData: Record<string, unknown> = {};
+
+        if (
+            'data' in validatedInput &&
+            validatedInput.data &&
+            typeof validatedInput.data === 'object'
+        ) {
+            const newData: Record<string, unknown> = validatedInput.data;
+            insertData = { ...newData };
+        }
+
+        if ('userId' in validatedInput && validatedInput.userId) {
+            insertData.userId = validatedInput.userId;
+        }
+
+        // Stage 3: Validate against Drizzle's insert schema
         const insertSchema = createInsertSchema(this.table);
         const validatedData = this.validateWithSchema(
             insertSchema,
-            validatedInput,
+            insertData,
             'insert data against table schema'
         );
 
-        // Type safety note: Drizzle's createInsertSchema output types are extremely complex
-        // and TypeScript struggles to infer the exact match, but the runtime type is correct
-        // because safeParse guarantees the data matches InferInsertModel<TTable>
-        return validatedData as InferInsertModel<TTable>;
+        return validatedData;
+    }
+
+    /**
+     * Validate and transform input data for bulk table insert operations.
+     *
+     * Performs validation for createMany operations:
+     * 1. Validates against the configured createMany input schema (with data array wrapper)
+     * 2. Extracts data array and merges userId into each record
+     * 3. Validates each record against Drizzle's insert schema
+     *
+     * @param input - Raw input containing { data: [...], userId?: ... }
+     * @returns Array of validated data ready for database insertion
+     * @throws AppErrors.validation if validation fails
+     *
+     * @example
+     * ```ts
+     * const validData = config.validateDataForTableInsertMany({
+     *   data: [{ name: 'Item 1' }, { name: 'Item 2' }],
+     *   userId: 'user-123'
+     * });
+     * // Returns: [{ name: 'Item 1', userId: 'user-123' }, { name: 'Item 2', userId: 'user-123' }]
+     * ```
+     */
+    validateDataForTableInsertMany(input: unknown): Array<InferTableTypes<TTable, 'insert'>> {
+        // Stage 1: Validate against configured createMany input schema
+        const configSchema = this.buildCreateManyInputSchema();
+        const validatedInput = this.validateWithSchema(
+            configSchema,
+            input,
+            'createMany input against configured schema'
+        );
+
+        // Stage 2: Extract data array and merge userId into each record
+        let dataArray: Array<Record<string, unknown>> = [];
+
+        if ('data' in validatedInput && Array.isArray(validatedInput.data)) {
+            const records: Array<Record<string, unknown>> = validatedInput.data;
+            dataArray = records.map((item) => {
+                const record = { ...item };
+                if ('userId' in validatedInput && validatedInput.userId) {
+                    record.userId = validatedInput.userId;
+                }
+                return record;
+            });
+        }
+
+        // Stage 3: Validate each record against Drizzle's insert schema
+        const insertSchema = createInsertSchema(this.table);
+        const validatedArray = dataArray.map((record, index) => {
+            return this.validateWithSchema(
+                insertSchema,
+                record,
+                `insert data for record ${index} against table schema`
+            );
+        });
+
+        return validatedArray;
     }
 
     /**
      * Validate and transform input data for table update operations.
      *
-     * Validates the input against Drizzle's update schema for the table.
-     * Unlike insert, this only validates the data portion (partial update).
+     * Performs two-stage validation:
+     * 1. Validates against the configured update input schema (with data/ids/userId wrapper)
+     * 2. Extracts the data portion and validates against Drizzle's update schema
      *
-     * @param input - Raw update data to validate
+     * Note: Unlike insert, userId is NOT merged into update data - it's only used for
+     * record identification/filtering. Only the `data` portion is validated and returned.
+     *
+     * @param input - Raw input containing { data: {...}, ids: {...}, userId?: ... }
      * @returns Validated partial data ready for database update
      * @throws AppErrors.validation if validation fails
      *
      * @example
      * ```ts
      * const validData = config.validateUpdateDataForTableUpdate({
-     *   name: 'Updated Name'
+     *   data: { name: 'Updated Name' },
+     *   ids: { id: 'item-123' },
+     *   userId: 'user-123'
      * });
      * // Returns: { name: 'Updated Name' }
      * ```
      */
-    validateUpdateDataForTableUpdate(input: unknown): InferTableSchema<TTable, 'update'> {
+    validateUpdateDataForTableUpdate(input: unknown): InferTableTypes<TTable, 'update'> {
+        // Stage 1: Validate against configured update input schema
+        const configSchema = this.buildUpdateInputSchema();
+        const validatedInput = this.validateWithSchema(
+            configSchema,
+            input,
+            'update input against configured schema'
+        );
+
+        // Stage 2: Extract just the data portion (userId/ids are for identification only)
+        let updateData: Record<string, unknown> = {};
+
+        if (
+            'data' in validatedInput &&
+            validatedInput.data &&
+            typeof validatedInput.data === 'object'
+        ) {
+            const newData: Record<string, unknown> = validatedInput.data;
+            updateData = { ...newData };
+        }
+
+        // Stage 3: Validate against Drizzle's update schema
         const updateSchema = createUpdateSchema(this.table);
         const validatedData = this.validateWithSchema(
             updateSchema,
-            input,
+            updateData,
             'update data against table schema'
         );
 
-        // Type safety note: Drizzle's createUpdateSchema output types are extremely complex
-        // and TypeScript struggles to infer the exact match, but the runtime type is correct
-        // because safeParse guarantees the data matches InferTableSchema<TTable, 'update'>
-        return validatedData as InferTableSchema<TTable, 'update'>;
+        return validatedData;
     }
 }
 

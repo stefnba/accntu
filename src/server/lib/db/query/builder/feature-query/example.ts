@@ -78,6 +78,17 @@ const createManyResult = await createMany({
     userId: USER_ID,
 });
 console.log('getManyResult', createManyResult);
+// ====================
+// standard create
+// ====================
+const create = tagQueries.queries.create;
+const createResult = await create({
+    data: {
+        name: 'Test create ' + Date.now(),
+    },
+    userId: USER_ID,
+});
+console.log('createResult', createResult);
 
 // exit
 process.exit(0);

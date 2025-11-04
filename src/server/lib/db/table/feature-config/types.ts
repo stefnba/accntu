@@ -84,6 +84,31 @@ export type InferTableSchema<
 > = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
 
 /**
+ * Infers the raw TypeScript shape for a Drizzle table operation (insert, select, or update).
+ *
+ * Given a Drizzle table type, extracts the plain TypeScript object type (not a Zod schema)
+ * for a specific operation type. This enables strongly typed values for database
+ * create, update, and select operations, directly linked to table schema definitions.
+ *
+ * @typeParam TTable - A Drizzle Table type (e.g., typeof userTable)
+ * @typeParam TOperation - The kind of DB operation: 'insert', 'select', or 'update'
+ *
+ * @example
+ * type InsertType = InferTableTypes<typeof userTable, 'insert'>;
+ * //    ^? { name: string; email: string; ... }
+ *
+ * type UpdateType = InferTableTypes<typeof userTable, 'update'>;
+ * //    ^? { name?: string; email?: string; ... }
+ *
+ * // For quick access to default 'insert' type:
+ * type InsertTypeDefault = InferTableTypes<typeof userTable>;
+ */
+export type InferTableTypes<
+    TTable extends Table,
+    TOperation extends 'insert' | 'select' | 'update' = 'insert',
+> = z.infer<InferTableSchema<TTable, TOperation>>;
+
+/**
  * Type guard to check if a Zod schema is empty (has no fields).
  *
  * Returns `true` if the schema shape has no properties (EmptySchema),

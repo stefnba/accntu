@@ -14,7 +14,7 @@ import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { Prettify } from '@/types/utils';
 import { TStandardNewQueryConfig } from './types';
 
-import { InferInsertModel, SQL, Table } from 'drizzle-orm';
+import { SQL, Table } from 'drizzle-orm';
 import z from 'zod';
 
 export class StandardQueryBuilder<
@@ -42,7 +42,7 @@ export class StandardQueryBuilder<
         TUpdateDataSchema,
         TSelectReturnSchema
     >,
-    TQueries extends Record<string, QueryFn<any, any>> = Record<string, never>,
+    TQueries extends Record<string, QueryFn<unknown, unknown>> = Record<string, never>,
 > {
     table: TTable;
     tableConfig: TTableConfig;
@@ -124,35 +124,17 @@ export class StandardQueryBuilder<
     }
 
     updateById() {
-        const inputSchema = this.tableConfig.buildUpdateInputSchema();
+        type TInput = z.infer<ReturnType<typeof this.tableConfig.buildUpdateInputSchema>>;
+
         const returnColumns = this.tableConfig.getReturnColumns();
-        type TInput = z.infer<typeof inputSchema>;
 
         const query = async (input: TInput) => {
-            console.log('updateById input', input);
-
-            const parsed = inputSchema.safeParse(input);
-
-            if (parsed.error) {
-                throw new Error('Errore asjlksjdfkl');
-            }
-            const inputValid = parsed.data;
-
-            console.log('updateById inputValid', inputValid);
-
-            let insertData = {};
-
-            if ('data' in inputValid) {
-                insertData = inputValid.data;
-            } else {
-                throw new Error('data must be in data');
-            }
-
-            console.log('updateById insertData', insertData);
+            // Validate the full input and extract/validate the data portion
+            const validatedData = this.tableConfig.validateUpdateDataForTableUpdate(input);
 
             const result = await this.tableOps.updateRecord({
-                identifiers: this.buildIdentifiers(inputValid),
-                data: insertData,
+                identifiers: this.buildIdentifiers(input),
+                data: validatedData,
                 returnColumns,
             });
 
@@ -184,9 +166,7 @@ export class StandardQueryBuilder<
 
     getMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
-        const schema = this.tableConfig.userIdSchema;
-        // todo
-        type TInput = z.infer<typeof schema> & {
+        type TInput = z.infer<typeof this.tableConfig.userIdSchema> & {
             filters?: (SQL | undefined)[];
             pagination?: {
                 page?: number;
@@ -232,8 +212,7 @@ export class StandardQueryBuilder<
 
     getById() {
         const returnColumns = this.tableConfig.getReturnColumns();
-        const schema = this.tableConfig.buildIdentifierSchema();
-        type TInput = z.infer<typeof schema>;
+        type TInput = z.infer<ReturnType<typeof this.tableConfig.buildIdentifierSchema>>;
 
         const query = async (input: TInput) => {
             const identifiers = this.buildIdentifiers(input);
@@ -269,8 +248,7 @@ export class StandardQueryBuilder<
     }
 
     removeById() {
-        const schema = this.tableConfig.buildIdentifierSchema();
-        type TInput = z.infer<typeof schema>;
+        type TInput = z.infer<ReturnType<typeof this.tableConfig.buildIdentifierSchema>>;
 
         const query = async (input: TInput) => {
             const identifiers = this.buildIdentifiers(input);
@@ -341,34 +319,12 @@ export class StandardQueryBuilder<
     }
 
     create() {
-        const inputSchema = this.tableConfig.buildCreateInputSchema();
         const returnColumns = this.tableConfig.getReturnColumns();
-        type TInput = z.infer<typeof inputSchema>;
+        type TInput = z.infer<ReturnType<typeof this.tableConfig.buildCreateInputSchema>>;
 
         const query = async (input: TInput) => {
-            const parsed = inputSchema.safeParse(input);
-
-            if (parsed.error) {
-                throw new Error('Errore asjlksjdfkl');
-            }
-            const inputValid = parsed.data;
-
-            let insertData = {};
-
-            if ('data' in inputValid) {
-                insertData = inputValid.data;
-            } else {
-                throw new Error('data must be in data');
-            }
-
-            if ('userId' in inputValid) {
-                insertData = {
-                    ...insertData,
-                    userId: inputValid.userId,
-                };
-            }
-
-            const validatedData = this.tableConfig.validateDataForTableInsert(insertData);
+            // Validate the full input (with data wrapper)
+            const validatedData = this.tableConfig.validateDataForTableInsert(input);
 
             return this.tableOps.createRecord({
                 data: validatedData,
@@ -399,40 +355,15 @@ export class StandardQueryBuilder<
     }
 
     createMany() {
-        const inputSchema = this.tableConfig.buildCreateManyInputSchema();
         const returnColumns = this.tableConfig.getReturnColumns();
-        type TInput = z.infer<typeof inputSchema>;
+        type TInput = z.infer<ReturnType<typeof this.tableConfig.buildCreateManyInputSchema>>;
 
         const query = async (input: TInput) => {
-            const parsed = inputSchema.safeParse(input);
-
-            if (parsed.error) {
-                throw new Error('Errore asjlksjdfkl');
-            }
-            const inputValid = parsed.data;
-
-            const insertData: { data: Array<InferInsertModel<TTable>>; userId?: string } = {
-                data: [],
-            };
-
-            if ('data' in inputValid) {
-                insertData.data = inputValid.data;
-            } else {
-                throw new Error('data must be in data');
-            }
-
-            if ('userId' in inputValid) {
-                insertData.userId = inputValid.userId;
-            }
-
-            // const validatedData = this.tableConfig.validateDataForTableInsert(insertData);
-
-            const d = insertData.data.map((item) => ({ ...item, userId: insertData.userId }));
-
-            console.log('insertData', d);
+            // Validate the full input and extract/merge/validate all records
+            const validatedData = this.tableConfig.validateDataForTableInsertMany(input);
 
             return this.tableOps.createManyRecords({
-                data: d,
+                data: validatedData,
                 returnColumns,
             });
         };
