@@ -10,6 +10,7 @@ import {
     TStandardTableOperation,
     TValidTableForFrom,
 } from '@/server/lib/db/query/table-operations/types';
+import { InferTableTypes } from '@/server/lib/db/table/feature-config/types';
 import type { ColumnsSelection } from 'drizzle-orm';
 import {
     and,
@@ -420,7 +421,7 @@ export class TableOperationsBuilder<T extends Table> {
         identifiers,
         returnColumns,
     }: {
-        data: Partial<InferInsertModel<T>>;
+        data: InferTableTypes<T, 'update'>;
         identifiers: Array<TBooleanFilter<T>>;
         returnColumns?: Cols;
     }) {
@@ -488,14 +489,18 @@ export class TableOperationsBuilder<T extends Table> {
         returnColumns,
         onConflict,
     }: {
-        data: InferInsertModel<T>;
+        data: InferTableTypes<T, 'insert'>;
         returnColumns?: Cols;
         onConflict?: TOnConflict<T>;
     }): Promise<{ [K in Cols[number]]: T['_']['columns'][K]['_']['data'] }> {
         const columns = this.buildSelectColumns(returnColumns);
 
         // base query
-        const baseQuery = db.insert(this.table).values(data).$dynamic();
+        // Type assertion: InferTableTypes<T, 'insert'> is structurally compatible with Drizzle's insert type
+        const baseQuery = db
+            .insert(this.table)
+            .values(data as InferInsertModel<T>)
+            .$dynamic();
 
         // build on conflict
         const query = this.buildOnConflict(baseQuery, onConflict);
@@ -577,7 +582,7 @@ export class TableOperationsBuilder<T extends Table> {
         overrideValues,
         onConflict = 'ignore',
     }: {
-        data: Array<InferInsertModel<T>>;
+        data: Array<InferTableTypes<T, 'insert'>>;
         overrideValues?: Partial<InferInsertModel<T>>;
         returnColumns?: Cols;
         onConflict?: TOnConflict<T>;
@@ -592,7 +597,11 @@ export class TableOperationsBuilder<T extends Table> {
         const columns = this.buildSelectColumns(returnColumns);
 
         // Build dynamic query with conflict resolution
-        let query = db.insert(this.table).values(localData).$dynamic();
+        // Type assertion: InferTableTypes<T, 'insert'> is structurally compatible with Drizzle's insert type
+        let query = db
+            .insert(this.table)
+            .values(localData as Array<InferInsertModel<T>>)
+            .$dynamic();
         query = this.buildOnConflict(query, onConflict);
 
         return withDbQuery({
