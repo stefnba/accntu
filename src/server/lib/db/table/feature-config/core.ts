@@ -1,9 +1,16 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { getFieldsAsArray, omitFields, pickFields } from '@/lib/utils/zod';
 import { SystemTableFieldKeys } from '@/server/lib/db/table';
-import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
+import {
+    EmptySchema,
+    InferDefaultSchemaForField,
+    InferTableSchema,
+} from '@/server/lib/db/table/feature-config/types';
+import { getIdSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
 import { fieldsToMask } from '@/server/lib/db/table/system-fields/utils';
-import { Table } from 'drizzle-orm';
+import { AppErrors } from '@/server/lib/error';
+import { Prettify } from '@/types/utils';
+import { InferInsertModel, Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
 
@@ -40,10 +47,10 @@ export class FeatureTableConfig<
     TTable extends Table = Table,
     TIdSchema extends TZodShape = EmptySchema,
     TUserIdSchema extends TZodShape = EmptySchema,
-    TBase extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],
-    TInsertDataSchema extends TZodShape = InferTableSchema<TTable, 'insert'>['shape'],
-    TUpdateDataSchema extends TZodShape = InferTableSchema<TTable, 'update'>['shape'],
-    TSelectReturnSchema extends TZodShape = InferTableSchema<TTable, 'select'>['shape'],
+    TBase extends TZodShape = TZodShape,
+    TInsertDataSchema extends TZodShape = TZodShape,
+    TUpdateDataSchema extends TZodShape = TZodShape,
+    TSelectReturnSchema extends TZodShape = TZodShape,
 > {
     /** The Drizzle table definition */
     readonly table: TTable;
@@ -117,7 +124,7 @@ export class FeatureTableConfig<
         return getFieldsAsArray(this.userIdSchema)[0];
     }
 
-    getIdsFieldNames(): (keyof TIdSchema)[] {
+    getIdsFieldNames(): Array<keyof TIdSchema> {
         return getFieldsAsArray(this.idSchema);
     }
 
@@ -177,16 +184,83 @@ export class FeatureTableConfig<
      * }
      * ```
      */
-    hasUserId(): this is FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        Exclude<TUserIdSchema, EmptySchema>,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema
-    > {
-        return Object.keys(this.userIdSchema.shape).length > 0;
+    // hasUserId(): this is FeatureTableConfig<
+    //     TTable,
+    //     TIdSchema,
+    //     Exclude<TUserIdSchema, EmptySchema>,
+    //     TBase,
+    //     TInsertDataSchema,
+    //     TUpdateDataSchema,
+    //     TSelectReturnSchema
+    // > {
+    //     return Object.keys(this.userIdSchema.shape).length > 0;
+    // }
+
+    buildCreateInputSchema() {
+        return z.object({ data: this.insertDataSchema }).extend(this.userIdSchema.shape);
+    }
+
+    buildUpdateInputSchema() {
+        return z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape).extend({
+            ids: this.idSchema,
+        });
+    }
+
+    buildIdentifierSChema() {
+        return z
+            .object({
+                ids: this.idSchema,
+            })
+            .extend(this.userIdSchema.shape);
+    }
+
+    // buildUpdateInputSchemaCond(): IsEmptySchema<TIdSchema> extends true
+    //     ? z.ZodObject<{ data: z.ZodObject<TUpdateDataSchema> }, z.core.$strip>
+    //     : z.ZodObject<
+    //           { ids: z.ZodObject<TIdSchema>; data: z.ZodObject<TUpdateDataSchema> },
+    //           z.core.$strip
+    //       > {
+    //     // if (!this.hasIds()) {
+    //     //     throw Error('Id schema needs to be defined for update');
+    //     // }
+
+    //     const base = z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape);
+
+    //     if (Object.keys(this.idSchema.shape).length > 0) {
+    //         base.extend({
+    //             ids: this.idSchema,
+    //         });
+    //     }
+
+    //     return base;
+    // }
+
+    validateDataForTableInsert(input: unknown): InferInsertModel<TTable> {
+        // schema as configured
+        const schemaConfig = this.buildCreateInputSchema();
+        const validatedInput = schemaConfig.safeParse(input);
+
+        // schema for actual insert
+        const schema = createInsertSchema(this.table);
+
+        const result = schema.safeParse(input);
+        // todo check if this assertion is safe
+        if (result.success) return result.data as InferInsertModel<TTable>;
+
+        console.error(result.error);
+
+        throw AppErrors.validation('INVALID_INPUT', {});
+    }
+
+    validateUpdateDataforTableUpdate(input: unknown): InferTableSchema<TTable, 'update'> {
+        const schema = createUpdateSchema(this.table);
+        const result = schema.safeParse(input);
+        // todo check if this assertion is safe
+        if (result.success) return result.data as InferTableSchema<TTable, 'update'>;
+
+        console.error(result.error);
+
+        throw AppErrors.validation('INVALID_INPUT', {});
     }
 }
 
@@ -265,28 +339,26 @@ export class FeatureTableConfigBuilder<
      * - All table columns available for select
      */
     static create<TTable extends Table>(table: TTable) {
-        type TInsertDataSchema = InferTableSchema<TTable, 'insert'>['shape'];
-        type TUpdateDataSchema = InferTableSchema<TTable, 'update'>['shape'];
-        type TSelectReturnSchema = InferTableSchema<TTable, 'select'>['shape'];
-
         const baseSchemaObj = createInsertSchema(table).omit(fieldsToMask());
-        type TBase = Omit<InferTableSchema<TTable, 'insert'>['shape'], SystemTableFieldKeys>;
+
+        const idSchema = getIdSchemaForTableField(table, 'id');
+        const userSchema = getIdSchemaForTableField(table, 'userId');
 
         return new FeatureTableConfigBuilder<
             TTable,
-            TBase,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            EmptySchema,
-            EmptySchema
+            Prettify<Omit<InferTableSchema<TTable, 'insert'>['shape'], SystemTableFieldKeys>>,
+            Prettify<Omit<InferTableSchema<TTable, 'insert'>['shape'], SystemTableFieldKeys>>,
+            Prettify<Omit<InferTableSchema<TTable, 'update'>['shape'], SystemTableFieldKeys>>,
+            InferTableSchema<TTable, 'select'>['shape'],
+            InferDefaultSchemaForField<TTable, 'id'>['shape'],
+            InferDefaultSchemaForField<TTable, 'userId'>['shape']
         >({
             table,
-            idSchemaObj: z.object({}),
-            userIdSchemaObj: z.object({}),
+            idSchemaObj: idSchema,
+            userIdSchemaObj: userSchema,
             baseSchemaObj: baseSchemaObj,
-            insertDataSchemaObj: z.object(createInsertSchema(table).shape),
-            updateDataSchemaObj: z.object(createUpdateSchema(table).shape),
+            insertDataSchemaObj: baseSchemaObj,
+            updateDataSchemaObj: createUpdateSchema(table).omit(fieldsToMask()),
             selectReturnSchemaObj: z.object(createSelectSchema(table).shape),
         });
     }
@@ -313,15 +385,19 @@ export class FeatureTableConfigBuilder<
         return createInsertSchema(this.table).shape;
     }
 
+    /**
+     *
+     * Overwrites previously specified schemas for create and update data.
+     */
     allowAllColumns() {
-        const baseSchemaObj = this.getRawSchemaFromTable('insert');
-        type TBase = InferTableSchema<TTable, 'insert'>['shape'];
+        const createSchema = createInsertSchema(this.table);
+        const updateSchema = createUpdateSchema(this.table);
 
         return new FeatureTableConfigBuilder<
             TTable,
-            TBase,
-            TInsertDataSchema,
-            TUpdateDataSchema,
+            InferTableSchema<TTable, 'insert'>['shape'],
+            InferTableSchema<TTable, 'insert'>['shape'],
+            InferTableSchema<TTable, 'update'>['shape'],
             TSelectReturnSchema,
             TIdSchema,
             TUserIdSchema
@@ -329,9 +405,9 @@ export class FeatureTableConfigBuilder<
             table: this.table,
             idSchemaObj: this.idSchemaObj,
             userIdSchemaObj: this.userIdSchemaObj,
-            baseSchemaObj: z.object(baseSchemaObj),
-            insertDataSchemaObj: this.insertDataSchemaObj,
-            updateDataSchemaObj: this.updateDataSchemaObj,
+            baseSchemaObj: createSchema,
+            insertDataSchemaObj: createSchema,
+            updateDataSchemaObj: updateSchema,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
         });
     }
@@ -366,7 +442,27 @@ export class FeatureTableConfigBuilder<
             fields
         ).required();
 
-        type NewIdSchema = typeof idSchemaObj.shape;
+        return new FeatureTableConfigBuilder<
+            TTable,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            typeof idSchemaObj.shape,
+            TUserIdSchema
+        >({
+            table: this.table,
+            idSchemaObj,
+            userIdSchemaObj: this.userIdSchemaObj,
+            baseSchemaObj: this.baseSchemaObj,
+            insertDataSchemaObj: this.insertDataSchemaObj,
+            updateDataSchemaObj: this.updateDataSchemaObj,
+            selectReturnSchemaObj: this.selectReturnSchemaObj,
+        });
+    }
+
+    removeIds() {
+        type NewIdSchema = EmptySchema;
 
         return new FeatureTableConfigBuilder<
             TTable,
@@ -378,7 +474,7 @@ export class FeatureTableConfigBuilder<
             TUserIdSchema
         >({
             table: this.table,
-            idSchemaObj,
+            idSchemaObj: z.object({}),
             userIdSchemaObj: this.userIdSchemaObj,
             baseSchemaObj: this.baseSchemaObj,
             insertDataSchemaObj: this.insertDataSchemaObj,
@@ -427,6 +523,28 @@ export class FeatureTableConfigBuilder<
             table: this.table,
             idSchemaObj: this.idSchemaObj,
             userIdSchemaObj,
+            baseSchemaObj: this.baseSchemaObj,
+            insertDataSchemaObj: this.insertDataSchemaObj,
+            updateDataSchemaObj: this.updateDataSchemaObj,
+            selectReturnSchemaObj: this.selectReturnSchemaObj,
+        });
+    }
+
+    removeUserId() {
+        type NewUserIdSchema = EmptySchema;
+
+        return new FeatureTableConfigBuilder<
+            TTable,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TIdSchema,
+            NewUserIdSchema
+        >({
+            table: this.table,
+            idSchemaObj: this.idSchemaObj,
+            userIdSchemaObj: z.object({}),
             baseSchemaObj: this.baseSchemaObj,
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
@@ -630,8 +748,8 @@ export class FeatureTableConfigBuilder<
         return new FeatureTableConfigBuilder<
             TTable,
             typeof baseSchemaObj.shape,
-            TInsertDataSchema,
-            TUpdateDataSchema,
+            typeof baseSchemaObj.shape,
+            typeof baseSchemaObj.shape,
             TSelectReturnSchema,
             TIdSchema,
             TUserIdSchema
@@ -640,8 +758,8 @@ export class FeatureTableConfigBuilder<
             baseSchemaObj: baseSchemaObj,
             idSchemaObj: this.idSchemaObj,
             userIdSchemaObj: this.userIdSchemaObj,
-            insertDataSchemaObj: this.insertDataSchemaObj,
-            updateDataSchemaObj: this.updateDataSchemaObj,
+            insertDataSchemaObj: baseSchemaObj,
+            updateDataSchemaObj: baseSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
         });
     }

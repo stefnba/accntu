@@ -229,3 +229,13 @@ export type InferTableFromConfig<
         table: Table;
     },
 > = TConfig['table'];
+
+/**
+ * Infer the zod schema from a table for a specific field if this field exists, otherwise infer empty schema
+ */
+export type InferDefaultSchemaForField<
+    TTable extends Table,
+    TField extends string = 'id',
+> = TField extends keyof TTable['_']['columns']
+    ? z.ZodObject<Prettify<Pick<InferTableSchema<TTable, 'select'>['shape'], TField>>>
+    : z.ZodObject<EmptySchema>;
