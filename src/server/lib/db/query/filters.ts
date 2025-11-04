@@ -1,4 +1,4 @@
-import { GetTableColumnKeys } from '@/server/lib/db/query/table-operations';
+import { GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import {
     Column,
     ColumnBaseConfig,

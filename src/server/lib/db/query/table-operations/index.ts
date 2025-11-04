@@ -17,12 +17,6 @@
 
 export { TableOperationsBuilder } from './core';
 export type {
-    GetTableColumnDefinitions,
-    GetTableColumnKeys,
-    GetTableInsertKeys,
-    InferTableColumnType,
-    InferTableColumnTypeAsObject,
-    InferTableColumnTypes,
     RequiredOnly,
     TBooleanFilter,
     TByIdInput,

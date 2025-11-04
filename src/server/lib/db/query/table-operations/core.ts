@@ -1,10 +1,9 @@
 import { typedKeys } from '@/lib/utils';
 import { db } from '@/server/db';
+import { GetTableColumnDefinitions, GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import { withDbQuery } from '@/server/lib/db/query/handler';
 import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query/helpers';
 import {
-    GetTableColumnDefinitions,
-    GetTableColumnKeys,
     TBooleanFilter,
     TOnConflict,
     TStandardTableOperation,

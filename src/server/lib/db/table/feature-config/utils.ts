@@ -1,32 +1,10 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { tableHasField } from '@/server/lib/db/drizzle';
 import { EmptySchema, InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { Prettify } from '@/types/utils';
-import { getTableColumns, Table } from 'drizzle-orm';
+import { Table } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
-
-/**
- * Type guard that checks if a Drizzle table contains a specific column.
- *
- * Narrows the `field` parameter to be a valid key of the table's columns,
- * enabling type-safe column access in subsequent operations.
- *
- * @param table - The Drizzle table instance to check
- * @param field - The column name to search for
- * @returns Type predicate indicating if the field exists as a column
- *
- * @example
- * if (tableHasField(userTable, 'email')) {
- *   // TypeScript now knows 'email' is a valid column
- * }
- */
-export const tableHasField = (
-    table: Table,
-    field: string
-): field is keyof Table['_']['columns'] => {
-    const cols = getTableColumns(table);
-    return Object.keys(cols).includes(field);
-};
 
 /**
  * Extracts a Zod schema for a specific field from a Drizzle table.

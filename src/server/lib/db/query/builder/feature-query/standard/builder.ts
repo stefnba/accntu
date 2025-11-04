@@ -1,15 +1,12 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedEntries, typedKeys } from '@/lib/utils';
+import { GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import { QueryFn } from '@/server/lib/db/query/feature-queries';
 import {
     defaultIdFiltersIdentifier,
     userIdIdentifier,
 } from '@/server/lib/db/query/feature-queries/helpers';
-import {
-    GetTableColumnKeys,
-    TableOperationsBuilder,
-    TBooleanFilter,
-} from '@/server/lib/db/query/table-operations';
+import { TableOperationsBuilder, TBooleanFilter } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { Prettify } from '@/types/utils';
 import { TStandardNewQueryConfig } from './types';
