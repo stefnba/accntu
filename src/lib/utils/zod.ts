@@ -1,6 +1,7 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { typedFromEntries } from '@/lib/utils';
+import { typedFromEntries, typedKeys } from '@/lib/utils';
 import { Prettify } from '@/types/utils';
+import { getTableColumns, Table } from 'drizzle-orm';
 import { core, util, z, ZodIssue, ZodObject } from 'zod';
 
 /**
@@ -114,7 +115,42 @@ export function omitFields<TSchema extends TZodShape, TKeys extends Array<keyof 
  *
  * @param schema - The Zod object schema to get the fields from
  * @returns An array of the fields of the schema with type support
+ *
+ * @example
+ * ```ts
+ * const fields = getFieldsAsArray(mySchema); // Returns (keyof schema['shape'])[]
+ * ```
  */
 export const getFieldsAsArray = <T extends z.ZodObject>(schema: T): (keyof T['shape'])[] => {
     return schema.keyof().options;
+};
+
+/**
+ * Utility to get fields from a Zod schema as an array, validated against table columns.
+ *
+ * Returns only the schema keys that exist in the table's columns, providing both runtime
+ * validation and proper type inference without type assertions.
+ *
+ * @param schema - The Zod object schema
+ * @param table - The Drizzle table to validate against
+ * @returns An array of schema keys that are valid table columns
+ *
+ * @example
+ * ```ts
+ * // Returns only keys that exist in both schema and table columns
+ * const columns = getFieldsAsArrayConstrained(config.selectReturnSchema, table);
+ * // Type: Array<Extract<keyof TSchema, keyof TTable['_']['columns']>>
+ * ```
+ */
+export const getFieldsAsArrayConstrained = <TSchema extends TZodShape, TTable extends Table>(
+    schema: z.ZodObject<TSchema>,
+    table: TTable
+): Array<Extract<keyof TSchema, keyof TTable['_']['columns']>> => {
+    const schemaKeys = schema.keyof().options;
+    const tableColumns = typedKeys(getTableColumns(table));
+
+    // Return only schema keys that are actual table columns
+    return schemaKeys.filter((key) => tableColumns.includes(key)) as Array<
+        Extract<keyof TSchema, keyof TTable['_']['columns']>
+    >;
 };
