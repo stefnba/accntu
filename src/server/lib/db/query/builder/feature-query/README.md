@@ -1,10 +1,12 @@
-# Feature Query Builder - Modern Approach
+# Feature Query Builder
 
-A progressive, type-safe query builder for feature-based architecture with simplified configuration and better developer experience.
+A modern, type-safe query builder for feature-based architecture. Bridges feature schemas with database operations, handles user-based filtering, and provides full TypeScript inference.
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Purpose](#purpose)
 - [Key Improvements](#key-improvements)
 - [Architecture](#architecture)
 - [Usage Guide](#usage-guide)
@@ -14,74 +16,89 @@ A progressive, type-safe query builder for feature-based architecture with simpl
 
 ## Overview
 
-The Feature Query Builder provides a modern, fluent interface for constructing database queries with full TypeScript inference. It separates standard CRUD operations from custom queries, making code more maintainable and easier to understand.
+The Feature Query Builder provides query orchestration for feature-based projects. It simplifies database operations while maintaining security, type safety, and developer experience.
+
+### Purpose
+
+- **Extract userId** from input and pass it to table operations
+- **Apply feature-specific filters** (search, status, etc.)
+- **Map schema types** to database operations
+- **Handle pagination** and ordering logic
+- **Provide full type safety** with zero type assertions
 
 ### Key Concepts
 
-1. **Progressive Registration**: Add queries one at a time instead of all-or-nothing
-2. **Separate Builders**: Standard CRUD vs custom queries have dedicated builders
-3. **Single Error Handling**: Only one error handling layer (no double wrapping)
-4. **Full Type Safety**: Complete type inference with no type assertions
+1. **Progressive Registration**: Add only the queries you need
+2. **Table Configuration**: Type-safe configuration via `FeatureTableConfig`
+3. **Single Error Handling**: Clean stack traces (no double wrapping)
+4. **Full Type Safety**: Complete type inference throughout
+
+## Quick Start
+
+```typescript
+import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
+import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import { tagTable } from '@/features/tag/server/db/tables';
+
+// 1. Create table configuration
+const tagTableConfig = createFeatureTableConfig(tagTable)
+    .restrictReturnColumns(['id', 'name', 'color', 'userId'])
+    .build();
+
+// 2. Create query builder with all standard CRUD operations
+export const tagQueries = createFeatureQueries('tag', tagTableConfig).registerAllStandard({
+    defaultFilters: { isActive: true },
+});
+
+// 3. Use the queries
+const tag = await tagQueries.queries.create({
+    data: { name: 'Work', color: '#FF0000' },
+    userId: 'user-123',
+});
+
+const tags = await tagQueries.queries.getMany({
+    userId: 'user-123',
+});
+```
 
 ## Key Improvements
 
-### 1. Progressive Query Registration
+### 1. Table Configuration System
+
+**New Approach** uses `FeatureTableConfig` for type-safe configuration:
+
+```typescript
+// Create configuration once, reuse everywhere
+const tableConfig = createFeatureTableConfig(userTable)
+    .restrictReturnColumns(['id', 'name', 'email'])
+    .restrictInsertColumns(['name', 'email'])
+    .build();
+
+// Configuration provides type safety for all queries
+const queries = createFeatureQueries('user', tableConfig).registerAllStandard();
+```
+
+### 2. Simplified API
 
 **Old Approach** (all-or-nothing):
 
 ```typescript
-// Must configure everything upfront, even if you only need 2 queries
 .registerCoreQueries(table, {
   idFields: ['id'],
   userIdField: 'userId',
   returnColumns: ['id', 'name', 'email'],
   allowedUpsertColumns: ['name', 'email'],
   softDelete: true,
-  queryConfig: {
-    getMany: { filters: ..., orderBy: ... },
-    create: { onConflict: 'update' }
-  }
+  queryConfig: { ... }
 })
-// ❌ Gets all 6 queries: create, createMany, getById, getMany, updateById, removeById
 ```
 
-**New Approach** (one at a time):
+**New Approach** (clean and simple):
 
 ```typescript
-// Add only what you need, configure each individually
-.standardQueries({
-  idColumns: ['id'],
-  userIdColumn: 'userId',
-  defaults: {
-    idFilters: { isActive: true },
-    returnColumns: ['id', 'name', 'email']
-  }
-})
-  .create({
-    allowedColumns: ['name', 'email'],
-    returnColumns: ['id', 'name', 'createdAt'],
-    onConflict: 'ignore'
-  })
-  .getById({
-    returnColumns: ['id', 'name', 'email']
-  })
-  .done()
-// ✅ Gets only 2 queries: create, getById
+.registerAllStandard({ defaultFilters: { isActive: true } })
+// Or use withStandard for selective queries
 ```
-
-### 2. Simpler Type Inference
-
-**Old Approach**:
-
-- 6 generic type parameters in one massive function
-- Complex nested conditionals
-- Type inference often fails
-
-**New Approach**:
-
-- Simple generics per method
-- Clear type flow
-- Types always infer correctly
 
 ### 3. Single Error Handling Layer
 
@@ -105,37 +122,38 @@ tableOps.createRecord() → wraps with withDbQuery
 
 Custom queries still use `dbQueryFnHandler` because they're user-provided functions that might not have error handling.
 
-### 4. Better Configuration Separation
-
-**Old Approach**:
-
-- One massive config object with 10+ properties
-- Hard to understand what affects what
-- No IntelliSense guidance
-
-**New Approach**:
-
-- Global config (idColumns, userIdColumn, defaults)
-- Per-query config (allowedColumns, returnColumns, onConflict)
-- Clear separation of concerns with default values support
-
 ## Architecture
 
 ```text
 FeatureQueryBuilder (Main Builder)
-├── registerSchema() - Add operation schemas
-├── registerTable() - Set/change table
+├── registerAllStandard() - Add all 6 CRUD queries (create, createMany, getById, getMany, updateById, removeById)
+├── withStandard() - Add selective standard queries via callback
 ├── addQuery() - Add custom query with error handling
-├── standardQueries() - Transition to StandardQueryBuilder
-│   └── StandardQueryBuilder (Standard CRUD Builder)
-│       ├── create() - Add create query
-│       ├── getById() - Add getById query
-│       ├── getMany() - Add getMany query
-│       ├── updateById() - Add updateById query
-│       ├── removeById() - Add removeById query
-│       ├── createMany() - Add createMany query
-│       └── done() - Return to FeatureQueryBuilder
 └── pick() - Select subset of queries
+
+Layer Flow:
+Feature Query Builder → Table Operations → Database
+```
+
+### What It Does Behind the Scenes
+
+```typescript
+// You call:
+tagQueries.queries.create({ data: { name: 'Work' }, userId: 'user-123' });
+
+// Feature Query Builder:
+// 1. Extracts userId from input
+// 2. Merges userId into data: { name: 'Work', userId: 'user-123' }
+// 3. Calls Table Operations: tableOps.createRecord({ data: {...} })
+
+// You call:
+tagQueries.queries.getById({ ids: { id: 'tag-1' }, userId: 'user-123' });
+
+// Feature Query Builder:
+// 1. Extracts userId as an identifier
+// 2. Builds identifier array: [{ field: 'userId', value: 'user-123' }, { field: 'id', value: 'tag-1' }]
+// 3. Applies defaultFilters if configured
+// 4. Calls Table Operations: tableOps.getFirstRecord({ identifiers: [...] })
 ```
 
 ### Type Flow
@@ -178,36 +196,46 @@ The builder leverages shared utility types from `table-operations/types.ts` for 
 
 ## Usage Guide
 
-### Basic Example
+### Basic Example - All Standard Queries
 
 ```typescript
 import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
+import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { userTable } from '@/server/db/tables';
-import { userSchemas } from '@/features/user/schemas';
 
-export const userQueries = createFeatureQueries(userTable)
-    .registerSchema(userSchemas)
-    .standardQueries({
-        idColumns: ['id'],
-        userIdColumn: 'userId',
-        defaults: {
-            idFilters: { isActive: true },
-            returnColumns: ['id', 'name', 'email'],
-            allowedUpsertColumns: ['name', 'email', 'role'],
-        },
-    })
-    .create({
-        returnColumns: ['id', 'name', 'email', 'createdAt'],
-    })
-    .getById({
-        returnColumns: ['id', 'name', 'email', 'role'],
-    })
-    .done()
-    .addQuery('findByEmail', ({ tableOps }) => ({
+// 1. Create table configuration
+const userTableConfig = createFeatureTableConfig(userTable)
+    .restrictReturnColumns(['id', 'name', 'email', 'role', 'createdAt'])
+    .restrictInsertColumns(['name', 'email', 'role'])
+    .build();
+
+// 2. Create queries with all standard CRUD operations
+export const userQueries = createFeatureQueries('user', userTableConfig).registerAllStandard({
+    defaultFilters: { isActive: true },
+});
+
+// 3. Use the queries
+const user = await userQueries.queries.create({
+    data: { name: 'John', email: 'john@example.com' },
+    userId: 'current-user-id',
+});
+
+const users = await userQueries.queries.getMany({
+    userId: 'current-user-id',
+});
+```
+
+### Advanced Example - Selective Standard + Custom Queries
+
+```typescript
+// Only add specific standard queries + custom queries
+export const userQueries = createFeatureQueries('user', userTableConfig)
+    .withStandard((b) => b.create().getById().done())
+    .addQuery('findByEmail', ({ tableOps, tableConfig }) => ({
         operation: 'find user by email',
         fn: async (input: { email: string; userId: string }) => {
             return await tableOps.getFirstRecord({
-                columns: ['id', 'name', 'email'],
+                columns: tableConfig.getReturnColumns(),
                 identifiers: [
                     { field: 'email', value: input.email },
                     { field: 'userId', value: input.userId },
@@ -215,68 +243,46 @@ export const userQueries = createFeatureQueries(userTable)
             });
         },
     }));
+```
 
-// Usage
-const user = await userQueries.queries.create({
-    data: { name: 'John', email: 'john@example.com', role: 'user' },
-    userId: 'current-user-id',
-});
-// Type: { id: string, name: string, email: string, createdAt: Date }
+### Table Configuration
 
-const fetchedUser = await userQueries.queries.getById({
-    ids: { id: user.id },
-    userId: 'current-user-id',
-});
-// Type: { id: string, name: string, email: string, role: string } | null
+Configure table behavior once, use everywhere:
+
+```typescript
+import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
+
+const tableConfig = createFeatureTableConfig(userTable)
+    // Define which columns can be returned (security)
+    .restrictReturnColumns(['id', 'name', 'email', 'createdAt'])
+
+    // Define which columns can be inserted (security)
+    .restrictInsertColumns(['name', 'email'])
+
+    // Define which columns can be updated (security)
+    .restrictUpdateColumns(['name', 'email'])
+
+    .build();
 ```
 
 ### Standard Queries Configuration
 
-#### Global Config (standardQueries)
-
 ```typescript
-.standardQueries({
-  // Required: Which columns identify a unique record
-  idColumns: ['id'],
-
-  // Optional: Column for user-based filtering (multi-tenancy)
-  userIdColumn: 'userId',
-
-  // Optional: Default configuration for all queries
-  defaults: {
-    // Default filters applied to ALL queries
-    idFilters: {
-      isActive: true,
-      deletedAt: null
-    },
-    // Default columns to return (can be overridden per query)
-    returnColumns: ['id', 'name', 'email'],
-    // Default columns allowed for create/upsert (can be overridden per query)
-    allowedUpsertColumns: ['name', 'email', 'role']
-  }
-})
-```
-
-#### Per-Query Config
-
-```typescript
-// Create
-.create({
-  allowedColumns: ['name', 'email'],  // Optional: Whitelist for security (uses defaults if not specified)
-  returnColumns: ['id', 'name', 'createdAt'],  // Optional: What to return (uses defaults if not specified)
-  onConflict: 'ignore' | 'update' | {...}  // Optional: Conflict handling
+// Add all standard queries with default filters
+.registerAllStandard({
+    defaultFilters: {
+        isActive: true,
+        deletedAt: null
+    }
 })
 
-// Or rely entirely on defaults
-.create()  // Uses config.defaults.allowedUpsertColumns and returnColumns
-
-// GetById
-.getById({
-  returnColumns: ['id', 'name', 'email'],  // Optional: What to return (uses defaults if not specified)
-  idFilters: { isActive: true }  // Optional: Override default idFilters for this query
-})
-
-// Future: GetMany, UpdateById, RemoveById, CreateMany
+// Or add selective standard queries
+.withStandard((b) =>
+    b.create()
+     .getById()
+     .getMany()
+     .done()
+)
 ```
 
 ### Custom Queries
@@ -284,42 +290,49 @@ const fetchedUser = await userQueries.queries.getById({
 For operations that don't fit standard patterns:
 
 ```typescript
-.addQuery('archive', ({ tableOps }) => ({
-  operation: 'archive user',
-  fn: async (input: { id: string; userId: string }) => {
-    return await tableOps.updateRecord({
-      data: { archivedAt: new Date() },
-      identifiers: [
-        { field: 'id', value: input.id },
-        { field: 'userId', value: input.userId }
-      ],
-      returnColumns: ['id', 'archivedAt']
-    });
-  }
+.addQuery('archive', ({ tableOps, tableConfig }) => ({
+    operation: 'archive user',
+    fn: async (input: { id: string; userId: string }) => {
+        return await tableOps.updateRecord({
+            data: { archivedAt: new Date() },
+            identifiers: [
+                { field: 'id', value: input.id },
+                { field: 'userId', value: input.userId }
+            ],
+            returnColumns: tableConfig.getReturnColumns()
+        });
+    }
 }))
+
+// Custom queries receive:
+// - tableOps: TableOperationsBuilder instance for database operations
+// - tableConfig: FeatureTableConfig instance for column restrictions
 ```
 
 ### Type Inference
 
-The builder automatically infers types from:
-
-1. **Table definition**: Column types from Drizzle schema
-2. **Configuration**: Which columns are IDs, userId, etc.
-3. **Options**: Which columns to allow/return
+The builder automatically infers types from table configuration:
 
 ```typescript
+const tableConfig = createFeatureTableConfig(userTable)
+    .restrictReturnColumns(['id', 'name', 'email'])
+    .restrictInsertColumns(['name', 'email'])
+    .build();
+
+const queries = createFeatureQueries('user', tableConfig).registerAllStandard();
+
 // TypeScript knows:
-const result = await queries.create({
+const result = await queries.queries.create({
     data: {
-        name: 'John', // ✅ Allowed
+        name: 'John', // ✅ Allowed (in restrictInsertColumns)
         email: 'john@example.com', // ✅ Allowed
-        // password: '123'  // ❌ Not in allowedColumns
+        // password: '123'  // ❌ Not in restrictInsertColumns
     },
-    userId: 'user-id', // ✅ Required because userIdColumn is set
+    userId: 'user-id', // ✅ Required if table has userId column
 });
 
-// Result type is inferred from returnColumns:
-// { id: string, name: string, createdAt: Date }
+// Result type inferred from restrictReturnColumns:
+// { id: string, name: string, email: string }
 ```
 
 ## Comparison with Legacy Approach
@@ -338,77 +351,57 @@ export const tagQueries = createFeatureQueries('tag')
         returnColumns: ['id', 'name', 'color'],
         allowedUpsertColumns: ['name', 'color'],
         softDelete: true,
-        defaults: {
-            idFilters: { isActive: true },
-            returnColumns: ['id', 'name', 'color'],
-        },
         queryConfig: {
             getMany: {
                 filters: (filters, f) => [f.ilike('name', filters?.search)],
-                orderBy: { createdAt: 'desc' },
-            },
-            create: {
-                onConflict: 'update',
             },
         },
     });
 
 // Problems:
-// ❌ Gets all 6 queries even if you only need 2
 // ❌ Complex nested config object
-// ❌ Hard to customize individual queries
+// ❌ Hard to understand configuration flow
 // ❌ Type inference sometimes fails
-// ❌ Double error handling (dbQueryFnHandler + withDbQuery)
+// ❌ Double error handling
 ```
 
 **New Approach** (`/src/server/lib/db/query/builder/feature-query/`):
 
 ```typescript
-// Progressive, flexible configuration
-export const tagQueries = createFeatureQueries(tagTable)
-  .registerSchema(tagSchemas)
-  .standardQueries({
-    idColumns: ['id'],
-    userIdColumn: 'userId',
-    defaults: {
-      idFilters: { isActive: true },
-      returnColumns: ['id', 'name', 'color']
-    }
-  })
-    .create({
-      allowedColumns: ['name', 'color'],
-      returnColumns: ['id', 'name', 'color', 'createdAt'],
-      onConflict: 'update'
+// Clean, simple configuration
+const tagTableConfig = createFeatureTableConfig(tagTable)
+    .restrictReturnColumns(['id', 'name', 'color'])
+    .restrictInsertColumns(['name', 'color'])
+    .build();
+
+export const tagQueries = createFeatureQueries('tag', tagTableConfig)
+    .registerAllStandard({
+        defaultFilters: { isActive: true }
     })
-    .getById({
-      returnColumns: ['id', 'name', 'color']
-    })
-    // Skip getMany, updateById, etc. if not needed
-    .done()
-  .addQuery('customQuery', ({ tableOps }) => ({
-    fn: async (input) => { ... }
-  }));
+    .addQuery('findByName', ({ tableOps, tableConfig }) => ({
+        fn: async (input) => { ... }
+    }));
 
 // Benefits:
-// ✅ Only add queries you need
-// ✅ Clear, focused configuration
-// ✅ Easy to customize per-query
+// ✅ Table configuration separated from queries
+// ✅ Clear, simple API
 // ✅ Perfect type inference
 // ✅ Single error handling layer
+// ✅ Easy to add custom queries
 ```
 
 ### Feature Comparison
 
-| Feature                      | Legacy | New    | Notes                             |
-| ---------------------------- | ------ | ------ | --------------------------------- |
-| **Progressive Registration** | ❌     | ✅     | Add queries one at a time         |
-| **Flexible Configuration**   | ❌     | ✅     | Configure each query individually |
-| **Type Inference**           | ⚠️     | ✅     | Sometimes fails vs always works   |
-| **Error Handling**           | ⚠️     | ✅     | Double wrapped vs single layer    |
-| **Code Complexity**          | High   | Low    | 150+ lines vs focused methods     |
-| **IntelliSense Support**     | ⚠️     | ✅     | Poor vs excellent                 |
-| **Maintainability**          | Low    | High   | Hard to modify vs easy to extend  |
-| **Learning Curve**           | Steep  | Gentle | Complex config vs simple API      |
+| Feature                  | Legacy | New    | Notes                                     |
+| ------------------------ | ------ | ------ | ----------------------------------------- |
+| **Table Configuration**  | ❌     | ✅     | Separate config system                    |
+| **Simple API**           | ❌     | ✅     | `registerAllStandard()` vs complex config |
+| **Type Inference**       | ⚠️     | ✅     | Sometimes fails vs always works           |
+| **Error Handling**       | ⚠️     | ✅     | Double wrapped vs single layer            |
+| **Code Complexity**      | High   | Low    | Complex config vs simple methods          |
+| **IntelliSense Support** | ⚠️     | ✅     | Poor vs excellent                         |
+| **Maintainability**      | Low    | High   | Hard to modify vs easy to extend          |
+| **Learning Curve**       | Steep  | Gentle | Complex vs simple                         |
 
 ## Migration Guide
 
@@ -423,6 +416,8 @@ export const tagQueries = createFeatureQueries(tagTable)
 **Before** (`/features/tag/server/db/queries.ts`):
 
 ```typescript
+import { createFeatureQueries } from '@/server/lib/db/query/feature-queries';
+
 export const tagQueries = createFeatureQueries('tag')
     .registerSchema(tagSchemas)
     .registerCoreQueries(tagTable, {
@@ -440,25 +435,21 @@ export const tagQueries = createFeatureQueries('tag')
 
 ```typescript
 import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
+import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
-export const tagQueries = createFeatureQueries(tagTable)
-    .registerSchema(tagSchemas)
-    .standardQueries({
-        idColumns: ['id'],
-        userIdColumn: 'userId',
-    })
-    .create({
-        allowedColumns: ['name', 'color'],
-        returnColumns: ['id', 'name', 'color', 'createdAt'],
-    })
-    .getById({
-        returnColumns: ['id', 'name', 'color'],
-    })
-    // Add other queries as needed
-    .done();
+// 1. Create table configuration
+const tagTableConfig = createFeatureTableConfig(tagTable)
+    .restrictReturnColumns(['id', 'name', 'color', 'userId'])
+    .restrictInsertColumns(['name', 'color'])
+    .build();
+
+// 2. Create queries
+export const tagQueries = createFeatureQueries('tag', tagTableConfig).registerAllStandard({
+    defaultFilters: { isActive: true },
+});
 ```
 
-#### 3. Update Service Layer
+#### 3. Service Layer Works Unchanged
 
 The service layer usage remains the same:
 
@@ -478,20 +469,6 @@ const services = new ServiceBuilderFactory({ schemas: {}, queries: {} })
 const tag = await tagQueries.queries.create({ data: { name: 'Test' }, userId: '123' });
 const fetched = await tagQueries.queries.getById({ ids: { id: tag.id }, userId: '123' });
 ```
-
-### Migration Checklist
-
-- [ ] Identify all features using `createFeatureQueries().registerCoreQueries()`
-- [ ] Create a migration priority list (start with simplest features)
-- [ ] For each feature:
-    - [ ] Create new builder in separate file (e.g., `queries-new.ts`)
-    - [ ] Add standard queries needed
-    - [ ] Add any custom queries
-    - [ ] Update imports in service layer
-    - [ ] Run tests
-    - [ ] Delete old queries file
-- [ ] Update feature templates/generators
-- [ ] Document new approach in team wiki
 
 ### Coexistence
 
@@ -513,109 +490,90 @@ const services = createFeatureServices('tag')
 
 ## Best Practices
 
-### 1. Only Add Queries You Need
+### 1. Configure Table Security First
 
 ```typescript
-// ❌ Don't add all queries by default
-.create().getById().getMany().updateById().removeById().createMany()
-
-// ✅ Only add what you use
-.create().getById()  // That's it!
+// ✅ Always restrict columns for security
+const tableConfig = createFeatureTableConfig(userTable)
+    .restrictReturnColumns(['id', 'name', 'email']) // Never return passwords
+    .restrictInsertColumns(['name', 'email']) // Control what can be created
+    .restrictUpdateColumns(['name', 'email']) // Control what can be updated
+    .build();
 ```
 
-### 2. Use Descriptive Return Columns
+### 2. Use registerAllStandard for Most Cases
 
 ```typescript
-// ❌ Don't return everything
-returnColumns: Object.keys(userTable) as Array<keyof typeof userTable>;
-
-// ✅ Be explicit about what you need
-returnColumns: ['id', 'name', 'email', 'createdAt'];
-```
-
-### 3. Configure Security Whitelist
-
-```typescript
-// ✅ Always specify allowedColumns for create
-.create({
-  allowedColumns: ['name', 'email'],  // Only these can be inserted
-  returnColumns: ['id', 'name', 'createdAt']
-})
-```
-
-### 4. Use Default Configuration Wisely
-
-```typescript
-// ✅ Apply defaults that should be used across all standard queries
-.standardQueries({
-  idColumns: ['id'],
-  userIdColumn: 'userId',
-  defaults: {
-    // Filters that should ALWAYS be enforced
-    idFilters: {
-      isActive: true,  // Never fetch inactive records
-      deletedAt: null  // Soft delete support
-    },
-    // Default columns to return (can be overridden per query)
-    returnColumns: ['id', 'name', 'email', 'createdAt'],
-    // Default columns allowed for create/upsert (can be overridden per query)
-    allowedUpsertColumns: ['name', 'email', 'role', 'status']
-  }
+// ✅ Simple and covers all CRUD operations
+.registerAllStandard({
+    defaultFilters: { isActive: true }
 })
 
-// Then you can create records without repeating the allowed columns
-.create({ onConflict: 'update' })  // Uses defaults
-.create({ allowedColumns: ['name'] })  // Override for specific case
+// Only use withStandard if you truly need selective queries
 ```
 
-### 5. Leverage TableOps for Custom Queries
+### 3. Leverage TableConfig in Custom Queries
 
 ```typescript
-// ✅ Use tableOps helper methods
-.addQuery('findActive', ({ tableOps }) => ({
-  fn: async (input) => {
-    return await tableOps.getManyRecords({
-      identifiers: [{ field: 'userId', value: input.userId }],
-      filters: [eq(table.isActive, true)],
-      columns: ['id', 'name']
-    });
-  }
+// ✅ Use tableConfig for consistent column restrictions
+.addQuery('findActive', ({ tableOps, tableConfig }) => ({
+    fn: async (input) => {
+        return await tableOps.getManyRecords({
+            identifiers: [{ field: 'userId', value: input.userId }],
+            filters: [eq(table.isActive, true)],
+            columns: tableConfig.getReturnColumns()  // ✅ Respects restrictions
+        });
+    }
+}))
+
+// ❌ Don't hardcode columns
+columns: ['id', 'name', 'password']  // Bypasses security restrictions!
+```
+
+### 4. Document Complex Operations
+
+```typescript
+.addQuery('complexOperation', ({ tableOps, tableConfig }) => ({
+    operation: 'Complex multi-step operation',
+    fn: async (input) => {
+        // Step 1: Fetch related records
+        const related = await tableOps...
+
+        // Step 2: Transform data
+        const transformed = related.map(...)
+
+        // Step 3: Return result
+        return transformed;
+    }
 }))
 ```
 
-### 6. Document Complex Queries
+### 5. Apply Default Filters Consistently
 
 ```typescript
-.addQuery('complexOperation', ({ tableOps }) => ({
-  operation: 'Complex multi-step operation',
-  fn: async (input) => {
-    // Step 1: Fetch related records
-    const related = await tableOps...
-
-    // Step 2: Transform data
-    const transformed = related.map(...)
-
-    // Step 3: Return result
-    return transformed;
-  }
-}))
+// ✅ Use defaultFilters for global constraints
+.registerAllStandard({
+    defaultFilters: {
+        isActive: true,  // Never fetch inactive records
+        deletedAt: null  // Soft delete support
+    }
+})
 ```
 
-## Future Enhancements
+## Standard Queries Available
 
-### Planned Features
+All queries are available via `registerAllStandard()`:
 
-- [ ] **getMany()** - Fetch multiple records with filtering/pagination
-- [ ] **updateById()** - Update a single record
-- [ ] **removeById()** - Delete/soft-delete a record
-- [ ] **createMany()** - Bulk insert records
-- [ ] **Runtime validation** - Optional input validation with Zod
-- [ ] **Query composition** - Combine multiple queries
-- [ ] **Transaction support** - Atomic operations across queries
+- ✅ **create** - Create a single record
+- ✅ **createMany** - Bulk insert records
+- ✅ **getById** - Fetch one record by ID
+- ✅ **getMany** - Fetch multiple records with filtering/pagination
+- ✅ **updateById** - Update a single record
+- ✅ **removeById** - Delete/soft-delete a record
 
-### API Stability
+## API Stability
 
-The current API is **experimental** and may change based on feedback. Once all standard queries are implemented and tested in production, the API will be frozen (v1.0).
+The current API is **stable** for production use. Standard queries are fully implemented and tested.
 
 ## Support
 

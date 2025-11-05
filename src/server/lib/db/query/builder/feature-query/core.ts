@@ -11,7 +11,7 @@ import {
     type TStandardNewQueryConfig,
 } from '@/server/lib/db/query/builder/feature-query/standard';
 
-import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
+import type { QueryFn } from '@/server/lib/db/query/builder/feature-query/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
@@ -256,7 +256,7 @@ export class FeatureQueryBuilder<
         });
     }
 
-    withStandard(
+    withStandard<TStandardQueries extends Record<string, QueryFn>>(
         standard: (
             b: StandardQueryBuilder<
                 TTable,
@@ -274,14 +274,16 @@ export class FeatureQueryBuilder<
             TUserIdSchema,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TTableConfig,
+            TStandardQueries
         >
     ) {
         const builder = standard(StandardQueryBuilder.create(this.tableConfig));
         const standardQueries = builder.done();
 
         return new FeatureQueryBuilder<
-            Q & typeof standardQueries,
+            Q & TStandardQueries,
             S,
             TTable,
             TBase,

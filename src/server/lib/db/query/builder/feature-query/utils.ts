@@ -30,3 +30,21 @@ export const defaultIdFiltersIdentifier = <T extends Table>(
     defaultIdFilters
         ? typedEntries(defaultIdFilters).map(([key, value]) => ({ field: key, value }))
         : [];
+
+// export const idFieldsIdentifier = <T extends Table>(
+//     idFields: Array<keyof T['_']['columns']> | undefined,
+//     input: Record<string | number, unknown>
+// ) => {
+//     if (!idFields || !idFields.length) return [];
+//     if (!input) return [];
+
+//     return 'ids' in input &&
+//         Array.isArray(input.ids) &&
+//         input.ids.length > 0 &&
+//         input.ids.every((id) => idFields.includes(id as keyof T['_']['columns']))
+//         ? input.ids.map((id) => ({
+//               field: id as keyof T['_']['columns'],
+//               value: input.ids[id],
+//           }))
+//         : [];
+// };
