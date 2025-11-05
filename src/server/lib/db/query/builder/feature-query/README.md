@@ -71,7 +71,7 @@ const tags = await tagQueries.queries.getMany({
 // Create configuration once, reuse everywhere
 const tableConfig = createFeatureTableConfig(userTable)
     .restrictReturnColumns(['id', 'name', 'email'])
-    .restrictInsertColumns(['name', 'email'])
+    .restrictInsertFields(['name', 'email'])
     .build();
 
 // Configuration provides type safety for all queries
@@ -206,7 +206,7 @@ import { userTable } from '@/server/db/tables';
 // 1. Create table configuration
 const userTableConfig = createFeatureTableConfig(userTable)
     .restrictReturnColumns(['id', 'name', 'email', 'role', 'createdAt'])
-    .restrictInsertColumns(['name', 'email', 'role'])
+    .restrictInsertFields(['name', 'email', 'role'])
     .build();
 
 // 2. Create queries with all standard CRUD operations
@@ -257,10 +257,10 @@ const tableConfig = createFeatureTableConfig(userTable)
     .restrictReturnColumns(['id', 'name', 'email', 'createdAt'])
 
     // Define which columns can be inserted (security)
-    .restrictInsertColumns(['name', 'email'])
+    .restrictInsertFields(['name', 'email'])
 
     // Define which columns can be updated (security)
-    .restrictUpdateColumns(['name', 'email'])
+    .restrictUpdateFields(['name', 'email'])
 
     .build();
 ```
@@ -316,7 +316,7 @@ The builder automatically infers types from table configuration:
 ```typescript
 const tableConfig = createFeatureTableConfig(userTable)
     .restrictReturnColumns(['id', 'name', 'email'])
-    .restrictInsertColumns(['name', 'email'])
+    .restrictInsertFields(['name', 'email'])
     .build();
 
 const queries = createFeatureQueries('user', tableConfig).registerAllStandard();
@@ -324,9 +324,9 @@ const queries = createFeatureQueries('user', tableConfig).registerAllStandard();
 // TypeScript knows:
 const result = await queries.queries.create({
     data: {
-        name: 'John', // ✅ Allowed (in restrictInsertColumns)
+        name: 'John', // ✅ Allowed (in restrictInsertFields)
         email: 'john@example.com', // ✅ Allowed
-        // password: '123'  // ❌ Not in restrictInsertColumns
+        // password: '123'  // ❌ Not in restrictInsertFields
     },
     userId: 'user-id', // ✅ Required if table has userId column
 });
@@ -440,7 +440,7 @@ import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 // 1. Create table configuration
 const tagTableConfig = createFeatureTableConfig(tagTable)
     .restrictReturnColumns(['id', 'name', 'color', 'userId'])
-    .restrictInsertColumns(['name', 'color'])
+    .restrictInsertFields(['name', 'color'])
     .build();
 
 // 2. Create queries
@@ -496,8 +496,8 @@ const services = createFeatureServices('tag')
 // ✅ Always restrict columns for security
 const tableConfig = createFeatureTableConfig(userTable)
     .restrictReturnColumns(['id', 'name', 'email']) // Never return passwords
-    .restrictInsertColumns(['name', 'email']) // Control what can be created
-    .restrictUpdateColumns(['name', 'email']) // Control what can be updated
+    .restrictInsertFields(['name', 'email']) // Control what can be created
+    .restrictUpdateFields(['name', 'email']) // Control what can be updated
     .build();
 ```
 

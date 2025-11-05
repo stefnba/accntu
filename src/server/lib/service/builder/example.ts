@@ -1,20 +1,14 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
-import { createServiceBuilder } from '@/server/lib/service/builder/factory';
+import { createFeatureServices } from '@/server/lib/service/builder/factory';
 
-const quick = createServiceBuilder('quick')
+const quick = createFeatureServices('quick')
     .registerSchemas(tagSchemas)
     .registerSchemas(tagToTransactionSchemas)
     .registerQueries(tagQueries)
     .registerQueries(tagToTransactionQueries)
     .registerCoreServices()
-    .addService('assignToTransaction', ({ queries }) => ({
-        operation: 'create tag to transaction',
-        throwOnNull: true,
-        fn: async (input) => {
-            return await queries.assignToTransaction(input);
-        },
-    }))
+
     // .addService('getById', ({ queries }) => ({
     //     operation: 'get tag by id',
     //     throwOnNull: false,
@@ -39,29 +33,26 @@ const run = async () => {
     console.log('resultGetById', resultGetById);
 
     const resultCreate = await quick.create({
-        data: {
-            name: 'test-' + Date.now(),
-            color: '#000000',
-        },
+        data: { name: 'test-' + Date.now(), color: '#000000' },
         userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
     });
     console.log('resultCreate', resultCreate);
 
-    const resultGetMany = await quick.getMany({
-        filters: {
-            // search: 'test',
-        },
-        pagination: { page: 1, pageSize: 100 },
-        userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
-    });
+    // const resultGetMany = await quick.getMany({
+    //     filters: {
+    //         // search: 'test',
+    //     },
+    //     pagination: { page: 1, pageSize: 100 },
+    //     userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
+    // });
     // console.log('resultGetMany', resultGetMany);
 
-    const resultUpdateById = await quick.updateById({
-        ids: { id: resultCreate.id },
-        data: { name: 'test-updated-' + Date.now() },
-        userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
-    });
-    console.log('resultUpdateById', resultUpdateById);
+    // const resultUpdateById = await quick.updateById({
+    //         ids: { id: resultCreate.id },
+    //         data: { name: 'test-updated-' + Date.now() },
+    //         userId: 'IFzBheRxRYED8lzSD1veak9JRRts5Bxv',
+    //     });
+    //     console.log('resultUpdateById', resultUpdateById);
 };
 
 const run2 = async () => {
@@ -72,6 +63,6 @@ const run2 = async () => {
     console.log('a', a);
 };
 
-run2().then(() => {
+run().then(() => {
     process.exit(0);
 });

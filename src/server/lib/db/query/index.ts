@@ -1,4 +1,9 @@
-export { createFeatureQueries } from './feature-queries';
-export { dbQueryFnHandler, withDbQuery } from './handler';
+// Legacy API (deprecated - use builder/feature-query instead)
+export { createFeatureQueries } from './builder/feature-query';
+export type { QueryFn } from './builder/feature-query/types';
 
-export type { InferFeatureType } from './feature-queries';
+// New API (recommended)
+export { createFeatureQueries as createFeatureQueryBuilder } from './builder/feature-query';
+
+// Query handlers
+export { dbQueryFnHandler, withDbQuery } from './handler';
