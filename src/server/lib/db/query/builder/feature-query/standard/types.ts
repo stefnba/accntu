@@ -1,7 +1,4 @@
-import {
-    GetTableColumnDefinitions,
-    GetTableColumnKeys,
-} from '@/server/lib/db/query/table-operations';
+import { GetTableColumnDefinitions, GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import { Table } from 'drizzle-orm';
 
 export type TStandardNewQueryConfig<TTable extends Table> = {

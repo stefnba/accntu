@@ -5,4 +5,5 @@ export type {
     InferTableColumnTypeAsObject,
     InferTableColumnTypes,
 } from './types';
+
 export { getColumnsFromTable, tableHasColumn, tableHasField } from './utils';
