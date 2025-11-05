@@ -9,9 +9,9 @@ import type { InferQuerySchemas, TOperationSchemaObject, TZodShape } from '@/lib
 import {
     StandardQueryBuilder,
     type TStandardNewQueryConfig,
-} from '@/server/lib/db/query/builder/feature-query/standard';
+} from '@/server/lib/db/query/feature-queries/standard';
 
-import type { QueryFn } from '@/server/lib/db/query/builder/feature-query/types';
+import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';

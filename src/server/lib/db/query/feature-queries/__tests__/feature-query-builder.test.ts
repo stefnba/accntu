@@ -1,6 +1,6 @@
 import { createTestUser } from '@/../test/utils';
 import { tag } from '@/features/tag/server/db/tables';
-import { createFeatureQueries } from '@/server/lib/db/query/builder/feature-query';
+import { createFeatureQueries } from '@/server/lib/db/query/feature-queries';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { beforeAll, describe, expect, it } from 'vitest';

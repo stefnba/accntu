@@ -1,4 +1,4 @@
-import { FeatureQueryBuilder } from '@/server/lib/db/query/builder/feature-query/core';
+import { FeatureQueryBuilder } from '@/server/lib/db/query/feature-queries/core';
 
 import { TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';

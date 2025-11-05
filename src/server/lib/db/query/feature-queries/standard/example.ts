@@ -1,5 +1,5 @@
 import { tag } from '@/server/db/tables';
-import { StandardQueryBuilder } from '@/server/lib/db/query/builder/feature-query/standard/builder';
+import { StandardQueryBuilder } from '@/server/lib/db/query/feature-queries/standard/builder';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
 const config = createFeatureTableConfig(tag).restrictReturnColumns(['id', 'description']).build();

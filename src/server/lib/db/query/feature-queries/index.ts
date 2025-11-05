@@ -7,3 +7,5 @@
 export { FeatureQueryBuilder } from './core';
 export { createFeatureQueries } from './factory';
 export { StandardQueryBuilder } from './standard/builder';
+
+export type { QueryFn } from './types';
