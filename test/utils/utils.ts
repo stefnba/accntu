@@ -44,6 +44,7 @@ export const expectAnyValidResponse = (status: number) => {
 
 /**
  * Creates a user in the database and returns the user object.
+ * @deprecated Use createTestUser from create-user.ts instead
  */
 export const createTestUser = async (): Promise<typeof user.$inferSelect> => {
     const id = createId();
