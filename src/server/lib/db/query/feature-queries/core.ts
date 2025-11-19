@@ -51,6 +51,7 @@ export class FeatureQueryBuilder<
     /** Operation schemas for input/output type inference */
     schemas: S;
 
+    /** Table configuration */
     tableConfig: TTableConfig;
 
     /** Drizzle table definition */
