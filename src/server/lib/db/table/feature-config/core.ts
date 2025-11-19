@@ -231,7 +231,9 @@ export class FeatureTableConfig<
      * });
      * ```
      */
-    buildCreateInputSchema() {
+    buildCreateInputSchema(): z.ZodObject<
+        { data: z.ZodObject<TInsertDataSchema> } & TUserIdSchema
+    > {
         return z.object({ data: this.insertDataSchema }).extend(this.userIdSchema.shape);
     }
 
@@ -252,7 +254,9 @@ export class FeatureTableConfig<
      * });
      * ```
      */
-    buildCreateManyInputSchema() {
+    buildCreateManyInputSchema(): z.ZodObject<
+        { data: z.ZodArray<z.ZodObject<TInsertDataSchema>> } & TUserIdSchema
+    > {
         return z.object({ data: z.array(this.insertDataSchema) }).extend(this.userIdSchema.shape);
     }
 
@@ -274,9 +278,15 @@ export class FeatureTableConfig<
      * });
      * ```
      */
-    buildUpdateInputSchema() {
-        return z.object({ data: this.updateDataSchema }).extend(this.userIdSchema.shape).extend({
-            ids: this.idSchema,
+    buildUpdateInputSchema(): z.ZodObject<
+        {
+            data: z.ZodObject<TUpdateDataSchema>;
+            ids: z.ZodObject<TIdSchema>;
+        } & TUserIdSchema
+    > {
+        return z.object({
+            data: this.updateDataSchema,
+            ...this.buildIdentifierSchema().shape,
         });
     }
 
@@ -294,7 +304,7 @@ export class FeatureTableConfig<
      * // Result: z.object({ ids: { id: z.string() }, userId: z.string() })
      * ```
      */
-    buildIdentifierSchema() {
+    buildIdentifierSchema(): z.ZodObject<{ ids: z.ZodObject<TIdSchema> } & TUserIdSchema> {
         return z
             .object({
                 ids: this.idSchema,
@@ -365,8 +375,7 @@ export class FeatureTableConfig<
             validatedInput.data &&
             typeof validatedInput.data === 'object'
         ) {
-            const newData: Record<string, unknown> = validatedInput.data;
-            insertData = { ...newData };
+            insertData = { ...validatedInput.data };
         }
 
         if ('userId' in validatedInput && validatedInput.userId) {
@@ -482,8 +491,7 @@ export class FeatureTableConfig<
             validatedInput.data &&
             typeof validatedInput.data === 'object'
         ) {
-            const newData: Record<string, unknown> = validatedInput.data;
-            updateData = { ...newData };
+            updateData = { ...validatedInput.data };
         }
 
         // Stage 3: Validate against Drizzle's update schema
