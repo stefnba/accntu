@@ -13,7 +13,10 @@ export function withPagination<T extends PgSelect>(
     qb: T,
     { page, pageSize }: { page: number; pageSize: number }
 ) {
-    return qb.limit(pageSize).offset((page - 1) * pageSize);
+    // Ensure page is at least 1 and pageSize is at least 0 to prevent negative offsets
+    const safePage = Math.max(1, page);
+    const safePageSize = Math.max(0, pageSize);
+    return qb.limit(safePageSize).offset((safePage - 1) * safePageSize);
 }
 
 /**
