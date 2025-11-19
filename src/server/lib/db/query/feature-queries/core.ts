@@ -256,6 +256,20 @@ export class FeatureQueryBuilder<
         });
     }
 
+    /**
+     * Add standard queries to the builder.
+     *
+     * @template TStandardQueries - Record of standard queries to add
+     * @param standard - Standard query builder function
+     * @returns New FeatureQueryBuilder with the standard queries added
+     *
+     * @example
+     * ```typescript
+     * const queries = builder.withStandard((b) => b.create().getById());
+     * // queries.queries will have create, getById operations
+     * ```
+     */
+
     withStandard<TStandardQueries extends Record<string, QueryFn>>(
         standard: (
             b: StandardQueryBuilder<
@@ -301,6 +315,18 @@ export class FeatureQueryBuilder<
         });
     }
 
+    /**
+     * Register all standard queries to the builder.
+     *
+     * @param config - Standard query configuration
+     * @returns New FeatureQueryBuilder with the standard queries added
+     *
+     * @example
+     * ```typescript
+     * const queries = builder.registerAllStandard();
+     * // queries.queries will have create, getById, getMany, updateById, removeById operations
+     * ```
+     */
     registerAllStandard(config: TStandardNewQueryConfig<TTable> = {}) {
         const builder = StandardQueryBuilder.create<
             TTable,
