@@ -1,9 +1,9 @@
 import { FeatureQueryBuilder } from '@/server/lib/db/query/feature-queries/core';
 
-import { TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
+import { TZodShape } from '@/lib/schemas/types';
+import { TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
-import { QueryFn } from '@/server/lib/db/query/feature-queries';
 import { Table } from 'drizzle-orm';
 /**
  * Factory function to create a new FeatureQueryBuilder instance.
@@ -84,8 +84,8 @@ export const createFeatureQueries = <
     >
 ) => {
     return new FeatureQueryBuilder<
-        Record<string, QueryFn>,
-        Record<string, TOperationSchemaObject>,
+        TEmptyQueries,
+        Record<string, never>,
         TTable,
         TBase,
         TIdSchema,

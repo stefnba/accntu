@@ -1,6 +1,6 @@
 // Legacy API (deprecated - use builder/feature-query instead)
 export { createFeatureQueries } from './feature-queries';
-export type { QueryFn } from './feature-queries/types';
+export type { InferFeatureType, QueryFn } from './feature-queries/types';
 
 // New API (recommended)
 export { createFeatureQueries as createFeatureQueryBuilder } from './feature-queries';

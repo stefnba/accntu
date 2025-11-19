@@ -1,7 +1,7 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedEntries, typedKeys } from '@/lib/utils';
 import { GetTableColumnKeys } from '@/server/lib/db/drizzle';
-import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
+import type { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import {
     defaultIdFiltersIdentifier,
     userIdIdentifier,
@@ -39,7 +39,7 @@ export class StandardQueryBuilder<
         TUpdateDataSchema,
         TSelectReturnSchema
     >,
-    TQueries extends Record<string, QueryFn<unknown, unknown>> = Record<string, never>,
+    TQueries extends Record<string, QueryFn<unknown, unknown>> = TEmptyQueries,
 > {
     table: TTable;
     tableConfig: TTableConfig;
