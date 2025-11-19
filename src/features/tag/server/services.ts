@@ -12,7 +12,7 @@ export const tagServices = createFeatureServices('tag')
         operation: 'assign tags to transaction',
         throwOnNull: true,
         fn: async (input) => {
-            return await queries.assignToTransaction(input);
+            return await queries.assign(input);
         },
     }))
     .build();
