@@ -36,7 +36,7 @@ The Feature Table Config Builder provides a declarative way to configure databas
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              FeatureTableConfigBuilder                       │
+│              FeatureTableConfigBuilder                      │
 │  - Fluent API methods (.setIds, .setUserId, etc.)           │
 │  - Builds configuration step by step                        │
 │  - Returns new builder instance on each method call         │
@@ -45,11 +45,11 @@ The Feature Table Config Builder provides a declarative way to configure databas
                        │ .build()
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│               FeatureTableConfig (Immutable)                 │
-│  - Contains all Zod schemas (id, userId, insert, etc.)     │
+│               FeatureTableConfig (Immutable)                │
+│  - Contains all Zod schemas (id, userId, insert, etc.)      │
 │  - Readonly configuration                                   │
 │  - Helper methods to access schemas                         │
-│  - Type guards (hasIds, hasUserId)                         │
+│  - Type guards (hasIds, hasUserId)                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
