@@ -81,7 +81,7 @@ export type AnyFeatureTableConfig = FeatureTableConfig<any, any, any, any, any, 
 export type InferTableSchema<
     TTable extends Table,
     TType extends 'insert' | 'select' | 'update' = 'insert',
-> = BuildSchema<TType, TTable['_']['columns'], undefined, undefined>;
+> = Prettify<BuildSchema<TType, TTable['_']['columns'], undefined, undefined>>;
 
 /**
  * Infers the raw TypeScript shape for a Drizzle table operation (insert, select, or update).
