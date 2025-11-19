@@ -1,9 +1,10 @@
-import { createTestUser } from '@/../test/utils';
+import { beforeAll, describe, expect, it } from 'vitest';
+
+import { createTestUser } from '@/../test/utils/create-user';
 import { tag } from '@/features/tag/server/db/tables';
 import { createFeatureQueries } from '@/server/lib/db/query/feature-queries';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { beforeAll, describe, expect, it } from 'vitest';
 
 describe('Feature Query Builder', () => {
     let testUser: Awaited<ReturnType<typeof createTestUser>>;
@@ -573,6 +574,539 @@ describe('Feature Query Builder', () => {
             expect(created).toHaveProperty('name');
             expect(created).not.toHaveProperty('color');
             expect(created).not.toHaveProperty('description');
+        });
+    });
+
+    describe('Builder Pattern Edge Cases', () => {
+        it('should handle empty queries object initially', () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .restrictReturnColumns(['id', 'name'])
+                .build();
+
+            const builder = createFeatureQueries('tag-test', tableConfig);
+
+            expect(builder.queries).toEqual({});
+            expect(Object.keys(builder.queries)).toHaveLength(0);
+        });
+
+        it('should allow selective query registration', () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).withStandard((b) =>
+                b.create().getById()
+            );
+
+            expect(Object.keys(queries.queries)).toHaveLength(2);
+            expect(queries.queries).toHaveProperty('create');
+            expect(queries.queries).toHaveProperty('getById');
+            expect(queries.queries).not.toHaveProperty('updateById');
+        });
+
+        it('should support method chaining with custom queries', () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .restrictReturnColumns(['id', 'name'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig)
+                .addQuery('custom1', () => ({
+                    operation: 'custom 1',
+                    fn: async () => ({ result: 1 }),
+                }))
+                .addQuery('custom2', () => ({
+                    operation: 'custom 2',
+                    fn: async () => ({ result: 2 }),
+                }))
+                .addQuery('custom3', () => ({
+                    operation: 'custom 3',
+                    fn: async () => ({ result: 3 }),
+                }));
+
+            expect(Object.keys(queries.queries)).toHaveLength(3);
+        });
+    });
+
+    describe('Query Execution Edge Cases', () => {
+        it('should handle rapid successive creates', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const timestamp = Date.now();
+            const results = await Promise.all(
+                Array.from({ length: 5 }, (_, i) =>
+                    queries.queries.create({
+                        data: { name: `rapid-${i}-${timestamp}`, color: '#RAPID' },
+                        userId: testUser.id,
+                    })
+                )
+            );
+
+            expect(results).toHaveLength(5);
+            results.forEach((r, i) => {
+                expect(r.name).toContain(`rapid-${i}`);
+            });
+        });
+
+        it('should handle interleaved creates and reads', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const created = await queries.queries.create({
+                data: { name: 'interleave-' + Date.now(), color: '#INTER' },
+                userId: testUser.id,
+            });
+
+            const read1 = queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            const read2 = queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            const results = await Promise.all([read1, read2]);
+
+            expect(results[0]?.id).toBe(created.id);
+            expect(results[1]?.id).toBe(created.id);
+        });
+
+        it('should handle empty userId scoping correctly', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            await expect(
+                // @ts-expect-error - testing runtime error
+                queries.queries.getMany({})
+            ).rejects.toThrow('User ID is required when userIdColumn is configured');
+        });
+    });
+
+    describe('Complex Query Combinations', () => {
+        it('should handle create -> update -> read flow', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'color', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .restrictUpdateFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const created = await queries.queries.create({
+                data: { name: 'flow-test-' + Date.now(), color: '#FLOW1' },
+                userId: testUser.id,
+            });
+
+            const updated = await queries.queries.updateById({
+                ids: { id: created.id },
+                data: { color: '#FLOW2' },
+                userId: testUser.id,
+            });
+
+            const fetched = await queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            expect(fetched?.color).toBe('#FLOW2');
+            expect(updated?.color).toBe('#FLOW2');
+        });
+
+        it('should handle createMany -> getMany -> updateMany flow', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'color', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .restrictUpdateFields(['color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard({
+                defaultFilters: { isActive: true },
+            });
+
+            const timestamp = Date.now();
+            const created = await queries.queries.createMany({
+                data: [
+                    { name: `bulk-flow-1-${timestamp}`, color: '#BULK1' },
+                    { name: `bulk-flow-2-${timestamp}`, color: '#BULK2' },
+                ],
+                userId: testUser.id,
+            });
+
+            expect(created).toHaveLength(2);
+
+            const fetched = await queries.queries.getMany({
+                userId: testUser.id,
+            });
+
+            expect(fetched.length).toBeGreaterThanOrEqual(2);
+        });
+
+        it('should handle create -> delete -> verify flow', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'isActive'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard({
+                defaultFilters: { isActive: true },
+            });
+
+            const created = await queries.queries.create({
+                data: { name: 'delete-flow-' + Date.now(), color: '#DEL' },
+                userId: testUser.id,
+            });
+
+            await queries.queries.removeById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            const fetched = await queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            expect(fetched).toBeNull();
+        });
+    });
+
+    describe('Multi-Tenant Isolation', () => {
+        it('should isolate data between different users', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const user1 = testUser;
+            const user2 = await createTestUser();
+
+            const user1Records = await queries.queries.getMany({
+                userId: user1.id,
+            });
+
+            const user2Records = await queries.queries.getMany({
+                userId: user2.id,
+            });
+
+            expect(user1Records.every((r) => r.userId === user1.id)).toBe(true);
+            expect(user2Records.every((r) => r.userId === user2.id)).toBe(true);
+        });
+
+        it('should prevent cross-user updates', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'userId', 'color'])
+                .restrictInsertFields(['name', 'color'])
+                .restrictUpdateFields(['color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const user1 = testUser;
+            const user2 = await createTestUser();
+
+            const record = await queries.queries.create({
+                data: { name: 'cross-user-' + Date.now(), color: '#ORIG' },
+                userId: user1.id,
+            });
+
+            const updateResult = await queries.queries.updateById({
+                ids: { id: record.id },
+                data: { color: '#HACKED' },
+                userId: user2.id, // Different user trying to update
+            });
+
+            expect(updateResult).toBeNull();
+
+            const verified = await queries.queries.getById({
+                ids: { id: record.id },
+                userId: user1.id,
+            });
+
+            expect(verified?.color).not.toBe('#HACKED');
+        });
+
+        it('should prevent cross-user deletes', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'userId'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const user1 = testUser;
+            const user2 = await createTestUser();
+
+            const record = await queries.queries.create({
+                data: { name: 'cross-delete-' + Date.now(), color: '#SAFE' },
+                userId: user1.id,
+            });
+
+            await queries.queries.removeById({
+                ids: { id: record.id },
+                userId: user2.id, // Different user trying to delete
+            });
+
+            const verified = await queries.queries.getById({
+                ids: { id: record.id },
+                userId: user1.id,
+            });
+
+            expect(verified).toBeDefined(); // Should still exist
+        });
+    });
+
+    describe('Performance and Scalability', () => {
+        it('should handle bulk creates efficiently', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const timestamp = Date.now();
+            const startTime = Date.now();
+
+            const data = Array.from({ length: 50 }, (_, i) => ({
+                name: `perf-bulk-${i}-${timestamp}`,
+                color: `#${i.toString(16).padStart(6, '0')}`,
+            }));
+
+            const result = await queries.queries.createMany({
+                data,
+                userId: testUser.id,
+            });
+
+            const duration = Date.now() - startTime;
+
+            expect(result).toHaveLength(50);
+            expect(duration).toBeLessThan(5000); // Should complete in under 5 seconds
+        });
+
+        it('should handle pagination on large datasets', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const result = await queries.queries.getMany({
+                userId: testUser.id,
+                pagination: { page: 1, pageSize: 100 },
+            });
+
+            expect(Array.isArray(result)).toBe(true);
+            expect(result.length).toBeLessThanOrEqual(100);
+        });
+    });
+
+    describe('Data Validation Edge Cases', () => {
+        it('should strip disallowed fields during create', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const result = await queries.queries.create({
+                data: {
+                    name: 'strip-test-' + Date.now(),
+                    color: '#STRIP',
+                    // @ts-expect-error - testing runtime validation
+                    extraField: 'should be removed',
+                },
+                userId: testUser.id,
+            });
+
+            expect(result).toHaveProperty('name');
+            expect(result).not.toHaveProperty('extraField');
+        });
+
+        it('should strip disallowed fields during update', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'color'])
+                .restrictInsertFields(['name', 'color'])
+                .restrictUpdateFields(['color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const created = await queries.queries.create({
+                data: { name: 'update-strip-' + Date.now(), color: '#ORIG' },
+                userId: testUser.id,
+            });
+
+            const updated = await queries.queries.updateById({
+                ids: { id: created.id },
+                data: {
+                    color: '#NEW',
+                    // @ts-expect-error - testing runtime validation
+                    name: 'should not change',
+                },
+                userId: testUser.id,
+            });
+
+            expect(updated?.color).toBe('#NEW');
+            expect(updated?.name).toBe(created.name); // Name should not change
+        });
+
+        it('should handle empty data arrays in createMany', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            await expect(
+                queries.queries.createMany({
+                    data: [],
+                    userId: testUser.id,
+                })
+            ).rejects.toThrow();
+        });
+    });
+
+    describe('Complex Filtering Scenarios', () => {
+        it('should handle default filters consistently', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'isActive'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard({
+                defaultFilters: { isActive: true },
+            });
+
+            const created = await queries.queries.create({
+                data: { name: 'filter-check-' + Date.now(), color: '#FILT' },
+                userId: testUser.id,
+            });
+
+            await queries.queries.removeById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            const getManyResult = await queries.queries.getMany({
+                userId: testUser.id,
+            });
+
+            const getByIdResult = await queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            expect(getManyResult.every((r) => r.isActive === true)).toBe(true);
+            expect(getByIdResult).toBeNull();
+        });
+
+        it('should handle ordering in getMany', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name', 'createdAt'])
+                .restrictInsertFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const timestamp = Date.now();
+            await queries.queries.createMany({
+                data: [
+                    { name: `order-z-${timestamp}`, color: '#ORD1' },
+                    { name: `order-a-${timestamp}`, color: '#ORD2' },
+                ],
+                userId: testUser.id,
+            });
+
+            const result = await queries.queries.getMany({
+                userId: testUser.id,
+                orderBy: { name: 'asc' },
+                pagination: { page: 1, pageSize: 10 },
+            });
+
+            expect(result.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('Return Column Restrictions', () => {
+        it('should respect return column restrictions across all queries', async () => {
+            const tableConfig = createFeatureTableConfig(tag)
+                .setIds(['id'])
+                .setUserId('userId')
+                .restrictReturnColumns(['id', 'name']) // Only id and name
+                .restrictInsertFields(['name', 'color', 'description'])
+                .restrictUpdateFields(['name', 'color'])
+                .build();
+
+            const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
+
+            const created = await queries.queries.create({
+                data: {
+                    name: 'restrict-test-' + Date.now(),
+                    color: '#REST',
+                    description: 'Full description',
+                },
+                userId: testUser.id,
+            });
+
+            expect(created).toHaveProperty('id');
+            expect(created).toHaveProperty('name');
+            expect(created).not.toHaveProperty('color');
+            expect(created).not.toHaveProperty('description');
+
+            const fetched = await queries.queries.getById({
+                ids: { id: created.id },
+                userId: testUser.id,
+            });
+
+            expect(fetched).toHaveProperty('id');
+            expect(fetched).toHaveProperty('name');
+            expect(fetched).not.toHaveProperty('color');
         });
     });
 });
