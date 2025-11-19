@@ -597,7 +597,19 @@ export class FeatureTableConfigBuilder<
         });
     }
 
-    /** @internal Helper to get raw Zod shape for insert/select/update operations */
+    /**
+     * Get the raw Zod shape object for the table's schema, used to generate schema definitions for
+     * insert, select, or update operations.
+     *
+     * - 'insert': The shape representing all fields required or optional for creation.
+     * - 'select': The shape of all possible fields returned by a select query.
+     * - 'update': The shape of all fields that can be updated.
+     *
+     * Used internally for programmatic schema manipulation and type inference.
+     *
+     * @param type - The schema operation type ('insert', 'select', or 'update'). Defaults to 'insert'.
+     * @returns The raw Zod shape object for the specified operation type.
+     */
     private getRawSchemaFromTable(type: 'insert'): InferTableSchema<TTable, 'insert'>['shape'];
     private getRawSchemaFromTable(type: 'select'): InferTableSchema<TTable, 'select'>['shape'];
     private getRawSchemaFromTable(type: 'update'): InferTableSchema<TTable, 'update'>['shape'];
@@ -616,18 +628,17 @@ export class FeatureTableConfigBuilder<
         if (type === 'update') {
             return createUpdateSchema(this.table).shape;
         }
+        // Default to insert shape if somehow invalid type (should not occur with union type param)
         return createInsertSchema(this.table).shape;
     }
 
     /**
-     * Allow all fields for insert and update operations.
+     * Allow all fields for insert and update operations, inlcuding system fields such as `userId`, `createdAt`, `updatedAt`, etc.
      *
      * Resets any field restrictions set via `.restrictUpsertFields()`, `.restrictInsertFields()`,
-     * or `.restrictUpdateFields()`. Use this when you want to allow modifying all fields.
+     * or `.restrictUpdateFields()`.
      *
      * **Warning:** This overwrites previously specified insert/update schemas.
-     *
-     * @returns New builder instance with unrestricted insert/update schemas
      *
      * @example
      * ```ts
