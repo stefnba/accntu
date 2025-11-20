@@ -1,6 +1,5 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { typedEntries, typedKeys } from '@/lib/utils';
-import { GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import type { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import {
     defaultIdFiltersIdentifier,
@@ -8,10 +7,9 @@ import {
 } from '@/server/lib/db/query/feature-queries/utils';
 import { TableOperationsBuilder, TBooleanFilter } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { Prettify } from '@/types/utils';
 import { TStandardNewQueryConfig } from './types';
 
-import { SQL, Table } from 'drizzle-orm';
+import { Table } from 'drizzle-orm';
 import z from 'zod';
 
 export class StandardQueryBuilder<
@@ -22,6 +20,9 @@ export class StandardQueryBuilder<
     TInsertDataSchema extends TZodShape,
     TUpdateDataSchema extends TZodShape,
     TSelectReturnSchema extends TZodShape,
+    TManyFiltersSchema extends TZodShape,
+    TPaginationSchema extends TZodShape,
+    TOrderingSchema extends TZodShape,
     TTableConfig extends FeatureTableConfig<
         TTable,
         TIdSchema,
@@ -29,7 +30,10 @@ export class StandardQueryBuilder<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     > = FeatureTableConfig<
         TTable,
         TIdSchema,
@@ -37,7 +41,10 @@ export class StandardQueryBuilder<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     >,
     TQueries extends Record<string, QueryFn<unknown, unknown>> = TEmptyQueries,
 > {
@@ -77,6 +84,9 @@ export class StandardQueryBuilder<
         TInsertDataSchema extends TZodShape,
         TUpdateDataSchema extends TZodShape,
         TSelectReturnSchema extends TZodShape,
+        TManyFiltersSchema extends TZodShape,
+        TPaginationSchema extends TZodShape,
+        TOrderingSchema extends TZodShape,
     >(
         tableConfig: FeatureTableConfig<
             TTable,
@@ -85,7 +95,10 @@ export class StandardQueryBuilder<
             TBase,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >,
         queryConfig: TStandardNewQueryConfig<TTable> = {}
     ) {
@@ -96,7 +109,10 @@ export class StandardQueryBuilder<
             TUserIdSchema,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({ tableConfig, queries: {}, queryConfig });
     }
 
@@ -109,6 +125,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries
         >({
@@ -152,6 +171,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { updateById: typeof query }
         >({
@@ -163,23 +185,35 @@ export class StandardQueryBuilder<
 
     getMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
-        type TInput = z.infer<typeof this.tableConfig.userIdSchema> & {
-            filters?: (SQL | undefined)[];
-            pagination?: {
-                page?: number;
-                pageSize?: number;
-            };
-            orderBy?: Partial<Record<GetTableColumnKeys<TTable>, 'asc' | 'desc'>>;
-        };
+        type TInput = z.infer<ReturnType<TTableConfig['buildManyInputSchema']>>;
 
-        const query = async (input: Prettify<TInput>) => {
+        const query = async (input: TInput) => {
+            // identifiers, only userId
             const identifiers = this.buildIdentifiers(input, { ids: false, userId: true });
+
+            // todo filters
+            // const filters = this.buildFilters(input);
+
+            // ordering
+            const orderBy =
+                this.tableConfig.validateOrderingInput(input) ??
+                this.queryConfig.getMany?.defaultOrdering;
+
+            // pagination
+            const pagination =
+                this.tableConfig.validatePaginationInput(input) ??
+                this.queryConfig.getMany?.defaultPagination;
+
+            console.log('orderBy', orderBy);
+            console.log('pagination', pagination);
+            console.log('identifiers', identifiers);
+
             const result = await this.tableOps.getManyRecords({
                 columns: returnColumns,
                 identifiers,
-                filters: input.filters,
-                pagination: input.pagination,
-                orderBy: input.orderBy,
+                // filters,
+                pagination,
+                // orderBy: orderBy,
             });
 
             return result;
@@ -198,6 +232,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { getMany: typeof query }
         >({
@@ -235,6 +272,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { getById: typeof query }
         >({
@@ -267,6 +307,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { removeById: typeof query }
         >({
@@ -342,6 +385,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { create: typeof query }
         >({
@@ -378,6 +424,9 @@ export class StandardQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig,
             TQueries & { createMany: typeof query }
         >({

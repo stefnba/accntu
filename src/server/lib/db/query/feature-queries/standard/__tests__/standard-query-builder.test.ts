@@ -373,6 +373,7 @@ describe('StandardQueryBuilder', () => {
             const tableConfig = createFeatureTableConfig(tag)
                 .setUserId('userId')
                 .restrictReturnColumns(['id', 'name'])
+                .enablePagination()
                 .build();
 
             const queries = StandardQueryBuilder.create(tableConfig).getMany().done();
@@ -390,6 +391,7 @@ describe('StandardQueryBuilder', () => {
                 .setUserId('userId')
                 .restrictReturnColumns(['id', 'name', 'createdAt'])
                 .restrictInsertFields(['name', 'color'])
+                .enableOrdering(['createdAt'])
                 .build();
 
             const queries = StandardQueryBuilder.create(tableConfig).createMany().getMany().done();
@@ -405,8 +407,7 @@ describe('StandardQueryBuilder', () => {
 
             const result = await queries.getMany({
                 userId: testUser.id,
-                orderBy: { createdAt: 'desc' },
-                pagination: { page: 1, pageSize: 10 },
+                ordering: [{ field: 'createdAt', direction: 'desc' }],
             });
 
             expect(result.length).toBeGreaterThan(0);
@@ -712,6 +713,7 @@ describe('StandardQueryBuilder', () => {
             const tableConfig = createFeatureTableConfig(tag)
                 .setUserId('userId')
                 .restrictReturnColumns(['id', 'name'])
+                .enablePagination()
                 .build();
 
             const queries = StandardQueryBuilder.create(tableConfig).getMany().done();

@@ -48,8 +48,28 @@ export type EmptySchema = Record<never, never>;
  * }
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnyFeatureTableConfig = FeatureTableConfig<any, any, any, any, any, any, any>;
+export type AnyFeatureTableConfig = FeatureTableConfig<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any
+>;
 
 // ========================================
 // Schema Inference Utilities
@@ -397,6 +417,18 @@ export type InferReturnColums<
         selectReturnSchema: z.ZodObject<TZodShape>;
     },
 > = keyof z.infer<TConfig['selectReturnSchema']>;
+
+/**
+ * Infer the input shape for many filters operations.
+ *
+ * Extracts the input shape for filtering multiple records based on the table config.
+ * Uses structural typing to dynamically include only configured schemas.
+ *
+ * **Structure:**
+ * - `{ filters: Filters }` - Always present, contains partial fields from manyFiltersSchema
+ */
+export type InferManyFiltersInput<TConfig extends { manyFiltersSchema: z.ZodObject<TZodShape> }> =
+    Prettify<z.infer<TConfig['manyFiltersSchema']>>;
 
 /**
  * Infer the underlying Drizzle table type from a feature table config.

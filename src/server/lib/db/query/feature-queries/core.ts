@@ -27,6 +27,9 @@ export class FeatureQueryBuilder<
     const TInsertDataSchema extends TZodShape,
     const TUpdateDataSchema extends TZodShape,
     const TSelectReturnSchema extends TZodShape,
+    const TManyFiltersSchema extends TZodShape,
+    const TPaginationSchema extends TZodShape,
+    const TOrderingSchema extends TZodShape,
     const TTableConfig extends FeatureTableConfig<
         TTable,
         TIdSchema,
@@ -34,7 +37,10 @@ export class FeatureQueryBuilder<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     > = FeatureTableConfig<
         TTable,
         TIdSchema,
@@ -42,7 +48,10 @@ export class FeatureQueryBuilder<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     >,
 > {
     /** Collection of registered query functions */
@@ -122,6 +131,9 @@ export class FeatureQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig
         >({
             queries: this.queries,
@@ -204,6 +216,9 @@ export class FeatureQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig
         >({
             queries: { ...this.queries, [key]: wrappedQueryFn },
@@ -246,6 +261,9 @@ export class FeatureQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig
         >({
             queries: queries,
@@ -277,7 +295,10 @@ export class FeatureQueryBuilder<
             TUserIdSchema,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >,
     >(
         standard: (
@@ -289,7 +310,10 @@ export class FeatureQueryBuilder<
                     TUserIdSchema,
                     TInsertDataSchema,
                     TUpdateDataSchema,
-                    TSelectReturnSchema
+                    TSelectReturnSchema,
+                    TManyFiltersSchema,
+                    TPaginationSchema,
+                    TOrderingSchema
                 >
             >
         ) => TBuilder
@@ -301,7 +325,10 @@ export class FeatureQueryBuilder<
             TUserIdSchema,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >(this.tableConfig);
         const standardBuilder = standard(builder);
         const standardQueries = standardBuilder.done();
@@ -316,6 +343,9 @@ export class FeatureQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig
         >({
             queries: { ...this.queries, ...standardQueries },
@@ -345,7 +375,10 @@ export class FeatureQueryBuilder<
             TUserIdSchema,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >(this.tableConfig, config);
 
         const standardQueries = builder.all().done();
@@ -360,6 +393,9 @@ export class FeatureQueryBuilder<
             TInsertDataSchema,
             TUpdateDataSchema,
             TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema,
             TTableConfig
         >({
             queries: { ...this.queries, ...standardQueries },

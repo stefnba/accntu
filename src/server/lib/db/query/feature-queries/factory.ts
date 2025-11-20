@@ -71,6 +71,9 @@ export const createFeatureQueries = <
     TInsertDataSchema extends TZodShape,
     TUpdateDataSchema extends TZodShape,
     TSelectReturnSchema extends TZodShape,
+    TManyFiltersSchema extends TZodShape,
+    TPaginationSchema extends TZodShape,
+    TOrderingSchema extends TZodShape,
 >(
     name: string,
     config: FeatureTableConfig<
@@ -80,7 +83,10 @@ export const createFeatureQueries = <
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     >
 ) => {
     return new FeatureQueryBuilder<
@@ -93,6 +99,9 @@ export const createFeatureQueries = <
         TInsertDataSchema,
         TUpdateDataSchema,
         TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema,
         FeatureTableConfig<
             TTable,
             TIdSchema,
@@ -100,7 +109,10 @@ export const createFeatureQueries = <
             TBase,
             TInsertDataSchema,
             TUpdateDataSchema,
-            TSelectReturnSchema
+            TSelectReturnSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >
     >({
         schemas: {},

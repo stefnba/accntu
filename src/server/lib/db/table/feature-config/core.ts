@@ -1,4 +1,5 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { TZodType } from '@/lib/schemas_new/types';
 import {
     getFieldsAsArray,
     getFieldsAsArrayConstrained,
@@ -6,6 +7,11 @@ import {
     pickFields,
 } from '@/lib/utils/zod';
 import { SystemTableFieldKeys } from '@/server/lib/db/table';
+import {
+    orderByDirectionSchema,
+    orderingSchema,
+    paginationSchema,
+} from '@/server/lib/db/table/feature-config/schemas';
 import {
     EmptySchema,
     InferDefaultSchemaForField,
@@ -57,6 +63,9 @@ export class FeatureTableConfig<
     TInsertDataSchema extends TZodShape = TZodShape,
     TUpdateDataSchema extends TZodShape = TZodShape,
     TSelectReturnSchema extends TZodShape = TZodShape,
+    TManyFiltersSchema extends TZodShape = EmptySchema,
+    TPaginationSchema extends TZodShape = EmptySchema,
+    TOrderingSchema extends TZodShape = EmptySchema,
 > {
     /** The Drizzle table definition */
     readonly table: TTable;
@@ -70,14 +79,23 @@ export class FeatureTableConfig<
     /** Base schema - all available fields before restrictions */
     readonly baseSchema: z.ZodObject<TBase>;
 
-    /** Schema for insert data operations (configurable via .defineUpsertData) */
+    /** Schema for insert data operations (configurable via .restrictUpsertFields) */
     readonly insertDataSchema: z.ZodObject<TInsertDataSchema>;
 
-    /** Schema for update data operations (partial, configurable via .defineUpsertData) */
+    /** Schema for update data operations (partial, configurable via .restrictUpsertFields) */
     readonly updateDataSchema: z.ZodObject<TUpdateDataSchema>;
 
-    /** Schema for select return operations (configurable via .defineReturnColumns) */
+    /** Schema for select return operations (configurable via .restrictReturnColumns) */
     readonly selectReturnSchema: z.ZodObject<TSelectReturnSchema>;
+
+    /** Schema for many filters operations (configurable via .enableManyFiltering) */
+    readonly manyFiltersSchema: z.ZodObject<TManyFiltersSchema>;
+
+    /** Schema for pagination operations (configurable via .enablePagination) */
+    readonly paginationSchema: z.ZodObject<TPaginationSchema>;
+
+    /** Schema for ordering operations (configurable via .enableOrdering) */
+    readonly orderingSchema: z.ZodObject<TOrderingSchema>;
 
     /**
      * @internal
@@ -91,6 +109,9 @@ export class FeatureTableConfig<
         insertDataSchema: z.ZodObject<TInsertDataSchema>;
         updateDataSchema: z.ZodObject<TUpdateDataSchema>;
         selectReturnSchema: z.ZodObject<TSelectReturnSchema>;
+        manyFiltersSchema: z.ZodObject<TManyFiltersSchema>;
+        paginationSchema: z.ZodObject<TPaginationSchema>;
+        orderingSchema: z.ZodObject<TOrderingSchema>;
     }) {
         this.table = config.table;
         this.idSchema = config.idSchema;
@@ -99,6 +120,9 @@ export class FeatureTableConfig<
         this.insertDataSchema = config.insertDataSchema;
         this.updateDataSchema = config.updateDataSchema;
         this.selectReturnSchema = config.selectReturnSchema;
+        this.manyFiltersSchema = config.manyFiltersSchema;
+        this.paginationSchema = config.paginationSchema;
+        this.orderingSchema = config.orderingSchema;
     }
 
     /**
@@ -184,7 +208,10 @@ export class FeatureTableConfig<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     > {
         return Object.keys(this.idSchema.shape).length > 0;
     }
@@ -209,7 +236,10 @@ export class FeatureTableConfig<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     > {
         return Object.keys(this.userIdSchema.shape).length > 0;
     }
@@ -312,6 +342,17 @@ export class FeatureTableConfig<
             .extend(this.userIdSchema.shape);
     }
 
+    buildManyInputSchema(): z.ZodObject<
+        Prettify<TUserIdSchema & TOrderingSchema & TManyFiltersSchema & TPaginationSchema>
+    > {
+        return z.object({
+            ...this.manyFiltersSchema.shape,
+            ...this.orderingSchema.shape,
+            ...this.paginationSchema.shape,
+            ...this.userIdSchema.shape,
+        });
+    }
+
     /**
      * @internal
      * Helper to validate input against a Zod schema with consistent error formatting.
@@ -336,6 +377,60 @@ export class FeatureTableConfig<
         }
 
         return result.data;
+    }
+
+    /**
+     * Validate and normalize pagination input data.
+     *
+     * Attempts to parse the input using the pagination schema. If validation fails,
+     * returns default values with page and pageSize undefined.
+     *
+     * @param input - Raw input (should be an object containing a `pagination` key).
+     * @returns The normalized pagination object.
+     *
+     * @example
+     * ```ts
+     * // Returns: { page: 2, pageSize: 10 }
+     * config.validatePaginationInput({ pagination: { page: 2, pageSize: 10 } });
+     *
+     * // Returns: { page: undefined, pageSize: undefined }
+     * config.validatePaginationInput({});
+     * ```
+     */
+    validatePaginationInput(input: unknown): z.infer<typeof paginationSchema>['pagination'] {
+        const validated = paginationSchema.safeParse(input);
+        if (validated.success) {
+            return validated.data.pagination;
+        }
+        return {
+            page: undefined,
+            pageSize: undefined,
+        };
+    }
+
+    /**
+     * Validate and normalize ordering input data.
+     *
+     * Attempts to parse the input using the ordering schema. If validation fails,
+     * returns undefined.
+     *
+     * @param input - Raw input (should be an object containing a `ordering` key).
+     *
+     * @example
+     * ```ts
+     * config.validateOrderingInput({ ordering: [{ field: 'createdAt', direction: 'desc' }] });
+     * // Returns: [{ field: 'createdAt', direction: 'desc' }]
+     *
+     * config.validateOrderingInput({});
+     * // Returns: undefined
+     * ```
+     */
+    validateOrderingInput(input: unknown): z.infer<ReturnType<typeof orderingSchema>>['ordering'] {
+        const validated = orderingSchema(this.table).safeParse(input);
+        if (validated.success) {
+            return validated.data.ordering;
+        }
+        return undefined;
     }
 
     /**
@@ -512,8 +607,8 @@ export class FeatureTableConfig<
  * Provides methods to configure:
  * - ID fields (.setIds)
  * - User ID field for row-level security (.setUserId)
- * - Which fields can be inserted/updated (.defineUpsertData)
- * - Which columns are returned in queries (.defineReturnColumns)
+ * - Which fields can be inserted/updated (.restrictUpsertFields)
+ * - Which columns are returned in queries (.restrictReturnColumns)
  *
  * **Important:** Use the factory function `createFeatureTableConfig(table)` instead
  * of calling `FeatureTableConfigBuilder.create()` directly.
@@ -538,6 +633,9 @@ export class FeatureTableConfigBuilder<
     TSelectReturnSchema extends TZodShape = InferTableSchema<TTable, 'select'>['shape'],
     TIdSchema extends TZodShape = EmptySchema,
     TUserIdSchema extends TZodShape = EmptySchema,
+    TManyFiltersSchema extends TZodShape = EmptySchema,
+    TPaginationSchema extends TZodShape = EmptySchema,
+    TOrderingSchema extends TZodShape = EmptySchema,
 > {
     private table: TTable;
     private idSchemaObj: z.ZodObject<TIdSchema>;
@@ -546,6 +644,9 @@ export class FeatureTableConfigBuilder<
     private insertDataSchemaObj: z.ZodObject<TInsertDataSchema>;
     private updateDataSchemaObj: z.ZodObject<TUpdateDataSchema>;
     private selectReturnSchemaObj: z.ZodObject<TSelectReturnSchema>;
+    private manyFiltersSchemaObj: z.ZodObject<TManyFiltersSchema>;
+    private paginationSchemaObj: z.ZodObject<TPaginationSchema>;
+    private orderingSchemaObj: z.ZodObject<TOrderingSchema>;
 
     /**
      * @internal
@@ -560,6 +661,9 @@ export class FeatureTableConfigBuilder<
         insertDataSchemaObj: z.ZodObject<TInsertDataSchema>;
         updateDataSchemaObj: z.ZodObject<TUpdateDataSchema>;
         selectReturnSchemaObj: z.ZodObject<TSelectReturnSchema>;
+        manyFiltersSchemaObj: z.ZodObject<TManyFiltersSchema>;
+        paginationSchemaObj: z.ZodObject<TPaginationSchema>;
+        orderingSchemaObj: z.ZodObject<TOrderingSchema>;
     }) {
         this.table = config.table;
         this.idSchemaObj = config.idSchemaObj;
@@ -568,6 +672,9 @@ export class FeatureTableConfigBuilder<
         this.insertDataSchemaObj = config.insertDataSchemaObj;
         this.updateDataSchemaObj = config.updateDataSchemaObj;
         this.selectReturnSchemaObj = config.selectReturnSchemaObj;
+        this.manyFiltersSchemaObj = config.manyFiltersSchemaObj;
+        this.paginationSchemaObj = config.paginationSchemaObj;
+        this.orderingSchemaObj = config.orderingSchemaObj;
     }
 
     /**
@@ -593,7 +700,10 @@ export class FeatureTableConfigBuilder<
             Prettify<Omit<InferTableSchema<TTable, 'update'>['shape'], SystemTableFieldKeys>>,
             InferTableSchema<TTable, 'select'>['shape'],
             InferDefaultSchemaForField<TTable, 'id'>['shape'],
-            InferDefaultSchemaForField<TTable, 'userId'>['shape']
+            InferDefaultSchemaForField<TTable, 'userId'>['shape'],
+            EmptySchema,
+            EmptySchema,
+            EmptySchema
         >({
             table,
             idSchemaObj: idSchema,
@@ -602,6 +712,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: baseSchemaObj,
             updateDataSchemaObj: createUpdateSchema(table).omit(fieldsToMask()),
             selectReturnSchemaObj: z.object(createSelectSchema(table).shape),
+            manyFiltersSchemaObj: z.object({}),
+            paginationSchemaObj: z.object({}),
+            orderingSchemaObj: z.object({}),
         });
     }
 
@@ -667,7 +780,10 @@ export class FeatureTableConfigBuilder<
             InferTableSchema<TTable, 'update'>['shape'],
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             idSchemaObj: this.idSchemaObj,
@@ -676,6 +792,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: createSchema,
             updateDataSchemaObj: updateSchema,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -723,7 +842,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             typeof idSchemaObj.shape,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             idSchemaObj,
@@ -732,6 +854,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -762,7 +887,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             NewIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             idSchemaObj: z.object({}),
@@ -771,6 +899,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -809,7 +940,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             TIdSchema,
-            NewUserIdSchema
+            NewUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             idSchemaObj: this.idSchemaObj,
@@ -818,6 +952,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -848,7 +985,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             TIdSchema,
-            NewUserIdSchema
+            NewUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             idSchemaObj: this.idSchemaObj,
@@ -857,6 +997,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -890,7 +1033,10 @@ export class FeatureTableConfigBuilder<
             typeof baseSchemaObj.shape,
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj,
@@ -899,6 +1045,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: baseSchemaObj,
             updateDataSchemaObj: baseSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -929,7 +1078,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj: this.baseSchemaObj,
@@ -938,6 +1090,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -970,7 +1125,10 @@ export class FeatureTableConfigBuilder<
             typeof updateDataSchemaObj.shape,
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj: this.baseSchemaObj,
@@ -979,6 +1137,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -1007,7 +1168,7 @@ export class FeatureTableConfigBuilder<
     >(fields: TFields) {
         if (fields.length === 0) {
             throw new Error(
-                `[FeatureTableConfigBuilder] defineReturnColumns: must provide at least one column`
+                `[FeatureTableConfigBuilder] restrictReturnColumns: must provide at least one column`
             );
         }
 
@@ -1015,7 +1176,7 @@ export class FeatureTableConfigBuilder<
         const uniqueFields = new Set(fields);
         if (uniqueFields.size !== fields.length) {
             throw new Error(
-                `[FeatureTableConfigBuilder] defineReturnColumns: duplicate columns detected`
+                `[FeatureTableConfigBuilder] restrictReturnColumns: duplicate columns detected`
             );
         }
 
@@ -1031,7 +1192,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             typeof selectReturnSchemaObj.shape,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj: this.baseSchemaObj,
@@ -1040,6 +1204,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -1047,10 +1214,10 @@ export class FeatureTableConfigBuilder<
      * Pick specific fields for the base schema.
      *
      * Restricts the base schema to only the specified fields. This affects what
-     * fields are available for subsequent `.defineUpsertData()` calls.
+     * fields are available for subsequent `.restrictUpsertFields()` calls.
      *
      * **Note:** This only affects the base schema, not insert/update/select schemas directly.
-     * Use this before calling `.defineUpsertData()` to limit available fields.
+     * Use this before calling `.restrictUpsertFields()` to limit available fields.
      *
      * @param fields - Array of field names to keep
      * @returns New builder instance with restricted base schema
@@ -1059,7 +1226,7 @@ export class FeatureTableConfigBuilder<
      * ```ts
      * const config = createFeatureTableConfig(table)
      *   .pickBaseSchema(['name', 'description', 'color'])
-     *   .defineUpsertData(['name', 'color']) // Can only pick from picked fields
+     *   .restrictUpsertFields(['name', 'color']) // Can only pick from picked fields
      *   .build();
      * ```
      */
@@ -1073,7 +1240,10 @@ export class FeatureTableConfigBuilder<
             TUpdateDataSchema,
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj: baseSchemaObj,
@@ -1082,6 +1252,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: this.insertDataSchemaObj,
             updateDataSchemaObj: this.updateDataSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
         });
     }
 
@@ -1089,7 +1262,7 @@ export class FeatureTableConfigBuilder<
      * Omit specific fields from the base schema.
      *
      * Excludes the specified fields from the base schema. This affects what
-     * fields are available for subsequent `.defineUpsertData()` calls.
+     * fields are available for subsequent `.restrictUpsertFields()` calls.
      *
      * **Note:** This also updates insert and update schemas to match the new base schema.
      *
@@ -1100,7 +1273,7 @@ export class FeatureTableConfigBuilder<
      * ```ts
      * const config = createFeatureTableConfig(table)
      *   .omitBaseSchema(['internalField', 'systemField'])
-     *   .defineUpsertData(['name', 'description']) // Omitted fields not available
+     *   .restrictUpsertFields(['name', 'description']) // Omitted fields not available
      *   .build();
      * ```
      */
@@ -1114,7 +1287,10 @@ export class FeatureTableConfigBuilder<
             typeof baseSchemaObj.shape,
             TSelectReturnSchema,
             TIdSchema,
-            TUserIdSchema
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            TOrderingSchema
         >({
             table: this.table,
             baseSchemaObj: baseSchemaObj,
@@ -1123,6 +1299,161 @@ export class FeatureTableConfigBuilder<
             insertDataSchemaObj: baseSchemaObj,
             updateDataSchemaObj: baseSchemaObj,
             selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
+        });
+    }
+
+    /**
+     * Define filter schema for querying multiple records.
+     *
+     * Allows you to specify Zod schemas for filtering operations. You can define
+     * filters for any subset of table columns - not all columns need to be included.
+     *
+     * @param schema - Partial record mapping column names to Zod validation schemas
+     * @returns New builder instance with filter schema configured
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .enableManyFiltering({
+     *     name: z.string(),           // Filter by name
+     *     createdAt: z.date(),        // Filter by creation date
+     *     status: z.enum(['active'])  // Filter by status
+     *   })
+     *   .build();
+     *
+     * // Only these fields can be used as filters, not all table columns
+     * ```
+     */
+    enableManyFiltering<
+        const TSchema extends Partial<Record<keyof TTable['_']['columns'], TZodType>> &
+            Record<string, TZodType>,
+    >(schema: TSchema) {
+        const manyFiltersSchemaObj = z.object({ filters: z.object(schema).partial().optional() });
+
+        return new FeatureTableConfigBuilder<
+            TTable,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TIdSchema,
+            TUserIdSchema,
+            typeof manyFiltersSchemaObj.shape,
+            TPaginationSchema,
+            TOrderingSchema
+        >({
+            table: this.table,
+            baseSchemaObj: this.baseSchemaObj,
+            idSchemaObj: this.idSchemaObj,
+            userIdSchemaObj: this.userIdSchemaObj,
+            insertDataSchemaObj: this.insertDataSchemaObj,
+            updateDataSchemaObj: this.updateDataSchemaObj,
+            selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: this.orderingSchemaObj,
+        });
+    }
+
+    /**
+     * Enable pagination for this table.
+     *
+     * Adds `page` and `pageSize` fields to the query schema.
+     *
+     * @param config - Configuration for pagination defaults
+     * @returns New builder instance with pagination schema configured
+     */
+    enablePagination() {
+        return new FeatureTableConfigBuilder<
+            TTable,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TIdSchema,
+            TUserIdSchema,
+            TManyFiltersSchema,
+            typeof paginationSchema.shape,
+            TOrderingSchema
+        >({
+            table: this.table,
+            baseSchemaObj: this.baseSchemaObj,
+            idSchemaObj: this.idSchemaObj,
+            userIdSchemaObj: this.userIdSchemaObj,
+            insertDataSchemaObj: this.insertDataSchemaObj,
+            updateDataSchemaObj: this.updateDataSchemaObj,
+            selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: paginationSchema,
+            orderingSchemaObj: this.orderingSchemaObj,
+        });
+    }
+
+    /**
+     * Enable ordering for this table.
+     *
+     * Creates a Zod schema where each provided column is a key with `z.enum(['asc', 'desc'])` as the value.
+     * This allows ordering by any of the specified columns with ascending or descending direction.
+     *
+     * @param columns - Array of table column names that can be used for ordering
+     * @returns New builder instance with ordering schema configured
+     *
+     * @example
+     * ```ts
+     * const config = createFeatureTableConfig(table)
+     *   .enableOrdering(['name', 'createdAt', 'updatedAt'])
+     *   .build();
+     *
+     * // Resulting schema: {
+     * //   name: z.enum(['asc', 'desc']),
+     * //   createdAt: z.enum(['asc', 'desc']),
+     * //   updatedAt: z.enum(['asc', 'desc'])
+     * // }
+     * ```
+     */
+    enableOrdering<
+        const TColumns extends Array<keyof TTable['_']['columns'] & string> = Array<
+            keyof TTable['_']['columns'] & string
+        >,
+    >(columns: TColumns) {
+        const orderingShape = z
+            .array(
+                z.object({
+                    field: z.enum(columns),
+                    direction: orderByDirectionSchema,
+                })
+            )
+            .optional();
+
+        const orderingSchema = z.object({
+            ordering: orderingShape,
+        });
+
+        return new FeatureTableConfigBuilder<
+            TTable,
+            TBase,
+            TInsertDataSchema,
+            TUpdateDataSchema,
+            TSelectReturnSchema,
+            TIdSchema,
+            TUserIdSchema,
+            TManyFiltersSchema,
+            TPaginationSchema,
+            typeof orderingSchema.shape
+        >({
+            table: this.table,
+            baseSchemaObj: this.baseSchemaObj,
+            idSchemaObj: this.idSchemaObj,
+            userIdSchemaObj: this.userIdSchemaObj,
+            insertDataSchemaObj: this.insertDataSchemaObj,
+            updateDataSchemaObj: this.updateDataSchemaObj,
+            selectReturnSchemaObj: this.selectReturnSchemaObj,
+            manyFiltersSchemaObj: this.manyFiltersSchemaObj,
+            paginationSchemaObj: this.paginationSchemaObj,
+            orderingSchemaObj: orderingSchema,
         });
     }
 
@@ -1157,7 +1488,10 @@ export class FeatureTableConfigBuilder<
         TBase,
         TInsertDataSchema,
         TUpdateDataSchema,
-        TSelectReturnSchema
+        TSelectReturnSchema,
+        TManyFiltersSchema,
+        TPaginationSchema,
+        TOrderingSchema
     > {
         return new FeatureTableConfig({
             table: this.table,
@@ -1167,6 +1501,9 @@ export class FeatureTableConfigBuilder<
             insertDataSchema: this.insertDataSchemaObj,
             updateDataSchema: this.updateDataSchemaObj,
             selectReturnSchema: this.selectReturnSchemaObj,
+            manyFiltersSchema: this.manyFiltersSchemaObj,
+            paginationSchema: this.paginationSchemaObj,
+            orderingSchema: this.orderingSchemaObj,
         });
     }
 }

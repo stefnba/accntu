@@ -35,12 +35,10 @@ export function getSchemaForTableField<
     table: TTable,
     field: TField
 ): z.ZodObject<Prettify<Pick<InferTableSchema<TTable, 'select'>['shape'], TField>>>;
-
 export function getSchemaForTableField<TTable extends Table, TField extends string>(
     table: TTable,
     field: TField
 ): z.ZodObject<EmptySchema>;
-
 export function getSchemaForTableField<TTable extends Table, TField extends string>(
     table: TTable,
     field: TField
