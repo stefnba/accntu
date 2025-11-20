@@ -55,5 +55,6 @@ export const tableHasField = (
     field: string
 ): field is keyof Table['_']['columns'] => {
     const cols = getTableColumns(table);
+    // Use Object.keys because typedKeys doesn't work with TypeScript correctly here
     return Object.keys(cols).includes(field);
 };
