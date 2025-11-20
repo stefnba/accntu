@@ -1,9 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-
-// Mock problematic modules BEFORE any other imports
-vi.mock('@/features/bank/server/db/queries/connected-bank', () => ({
-    connectedBankQueries: { queries: {} },
-}));
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { createTestUser } from '@/../test/utils/create-user';
 import { tag } from '@/features/tag/server/db/tables';
