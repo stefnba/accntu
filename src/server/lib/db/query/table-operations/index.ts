@@ -21,5 +21,7 @@ export type {
     TBooleanFilter,
     TByIdInput,
     TOnConflict,
+    TOrderBy,
+    TPagination,
     TValidTableForFrom,
 } from './types';

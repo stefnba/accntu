@@ -104,3 +104,35 @@ export type TOnConflict<T extends Table> =
           }>;
           where?: Array<TBooleanFilter<T>>; // Optional conditions for the update
       };
+
+/**
+ * Ordering for the getManyRecords operation.
+ * Supports both array of objects and array of column keys. If only a column key is provided, it will be ordered by ascending.
+ * @example
+ * ```typescript
+ * const ordering: TOrderBy<Table> = [
+ *     { field: 'createdAt', direction: 'asc' },
+ *     'name',
+ * ];
+ * ```
+ */
+export type TOrderBy<T extends Table> =
+    | Array<{
+          field: GetTableColumnKeys<T>;
+          direction: 'asc' | 'desc';
+      }>
+    | Array<GetTableColumnKeys<T>>;
+
+/**
+ * Pagination for the getManyRecords operation.
+ * @example
+ * ```typescript
+ * const pagination: TPagination = {
+ *     page: 1,
+ *     pageSize: 10,
+ * };
+ */
+export type TPagination = {
+    page?: number;
+    pageSize?: number;
+};
