@@ -13,10 +13,9 @@ import {
 import z from 'zod';
 
 // ================================================================
-// Tag Table Config Example
+// Table Config
 // ================================================================
 
-//
 const tagTableConfig = createFeatureTableConfig(tag)
     .omitBaseSchema(['transactionCount'])
     // .removeIds()
@@ -78,6 +77,24 @@ export type TTagTableConfigReturn = {
 
 export type IdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.idSchema>;
 export type UserIdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.userIdSchema>;
+
+// ================================================================
+// Validate
+// ================================================================
+
+const validateManyFiltersInput = tagTableConfig.validateManyFiltersInput({
+    filters: {
+        createdAt: new Date(),
+        name: 'Test',
+        startDate: new Date(),
+    },
+});
+console.log('validateManyFiltersInput', validateManyFiltersInput);
+
+const validateOrderingInput = tagTableConfig.validateOrderingInput({
+    ordering: [{ field: 'createdAt', direction: 'desc' }],
+});
+console.log('validateOrderingInput', validateOrderingInput);
 
 // ================================================================
 // TagToTransaction Table Config Example

@@ -8,6 +8,7 @@ import {
 } from '@/lib/utils/zod';
 import { SystemTableFieldKeys } from '@/server/lib/db/table';
 import {
+    manyFiltersSchema,
     orderByDirectionSchema,
     orderingSchema,
     paginationSchema,
@@ -245,6 +246,24 @@ export class FeatureTableConfig<
     }
 
     /**
+     * Type guard: Check if many filters schema is configured.
+     */
+    hasManyFilters(): this is FeatureTableConfig<
+        TTable,
+        TIdSchema,
+        TUserIdSchema,
+        TBase,
+        TInsertDataSchema,
+        TUpdateDataSchema,
+        TSelectReturnSchema,
+        TManyFiltersSchema & { filters: TZodShape },
+        TPaginationSchema,
+        TOrderingSchema
+    > {
+        return 'filters' in this.manyFiltersSchema.shape;
+    }
+
+    /**
      * Build a Zod schema for create/insert operations.
      *
      * Combines insert data schema with user ID schema (if configured).
@@ -342,6 +361,25 @@ export class FeatureTableConfig<
             .extend(this.userIdSchema.shape);
     }
 
+    /**
+     * Build the input schema for "get many" operations.
+     *
+     * This method combines userId, ordering, filters, and pagination schemas into a single Zod schema
+     * used to validate and parse inputs for queries that retrieve multiple records.
+     *
+     * @returns Zod schema containing userId, ordering, filters, and pagination fields.
+     *
+     * @example
+     * ```ts
+     * const manyInputSchema = config.buildManyInputSchema();
+     * const validated = manyInputSchema.parse({
+     *   userId: 'user-123',
+     *   ordering: [{ field: 'createdAt', direction: 'desc' }],
+     *   filters: { name: 'MyTag' },
+     *   pagination: { page: 1, pageSize: 10 }
+     * });
+     * ```
+     */
     buildManyInputSchema(): z.ZodObject<
         Prettify<TUserIdSchema & TOrderingSchema & TManyFiltersSchema & TPaginationSchema>
     > {
@@ -425,10 +463,25 @@ export class FeatureTableConfig<
      * // Returns: undefined
      * ```
      */
-    validateOrderingInput(input: unknown): z.infer<ReturnType<typeof orderingSchema>>['ordering'] {
+    validateOrderingInput(
+        input: unknown
+    ): z.infer<ReturnType<typeof orderingSchema<TTable>>>['ordering'] {
         const validated = orderingSchema(this.table).safeParse(input);
         if (validated.success) {
             return validated.data.ordering;
+        }
+        return undefined;
+    }
+
+    //
+    validateManyFiltersInput(input: unknown) {
+        const validated = this.manyFiltersSchema.safeParse(input);
+
+        if (validated.success) {
+            if ('filters' in validated.data) {
+                return validated.data;
+            }
+            return undefined;
         }
         return undefined;
     }
@@ -1331,8 +1384,7 @@ export class FeatureTableConfigBuilder<
         const TSchema extends Partial<Record<keyof TTable['_']['columns'], TZodType>> &
             Record<string, TZodType>,
     >(schema: TSchema) {
-        const manyFiltersSchemaObj = z.object({ filters: z.object(schema).partial().optional() });
-
+        const manyFiltersSchemaObj = manyFiltersSchema<TSchema>(schema);
         return new FeatureTableConfigBuilder<
             TTable,
             TBase,

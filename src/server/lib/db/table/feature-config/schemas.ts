@@ -1,3 +1,4 @@
+import { TZodShape } from '@/lib/schemas_new/types';
 import { getTableColumns, Table } from 'drizzle-orm';
 import z from 'zod';
 
@@ -70,3 +71,8 @@ export const orderingSchema = <TTable extends Table>(table: TTable) => {
             .optional(),
     });
 };
+
+export const manyFiltersSchema = <T extends TZodShape>(schema: T) =>
+    z.object({
+        filters: z.object(schema).partial().optional(),
+    });

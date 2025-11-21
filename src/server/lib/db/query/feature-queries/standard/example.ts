@@ -19,6 +19,14 @@ const config = createFeatureTableConfig(tag)
 export const inputSchema = config.buildManyInputSchema();
 export type TInputSchema = z.infer<typeof inputSchema>;
 
+const orderingSchema = config.validateOrderingInput({
+    ordering: [{ field: 'createdAt', direction: 'asc' }],
+});
+console.log('orderingSchema', orderingSchema);
+
+const manyFiltersSchema = config.validateManyFiltersInput({ filters: { name: 'Test' } });
+console.log('manyFiltersSchema', manyFiltersSchema);
+
 // ==============================
 // Standard Query Builder
 // ==============================
@@ -45,7 +53,9 @@ const standardQueries = StandardQueryBuilder.create(config, {
 const manyResult = await standardQueries.getMany({
     userId: 'kdot36uifwaveogao0o7umx3',
     ordering: [{ field: 'createdAt', direction: 'asc' }],
-    pagination: {},
+    filters: {
+        name: 'Test',
+    },
 });
 console.log('Has only 3 records', manyResult.length === 3);
 console.log('manyResult', manyResult);
