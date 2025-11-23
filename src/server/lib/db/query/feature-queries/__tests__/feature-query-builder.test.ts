@@ -923,6 +923,7 @@ describe('Feature Query Builder', () => {
             const tableConfig = createFeatureTableConfig(tag)
                 .setUserId('userId')
                 .restrictReturnColumns(['id', 'name'])
+                .enablePagination()
                 .build();
 
             const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
@@ -1050,6 +1051,8 @@ describe('Feature Query Builder', () => {
                 .setUserId('userId')
                 .restrictReturnColumns(['id', 'name', 'createdAt'])
                 .restrictInsertFields(['name', 'color'])
+                .enableOrdering(['name'])
+                .enablePagination()
                 .build();
 
             const queries = createFeatureQueries('tag-test', tableConfig).registerAllStandard();
@@ -1065,7 +1068,7 @@ describe('Feature Query Builder', () => {
 
             const result = await queries.queries.getMany({
                 userId: testUser.id,
-                orderBy: { name: 'asc' },
+                ordering: [{ field: 'name', direction: 'asc' }],
                 pagination: { page: 1, pageSize: 10 },
             });
 

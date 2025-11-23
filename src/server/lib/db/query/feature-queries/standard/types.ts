@@ -1,5 +1,6 @@
 import { GetTableColumnDefinitions, GetTableColumnKeys } from '@/server/lib/db/drizzle';
 import { TOrderBy, TPagination } from '@/server/lib/db/query/table-operations';
+import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 
 /**
@@ -21,7 +22,7 @@ import { Table } from 'drizzle-orm';
 export type TStandardNewQueryConfig<TTable extends Table> = {
     defaultFilters?: TDefaultFilters<TTable>;
     getMany?: {
-        defaultPagination?: Pick<TPagination, 'pageSize'>;
+        defaultPagination?: Prettify<Pick<TPagination, 'pageSize'>>;
         defaultOrdering?: TOrderBy<TTable>; // todo restrict this to the columns that are enabled for ordering
         defaultFilters?: TDefaultFilters<TTable>;
         filters?: boolean;

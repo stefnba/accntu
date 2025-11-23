@@ -10,7 +10,7 @@ import z from 'zod';
 const config = createFeatureTableConfig(tag)
     .restrictReturnColumns(['id', 'description', 'createdAt'])
     .enableOrdering(['createdAt'])
-    .enableManyFiltering({
+    .enableFiltering({
         name: z.string(),
     })
     .enablePagination()
@@ -24,7 +24,7 @@ const orderingSchema = config.validateOrderingInput({
 });
 console.log('orderingSchema', orderingSchema);
 
-const manyFiltersSchema = config.validateManyFiltersInput({ filters: { name: 'Test' } });
+const manyFiltersSchema = config.validateFiltersInput({ filters: { name: 'Test' } });
 console.log('manyFiltersSchema', manyFiltersSchema);
 
 // ==============================

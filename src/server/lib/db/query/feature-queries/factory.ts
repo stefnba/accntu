@@ -1,10 +1,11 @@
 import { FeatureQueryBuilder } from '@/server/lib/db/query/feature-queries/core';
 
-import { TZodShape } from '@/lib/schemas/types';
 import { TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
+import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { Table } from 'drizzle-orm';
+
 /**
  * Factory function to create a new FeatureQueryBuilder instance.
  *
@@ -40,80 +41,19 @@ import { Table } from 'drizzle-orm';
  *     .done()
  * ```
  */
-// export const createFeatureQueriesOld = <T extends Table>(
-//     tableOrConfig: T | { table: T; name?: string }
-// ) => {
-//     // Extract table from config or use directly
-//     const table =
-//         typeof tableOrConfig === 'object' && 'table' in tableOrConfig
-//             ? tableOrConfig.table
-//             : tableOrConfig;
-
-//     // Derive name: explicit > table name > fallback
-//     const name =
-//         typeof tableOrConfig === 'object' && 'name' in tableOrConfig
-//             ? (tableOrConfig.name ?? table?._?.name ?? 'unknown')
-//             : (table?._?.name ?? 'unknown');
-
-//     return new FeatureQueryBuilder({
-//         schemas: {},
-//         queries: {},
-//         table,
-//         name,
-//     });
-// };
-
 export const createFeatureQueries = <
     TTable extends Table,
-    TBase extends TZodShape,
-    TIdSchema extends TZodShape,
-    TUserIdSchema extends TZodShape,
-    TInsertDataSchema extends TZodShape,
-    TUpdateDataSchema extends TZodShape,
-    TSelectReturnSchema extends TZodShape,
-    TManyFiltersSchema extends TZodShape,
-    TPaginationSchema extends TZodShape,
-    TOrderingSchema extends TZodShape,
+    TConfig extends TFeatureTableConfig<TTable>,
 >(
     name: string,
-    config: FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema
-    >
+    config: FeatureTableConfig<TTable, TConfig>
 ) => {
     return new FeatureQueryBuilder<
         TEmptyQueries,
         Record<string, never>,
         TTable,
-        TBase,
-        TIdSchema,
-        TUserIdSchema,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema,
-        FeatureTableConfig<
-            TTable,
-            TIdSchema,
-            TUserIdSchema,
-            TBase,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >
+        TConfig,
+        FeatureTableConfig<TTable, TConfig>
     >({
         schemas: {},
         queries: {},

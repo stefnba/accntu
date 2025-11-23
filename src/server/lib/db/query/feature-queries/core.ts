@@ -5,7 +5,7 @@
  * It supports both standard CRUD operations and custom queries with full TypeScript inference.
  */
 
-import type { InferQuerySchemas, TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
+import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
 import {
     StandardQueryBuilder,
     type TStandardNewQueryConfig,
@@ -15,43 +15,17 @@ import type { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { Table } from 'drizzle-orm';
 
 export class FeatureQueryBuilder<
     const Q extends Record<string, never>,
     const S extends Record<string, never>,
     const TTable extends Table,
-    const TBase extends TZodShape,
-    const TIdSchema extends TZodShape,
-    const TUserIdSchema extends TZodShape,
-    const TInsertDataSchema extends TZodShape,
-    const TUpdateDataSchema extends TZodShape,
-    const TSelectReturnSchema extends TZodShape,
-    const TManyFiltersSchema extends TZodShape,
-    const TPaginationSchema extends TZodShape,
-    const TOrderingSchema extends TZodShape,
-    const TTableConfig extends FeatureTableConfig<
+    const TConfig extends TFeatureTableConfig<TTable>,
+    const TTableConfig extends FeatureTableConfig<TTable, TConfig> = FeatureTableConfig<
         TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema
-    > = FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema
+        TConfig
     >,
 > {
     /** Collection of registered query functions */
@@ -93,13 +67,15 @@ export class FeatureQueryBuilder<
         config: TTableConfig;
         name: string;
     }) {
+        const table = config.getTable();
+
         this.queries = queries;
         this.schemas = schemas;
         this.tableConfig = config;
-        this.table = config.table;
+        this.table = table;
         this.name = name;
         // Create shared TableOperationsBuilder instance for all queries
-        this.tableOperations = new TableOperationsBuilder(config.table);
+        this.tableOperations = new TableOperationsBuilder(table);
     }
 
     /**
@@ -121,21 +97,7 @@ export class FeatureQueryBuilder<
     registerSchema<const TLocalSchemas extends Record<string, TOperationSchemaObject>>(
         schemas: TLocalSchemas
     ) {
-        return new FeatureQueryBuilder<
-            Q,
-            S & TLocalSchemas,
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig
-        >({
+        return new FeatureQueryBuilder<Q, S & TLocalSchemas, TTable, TConfig, TTableConfig>({
             queries: this.queries,
             schemas: { ...this.schemas, ...schemas },
             config: this.tableConfig,
@@ -210,15 +172,7 @@ export class FeatureQueryBuilder<
             Q & Record<K, QueryFn<I, O>>,
             S,
             TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
+            TConfig,
             TTableConfig
         >({
             queries: { ...this.queries, [key]: wrappedQueryFn },
@@ -251,21 +205,7 @@ export class FeatureQueryBuilder<
             queries[key] = this.queries[key];
         }
 
-        return new FeatureQueryBuilder<
-            Pick<Q, K>,
-            S,
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig
-        >({
+        return new FeatureQueryBuilder<Pick<Q, K>, S, TTable, TConfig, TTableConfig>({
             queries: queries,
             schemas: this.schemas,
             config: this.tableConfig,
@@ -287,67 +227,14 @@ export class FeatureQueryBuilder<
      * ```
      */
 
-    withStandard<
-        TBuilder extends StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >,
-    >(
-        standard: (
-            b: ReturnType<
-                typeof StandardQueryBuilder.create<
-                    TTable,
-                    TBase,
-                    TIdSchema,
-                    TUserIdSchema,
-                    TInsertDataSchema,
-                    TUpdateDataSchema,
-                    TSelectReturnSchema,
-                    TManyFiltersSchema,
-                    TPaginationSchema,
-                    TOrderingSchema
-                >
-            >
-        ) => TBuilder
+    withStandard<TBuilder extends StandardQueryBuilder<TTable, TConfig>>(
+        standard: (b: ReturnType<typeof StandardQueryBuilder.create<TTable, TConfig>>) => TBuilder
     ) {
-        const builder = StandardQueryBuilder.create<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >(this.tableConfig);
+        const builder = StandardQueryBuilder.create<TTable, TConfig>(this.tableConfig);
         const standardBuilder = standard(builder);
         const standardQueries = standardBuilder.done();
 
-        return new FeatureQueryBuilder<
-            Q & TBuilder['queries'],
-            S,
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig
-        >({
+        return new FeatureQueryBuilder<Q & TBuilder['queries'], S, TTable, TConfig, TTableConfig>({
             queries: { ...this.queries, ...standardQueries },
             schemas: this.schemas,
             config: this.tableConfig,
@@ -368,18 +255,7 @@ export class FeatureQueryBuilder<
      * ```
      */
     registerAllStandard(config: TStandardNewQueryConfig<TTable> = {}) {
-        const builder = StandardQueryBuilder.create<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >(this.tableConfig, config);
+        const builder = StandardQueryBuilder.create<TTable, TConfig>(this.tableConfig, config);
 
         const standardQueries = builder.all().done();
 
@@ -387,15 +263,7 @@ export class FeatureQueryBuilder<
             Q & typeof standardQueries,
             S,
             TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
+            TConfig,
             TTableConfig
         >({
             queries: { ...this.queries, ...standardQueries },

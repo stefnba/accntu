@@ -1,4 +1,3 @@
-import { TZodShape } from '@/lib/schemas/types';
 import { typedEntries, typedKeys } from '@/lib/utils';
 import type { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import {
@@ -7,130 +6,51 @@ import {
 } from '@/server/lib/db/query/feature-queries/utils';
 import { TableOperationsBuilder, TBooleanFilter } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { TStandardNewQueryConfig } from './types';
-
+import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { Table } from 'drizzle-orm';
 import z from 'zod';
+import { TStandardNewQueryConfig } from './types';
 
 export class StandardQueryBuilder<
     TTable extends Table,
-    TBase extends TZodShape,
-    TIdSchema extends TZodShape,
-    TUserIdSchema extends TZodShape,
-    TInsertDataSchema extends TZodShape,
-    TUpdateDataSchema extends TZodShape,
-    TSelectReturnSchema extends TZodShape,
-    TManyFiltersSchema extends TZodShape,
-    TPaginationSchema extends TZodShape,
-    TOrderingSchema extends TZodShape,
-    TTableConfig extends FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema
-    > = FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        TManyFiltersSchema,
-        TPaginationSchema,
-        TOrderingSchema
-    >,
+    TConfig extends TFeatureTableConfig<TTable>,
     TQueries extends Record<string, QueryFn<unknown, unknown>> = TEmptyQueries,
 > {
     table: TTable;
-    tableConfig: TTableConfig;
+    tableConfig: FeatureTableConfig<TTable, TConfig>;
     queryConfig: TStandardNewQueryConfig<TTable>;
 
     tableOps: TableOperationsBuilder<TTable>;
 
     queries: TQueries;
-    // tableConfig: Omit<TTableConfig, 'table'>;
 
-    // constructor(tableConfig: QueryConfig<TTable, TBase, TIdSchema, TUserIdSchema, TSelectReturnSchema>) {
     constructor({
         tableConfig,
         queries,
         queryConfig,
     }: {
-        tableConfig: TTableConfig;
+        tableConfig: FeatureTableConfig<TTable, TConfig>;
         queries: TQueries;
         queryConfig: TStandardNewQueryConfig<TTable>;
     }) {
-        // const { table, ..._config } = tableConfig;
-        this.table = tableConfig.table;
+        const table = tableConfig.getTable();
+        this.table = table;
         this.tableConfig = tableConfig;
         this.queries = queries;
         this.queryConfig = queryConfig;
 
-        this.tableOps = new TableOperationsBuilder(tableConfig.table);
+        this.tableOps = new TableOperationsBuilder(table);
     }
 
-    static create<
-        TTable extends Table,
-        TBase extends TZodShape,
-        TIdSchema extends TZodShape,
-        TUserIdSchema extends TZodShape,
-        TInsertDataSchema extends TZodShape,
-        TUpdateDataSchema extends TZodShape,
-        TSelectReturnSchema extends TZodShape,
-        TManyFiltersSchema extends TZodShape,
-        TPaginationSchema extends TZodShape,
-        TOrderingSchema extends TZodShape,
-    >(
-        tableConfig: FeatureTableConfig<
-            TTable,
-            TIdSchema,
-            TUserIdSchema,
-            TBase,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >,
+    static create<TTable extends Table, TConfig extends TFeatureTableConfig<TTable>>(
+        tableConfig: FeatureTableConfig<TTable, TConfig>,
         queryConfig: TStandardNewQueryConfig<TTable> = {}
     ) {
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema
-        >({ tableConfig, queries: {}, queryConfig });
+        return new StandardQueryBuilder<TTable, TConfig>({ tableConfig, queries: {}, queryConfig });
     }
 
     all() {
-        const b = new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries
-        >({
+        const b = new StandardQueryBuilder<TTable, TConfig, TQueries>({
             tableConfig: this.tableConfig,
             queries: this.queries,
             queryConfig: this.queryConfig,
@@ -163,20 +83,7 @@ export class StandardQueryBuilder<
             updateById: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { updateById: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { updateById: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
@@ -185,7 +92,9 @@ export class StandardQueryBuilder<
 
     getMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
-        type TInput = z.infer<ReturnType<TTableConfig['buildManyInputSchema']>>;
+        type TInput = z.infer<
+            ReturnType<FeatureTableConfig<TTable, TConfig>['buildManyInputSchema']>
+        >;
 
         const query = async (input: TInput) => {
             // identifiers, only userId
@@ -194,25 +103,24 @@ export class StandardQueryBuilder<
             // todo filters
             // const filters = this.buildFilters(input);
 
-            // ordering
+            // todo ordering
             const orderBy =
                 this.tableConfig.validateOrderingInput(input) ??
                 this.queryConfig.getMany?.defaultOrdering;
 
             // pagination
-            const pagination =
-                this.tableConfig.validatePaginationInput(input) ??
-                this.queryConfig.getMany?.defaultPagination;
-
-            console.log('orderBy', orderBy);
-            console.log('pagination', pagination);
-            console.log('identifiers', identifiers);
-
+            const paginationInput = this.tableConfig.validatePaginationInput(input);
             const result = await this.tableOps.getManyRecords({
                 columns: returnColumns,
                 identifiers,
                 // filters,
-                pagination,
+                pagination: {
+                    page: paginationInput?.page ?? 1,
+                    pageSize:
+                        paginationInput?.pageSize ??
+                        this.queryConfig.getMany?.defaultPagination?.pageSize ??
+                        25,
+                },
                 // orderBy: orderBy,
             });
 
@@ -224,20 +132,7 @@ export class StandardQueryBuilder<
             getMany: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { getMany: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { getMany: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
@@ -264,20 +159,7 @@ export class StandardQueryBuilder<
             getById: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { getById: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { getById: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
@@ -299,20 +181,7 @@ export class StandardQueryBuilder<
             removeById: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { removeById: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { removeById: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
@@ -335,11 +204,11 @@ export class StandardQueryBuilder<
 
         // ID fields from input (e.g., id: '123')
         if (selection.ids) {
-            if (!('ids' in input) || !input.ids || !Object.keys(input.ids).length) {
+            if (!('ids' in input) || !input.ids || !Object.keys(input.ids as object).length) {
                 throw new Error('Identifiers are required for getById query');
             }
             identifiers.push(
-                ...typedEntries(input.ids).map(([field, value]) => ({
+                ...typedEntries(input.ids as object).map(([field, value]) => ({
                     field,
                     value,
                 }))
@@ -348,7 +217,7 @@ export class StandardQueryBuilder<
 
         // Default filters (e.g., isActive: true)
         if (selection.userId) {
-            const userIdField = typedKeys(this.tableConfig.userIdSchema.shape)[0];
+            const userIdField = typedKeys(this.tableConfig.getUserIdSchema().shape)[0];
             if (userIdField !== undefined && !(userIdField in input)) {
                 throw new Error('User ID is required when userIdColumn is configured');
             }
@@ -377,20 +246,7 @@ export class StandardQueryBuilder<
             create: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { create: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { create: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
@@ -416,20 +272,7 @@ export class StandardQueryBuilder<
             createMany: query,
         };
 
-        return new StandardQueryBuilder<
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TManyFiltersSchema,
-            TPaginationSchema,
-            TOrderingSchema,
-            TTableConfig,
-            TQueries & { createMany: typeof query }
-        >({
+        return new StandardQueryBuilder<TTable, TConfig, TQueries & { createMany: typeof query }>({
             tableConfig: this.tableConfig,
             queries,
             queryConfig: this.queryConfig,
