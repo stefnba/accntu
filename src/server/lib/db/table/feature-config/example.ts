@@ -49,8 +49,11 @@ export const tagTableConfigReturn = {
     manyFiltersSchema: tagTableConfig.getFiltersSchema(),
     paginationSchema: tagTableConfig.getPaginationSchema(),
     orderingSchema: tagTableConfig.getOrderingSchema(),
+
+    identifierSchema: tagTableConfig.buildIdentifierSchema(),
     // input schemas
     createSchema: tagTableConfig.buildCreateInputSchema(),
+    createManySchema: tagTableConfig.buildCreateManyInputSchema(),
     updateSchema: tagTableConfig.buildUpdateInputSchema(),
     manyInputSchema: tagTableConfig.buildManyInputSchema(),
 } as const;

@@ -1,12 +1,13 @@
 import { getFieldsAsArray, getFieldsAsArrayConstrained } from '@/lib/utils/zod';
 import { paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
 import {
-    ConditionalTest,
-    ConditionalTestArray,
+    ConditionalArrayShape,
+    ConditionalObjectShape,
     InferTableTypes,
     TFeatureTableConfig,
 } from '@/server/lib/db/table/feature-config/types';
 import { AppErrors } from '@/server/lib/error';
+import { Prettify } from '@/types/utils';
 import { TZodShape } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
@@ -18,6 +19,10 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
     constructor({ config }: { config: C }) {
         this.config = config;
     }
+
+    // ========================================
+    // Base
+    // ========================================
 
     /**
      * Get the base schema for the table.
@@ -206,9 +211,9 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         }
 
         return z.object(shape) as z.ZodObject<
-            ConditionalTest<C['filters'], (typeof filtersSchema)['shape']> &
-                ConditionalTest<C['pagination'], (typeof paginationSchema)['shape']> &
-                ConditionalTestArray<C['ordering'], (typeof orderingSchema)['shape']> &
+            ConditionalObjectShape<C['filters'], (typeof filtersSchema)['shape']> &
+                ConditionalObjectShape<C['pagination'], (typeof paginationSchema)['shape']> &
+                ConditionalArrayShape<C['ordering'], (typeof orderingSchema)['shape']> &
                 C['userId']
         >;
     }
@@ -245,7 +250,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * ```
      */
     buildCreateInputSchema() {
-        return z.object({ data: this.getCreateDataSchema() }).extend(this.config.userId);
+        return z.object({ data: this.getCreateDataSchema(), ...this.getUserIdSchema().shape });
     }
 
     /**
@@ -266,7 +271,10 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * ```
      */
     buildCreateManyInputSchema() {
-        return z.object({ data: z.array(this.getCreateDataSchema()) }).extend(this.config.userId);
+        return z.object({
+            data: z.array(this.getCreateDataSchema()),
+            ...this.getUserIdSchema().shape,
+        });
     }
 
     /**
@@ -593,11 +601,24 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * ```
      */
     buildIdentifierSchema() {
-        return z
-            .object({
-                ids: this.getIdSchema(),
-            })
-            .extend(this.config.userId);
+        const shape: TZodShape = {};
+
+        // ids
+        const idsSchema = z.object({
+            ids: this.getIdSchema(),
+        });
+        if (this.hasIdSchema()) {
+            Object.assign(shape, idsSchema.shape);
+        }
+
+        // userId
+        if (this.hasUserIdSchema()) {
+            Object.assign(shape, this.getUserIdSchema().shape);
+        }
+
+        return z.object(shape) as z.ZodObject<
+            Prettify<ConditionalObjectShape<C['id'], (typeof idsSchema)['shape']> & C['userId']>
+        >;
     }
 
     /**

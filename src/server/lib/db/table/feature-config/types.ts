@@ -26,11 +26,11 @@ export type TFeatureTableConfig<T extends Table> = {
 // Utility to check if T is a union
 type IsStringUnion<T, U = T> = T extends string ? ([U] extends [T] ? false : true) : never;
 
-export type ConditionalTest<S extends TZodShape, R extends TZodShape> = keyof S extends never
+export type ConditionalObjectShape<S extends TZodShape, R extends TZodShape> = keyof S extends never
     ? Pick<TZodShape, never>
     : R;
 
-export type ConditionalTestArray<
+export type ConditionalArrayShape<
     S extends TZodArray,
     R extends TZodShape,
 > = S['element'] extends ZodNever ? Pick<TZodShape, never> : R;
