@@ -1,5 +1,5 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core-new';
 import { Prettify } from '@/types/utils';
 import { EmptySchema, TZodArray } from '@/types/zod';
 import { Table } from 'drizzle-orm';
@@ -63,10 +63,6 @@ export type ConditionalArraySchema<S extends TZodArray, K extends string> = Pret
  * - Generic function parameters that accept any table config
  * - Type constraints in complex generic scenarios
  *
- * **Recommendation:**
- * Prefer structural typing (e.g., `{ idSchema: z.ZodObject<...> }`) over this
- * for better type flexibility and precision in most cases.
- *
  * @example
  * ```ts
  * function processConfig(config: AnyFeatureTableConfig) {
@@ -75,22 +71,6 @@ export type ConditionalArraySchema<S extends TZodArray, K extends string> = Pret
  * ```
  */
 export type AnyFeatureTableConfig = FeatureTableConfig<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -155,67 +135,47 @@ export type InferTableTypes<
 > = z.infer<InferTableSchema<TTable, TOperation>>;
 
 /**
- * Type guard to check if a Zod schema is empty (has no fields).
+ * Type guard to check if a Zod shape is empty (has no fields).
  *
- * Returns `true` if the schema shape has no properties (EmptySchema),
+ * Returns `true` if the schema shape has no properties,
  * `false` if it contains any fields.
  *
- * **Use Cases:**
- * - Runtime checks for optional configuration (IDs, userId)
- * - Conditional type logic for input/output types
- * - Type narrowing in generic functions
- *
- * @template T - Zod object schema to check
+ * @template T - Zod shape to check
  *
  * @example
  * ```ts
- * type HasIds = IsEmptySchema<typeof config.idSchema>;
+ * type HasIds = IsEmptyShape<typeof config.config.id>;
  * // Result: true if no IDs configured, false if IDs exist
  *
  * // Used in conditional types:
- * type Result = IsEmptySchema<TIdSchema> extends true
+ * type Result = IsEmptyShape<TIdShape> extends true
  *   ? 'No IDs'
  *   : 'Has IDs';
  * ```
  */
-export type IsEmptySchema<T> =
-    T extends z.ZodObject<infer S> ? (keyof S extends never ? true : false) : false;
+export type IsEmptyShape<T extends TZodShape> = keyof T extends never ? true : false;
 
 /**
- * Infer schema value, returning `undefined` if schema is empty.
+ * Infer schema value from shape, returning `undefined` if shape is empty.
  *
  * Provides clean `undefined` semantics for optional schemas (like IDs, userId)
  * while maintaining proper type inference for configured schemas.
  *
- * **How it works:**
- * 1. Checks if schema is empty using `IsEmptySchema`
- * 2. If empty → returns `undefined`
- * 3. If not empty → returns inferred Zod type via `z.infer<T>`
- *
- * **Use Cases:**
- * - Optional ID schema (when `.setIds()` not called)
- * - Optional userId schema (when `.setUserId()` not called)
- * - Conditional input types that change based on configuration
- *
- * @template T - Zod object schema to infer from
+ * @template T - Zod shape to infer from
  *
  * @example
  * ```ts
  * // Config WITH IDs:
- * type IdType = InferOptionalSchema<typeof config.idSchema>;
+ * type IdType = InferOptionalShape<typeof config.config.id>;
  * // Result: { id: string }
  *
  * // Config WITHOUT IDs:
- * type NoIdType = InferOptionalSchema<typeof emptyConfig.idSchema>;
+ * type NoIdType = InferOptionalShape<typeof emptyConfig.config.id>;
  * // Result: undefined
- *
- * // Used in function parameters:
- * function getById(ids: InferOptionalSchema<typeof config.idSchema>) {
- *   // ids is { id: string } | undefined depending on config
- * }
  * ```
  */
-export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined : z.infer<T>;
+export type InferOptionalShape<T extends TZodShape> =
+    IsEmptyShape<T> extends true ? undefined : z.infer<z.ZodObject<T>>;
 
 // ========================================
 // Operation Input Type Helpers
@@ -228,14 +188,14 @@ export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined :
  * Uses structural typing to only include schemas that are actually configured.
  *
  * **Structure:**
- * - `{ data: InsertData }` - Always present, contains fields from insertDataSchema
- * - `& { userId: string }` - Conditionally added if userIdSchema is configured
+ * - `{ data: InsertData }` - Always present, contains fields from createData
+ * - `& { userId: string }` - Conditionally added if userId is configured
  *
  * **Field Exclusion:**
  * If userId is configured, it's automatically excluded from the data object
  * to prevent duplication (userId goes at top level, not in data).
  *
- * @template TConfig - Table config with insertDataSchema and userIdSchema
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
@@ -255,18 +215,19 @@ export type InferOptionalSchema<T> = IsEmptySchema<T> extends true ? undefined :
  */
 export type InferCreateInput<
     TConfig extends {
-        insertDataSchema: z.ZodObject<TZodShape>;
-        userIdSchema: z.ZodObject<TZodShape>;
+        config: {
+            createData: TZodShape;
+            userId: TZodShape;
+        };
     },
-    TData = z.infer<TConfig['insertDataSchema']>,
-    TUserIdSchema = z.infer<TConfig['userIdSchema']>,
+    TData = z.infer<z.ZodObject<TConfig['config']['createData']>>,
+    TUserId = z.infer<z.ZodObject<TConfig['config']['userId']>>,
 > = Prettify<
     {
-        data: InferOptionalSchema<TConfig['userIdSchema']> extends undefined
+        data: IsEmptyShape<TConfig['config']['userId']> extends true
             ? TData
-            : // omit userId field if userIdSchema is configured
-              Prettify<Omit<TData, keyof TUserIdSchema>>;
-    } & (InferOptionalSchema<TConfig['userIdSchema']> extends undefined ? object : TUserIdSchema)
+            : Prettify<Omit<TData, keyof TUserId>>;
+    } & (IsEmptyShape<TConfig['config']['userId']> extends true ? object : TUserId)
 >;
 
 /**
@@ -276,15 +237,11 @@ export type InferCreateInput<
  * Uses structural typing to dynamically include only configured schemas.
  *
  * **Structure:**
- * - `{ data: UpdateData }` - Always present, contains partial fields from updateDataSchema
- * - `& { ids: IdData }` - Conditionally added if idSchema is configured
- * - `& { userId: string }` - Conditionally added if userIdSchema is configured
+ * - `{ data: UpdateData }` - Always present, contains partial fields from updateData
+ * - `& { ids: IdData }` - Conditionally added if id is configured
+ * - `& { userId: string }` - Conditionally added if userId is configured
  *
- * **Field Optionality:**
- * The data object is always partial (all fields optional) since updates typically
- * modify only specific fields, not the entire record.
- *
- * @template TConfig - Table config with updateDataSchema, idSchema, and userIdSchema
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
@@ -310,19 +267,21 @@ export type InferCreateInput<
  */
 export type InferUpdateInput<
     TConfig extends {
-        updateDataSchema: z.ZodObject<TZodShape>;
-        idSchema: z.ZodObject<TZodShape>;
-        userIdSchema: z.ZodObject<TZodShape>;
+        config: {
+            updateData: TZodShape;
+            id: TZodShape;
+            userId: TZodShape;
+        };
     },
 > = Prettify<
     {
-        data: z.infer<TConfig['updateDataSchema']>;
-    } & (InferOptionalSchema<TConfig['idSchema']> extends undefined
+        data: z.infer<z.ZodObject<TConfig['config']['updateData']>>;
+    } & (IsEmptyShape<TConfig['config']['id']> extends true
         ? object
-        : { ids: z.infer<TConfig['idSchema']> }) &
-        (InferOptionalSchema<TConfig['userIdSchema']> extends undefined
+        : { ids: z.infer<z.ZodObject<TConfig['config']['id']>> }) &
+        (IsEmptyShape<TConfig['config']['userId']> extends true
             ? object
-            : z.infer<TConfig['userIdSchema']>)
+            : z.infer<z.ZodObject<TConfig['config']['userId']>>)
 >;
 
 /**
@@ -332,13 +291,10 @@ export type InferUpdateInput<
  * specific records (get by ID, delete by ID, etc.).
  *
  * **Returns:**
- * - `{ ids: { id: string, ... } }` - If IDs are configured via `.setIds()`
+ * - `{ ids: { id: string, ... } }` - If IDs are configured
  * - `{}` (empty object) - If no IDs configured
  *
- * **Composite Keys:**
- * Supports multi-field primary keys automatically.
- *
- * @template TConfig - Table config with idSchema
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
@@ -364,12 +320,14 @@ export type InferUpdateInput<
  */
 export type InferIdsInput<
     TConfig extends {
-        idSchema: z.ZodObject<TZodShape>;
+        config: {
+            id: TZodShape;
+        };
     },
 > =
-    Prettify<InferOptionalSchema<TConfig['idSchema']>> extends undefined
+    IsEmptyShape<TConfig['config']['id']> extends true
         ? object
-        : { ids: Prettify<z.infer<TConfig['idSchema']>> };
+        : { ids: Prettify<z.infer<z.ZodObject<TConfig['config']['id']>>> };
 
 /**
  * Infer the userId input shape from table config.
@@ -378,10 +336,10 @@ export type InferIdsInput<
  * for row-level security (RLS) filtering.
  *
  * **Returns:**
- * - `{ userId: string }` - If userId is configured via `.setUserId()`
+ * - `{ userId: string }` - If userId is configured
  * - `{}` (empty object) - If no userId configured
  *
- * @template TConfig - Table config with userIdSchema
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
@@ -404,45 +362,43 @@ export type InferIdsInput<
  */
 export type InferUserIdInput<
     TConfig extends {
-        userIdSchema: z.ZodObject<TZodShape>;
+        config: {
+            userId: TZodShape;
+        };
     },
 > =
-    Prettify<InferOptionalSchema<TConfig['userIdSchema']>> extends undefined
+    IsEmptyShape<TConfig['config']['userId']> extends true
         ? object
-        : Prettify<z.infer<TConfig['userIdSchema']>>;
+        : Prettify<z.infer<z.ZodObject<TConfig['config']['userId']>>>;
 
 /**
  * Extract the return column names from table config.
  *
  * Returns a union type of all column names that will be returned in query results.
- * These columns are defined via `.defineReturnColumns()` in the config builder.
  *
- * **Use Cases:**
- * - Type-safe column selection in queries
- * - Dynamic query building with proper types
- * - Validation that certain columns are included
- *
- * @template TConfig - Table config with selectReturnSchema
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
- * type Columns = InferReturnColumns<typeof tagConfig>;
+ * type Columns = InferReturnColums<typeof tagConfig>;
  * // Result: "id" | "name" | "color" | "userId"
  *
  * // Usage in query builders:
- * const selectColumns = (cols: InferReturnColumns<typeof config>[]) => {
+ * const selectColumns = (cols: InferReturnColums<typeof config>[]) => {
  *   return db.select().from(table).columns(cols);
  * };
  *
  * // Type-safe column checks:
- * type HasIdColumn = 'id' extends InferReturnColumns<typeof config> ? true : false;
+ * type HasIdColumn = 'id' extends InferReturnColums<typeof config> ? true : false;
  * ```
  */
 export type InferReturnColums<
     TConfig extends {
-        selectReturnSchema: z.ZodObject<TZodShape>;
+        config: {
+            returnCols: TZodShape;
+        };
     },
-> = keyof z.infer<TConfig['selectReturnSchema']>;
+> = keyof TConfig['config']['returnCols'];
 
 /**
  * Infer the input shape for many filters operations.
@@ -451,10 +407,15 @@ export type InferReturnColums<
  * Uses structural typing to dynamically include only configured schemas.
  *
  * **Structure:**
- * - `{ filters: Filters }` - Always present, contains partial fields from manyFiltersSchema
+ * - `{ filters: Filters }` - Always present, contains partial fields from filters
  */
-export type InferManyFiltersInput<TConfig extends { manyFiltersSchema: z.ZodObject<TZodShape> }> =
-    Prettify<z.infer<TConfig['manyFiltersSchema']>>;
+export type InferManyFiltersInput<
+    TConfig extends {
+        config: {
+            filters: TZodShape;
+        };
+    },
+> = Prettify<z.infer<z.ZodObject<TConfig['config']['filters']>>>;
 
 /**
  * Infer the underlying Drizzle table type from a feature table config.
@@ -462,7 +423,7 @@ export type InferManyFiltersInput<TConfig extends { manyFiltersSchema: z.ZodObje
  * Extracts the Drizzle table definition from a config, allowing you to work
  * with the raw table type when needed.
  *
- * @template TConfig - Table config with table property
+ * @template TConfig - Table config
  *
  * @example
  * ```ts
@@ -478,20 +439,17 @@ export type InferManyFiltersInput<TConfig extends { manyFiltersSchema: z.ZodObje
  */
 export type InferTableFromConfig<
     TConfig extends {
-        table: Table;
+        config: {
+            table: Table;
+        };
     },
-> = TConfig['table'];
+> = TConfig['config']['table'];
 
 /**
  * Infer Zod schema for a specific table field.
  *
  * Extracts the Zod schema for a single field from a Drizzle table if the field exists,
  * or returns EmptySchema if the field doesn't exist in the table.
- *
- * **Use Cases:**
- * - Auto-detecting optional fields (id, userId) in table definitions
- * - Building default schemas based on table structure
- * - Type-safe field schema extraction
  *
  * @template TTable - Drizzle table type
  * @template TField - Field name to extract (defaults to 'id')

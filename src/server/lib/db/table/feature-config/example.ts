@@ -4,11 +4,11 @@ import {
     InferCreateInput,
     InferIdsInput,
     InferManyFiltersInput,
-    InferOptionalSchema,
+    InferOptionalShape,
     InferReturnColums,
     InferTableFromConfig,
     InferUpdateInput,
-    IsEmptySchema,
+    IsEmptyShape,
 } from '@/server/lib/db/table/feature-config/types';
 import z from 'zod';
 
@@ -21,14 +21,18 @@ const tagTableConfig = createFeatureTableConfig(tag)
     // .removeIds()
     // .removeUserId()
     .restrictReturnColumns(['name', 'color', 'userId', 'id'])
-    .restrictUpsertFields(['name', 'description', 'color'])
-    .enableManyFiltering({
+    .restrictUpdateFields(['name', 'description'])
+    .restrictInsertFields(['name'])
+    // .restrictUpsertFields(['name', 'description'])
+    .enableFiltering({
         createdAt: z.date(),
         name: z.string(),
         startDate: z.date(),
     })
     .enablePagination()
     .enableOrdering(['createdAt'])
+    // .setIds(['id'])
+    // .setUserId('userId')
     .build();
 
 export const tagTableConfigReturn = {
@@ -36,15 +40,15 @@ export const tagTableConfigReturn = {
     userIdFieldName: tagTableConfig.getUserIdFieldName(),
     idsFieldNames: tagTableConfig.getIdsFieldNames(),
     // schemas
-    baseSchema: tagTableConfig.baseSchema,
-    idSchema: tagTableConfig.idSchema,
-    userIdSchema: tagTableConfig.userIdSchema,
-    insertDataSchema: tagTableConfig.insertDataSchema,
-    updateDataSchema: tagTableConfig.updateDataSchema,
-    selectReturnSchema: tagTableConfig.selectReturnSchema,
-    manyFiltersSchema: tagTableConfig.manyFiltersSchema,
-    paginationSchema: tagTableConfig.paginationSchema,
-    orderingSchema: tagTableConfig.orderingSchema,
+    baseSchema: tagTableConfig.getBaseSchema(),
+    idSchema: tagTableConfig.getIdSchema(),
+    userIdSchema: tagTableConfig.getUserIdSchema(),
+    insertDataSchema: tagTableConfig.getCreateDataSchema(),
+    updateDataSchema: tagTableConfig.getUpdateDataSchema(),
+    selectReturnSchema: tagTableConfig.getReturnColumns(),
+    manyFiltersSchema: tagTableConfig.getFiltersSchema(),
+    paginationSchema: tagTableConfig.getPaginationSchema(),
+    orderingSchema: tagTableConfig.getOrderingSchema(),
     // input schemas
     createSchema: tagTableConfig.buildCreateInputSchema(),
     updateSchema: tagTableConfig.buildUpdateInputSchema(),
@@ -71,18 +75,18 @@ export type TTagTableConfigReturn = {
     TManyFiltersInput: InferManyFiltersInput<typeof tagTableConfig>;
 
     // optional schema
-    IdSchema: InferOptionalSchema<typeof tagTableConfigReturn.idSchema>;
-    userIdSchema: InferOptionalSchema<typeof tagTableConfigReturn.userIdSchema>;
+    IdSchema: InferOptionalShape<typeof tagTableConfig.config.id>;
+    userIdSchema: InferOptionalShape<typeof tagTableConfig.config.userId>;
 };
 
-export type IdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.idSchema>;
-export type UserIdSchemaIsEmpty = IsEmptySchema<typeof tagTableConfigReturn.userIdSchema>;
+export type IdSchemaIsEmpty = IsEmptyShape<typeof tagTableConfig.config.id>;
+export type UserIdSchemaIsEmpty = IsEmptyShape<typeof tagTableConfig.config.userId>;
 
 // ================================================================
 // Validate
 // ================================================================
 
-const validateManyFiltersInput = tagTableConfig.validateManyFiltersInput({
+const validateManyFiltersInput = tagTableConfig.validateFiltersInput({
     filters: {
         createdAt: new Date(),
         name: 'Test',
