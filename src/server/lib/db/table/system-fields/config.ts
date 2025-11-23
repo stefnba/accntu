@@ -1,4 +1,5 @@
 import { user } from '@/lib/auth/server/db/tables';
+import { typedKeys } from '@/lib/utils';
 import { createId } from '@paralleldrive/cuid2';
 import { boolean, text, timestamp } from 'drizzle-orm/pg-core';
 
@@ -37,3 +38,5 @@ export const SYSTEM_FIELDS = {
         .notNull()
         .$onUpdate(() => new Date()),
 } as const;
+
+export const SYSTEM_FIELDS_KEYS = typedKeys(SYSTEM_FIELDS);

@@ -6,7 +6,7 @@ import { PgTable, pgTable } from 'drizzle-orm/pg-core';
 // Core
 // ================================
 
-export { SYSTEM_FIELDS } from '@/server/lib/db/table/system-fields/config';
+export { SYSTEM_FIELDS, SYSTEM_FIELDS_KEYS } from '@/server/lib/db/table/system-fields/config';
 export { createSystemTableFields } from '@/server/lib/db/table/system-fields/core';
 
 // ================================
