@@ -45,7 +45,7 @@ export const tagTableConfigReturn = {
     userIdSchema: tagTableConfig.getUserIdSchema(),
     insertDataSchema: tagTableConfig.getCreateDataSchema(),
     updateDataSchema: tagTableConfig.getUpdateDataSchema(),
-    selectReturnSchema: tagTableConfig.getReturnColumns(),
+    selectReturnSchema: tagTableConfig.getReturnColumnsSchema(),
     manyFiltersSchema: tagTableConfig.getFiltersSchema(),
     paginationSchema: tagTableConfig.getPaginationSchema(),
     orderingSchema: tagTableConfig.getOrderingSchema(),

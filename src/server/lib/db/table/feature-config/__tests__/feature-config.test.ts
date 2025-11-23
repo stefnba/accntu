@@ -32,27 +32,27 @@ describe('FeatureTableConfig', () => {
             const config = createFeatureTableConfig(tag).build();
 
             expect(config).toBeDefined();
-            expect(config.table).toBe(tag);
-            expect(config.baseSchema).toBeDefined();
-            expect(config.insertDataSchema).toBeDefined();
-            expect(config.updateDataSchema).toBeDefined();
-            expect(config.selectReturnSchema).toBeDefined();
+            expect(config.getTable()).toBe(tag);
+            expect(config.getBaseSchema()).toBeDefined();
+            expect(config.getCreateDataSchema()).toBeDefined();
+            expect(config.getUpdateDataSchema()).toBeDefined();
+            expect(config.getReturnColumns()).toBeDefined();
         });
 
         it('should auto-detect id field from table', () => {
             const config = createFeatureTableConfig(tag).build();
 
-            expect(config.idSchema).toBeDefined();
-            expect(config.hasIds()).toBe(true);
-            expect(Object.keys(config.idSchema.shape)).toContain('id');
+            expect(config.getIdSchema()).toBeDefined();
+            expect(config.hasIdSchema()).toBe(true);
+            expect(Object.keys(config.getIdSchema().shape)).toContain('id');
         });
 
         it('should auto-detect userId field from table', () => {
             const config = createFeatureTableConfig(tag).build();
 
-            expect(config.userIdSchema).toBeDefined();
-            expect(config.hasUserId()).toBe(true);
-            expect(Object.keys(config.userIdSchema.shape)).toContain('userId');
+            expect(config.getUserIdSchema()).toBeDefined();
+            expect(config.hasUserIdSchema()).toBe(true);
+            expect(Object.keys(config.getUserIdSchema().shape)).toContain('userId');
         });
     });
 
@@ -60,18 +60,18 @@ describe('FeatureTableConfig', () => {
         it('should set single id field', () => {
             const config = createFeatureTableConfig(tag).setIds(['id']).build();
 
-            expect(config.hasIds()).toBe(true);
-            expect(Object.keys(config.idSchema.shape)).toHaveLength(1);
-            expect(config.idSchema.shape).toHaveProperty('id');
+            expect(config.hasIdSchema()).toBe(true);
+            expect(Object.keys(config.getIdSchema().shape)).toHaveLength(1);
+            expect(config.getIdSchema().shape).toHaveProperty('id');
         });
 
         it('should set multiple id fields', () => {
             const config = createFeatureTableConfig(tag).setIds(['id', 'userId']).build();
 
-            expect(config.hasIds()).toBe(true);
-            expect(Object.keys(config.idSchema.shape)).toHaveLength(2);
-            expect(config.idSchema.shape).toHaveProperty('id');
-            expect(config.idSchema.shape).toHaveProperty('userId');
+            expect(config.hasIdSchema()).toBe(true);
+            expect(Object.keys(config.getIdSchema().shape)).toHaveLength(2);
+            expect(config.getIdSchema().shape).toHaveProperty('id');
+            expect(config.getIdSchema().shape).toHaveProperty('userId');
         });
 
         it('should get id columns', () => {
@@ -86,9 +86,9 @@ describe('FeatureTableConfig', () => {
         it('should set userId field', () => {
             const config = createFeatureTableConfig(tag).setUserId('userId').build();
 
-            expect(config.hasUserId()).toBe(true);
-            expect(Object.keys(config.userIdSchema.shape)).toHaveLength(1);
-            expect(config.userIdSchema.shape).toHaveProperty('userId');
+            expect(config.hasUserIdSchema()).toBe(true);
+            expect(Object.keys(config.getUserIdSchema().shape)).toHaveLength(1);
+            expect(config.getUserIdSchema().shape).toHaveProperty('userId');
         });
 
         it('should get userId column', () => {
@@ -132,9 +132,11 @@ describe('FeatureTableConfig', () => {
                 .restrictReturnColumns(['id', 'name'])
                 .build();
 
-            expect(config.selectReturnSchema.shape).toHaveProperty('id');
-            expect(config.selectReturnSchema.shape).toHaveProperty('name');
-            expect(config.selectReturnSchema.shape).not.toHaveProperty('color');
+            // New API returns columns array directly, implicitly verifying schema
+            const columns = config.getReturnColumns();
+            expect(columns).toContain('id');
+            expect(columns).toContain('name');
+            expect(columns).not.toContain('color');
         });
     });
 
@@ -144,14 +146,14 @@ describe('FeatureTableConfig', () => {
                 .restrictInsertFields(['name', 'color', 'description'])
                 .build();
 
-            const fields = Object.keys(config.insertDataSchema.shape);
+            const fields = Object.keys(config.getCreateDataSchema().shape);
             expect(fields).toEqual(['name', 'color', 'description']);
         });
 
         it('should allow all fields when not restricted', () => {
             const config = createFeatureTableConfig(tag).build();
 
-            const fields = Object.keys(config.insertDataSchema.shape);
+            const fields = Object.keys(config.getCreateDataSchema().shape);
             expect(fields.length).toBeGreaterThan(3);
             expect(fields).toContain('name');
             expect(fields).toContain('color');
@@ -160,7 +162,7 @@ describe('FeatureTableConfig', () => {
         it('should exclude system fields from insert by default', () => {
             const config = createFeatureTableConfig(tag).build();
 
-            const fields = Object.keys(config.insertDataSchema.shape);
+            const fields = Object.keys(config.getCreateDataSchema().shape);
             // System fields like createdAt, updatedAt should not be in insert data
             expect(fields).not.toContain('createdAt');
             expect(fields).not.toContain('updatedAt');
@@ -173,7 +175,7 @@ describe('FeatureTableConfig', () => {
                 .restrictUpdateFields(['name', 'color', 'description'])
                 .build();
 
-            const fields = Object.keys(config.updateDataSchema.shape);
+            const fields = Object.keys(config.getUpdateDataSchema().shape);
             expect(fields).toEqual(['name', 'color', 'description']);
         });
 
@@ -182,14 +184,14 @@ describe('FeatureTableConfig', () => {
                 .restrictUpdateFields(['name', 'color'])
                 .build();
 
-            const result = config.updateDataSchema.safeParse({});
+            const result = config.getUpdateDataSchema().safeParse({});
             expect(result.success).toBe(true);
         });
 
         it('should exclude id and userId from updates', () => {
             const config = createFeatureTableConfig(tag).setIds(['id']).setUserId('userId').build();
 
-            const fields = Object.keys(config.updateDataSchema.shape);
+            const fields = Object.keys(config.getUpdateDataSchema().shape);
             expect(fields).not.toContain('id');
             expect(fields).not.toContain('userId');
         });
@@ -344,24 +346,24 @@ describe('FeatureTableConfig', () => {
                 .restrictUpdateFields(['name', 'color'])
                 .build();
 
-            expect(config.hasIds()).toBe(true);
-            expect(config.hasUserId()).toBe(true);
+            expect(config.hasIdSchema()).toBe(true);
+            expect(config.hasUserIdSchema()).toBe(true);
             expect(config.getReturnColumns()).toHaveLength(3);
-            expect(Object.keys(config.insertDataSchema.shape)).toHaveLength(2);
-            expect(Object.keys(config.updateDataSchema.shape)).toHaveLength(2);
+            expect(Object.keys(config.getCreateDataSchema().shape)).toHaveLength(2);
+            expect(Object.keys(config.getUpdateDataSchema().shape)).toHaveLength(2);
         });
 
         it('should have all expected properties after build', () => {
             const config = createFeatureTableConfig(tag).build();
 
             // Verify all properties are present
-            expect(config.table).toBeDefined();
-            expect(config.idSchema).toBeDefined();
-            expect(config.userIdSchema).toBeDefined();
-            expect(config.baseSchema).toBeDefined();
-            expect(config.insertDataSchema).toBeDefined();
-            expect(config.updateDataSchema).toBeDefined();
-            expect(config.selectReturnSchema).toBeDefined();
+            expect(config.getTable()).toBeDefined();
+            expect(config.getIdSchema()).toBeDefined();
+            expect(config.getUserIdSchema()).toBeDefined();
+            expect(config.getBaseSchema()).toBeDefined();
+            expect(config.getCreateDataSchema()).toBeDefined();
+            expect(config.getUpdateDataSchema()).toBeDefined();
+            expect(config.getReturnColumns()).toBeDefined();
         });
     });
 
@@ -387,7 +389,7 @@ describe('FeatureTableConfig', () => {
                 .build();
 
             // Test schema types
-            const insertSchema = config.insertDataSchema;
+            const insertSchema = config.getCreateDataSchema();
             expect(insertSchema.shape).toHaveProperty('name');
             expect(insertSchema.shape).toHaveProperty('color');
         });
@@ -404,22 +406,22 @@ describe('FeatureTableConfig', () => {
         it('should handle empty insert fields array', () => {
             const config = createFeatureTableConfig(tag).restrictInsertFields([]).build();
 
-            const fields = Object.keys(config.insertDataSchema.shape);
+            const fields = Object.keys(config.getCreateDataSchema().shape);
             expect(fields).toHaveLength(0);
         });
 
         it('should handle manually removing ids', () => {
             const config = createFeatureTableConfig(tag).removeIds().build();
 
-            expect(config.hasIds()).toBe(false);
-            expect(config.hasUserId()).toBe(true); // userId still auto-detected
+            expect(config.hasIdSchema()).toBe(false);
+            expect(config.hasUserIdSchema()).toBe(true); // userId still auto-detected
         });
 
         it('should handle manually removing userId', () => {
             const config = createFeatureTableConfig(tag).removeUserId().build();
 
-            expect(config.hasIds()).toBe(true); // id still auto-detected
-            expect(config.hasUserId()).toBe(false);
+            expect(config.hasIdSchema()).toBe(true); // id still auto-detected
+            expect(config.hasUserIdSchema()).toBe(false);
         });
 
         it('should handle validation with missing userId when required', () => {
@@ -454,7 +456,7 @@ describe('FeatureTableConfig', () => {
         it('should exclude system fields from insert data', () => {
             const config = createFeatureTableConfig(tag).build();
 
-            const fields = Object.keys(config.insertDataSchema.shape);
+            const fields = Object.keys(config.getCreateDataSchema().shape);
             expect(fields).not.toContain('id');
             expect(fields).not.toContain('createdAt');
             expect(fields).not.toContain('updatedAt');
@@ -463,7 +465,7 @@ describe('FeatureTableConfig', () => {
         it('should exclude id and userId from update data', () => {
             const config = createFeatureTableConfig(tag).setIds(['id']).setUserId('userId').build();
 
-            const fields = Object.keys(config.updateDataSchema.shape);
+            const fields = Object.keys(config.getUpdateDataSchema().shape);
             expect(fields).not.toContain('id');
             expect(fields).not.toContain('userId');
         });
@@ -473,7 +475,7 @@ describe('FeatureTableConfig', () => {
                 .restrictUpdateFields(['name', 'color'])
                 .build();
 
-            const fields = Object.keys(config.updateDataSchema.shape);
+            const fields = Object.keys(config.getUpdateDataSchema().shape);
             expect(fields).toEqual(['name', 'color']);
         });
     });
@@ -488,8 +490,8 @@ describe('FeatureTableConfig', () => {
                 .restrictUpdateFields(['name', 'color', 'description'])
                 .build();
 
-            expect(config.hasIds()).toBe(true);
-            expect(config.hasUserId()).toBe(true);
+            expect(config.hasIdSchema()).toBe(true);
+            expect(config.hasUserIdSchema()).toBe(true);
             expect(config.getReturnColumns()).toContain('userId');
 
             // Should auto-inject userId in creates
@@ -527,8 +529,8 @@ describe('FeatureTableConfig', () => {
                 .build();
 
             const returnFields = config.getReturnColumns();
-            const insertFields = Object.keys(config.insertDataSchema.shape);
-            const updateFields = Object.keys(config.updateDataSchema.shape);
+            const insertFields = Object.keys(config.getCreateDataSchema().shape);
+            const updateFields = Object.keys(config.getUpdateDataSchema().shape);
 
             expect(returnFields).toContain('createdAt');
             expect(returnFields).toContain('updatedAt');

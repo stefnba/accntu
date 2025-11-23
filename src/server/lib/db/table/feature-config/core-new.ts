@@ -21,6 +21,19 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
     }
 
     // ========================================
+    // Table
+    // ========================================
+
+    /**
+     * Get the table.
+     *
+     * Returns the table object.
+     */
+    getTable(): TTable {
+        return this.config.table;
+    }
+
+    // ========================================
     // Base
     // ========================================
 
@@ -503,6 +516,10 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      */
     getReturnColumns(): Array<Extract<keyof C['returnCols'], keyof TTable['_']['columns']>> {
         return getFieldsAsArrayConstrained(z.object(this.config.returnCols), this.config.table);
+    }
+
+    getReturnColumnsSchema(): z.ZodObject<C['returnCols']> {
+        return z.object(this.config.returnCols);
     }
 
     // ========================================

@@ -1,10 +1,9 @@
-import { omitFields, pickFields } from '@/lib/utils/zod';
+import { omitFields, pickFields, safeOmit } from '@/lib/utils/zod';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core-new';
 import { orderByDirectionSchema } from '@/server/lib/db/table/feature-config/schemas';
 import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
-import { SystemTableFieldKeys } from '@/server/lib/db/table/system-fields';
-import { fieldsToMask } from '@/server/lib/db/table/system-fields/utils';
+import { SYSTEM_FIELDS_KEYS } from '@/server/lib/db/table/system-fields';
 import { Prettify } from '@/types/utils';
 import { EmptySchema, TZodArray, TZodType } from '@/types/zod';
 import { Table } from 'drizzle-orm';
@@ -69,9 +68,9 @@ export class FeatureTableConfigBuilder<
      */
     static create<TLocal extends Table>(table: TLocal) {
         // base and insert/update schemas
-        const createSchema = createInsertSchema(table).omit(fieldsToMask());
+        const createSchema = safeOmit(createInsertSchema(table), SYSTEM_FIELDS_KEYS);
         const baseSchema = createSchema;
-        const updateSchema = createUpdateSchema(table).omit(fieldsToMask());
+        const updateSchema = safeOmit(createUpdateSchema(table), SYSTEM_FIELDS_KEYS);
         const selectSchema = createSelectSchema(table);
 
         // id and userId schemas
@@ -82,19 +81,13 @@ export class FeatureTableConfigBuilder<
             TLocal,
             {
                 table: TLocal;
-                base: Prettify<
-                    Omit<InferTableSchema<TLocal, 'insert'>['shape'], SystemTableFieldKeys>
-                >;
-                createData: Prettify<
-                    Omit<InferTableSchema<TLocal, 'insert'>['shape'], SystemTableFieldKeys>
-                >;
+                base: typeof createSchema.shape;
+                createData: typeof createSchema.shape;
                 filters: EmptySchema;
                 pagination: EmptySchema;
                 ordering: TZodArray<ZodNever>;
-                updateData: Prettify<
-                    Omit<InferTableSchema<TLocal, 'update'>['shape'], SystemTableFieldKeys>
-                >;
-                returnCols: InferTableSchema<TLocal, 'select'>['shape'];
+                updateData: typeof updateSchema.shape;
+                returnCols: typeof selectSchema.shape;
                 id: typeof idSchema.shape;
                 userId: typeof userSchema.shape;
             }
@@ -418,9 +411,9 @@ export class FeatureTableConfigBuilder<
             TTable,
             Prettify<
                 Omit<C, 'base' | 'createData' | 'updateData'> & {
-                    base: InferTableSchema<TTable, 'insert'>['shape'];
-                    createData: InferTableSchema<TTable, 'insert'>['shape'];
-                    updateData: InferTableSchema<TTable, 'update'>['shape'];
+                    base: typeof createSchema.shape;
+                    createData: typeof createSchema.shape;
+                    updateData: typeof updateSchema.shape;
                 }
             >
         >({
