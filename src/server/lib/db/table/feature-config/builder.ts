@@ -1,5 +1,5 @@
 import { omitFields, pickFields, safeOmit } from '@/lib/utils/zod';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core-new';
+import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { orderByDirectionSchema } from '@/server/lib/db/table/feature-config/schemas';
 import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';

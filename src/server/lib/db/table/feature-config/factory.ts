@@ -1,4 +1,4 @@
-import { FeatureTableConfigBuilder } from '@/server/lib/db/table/feature-config/builder-new';
+import { FeatureTableConfigBuilder } from '@/server/lib/db/table/feature-config/builder';
 import { Table } from 'drizzle-orm';
 
 /**

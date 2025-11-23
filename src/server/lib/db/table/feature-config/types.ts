@@ -1,5 +1,5 @@
 import { TZodShape } from '@/lib/schemas/types';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core-new';
+import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { Prettify } from '@/types/utils';
 import { EmptySchema, TZodArray } from '@/types/zod';
 import { Table } from 'drizzle-orm';
