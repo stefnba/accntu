@@ -30,6 +30,9 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * Returns the table object.
      */
     getTable(): TTable {
+        if (!this.config.table) {
+            console.error('FeatureTableConfig: table is undefined in config', this.config);
+        }
         return this.config.table;
     }
 
@@ -79,14 +82,20 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * ```
      */
     validatePaginationInput(input: unknown) {
-        const validated = paginationSchema.safeParse(input);
+        // if no pagination schema, return undefined
+        if (!this.hasPaginationSchema()) return undefined;
+
+        // create a schema with the pagination schema as a partial
+        const schema = z.object({
+            pagination: paginationSchema.partial(),
+        });
+
+        console.log('input', input);
+        const validated = schema.safeParse(input);
         if (validated.success) {
-            return validated.data;
+            return validated.data.pagination;
         }
-        return {
-            page: undefined,
-            pageSize: undefined,
-        };
+        return undefined;
     }
 
     /**
@@ -436,7 +445,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      */
     buildUpdateInputSchema() {
         return z.object({
-            data: this.getUpdateDataSchema(),
+            data: this.getUpdateDataSchema().partial(),
             ...this.buildIdentifierSchema().shape,
         });
     }
