@@ -78,6 +78,35 @@ export function pickFields<TSchema extends TZodShape, TKeys extends Array<keyof 
 }
 
 /**
+ * Safely picks fields from a Zod object schema, ignoring fields that don't exist in the schema.
+ *
+ * Unlike standard .pick() or pickFields(), this accepts any string keys and will not throw
+ * if you try to pick a field that doesn't exist. It only picks fields that are both
+ * requested and present in the schema.
+ *
+ * @param schema - The source ZodObject
+ * @param fields - Array of field names to include (can include keys not in schema)
+ * @returns New ZodObject with valid fields picked
+ *
+ * @example
+ *
+ * const schema = z.object({ a: z.string(), b: z.string() });
+ * // Safe even though 'c' is not in schema
+ * const result = safePick(schema, ['a', 'c']);
+ * // Result: ZodObject<{ a: string }>
+ *  */
+export function safePick<TSchema extends TZodShape, const TKeys extends readonly string[]>(
+    schema: z.ZodObject<TSchema>,
+    fields: TKeys
+) {
+    const validFields = fields.filter((field): field is Extract<keyof TSchema, TKeys[number]> =>
+        Object.prototype.hasOwnProperty.call(schema.shape, field)
+    );
+
+    return pickFields(schema, validFields);
+}
+
+/**
  * Utility to omit specific fields from a Zod object schema.
  *
  * This is a type-safe wrapper around Zod's .omit() method that ensures
@@ -108,6 +137,35 @@ export function omitFields<TSchema extends TZodShape, TKeys extends Array<keyof 
         fields.map((field) => [field, true])
     );
     return schema.omit(mask);
+}
+
+/**
+ * Safely omits fields from a Zod object schema, ignoring fields that don't exist in the schema.
+ *
+ * Unlike standard .omit() or omitFields(), this accepts any string keys and will not throw
+ * if you try to omit a field that doesn't exist. It only omits fields that are both
+ * requested and present in the schema.
+ *
+ * @param schema - The source ZodObject
+ * @param fields - Array of field names to exclude (can include keys not in schema)
+ * @returns New ZodObject with valid fields omitted
+ *
+ * @example
+ *
+ * const schema = z.object({ a: z.string(), b: z.string() });
+ * // Safe even though 'c' is not in schema
+ * const result = safeOmit(schema, ['a', 'c']);
+ * // Result: ZodObject<{ b: string }>
+ *  */
+export function safeOmit<TSchema extends TZodShape, const TKeys extends readonly string[]>(
+    schema: z.ZodObject<TSchema>,
+    fields: TKeys
+) {
+    const validFields = fields.filter((field): field is Extract<keyof TSchema, TKeys[number]> =>
+        Object.prototype.hasOwnProperty.call(schema.shape, field)
+    );
+
+    return omitFields(schema, validFields);
 }
 
 /**
