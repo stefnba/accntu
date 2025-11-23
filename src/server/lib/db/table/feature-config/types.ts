@@ -1,33 +1,59 @@
 import { TZodShape } from '@/lib/schemas/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { Prettify } from '@/types/utils';
+import { EmptySchema, TZodArray } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
-import z from 'zod';
+import z, { ZodNever } from 'zod';
 
 // ========================================
 // Core Types
 // ========================================
 
-/**
- * Sentinel value representing an empty Zod schema.
- *
- * **Why use this instead of `undefined`?**
- * Using `Record<never, never>` enables zero-assertion type safety by ensuring
- * `keyof EmptySchema` evaluates to `never`. This allows type guards and conditional
- * types to work correctly without runtime type assertions.
- *
- * **Where is this used?**
- * - ID schema (when no IDs configured via `.setIds()`)
- * - User ID schema (when no userId configured via `.setUserId()`)
- *
- * @example
- * ```ts
- * // Config without IDs has EmptySchema for idSchema
- * type ConfigWithoutIds = FeatureTableConfig<Table, EmptySchema, ...>
- * ```
- */
-export type EmptySchema = Record<never, never>;
+export type TFeatureTableConfig<T extends Table> = {
+    table: T;
+    filters: TZodShape;
+    pagination: TZodShape;
+    ordering: TZodArray;
+    updateData: TZodShape;
+    createData: TZodShape;
+    returnCols: TZodShape;
+    id: TZodShape;
+    userId: TZodShape;
+    base: TZodShape;
+};
+
+// Utility to check if T is a union
+type IsStringUnion<T, U = T> = T extends string ? ([U] extends [T] ? false : true) : never;
+
+export type ConditionalTest<S extends TZodShape, R extends TZodShape> = keyof S extends never
+    ? Pick<TZodShape, never>
+    : R;
+
+export type ConditionalTestArray<
+    S extends TZodArray,
+    R extends TZodShape,
+> = S['element'] extends ZodNever ? Pick<TZodShape, never> : R;
+
+export type ConditionalSchema<S extends TZodShape, K extends string> = Prettify<
+    keyof S extends never
+        ? Pick<TZodShape, never>
+        : IsStringUnion<K> extends true
+          ? {
+                [k in K]: 'ERROR: Union keys are not allowed in ConditionalSchema. Use a single string literal.';
+            }
+          : { [k in K]: z.ZodObject<S> }
+>;
+
+export type ConditionalArraySchema<S extends TZodArray, K extends string> = Prettify<
+    S['element'] extends ZodNever
+        ? Pick<TZodShape, never>
+        : IsStringUnion<K> extends true
+          ? {
+                [k in K]: 'ERROR: Union keys are not allowed in ConditionalSchemaArray. Use a single string literal.';
+            }
+          : { [k in K]: S }
+>;
 
 /**
  * Type alias for FeatureTableConfig with any generics.
