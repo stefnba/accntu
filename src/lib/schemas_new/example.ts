@@ -10,6 +10,11 @@ export const tagTableConfig = createFeatureTableConfig(tag)
     // .removeIds()
     // .setIds(['id'])
     // .setUserId('userId')
+    // .enableFiltering({
+    //     name: z.string(),
+    // })
+    .enablePagination()
+    // .enableOrdering(['createdAt'])
     .build();
 
 export const tagSchemas = createFeatureSchemas(tagTableConfig)
@@ -21,18 +26,15 @@ export const tagSchemas = createFeatureSchemas(tagTableConfig)
             form: helpers.buildIdentifierSchema(),
         },
     }))
-    .addSchema('update', ({ schemas, helpers }) => ({
-        query: schemas.base,
-        body: schemas.inputData.update,
-        endpoint: {
-            json: schemas.table.update,
-            form: helpers.buildPaginationSchema(),
-        },
-    }));
+    .withStandard((b) => b.create().getById().getMany())
+    .build();
 
-const schemas = tagSchemas.schemas.update.endpoint.form;
+// ==============================
+// Schemas
+// ==============================
 
-type TestQuery = z.infer<typeof schemas>;
+export const getManyService = tagSchemas.getMany.service;
+export type TGetManyService = z.infer<typeof getManyService>;
 
-type A = InferSchemasByLayer<typeof tagSchemas.schemas, 'endpoint'>;
+type A = InferSchemasByLayer<typeof tagSchemas, 'query'>;
 type B = keyof A;

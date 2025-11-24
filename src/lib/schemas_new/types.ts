@@ -1,4 +1,5 @@
 import { TZodType } from '@/lib/validation';
+import { Prettify } from '@/types/utils';
 import { ValidationTargets } from 'hono';
 import z from 'zod';
 
@@ -58,6 +59,6 @@ export type InferFeatureSchemaObject<T> = T extends z.ZodTypeAny
 export type InferSchemasByLayer<
     T extends TFeatureSchemas,
     TLayer extends keyof TFeatureSchemaObject,
-> = {
-    [K in keyof T]: InferFeatureSchemaObject<T[K][TLayer]>;
-};
+> = Prettify<{
+    [K in keyof T as string extends K ? never : K]: InferFeatureSchemaObject<T[K][TLayer]>;
+}>;
