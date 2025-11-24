@@ -5,8 +5,6 @@ import { z } from 'zod';
  */
 export type TZodShape = z.ZodRawShape;
 
-export type TZodArray<T extends TZodType = TZodType> = z.ZodArray<T>;
-
 /**
  * Type constraint for all Zod objects used in the layer system
  */
@@ -16,6 +14,11 @@ export type TZodObject<T extends TZodShape = TZodShape> = z.ZodObject<T>;
  * Type constraint for all Zod types used in the layer system. This is using zod core since z.ZodType is not working.
  */
 export type TZodType = z.core.$ZodType;
+
+/**
+ * Type constraint for all Zod arrays used in the layer system.
+ */
+export type TZodArray<T extends TZodType = TZodType> = z.ZodArray<T>;
 
 /**
  * Defines a Zod shape constrained to a specific set of keys `K`.

@@ -1,5 +1,5 @@
 import { BaseSchemaBuilder } from '@/lib/schemas/builder';
-import { TZodObject } from '@/lib/schemas/types';
+import { TZodObject } from '@/lib/validation';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 

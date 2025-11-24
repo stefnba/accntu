@@ -1,4 +1,5 @@
-import { MappingCoreServiceInput, TZodObject, TZodType } from '@/lib/schemas/types';
+import { MappingCoreServiceInput } from '@/lib/schemas/types';
+import { TZodObject, TZodType } from '@/lib/validation';
 import { z } from 'zod';
 
 /**

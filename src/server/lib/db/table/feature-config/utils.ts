@@ -1,5 +1,4 @@
-import { TZodShape } from '@/lib/schemas/types';
-import { type TEmptySchema } from '@/lib/validation';
+import { TEmptySchema, TZodShape } from '@/lib/validation';
 import { tableHasField } from '@/server/lib/db/drizzle';
 import { InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { Prettify } from '@/types/utils';

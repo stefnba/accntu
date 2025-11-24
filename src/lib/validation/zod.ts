@@ -1,8 +1,8 @@
-import { TZodShape } from '@/lib/schemas/types';
 import { typedFromEntries, typedKeys } from '@/lib/utils';
 import { Prettify } from '@/types/utils';
 import { getTableColumns, Table } from 'drizzle-orm';
 import { core, util, z, ZodIssue, ZodObject } from 'zod';
+import { TZodShape } from './types';
 
 /**
  * Constructs readable error messages from Zod validation issues

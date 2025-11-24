@@ -1,5 +1,6 @@
 import { inputHelpers } from '@/lib/schemas/helpers';
-import { MappingCoreServiceInput, TOperationSchemaObject, TZodShape } from '@/lib/schemas/types';
+import { MappingCoreServiceInput, TOperationSchemaObject } from '@/lib/schemas/types';
+import { TZodShape } from '@/lib/validation';
 import z, { util } from 'zod';
 
 /**

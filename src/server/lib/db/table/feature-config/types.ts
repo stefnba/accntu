@@ -1,5 +1,4 @@
-import { TZodShape } from '@/lib/schemas/types';
-import { type TEmptySchema, type TZodArray } from '@/lib/validation';
+import { TEmptySchema, TZodArray, TZodShape } from '@/lib/validation';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';

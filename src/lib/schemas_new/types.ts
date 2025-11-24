@@ -1,20 +1,6 @@
+import { TZodType } from '@/lib/validation';
 import { ValidationTargets } from 'hono';
 import z from 'zod';
-
-/**
- * Type constraint for all Zod shapes used in the layer system. This is more flexible than TZodObject.
- */
-export type TZodShape = z.ZodRawShape;
-
-/**
- * Type constraint for all Zod objects used in the layer system
- */
-export type TZodObject<T extends TZodShape = TZodShape> = z.ZodObject<T>;
-
-/**
- * Type constraint for all Zod types used in the layer system. This is using zod core since z.ZodType is not working.
- */
-export type TZodType = z.core.$ZodType;
 
 /**
  * Endpoint schema object supporting Hono validation targets
@@ -44,11 +30,11 @@ export type TFeatureSchemas = Record<string, TFeatureSchemaObject>;
 
 /**
  * Recursively infer types from schema objects or nested structures.
- * Handles both Zod objects and nested object structures.
+ * Handles Zod schemas (objects, arrays, etc.) and nested object structures.
  *
  * @template T - The input type to infer from
  */
-export type InferFeatureSchemaObject<T> = T extends z.ZodObject
+export type InferFeatureSchemaObject<T> = T extends z.ZodTypeAny
     ? z.infer<T>
     : T extends object
       ? { [key in keyof T]: InferFeatureSchemaObject<T[key]> }
@@ -57,7 +43,7 @@ export type InferFeatureSchemaObject<T> = T extends z.ZodObject
 /**
  * Recursively infers types for all entries in the given layer, including handling nested endpoint validation targets.
  *
- * @template T - The TFeatureSchemas object containing all feature schema definitions
+ * @template T - The schema object returned by FeatureSchemasBuilder.build() (which is a TFeatureSchemas)
  * @template TLayer - The key of the schema layer to extract and infer ('query', 'service', 'endpoint', 'form')
  * @returns Mapped type with inferred types for each item in the specified layer
  *
