@@ -8,7 +8,7 @@ import z from 'zod';
 // ==============================
 
 const config = createFeatureTableConfig(tag)
-    .restrictReturnColumns(['id', 'description', 'createdAt'])
+    .restrictReturnColumns(['id', 'description', 'createdAt', 'name'])
     .enableOrdering(['createdAt'])
     .enableFiltering({
         name: z.string(),
@@ -40,6 +40,9 @@ const standardQueries = StandardQueryBuilder.create(config, {
             pageSize: 3,
         },
         defaultOrdering: ['description'],
+        filters(filterParams, { ilike }) {
+            return [ilike('name', filterParams.name)];
+        },
     },
 })
     .all()

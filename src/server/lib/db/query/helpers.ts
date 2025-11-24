@@ -1,4 +1,4 @@
-import { typedEntries } from '@/lib/utils';
+import { TOrderBy } from '@/server/lib/db/query/table-operations/types';
 import { and, asc, desc, SQL, Table } from 'drizzle-orm';
 import { PgSelect } from 'drizzle-orm/pg-core';
 
@@ -28,14 +28,26 @@ export function withPagination<T extends PgSelect>(
  */
 export function withOrdering<T extends PgSelect, TTable extends Table>(
     qb: T,
-    orderBy: Partial<Record<keyof TTable['_']['columns'], 'asc' | 'desc'>>,
+    orderBy: TOrderBy<TTable>,
     getColumn: (
         column: keyof TTable['_']['columns']
     ) => TTable['_']['columns'][keyof TTable['_']['columns']]
 ) {
-    const orderByConditions = typedEntries(orderBy).map(([field, direction]) => {
-        const column = getColumn(field);
-        return direction === 'asc' ? asc(column) : desc(column);
+    const orderByConditions = orderBy.map((item) => {
+        // if the item is a string, get the column and order by ascending
+        if (typeof item === 'string') {
+            return asc(getColumn(item));
+        }
+
+        // if the item is an object, get the field and direction
+        if (typeof item === 'object' && 'field' in item && 'direction' in item) {
+            const { field, direction } = item;
+            const column = getColumn(field);
+            return direction === 'asc' ? asc(column) : desc(column);
+        }
+
+        // if the item is not a string or object, throw an error
+        throw new Error(`Invalid ordering item: ${JSON.stringify(item)}`);
     });
 
     return orderByConditions.length > 0 ? qb.orderBy(...orderByConditions) : qb;

@@ -1,5 +1,6 @@
 import { getFieldsAsArray, getFieldsAsArrayConstrained } from '@/lib/utils/zod';
-import { paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
+import { TOrderBy } from '@/server/lib/db/query/table-operations';
+import { orderingSchema, paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
 import {
     ConditionalArrayShape,
     ConditionalObjectShape,
@@ -131,10 +132,20 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * @param input - Raw input object containing filter fields
      * @returns Validated filters object or undefined if validation fails
      */
-    validateFiltersInput(input: unknown) {
-        const validated = this.getFiltersSchema().safeParse(input);
+    validateFiltersInput(
+        input: unknown
+    ):
+        | z.infer<z.ZodObject<{ [k in keyof C['filters']]: z.ZodOptional<C['filters'][k]> }>>
+        | undefined {
+        if (!this.hasFiltersSchema()) return undefined;
+
+        const schema = z.object({
+            filters: this.getFiltersSchema().partial(),
+        });
+
+        const validated = schema.safeParse(input);
         if (validated.success) {
-            return validated.data;
+            return validated.data.filters;
         }
         return undefined;
     }
@@ -156,10 +167,14 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * @param input - Raw input object containing ordering array
      * @returns Validated ordering array or undefined if validation fails
      */
-    validateOrderingInput(input: unknown) {
-        const validated = this.getOrderingSchema().safeParse(input);
+    validateOrderingInput(input: unknown): TOrderBy<TTable> | undefined {
+        if (!this.hasOrderingSchema()) return undefined;
+
+        const schema = orderingSchema(this.config.table);
+
+        const validated = schema.safeParse(input);
         if (validated.success) {
-            return validated.data;
+            return validated.data.ordering;
         }
         return undefined;
     }
@@ -218,12 +233,19 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         }
 
         // pagination
-        const paginationSchema = z.object({
+        type PaginationShape = C['pagination'];
+        const paginationSchemaForMany: z.ZodObject<{
+            pagination: z.ZodOptional<
+                z.ZodObject<{
+                    [K in keyof PaginationShape]: z.ZodOptional<PaginationShape[K]>;
+                }>
+            >;
+        }> = z.object({
             pagination: this.getPaginationSchema().partial().optional(),
         });
         if (this.hasPaginationSchema()) {
             Object.assign(shape, {
-                pagination: paginationSchema.shape,
+                pagination: paginationSchemaForMany.shape,
             });
         }
 
@@ -234,7 +256,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
 
         return z.object(shape) as z.ZodObject<
             ConditionalObjectShape<C['filters'], (typeof filtersSchema)['shape']> &
-                ConditionalObjectShape<C['pagination'], (typeof paginationSchema)['shape']> &
+                ConditionalObjectShape<C['pagination'], (typeof paginationSchemaForMany)['shape']> &
                 ConditionalArrayShape<C['ordering'], (typeof orderingSchema)['shape']> &
                 C['userId']
         >;

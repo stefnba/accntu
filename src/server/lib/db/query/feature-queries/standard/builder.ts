@@ -4,6 +4,7 @@ import {
     defaultIdFiltersIdentifier,
     userIdIdentifier,
 } from '@/server/lib/db/query/feature-queries/utils';
+import { withTableFilters } from '@/server/lib/db/query/filters';
 import { TableOperationsBuilder, TBooleanFilter } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
@@ -18,7 +19,7 @@ export class StandardQueryBuilder<
 > {
     table: TTable;
     tableConfig: FeatureTableConfig<TTable, TConfig>;
-    queryConfig: TStandardNewQueryConfig<TTable>;
+    queryConfig: TStandardNewQueryConfig<TTable, TConfig>;
 
     tableOps: TableOperationsBuilder<TTable>;
 
@@ -31,7 +32,7 @@ export class StandardQueryBuilder<
     }: {
         tableConfig: FeatureTableConfig<TTable, TConfig>;
         queries: TQueries;
-        queryConfig: TStandardNewQueryConfig<TTable>;
+        queryConfig: TStandardNewQueryConfig<TTable, TConfig>;
     }) {
         const table = tableConfig.getTable();
         this.table = table;
@@ -44,7 +45,7 @@ export class StandardQueryBuilder<
 
     static create<TTable extends Table, TConfig extends TFeatureTableConfig<TTable>>(
         tableConfig: FeatureTableConfig<TTable, TConfig>,
-        queryConfig: TStandardNewQueryConfig<TTable> = {}
+        queryConfig: TStandardNewQueryConfig<TTable, TConfig> = {}
     ) {
         return new StandardQueryBuilder<TTable, TConfig>({ tableConfig, queries: {}, queryConfig });
     }
@@ -90,6 +91,14 @@ export class StandardQueryBuilder<
         });
     }
 
+    private buildFilters(input: unknown) {
+        const filtersInput = this.tableConfig.validateFiltersInput(input);
+
+        if (!filtersInput) return undefined;
+
+        return this.queryConfig.getMany?.filters?.(filtersInput, withTableFilters(this.table));
+    }
+
     getMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
         type TInput = z.infer<
@@ -100,10 +109,10 @@ export class StandardQueryBuilder<
             // identifiers, only userId
             const identifiers = this.buildIdentifiers(input, { ids: false, userId: true });
 
-            // todo filters
-            // const filters = this.buildFilters(input);
+            // filters
+            const filters = this.buildFilters(input);
 
-            // todo ordering
+            // ordering
             const orderBy =
                 this.tableConfig.validateOrderingInput(input) ??
                 this.queryConfig.getMany?.defaultOrdering;
@@ -113,7 +122,7 @@ export class StandardQueryBuilder<
             const result = await this.tableOps.getManyRecords({
                 columns: returnColumns,
                 identifiers,
-                // filters,
+                filters,
                 pagination: {
                     page: paginationInput?.page ?? 1,
                     pageSize:
@@ -121,7 +130,7 @@ export class StandardQueryBuilder<
                         this.queryConfig.getMany?.defaultPagination?.pageSize ??
                         25,
                 },
-                // orderBy: orderBy,
+                orderBy,
             });
 
             return result;

@@ -116,12 +116,13 @@ export type TOnConflict<T extends Table> =
  * ];
  * ```
  */
-export type TOrderBy<T extends Table> =
-    | Array<{
+export type TOrderBy<T extends Table> = Array<
+    | {
           field: GetTableColumnKeys<T>;
           direction: 'asc' | 'desc';
-      }>
-    | Array<GetTableColumnKeys<T>>;
+      }
+    | GetTableColumnKeys<T>
+>;
 
 /**
  * Pagination for the getManyRecords operation.

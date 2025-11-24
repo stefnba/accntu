@@ -6,6 +6,8 @@ import { withFilters, withOrdering, withPagination } from '@/server/lib/db/query
 import {
     TBooleanFilter,
     TOnConflict,
+    TOrderBy,
+    TPagination,
     TStandardTableOperation,
     TValidTableForFrom,
 } from '@/server/lib/db/query/table-operations/types';
@@ -363,11 +365,8 @@ export class TableOperationsBuilder<T extends Table> {
         columns?: Cols;
         identifiers: Array<TBooleanFilter<T>>;
         filters?: (SQL | undefined)[];
-        orderBy?: Partial<Record<GetTableColumnKeys<T>, 'asc' | 'desc'>>;
-        pagination?: {
-            page?: number;
-            pageSize?: number;
-        };
+        orderBy?: TOrderBy<T>;
+        pagination?: TPagination;
     }) {
         // check if the table is a table
         if (!isTable(this.table)) {

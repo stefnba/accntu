@@ -224,7 +224,7 @@ describe('TableOperationsBuilder', () => {
 
             const result = await tableOps.getManyRecords({
                 identifiers: [{ field: 'userId', value: testUser.id }],
-                orderBy: { createdAt: 'desc' },
+                orderBy: [{ field: 'createdAt', direction: 'desc' }],
                 pagination: { page: 1, pageSize: 10 },
             });
 
@@ -1065,7 +1065,10 @@ describe('TableOperationsBuilder', () => {
 
             const result = await tableOps.getManyRecords({
                 identifiers: [{ field: 'userId', value: testUser.id }],
-                orderBy: { createdAt: 'desc', transactionCount: 'asc' },
+                orderBy: [
+                    { field: 'createdAt', direction: 'desc' },
+                    { field: 'transactionCount', direction: 'asc' },
+                ],
                 pagination: { page: 1, pageSize: 5 },
             });
 

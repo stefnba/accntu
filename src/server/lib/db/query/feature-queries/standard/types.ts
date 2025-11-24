@@ -1,7 +1,10 @@
 import { GetTableColumnDefinitions, GetTableColumnKeys } from '@/server/lib/db/drizzle';
+import { withTableFilters } from '@/server/lib/db/query/filters';
 import { TOrderBy, TPagination } from '@/server/lib/db/query/table-operations';
+import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { Prettify } from '@/types/utils';
-import { Table } from 'drizzle-orm';
+import { SQL, Table } from 'drizzle-orm';
+import z from 'zod';
 
 /**
  * Configuration options for constructing a standard query builder for a specific feature table.
@@ -19,14 +22,33 @@ import { Table } from 'drizzle-orm';
  * @property getById - Options for "getById" operation:
  *   - defaultFilters: Filters always applied to getById calls.
  */
-export type TStandardNewQueryConfig<TTable extends Table> = {
+export type TStandardNewQueryConfig<
+    TTable extends Table,
+    TConfig extends TFeatureTableConfig<TTable>,
+> = {
     defaultFilters?: TDefaultFilters<TTable>;
     getMany?: {
         defaultPagination?: Prettify<Pick<TPagination, 'pageSize'>>;
         defaultOrdering?: TOrderBy<TTable>; // todo restrict this to the columns that are enabled for ordering
         defaultFilters?: TDefaultFilters<TTable>;
-        filters?: boolean;
+        /**
+         * The filters config is used to filter the records based on the filter schema defined in the table config.
+         * It is a function that takes the filter parameters and returns an array of filters.
+         *
+         * @param filterParams - The filter parameters from the input.
+         * @param filterClauses - The filter clauses to use to filter the records.
+         * @returns An array of filters to use to filter the records.
+         */
+        filters?: (
+            filterParams: z.infer<
+                z.ZodObject<{
+                    [k in keyof TConfig['filters']]: z.ZodOptional<TConfig['filters'][k]>;
+                }>
+            >,
+            filterClauses: ReturnType<typeof withTableFilters<TTable>>
+        ) => (SQL<unknown> | undefined)[];
     };
+
     getById?: {
         defaultFilters?: TDefaultFilters<TTable>;
     };
