@@ -2,7 +2,7 @@ import {
     transactionParseDuplicateCheckSchema,
     TTransactionParseDuplicateCheck,
 } from '@/features/transaction/schemas';
-import { parseZodError } from '@/lib/utils/zod';
+import { parseZodError } from '@/lib/validation';
 import { z } from 'zod';
 import { DuckDBCore } from './core';
 import { DuckDBQueryError } from './errors';

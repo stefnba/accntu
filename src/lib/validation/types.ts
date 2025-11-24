@@ -30,7 +30,7 @@ export type TZodPartialShape<K extends PropertyKey, S> = {
  *
  * **Why use this instead of `undefined`?**
  * Using `Record<never, never>` enables zero-assertion type safety by ensuring
- * `keyof EmptySchema` evaluates to `never`. This allows type guards and conditional
+ * `keyof TEmptySchema` evaluates to `never`. This allows type guards and conditional
  * types to work correctly without runtime type assertions.
  */
-export type EmptySchema = Readonly<Record<never, never>>;
+export type TEmptySchema = Readonly<Record<never, never>>;

@@ -1,8 +1,8 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { type TEmptySchema } from '@/lib/validation';
 import { tableHasField } from '@/server/lib/db/drizzle';
 import { InferTableSchema } from '@/server/lib/db/table/feature-config/types';
 import { Prettify } from '@/types/utils';
-import { EmptySchema } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
@@ -39,7 +39,7 @@ export function getSchemaForTableField<
 export function getSchemaForTableField<TTable extends Table, TField extends string>(
     table: TTable,
     field: TField
-): z.ZodObject<EmptySchema>;
+): z.ZodObject<TEmptySchema>;
 export function getSchemaForTableField<TTable extends Table, TField extends string>(
     table: TTable,
     field: TField

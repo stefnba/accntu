@@ -1,11 +1,18 @@
-import { omitFields, pickFields, safeOmit } from '@/lib/utils/zod';
+import {
+    type TEmptySchema,
+    type TZodArray,
+    type TZodType,
+    omitFields,
+    pickFields,
+    safeOmit,
+} from '@/lib/validation';
+
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { orderByDirectionSchema } from '@/server/lib/db/table/feature-config/schemas';
 import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
 import { SYSTEM_FIELDS_KEYS } from '@/server/lib/db/table/system-fields';
 import { Prettify } from '@/types/utils';
-import { EmptySchema, TZodArray, TZodType } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z, { ZodNever } from 'zod';
@@ -40,14 +47,14 @@ export class FeatureTableConfigBuilder<
     C extends Readonly<TFeatureTableConfig<TTable>> = Readonly<{
         table: TTable;
         base: InferTableSchema<TTable, 'insert'>['shape'];
-        filters: EmptySchema;
-        pagination: EmptySchema;
+        filters: TEmptySchema;
+        pagination: TEmptySchema;
         ordering: TZodArray<ZodNever>;
-        updateData: EmptySchema;
-        createData: EmptySchema;
+        updateData: TEmptySchema;
+        createData: TEmptySchema;
         returnCols: InferTableSchema<TTable, 'select'>['shape'];
-        id: EmptySchema;
-        userId: EmptySchema;
+        id: TEmptySchema;
+        userId: TEmptySchema;
     }>,
 > {
     config: C;
@@ -83,8 +90,8 @@ export class FeatureTableConfigBuilder<
                 table: TLocal;
                 base: typeof createSchema.shape;
                 createData: typeof createSchema.shape;
-                filters: EmptySchema;
-                pagination: EmptySchema;
+                filters: TEmptySchema;
+                pagination: TEmptySchema;
                 ordering: TZodArray<ZodNever>;
                 updateData: typeof updateSchema.shape;
                 returnCols: typeof selectSchema.shape;
@@ -311,14 +318,15 @@ export class FeatureTableConfigBuilder<
      * ```
      */
     removeIds() {
-        return new FeatureTableConfigBuilder<TTable, Prettify<Omit<C, 'id'> & { id: EmptySchema }>>(
-            {
-                config: {
-                    ...this.config,
-                    id: {},
-                },
-            }
-        );
+        return new FeatureTableConfigBuilder<
+            TTable,
+            Prettify<Omit<C, 'id'> & { id: TEmptySchema }>
+        >({
+            config: {
+                ...this.config,
+                id: {},
+            },
+        });
     }
 
     /**
@@ -378,7 +386,7 @@ export class FeatureTableConfigBuilder<
     removeUserId() {
         return new FeatureTableConfigBuilder<
             TTable,
-            Prettify<Omit<C, 'userId'> & { userId: EmptySchema }>
+            Prettify<Omit<C, 'userId'> & { userId: TEmptySchema }>
         >({
             config: {
                 ...this.config,

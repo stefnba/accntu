@@ -1,4 +1,5 @@
-import { getFieldsAsArray, getFieldsAsArrayConstrained } from '@/lib/utils/zod';
+import { type TZodShape, getFieldsAsArray, getFieldsAsArrayConstrained } from '@/lib/validation';
+
 import { TOrderBy } from '@/server/lib/db/query/table-operations';
 import { orderingSchema, paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
 import {
@@ -9,7 +10,6 @@ import {
 } from '@/server/lib/db/table/feature-config/types';
 import { AppErrors } from '@/server/lib/error';
 import { Prettify } from '@/types/utils';
-import { TZodShape } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';

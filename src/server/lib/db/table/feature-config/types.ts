@@ -1,7 +1,7 @@
 import { TZodShape } from '@/lib/schemas/types';
+import { type TEmptySchema, type TZodArray } from '@/lib/validation';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { Prettify } from '@/types/utils';
-import { EmptySchema, TZodArray } from '@/types/zod';
 import { Table } from 'drizzle-orm';
 import { BuildSchema } from 'drizzle-zod';
 import z, { ZodNever } from 'zod';
@@ -449,7 +449,7 @@ export type InferTableFromConfig<
  * Infer Zod schema for a specific table field.
  *
  * Extracts the Zod schema for a single field from a Drizzle table if the field exists,
- * or returns EmptySchema if the field doesn't exist in the table.
+ * or returns TEmptySchema if the field doesn't exist in the table.
  *
  * @template TTable - Drizzle table type
  * @template TField - Field name to extract (defaults to 'id')
@@ -462,7 +462,7 @@ export type InferTableFromConfig<
  *
  * // Table doesn't have 'ownerId' field:
  * type OwnerSchema = InferDefaultSchemaForField<typeof userTable, 'ownerId'>;
- * // Result: z.ZodObject<EmptySchema>
+ * // Result: z.ZodObject<TEmptySchema>
  *
  * // Used internally by builder:
  * const idSchema = InferDefaultSchemaForField<TTable, 'id'>;
@@ -474,4 +474,4 @@ export type InferDefaultSchemaForField<
     TField extends string = 'id',
 > = TField extends keyof TTable['_']['columns']
     ? z.ZodObject<Prettify<Pick<InferTableSchema<TTable, 'select'>['shape'], TField>>>
-    : z.ZodObject<EmptySchema>;
+    : z.ZodObject<TEmptySchema>;

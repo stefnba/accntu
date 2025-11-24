@@ -23,7 +23,7 @@ The Feature Table Config Builder provides a declarative way to configure databas
 - **Row-level security** (RLS) via userId configuration
 - **Composite primary keys** support
 - **Field-level access control** (control which fields can be modified/returned)
-- **Zero type assertions** using sentinel EmptySchema pattern
+- **Zero type assertions** using sentinel TEmptySchema pattern
 - **Immutable configurations** for predictable behavior
 
 ## Architecture
@@ -70,14 +70,14 @@ feature-config/
 
 ### 1. **Zero-Assertion Type Safety**
 
-Uses `EmptySchema` sentinel instead of `undefined` to eliminate type assertions:
+Uses `TEmptySchema` sentinel instead of `undefined` to eliminate type assertions:
 
 ```typescript
 // Instead of this (with type assertions):
 const idSchema: z.ZodObject<IdShape> | undefined = hasIds ? schema : undefined;
 
 // We use this (zero assertions):
-const idSchema: z.ZodObject<IdShape | EmptySchema> = hasIds ? schema : z.object({});
+const idSchema: z.ZodObject<IdShape | TEmptySchema> = hasIds ? schema : z.object({});
 ```
 
 ### 2. **Immutable Configuration**

@@ -24,7 +24,7 @@ import {
     emailEnvSchema,
     serverBaseEnvSchema,
 } from '@/lib/env/schemas';
-import { constructZodErrorMessages } from '@/lib/utils/zod';
+import { constructZodErrorMessages } from '@/lib/validation';
 import { z } from 'zod';
 
 // Full server-side schema
