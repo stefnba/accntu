@@ -254,7 +254,7 @@ export class FeatureQueryBuilder<
      * // queries.queries will have create, getById, getMany, updateById, removeById operations
      * ```
      */
-    registerAllStandard(config: TStandardNewQueryConfig<TTable> = {}) {
+    registerAllStandard(config: TStandardNewQueryConfig<TTable, TConfig> = {}) {
         const builder = StandardQueryBuilder.create<TTable, TConfig>(this.tableConfig, config);
 
         const standardQueries = builder.all().done();
