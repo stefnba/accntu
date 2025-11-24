@@ -1,52 +1,23 @@
-import type { TFeatureSchemaObject, TFeatureSchemas, TZodShape } from '@/lib/schemas_new/types';
+import type { TFeatureSchemaObject, TFeatureSchemas } from '@/lib/schemas_new/types';
 import { Table } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { InferTableSchema } from '@/server/lib/db/table/feature-config/types';
+import { paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
+import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 
-const paginationSchema = z
-    .object({
-        page: z.coerce.number().int().min(1).optional(),
-        pageSize: z.coerce.number().int().min(1).max(100).optional(),
-    })
-    .partial()
-    .optional()
-    .default({
-        page: 1,
-        pageSize: 10,
-    });
-
 export class FeatureSchemasBuilder<
-    const S extends Record<string, TFeatureSchemas>,
+    const TSchemas extends Record<string, TFeatureSchemas>,
     const TTable extends Table,
-    const TBase extends TZodShape,
-    const TIdSchema extends TZodShape,
-    const TUserIdSchema extends TZodShape,
-    const TInsertDataSchema extends TZodShape,
-    const TUpdateDataSchema extends TZodShape,
-    const TSelectReturnSchema extends TZodShape,
-    const TTableConfig extends FeatureTableConfig<
+    const TConfig extends TFeatureTableConfig<TTable>,
+    const TTableConfig extends FeatureTableConfig<TTable, TConfig> = FeatureTableConfig<
         TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema
-    > = FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema
+        TConfig
     >,
 > {
     /** The builder schemas */
-    schemas: S;
+    schemas: TSchemas;
 
     /** Table configuration */
     tableConfig: TTableConfig;
@@ -54,10 +25,10 @@ export class FeatureSchemasBuilder<
     /** Drizzle table definition */
     table: TTable;
 
-    constructor({ schemas, config }: { schemas: S; config: TTableConfig }) {
+    constructor({ schemas, config }: { schemas: TSchemas; config: TTableConfig }) {
         this.schemas = schemas;
         this.tableConfig = config;
-        this.table = config.table;
+        this.table = config.getTable();
     }
 
     // The addSchema method should accept a key and a config function, returning a shape (e.g., TZodShape).
@@ -78,38 +49,35 @@ export class FeatureSchemasBuilder<
                 /** The input schemas */
                 input: {
                     /** The update input schema */
-                    update: z.ZodObject<
-                        {
-                            data: TTableConfig['updateDataSchema'];
-                            ids: TTableConfig['idSchema'];
-                        } & TUserIdSchema
+                    update: ReturnType<
+                        FeatureTableConfig<TTable, TConfig>['buildUpdateInputSchema']
                     >;
                     /** The create input schema */
-                    create: z.ZodObject<
-                        {
-                            data: TTableConfig['insertDataSchema'];
-                        } & TUserIdSchema
+                    create: ReturnType<
+                        FeatureTableConfig<TTable, TConfig>['buildCreateInputSchema']
                     >;
                 };
                 /** The input data schema */
                 inputData: {
                     /** The update input data schema */
-                    update: TTableConfig['updateDataSchema'];
+                    update: z.ZodObject<TConfig['updateData']>;
                     /** The insert input data schema */
-                    insert: TTableConfig['insertDataSchema'];
+                    insert: z.ZodObject<TConfig['createData']>;
                 };
                 /** The return schema */
-                return: TTableConfig['selectReturnSchema'];
+                return: z.ZodObject<TConfig['returnCols']>;
                 /** The base schema */
-                base: TTableConfig['baseSchema'];
+                base: z.ZodObject<TConfig['base']>;
                 /** The id schema */
-                id: TTableConfig['idSchema'];
+                id: z.ZodObject<TConfig['id']>;
                 /** The user id schema */
-                userId: TTableConfig['userIdSchema'];
+                userId: z.ZodObject<TConfig['userId']>;
             };
             helpers: {
                 /** The identifier schema */
-                buildIdentifierSchema: TTableConfig['buildIdentifierSchema'];
+                buildIdentifierSchema: () => ReturnType<
+                    FeatureTableConfig<TTable, TConfig>['buildIdentifierSchema']
+                >;
                 /** The pagination schema */
                 buildPaginationSchema: () => typeof paginationSchema;
             };
@@ -117,7 +85,7 @@ export class FeatureSchemasBuilder<
     ) {
         const schema = config({
             helpers: {
-                buildIdentifierSchema: this.tableConfig.buildIdentifierSchema,
+                buildIdentifierSchema: () => this.tableConfig.buildIdentifierSchema(),
                 buildPaginationSchema: () => paginationSchema,
             },
             schemas: {
@@ -131,33 +99,23 @@ export class FeatureSchemasBuilder<
                     create: this.tableConfig.buildCreateInputSchema(),
                 },
                 inputData: {
-                    update: this.tableConfig.updateDataSchema,
-                    insert: this.tableConfig.insertDataSchema,
+                    update: this.tableConfig.getUpdateDataSchema(),
+                    insert: this.tableConfig.getCreateDataSchema(),
                 },
-                return: this.tableConfig.selectReturnSchema,
-                base: this.tableConfig.baseSchema,
-                id: this.tableConfig.idSchema,
-                userId: this.tableConfig.userIdSchema,
+                return: this.tableConfig.getReturnColumnsSchema(),
+                base: this.tableConfig.getBaseSchema(),
+                id: this.tableConfig.getIdSchema(),
+                userId: this.tableConfig.getUserIdSchema(),
             },
         });
 
-        return new FeatureSchemasBuilder<
-            S & Record<K, O>,
-            TTable,
-            TBase,
-            TIdSchema,
-            TUserIdSchema,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema,
-            TTableConfig
-        >({
+        return new FeatureSchemasBuilder<TSchemas & Record<K, O>, TTable, TConfig, TTableConfig>({
             schemas: { ...this.schemas, [key]: schema },
             config: this.tableConfig,
         });
     }
 
-    build(): S {
+    build(): TSchemas {
         return this.schemas;
     }
 }

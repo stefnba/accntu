@@ -1,45 +1,17 @@
-import { TZodShape } from '@/lib/schemas/types';
 import { FeatureSchemasBuilder } from '@/lib/schemas_new/core';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 
 import { Table } from 'drizzle-orm';
 
 export const createFeatureSchemas = <
     TTable extends Table,
-    TBase extends TZodShape,
-    TIdSchema extends TZodShape,
-    TUserIdSchema extends TZodShape,
-    TInsertDataSchema extends TZodShape,
-    TUpdateDataSchema extends TZodShape,
-    TSelectReturnSchema extends TZodShape,
+    TConfig extends TFeatureTableConfig<TTable>,
 >(
-    config: FeatureTableConfig<
-        TTable,
-        TIdSchema,
-        TUserIdSchema,
-        TBase,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema
-    >
+    config: FeatureTableConfig<TTable, TConfig>
 ) => {
-    return new FeatureSchemasBuilder<
-        Record<string, never>,
-        TTable,
-        TBase,
-        TIdSchema,
-        TUserIdSchema,
-        TInsertDataSchema,
-        TUpdateDataSchema,
-        TSelectReturnSchema,
-        FeatureTableConfig<
-            TTable,
-            TIdSchema,
-            TUserIdSchema,
-            TBase,
-            TInsertDataSchema,
-            TUpdateDataSchema,
-            TSelectReturnSchema
-        >
-    >({ schemas: {}, config });
+    return new FeatureSchemasBuilder<Record<string, never>, TTable, TConfig>({
+        schemas: {},
+        config: config,
+    });
 };

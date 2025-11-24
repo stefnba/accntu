@@ -32,7 +32,7 @@ export const tagSchemas = createFeatureSchemas(tagTableConfig)
 
 const schemas = tagSchemas.schemas.update.endpoint.form;
 
-type TestQuery = z.infer<typeof schemas>[];
+type TestQuery = z.infer<typeof schemas>;
 
 type A = InferSchemasByLayer<typeof tagSchemas.schemas, 'endpoint'>;
 type B = keyof A;
