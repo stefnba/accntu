@@ -44,16 +44,17 @@ import { Table } from 'drizzle-orm';
 export const createFeatureQueries = <
     TTable extends Table,
     TConfig extends TFeatureTableConfig<TTable>,
+    TTableConfig extends FeatureTableConfig<TTable, TConfig> = FeatureTableConfig<TTable, TConfig>,
 >(
     name: string,
-    config: FeatureTableConfig<TTable, TConfig>
+    config: TTableConfig
 ) => {
     return new FeatureQueryBuilder<
         TEmptyQueries,
         Record<string, never>,
         TTable,
         TConfig,
-        FeatureTableConfig<TTable, TConfig>
+        TTableConfig
     >({
         schemas: {},
         queries: {},
