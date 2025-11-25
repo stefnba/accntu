@@ -2,10 +2,15 @@
  * Standard function signature for all database query functions.
  * All query functions must be async and return a Promise.
  *
- * @template Input - The input parameter type (defaults to any for flexibility)
- * @template Output - The return type (defaults to any for flexibility)
+ * The bivariance hack keeps parameters assignable (needed when storing
+ * heterogeneous query functions in a single record) without resorting to `any`.
+ *
+ * @template Input - The input parameter type
+ * @template Output - The return type
  */
-export type QueryFn<Input = unknown, Output = unknown> = (args: Input) => Promise<Output>;
+export type QueryFn<Input = unknown, Output = unknown> = {
+    bivarianceHack(args: Input): Promise<Output>;
+}['bivarianceHack'];
 
 /**
  * Empty object type used as the initial state in query builders.
