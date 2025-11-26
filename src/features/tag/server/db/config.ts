@@ -2,7 +2,7 @@ import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import z from 'zod';
 
-const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
+export const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
 
 export const tagTableConfig = createFeatureTableConfig(tag)
     .omitBaseSchema(['transactionCount'])
