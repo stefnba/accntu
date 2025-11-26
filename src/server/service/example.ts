@@ -28,7 +28,7 @@ const tagQueries = createFeatureQueries('tag', tagTableConfig)
     .build();
 
 // Create services
-const tagServices = createFeatureServices('tag', tagTableConfig)
+const tagServices = createFeatureServices('tag')
     .registerQueries(tagQueries)
     .registerSchema(tagSchemas)
     // Add a custom service

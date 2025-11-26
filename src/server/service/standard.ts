@@ -1,8 +1,5 @@
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { serviceHandler } from '@/server/service/handler';
-import { Table } from 'drizzle-orm';
 import { ServiceFn, TEmptyServices } from './types';
 
 /**
@@ -20,28 +17,15 @@ import { ServiceFn, TEmptyServices } from './types';
  * @template TServices - Accumulated services record type
  */
 export class StandardServiceBuilder<
-    TTable extends Table,
-    TConfig extends TFeatureTableConfig<TTable>,
-    TTableConfig extends FeatureTableConfig<TTable, TConfig>,
     const TQueries extends Record<string, QueryFn>,
     const TServices extends Record<string, ServiceFn> = TEmptyServices,
 > {
-    tableConfig: TTableConfig;
     /** Queries stored with their exact type TQueries, not a lookup type */
     queries: TQueries;
     /** Services stored with their exact type TServices, not a lookup type */
     services: TServices;
 
-    constructor({
-        tableConfig,
-        queries,
-        services,
-    }: {
-        tableConfig: TTableConfig;
-        queries: TQueries;
-        services: TServices;
-    }) {
-        this.tableConfig = tableConfig;
+    constructor({ queries, services }: { queries: TQueries; services: TServices }) {
         this.queries = queries;
         this.services = services;
     }
@@ -53,18 +37,8 @@ export class StandardServiceBuilder<
      * @param queries - The queries.
      * @returns The standard service builder.
      */
-    static create<
-        const TTable extends Table,
-        const TConfig extends TFeatureTableConfig<TTable>,
-        const TQueriesNew extends Record<string, QueryFn>,
-    >(tableConfig: FeatureTableConfig<TTable, TConfig>, queries: TQueriesNew) {
-        return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            FeatureTableConfig<TTable, TConfig>,
-            TQueriesNew
-        >({
-            tableConfig,
+    static create<const TQueriesNew extends Record<string, QueryFn>>(queries: TQueriesNew) {
+        return new StandardServiceBuilder<TQueriesNew>({
             queries,
             services: {},
         });
@@ -100,14 +74,7 @@ export class StandardServiceBuilder<
             operation,
         });
 
-        return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            TServices & { create: typeof wrappedService }
-        >({
-            tableConfig: this.tableConfig,
+        return new StandardServiceBuilder<TQueries, TServices & { create: typeof wrappedService }>({
             queries: this.queries,
             services: { ...this.services, create: wrappedService },
         });
@@ -130,13 +97,9 @@ export class StandardServiceBuilder<
         });
 
         return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
             TQueries,
             TServices & { createMany: typeof wrappedService }
         >({
-            tableConfig: this.tableConfig,
             queries: this.queries,
             services: { ...this.services, createMany: wrappedService },
         });
@@ -158,17 +121,12 @@ export class StandardServiceBuilder<
             operation,
         });
 
-        return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            TServices & { getMany: typeof wrappedService }
-        >({
-            tableConfig: this.tableConfig,
-            queries: this.queries,
-            services: { ...this.services, getMany: wrappedService },
-        });
+        return new StandardServiceBuilder<TQueries, TServices & { getMany: typeof wrappedService }>(
+            {
+                queries: this.queries,
+                services: { ...this.services, getMany: wrappedService },
+            }
+        );
     }
 
     /**
@@ -188,13 +146,9 @@ export class StandardServiceBuilder<
         });
 
         return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
             TQueries,
             TServices & { updateById: typeof wrappedService }
         >({
-            tableConfig: this.tableConfig,
             queries: this.queries,
             services: { ...this.services, updateById: wrappedService },
         });
@@ -217,13 +171,9 @@ export class StandardServiceBuilder<
         });
 
         return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
             TQueries,
             TServices & { removeById: typeof wrappedService }
         >({
-            tableConfig: this.tableConfig,
             queries: this.queries,
             services: { ...this.services, removeById: wrappedService },
         });
@@ -248,17 +198,12 @@ export class StandardServiceBuilder<
             operation,
         });
 
-        return new StandardServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            TServices & { getById: typeof wrappedService }
-        >({
-            tableConfig: this.tableConfig,
-            queries: this.queries,
-            services: { ...this.services, getById: wrappedService },
-        });
+        return new StandardServiceBuilder<TQueries, TServices & { getById: typeof wrappedService }>(
+            {
+                queries: this.queries,
+                services: { ...this.services, getById: wrappedService },
+            }
+        );
     }
 
     /**

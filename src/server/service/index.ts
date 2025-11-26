@@ -1,2 +1,2 @@
-export * from './factory';
-export * from './handler';
+export { createFeatureServices } from './factory';
+export { serviceHandler } from './handler';

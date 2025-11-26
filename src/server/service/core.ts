@@ -1,10 +1,7 @@
 import { TFeatureSchemas } from '@/lib/schemas_new/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { serviceHandler } from '@/server/service/handler';
 import { Prettify } from '@/types/utils';
-import { Table } from 'drizzle-orm';
 import { StandardServiceBuilder } from './standard';
 import { NonNullableService, ServiceFn, TEmptyServices } from './types';
 
@@ -19,21 +16,12 @@ import { NonNullableService, ServiceFn, TEmptyServices } from './types';
  * @template TSchemas - Registered schemas type
  */
 export class FeatureServiceBuilder<
-    const TTable extends Table,
-    const TConfig extends TFeatureTableConfig<TTable>,
-    const TTableConfig extends FeatureTableConfig<TTable, TConfig> = FeatureTableConfig<
-        TTable,
-        TConfig
-    >,
     TQueries extends Record<string, QueryFn> = TEmptyQueries,
     TSchemas extends TFeatureSchemas = TFeatureSchemas,
     TServices extends Record<string, ServiceFn> = TEmptyServices,
 > {
     /** Collection of registered service functions */
     services: TServices;
-
-    /** Table configuration */
-    tableConfig: TTableConfig;
 
     /** Feature queries - stored with exact type TQueries */
     queries: TQueries;
@@ -46,19 +34,17 @@ export class FeatureServiceBuilder<
 
     constructor({
         services,
-        config,
         queries,
         schemas,
         name,
     }: {
         services: TServices;
-        config: TTableConfig;
+
         queries: TQueries;
         schemas: TSchemas;
         name: string;
     }) {
         this.services = services;
-        this.tableConfig = config;
         this.queries = queries;
         this.schemas = schemas;
         this.name = name;
@@ -70,16 +56,8 @@ export class FeatureServiceBuilder<
      * @param queries - Built queries object (result of FeatureQueryBuilder.build())
      */
     registerQueries<const NewQueries extends Record<string, QueryFn>>(queries: NewQueries) {
-        return new FeatureServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            NewQueries,
-            TSchemas,
-            TServices
-        >({
+        return new FeatureServiceBuilder<NewQueries, TSchemas, TServices>({
             services: this.services,
-            config: this.tableConfig,
             queries,
             schemas: this.schemas,
             name: this.name,
@@ -92,16 +70,8 @@ export class FeatureServiceBuilder<
      * @param schemas - Feature schemas object
      */
     registerSchema<const NewSchemas extends TFeatureSchemas>(schemas: NewSchemas) {
-        return new FeatureServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            NewSchemas,
-            TServices
-        >({
+        return new FeatureServiceBuilder<TQueries, NewSchemas, TServices>({
             services: this.services,
-            config: this.tableConfig,
             queries: this.queries,
             schemas,
             name: this.name,
@@ -120,15 +90,12 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw';
         }
     ): FeatureServiceBuilder<
-        TTable,
-        TConfig,
-        TTableConfig,
         TQueries,
         TSchemas,
         TServices & Record<K, NonNullableService<ServiceFn<Input, Output>>>
@@ -146,19 +113,12 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull: 'return';
         }
-    ): FeatureServiceBuilder<
-        TTable,
-        TConfig,
-        TTableConfig,
-        TQueries,
-        TSchemas,
-        TServices & Record<K, ServiceFn<Input, Output>>
-    >;
+    ): FeatureServiceBuilder<TQueries, TSchemas, TServices & Record<K, ServiceFn<Input, Output>>>;
 
     /**
      * Implementation
@@ -169,15 +129,12 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw' | 'return';
         }
     ): FeatureServiceBuilder<
-        TTable,
-        TConfig,
-        TTableConfig,
         TQueries,
         TSchemas,
         TServices &
@@ -190,7 +147,6 @@ export class FeatureServiceBuilder<
         } = config({
             queries: this.queries,
             schemas: this.schemas,
-            config: this.tableConfig,
         });
 
         const wrappedService =
@@ -210,7 +166,6 @@ export class FeatureServiceBuilder<
 
         return new FeatureServiceBuilder({
             services: { ...this.services, [key]: wrappedService },
-            config: this.tableConfig,
             queries: this.queries,
             schemas: this.schemas,
             name: this.name,
@@ -222,29 +177,17 @@ export class FeatureServiceBuilder<
      *
      * @param standard - Standard service builder function
      */
-    withStandard<TBuilder extends StandardServiceBuilder<TTable, TConfig, TTableConfig, TQueries>>(
-        standard: (
-            b: ReturnType<typeof StandardServiceBuilder.create<TTable, TConfig, TQueries>>
-        ) => TBuilder
+    withStandard<TBuilder extends StandardServiceBuilder<TQueries>>(
+        standard: (b: ReturnType<typeof StandardServiceBuilder.create<TQueries>>) => TBuilder
     ) {
-        const builder = StandardServiceBuilder.create<TTable, TConfig, TQueries>(
-            this.tableConfig,
-            this.queries
-        );
+        const builder = StandardServiceBuilder.create<TQueries>(this.queries);
 
         const standardBuilder = standard(builder);
         const standardServices = standardBuilder.done();
 
-        return new FeatureServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            TSchemas,
-            TServices & TBuilder['services']
-        >({
+        return new FeatureServiceBuilder<TQueries, TSchemas, TServices & TBuilder['services']>({
             services: { ...this.services, ...standardServices },
-            config: this.tableConfig,
+
             queries: this.queries,
             schemas: this.schemas,
             name: this.name,
@@ -255,23 +198,12 @@ export class FeatureServiceBuilder<
      * Register all standard services to the builder.
      */
     registerAllStandard() {
-        const builder = StandardServiceBuilder.create<TTable, TConfig, TQueries>(
-            this.tableConfig,
-            this.queries
-        );
+        const builder = StandardServiceBuilder.create<TQueries>(this.queries);
 
         const standardServices = builder.all().done();
 
-        return new FeatureServiceBuilder<
-            TTable,
-            TConfig,
-            TTableConfig,
-            TQueries,
-            TSchemas,
-            TServices & typeof standardServices
-        >({
+        return new FeatureServiceBuilder<TQueries, TSchemas, TServices & typeof standardServices>({
             services: { ...this.services, ...standardServices },
-            config: this.tableConfig,
             queries: this.queries,
             schemas: this.schemas,
             name: this.name,
