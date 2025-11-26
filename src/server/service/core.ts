@@ -2,7 +2,7 @@ import { TFeatureSchemas } from '@/lib/schemas_new/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
-import { serviceHandler } from '@/server/service-new/handler';
+import { serviceHandler } from '@/server/service/handler';
 import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 import { StandardServiceBuilder } from './standard';

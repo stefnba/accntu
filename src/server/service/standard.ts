@@ -1,7 +1,7 @@
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
-import { serviceHandler } from '@/server/service-new/handler';
+import { serviceHandler } from '@/server/service/handler';
 import { Table } from 'drizzle-orm';
 import { ServiceFn, TEmptyServices } from './types';
 
