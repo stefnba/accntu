@@ -46,6 +46,13 @@ export class StandardServiceBuilder<
         this.services = services;
     }
 
+    /**
+     * Creates a new standard service builder.
+     *
+     * @param tableConfig - The table config.
+     * @param queries - The queries.
+     * @returns The standard service builder.
+     */
     static create<
         const TTable extends Table,
         const TConfig extends TFeatureTableConfig<TTable>,
@@ -63,6 +70,12 @@ export class StandardServiceBuilder<
         });
     }
 
+    /**
+     * Gets a query by key. Required for type safety when chaining standard services.
+     *
+     * @param key - The key of the query to get.
+     * @returns The query function.
+     */
     private getQuery<K extends keyof TQueries>(key: K): TQueries[K] {
         if (!this.queries[key]) {
             throw new Error(`Query ${String(key)} not found`);
