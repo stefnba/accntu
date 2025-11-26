@@ -1,9 +1,5 @@
 import { transactionSchemas } from '@/features/transaction/schemas';
-import {
-    createMany,
-    getFilterOptions,
-    transactionServices,
-} from '@/features/transaction/server/services';
+import { transactionServices } from '@/features/transaction/server/services';
 import { routeHandler } from '@/server/lib/route';
 import { zValidator } from '@/server/lib/validation';
 import { Hono } from 'hono';
@@ -27,7 +23,7 @@ const app = new Hono()
     .get('/filter-options', (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId }) => getFilterOptions(userId))
+            .handle(async ({ userId }) => transactionServices.getFilterOptions({ userId }))
     )
 
     .get('/:id', zValidator('param', transactionSchemas.getById.endpoint.param), (c) =>
@@ -60,7 +56,7 @@ const app = new Hono()
     .delete('/:id', zValidator('param', transactionSchemas.removeById.endpoint.param), (c) =>
         routeHandler(c)
             .withUser()
-            .handle(async ({ userId, validatedInput }) =>
+            .handleMutation(async ({ userId, validatedInput }) =>
                 transactionServices.removeById({
                     ids: validatedInput.param,
                     userId,
@@ -94,10 +90,12 @@ const app = new Hono()
                 .handle(async ({ userId, validatedInput }) => {
                     const { transactions, importFileId } = validatedInput.json;
 
-                    return await createMany({
+                    return await transactionServices.createManyFromImport({
                         userId,
-                        transactions,
-                        importFileId,
+                        data: {
+                            transactions,
+                            importFileId,
+                        },
                     });
                 })
     );

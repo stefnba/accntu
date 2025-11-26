@@ -1,60 +1,13 @@
-import { transaction } from '@/features/transaction/server/db/tables';
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { transactionTableConfig } from '@/features/transaction/server/db/config';
+import { createFeatureSchemas } from '@/lib/schema';
 import { z } from 'zod';
 
-const numericInputSchema = z.coerce.number();
-
-export const {
-    schemas: transactionSchemas,
-    setIdFields,
-    idSchema,
-    rawSchema,
-    baseSchema,
-} = createFeatureSchemas
-    .registerTable(transaction)
-    .omit({
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        isActive: true,
-        isHidden: true,
-        isNew: true,
-        userId: true,
-    })
-    .transform((base) =>
-        base.extend({
-            userAmount: numericInputSchema,
-            accountAmount: numericInputSchema,
-            spendingAmount: numericInputSchema,
-            balance: numericInputSchema.optional(),
-        })
-    )
-    .setUserIdField('userId')
-    .setIdFields({
-        id: true,
-    })
-    /**
-     * Create a transaction
-     */
-    .addCore('create', ({ baseSchema, buildInput }) => {
-        const input = buildInput({ data: baseSchema });
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                json: baseSchema,
-            },
-        };
-    })
+export const transactionSchemas = createFeatureSchemas(transactionTableConfig)
+    .registerAllStandard()
     /**
      * Get many transactions
      */
-    .addCore('getMany', ({ buildInput }) => {
-        const paginationSchema = z.object({
-            page: z.coerce.number().min(1).default(1),
-            pageSize: z.coerce.number().min(1).max(100).default(50),
-        });
-
+    .addSchema('getMany', ({ schemas }) => {
         const filtersSchema = z.object({
             accountIds: z
                 .preprocess(
@@ -91,100 +44,50 @@ export const {
             endDate: z.coerce.date().optional(),
         });
 
-        const input = buildInput({
-            pagination: paginationSchema,
-            filters: filtersSchema,
+        const input = schemas.inputData.insert.extend({
+            data: filtersSchema,
         });
 
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                query: paginationSchema.extend(filtersSchema.shape),
-            },
-        };
-    })
-    /**
-     * Get a transaction by ID
-     */
-    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
-        const input = buildInput();
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Update a transaction by ID
-     */
-    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
-        const input = buildInput({ data: baseSchema.partial() });
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                param: idFieldsSchema,
-                json: baseSchema.partial(),
-            },
-        };
-    })
-    /**
-     * Remove a transaction by ID
-     */
-    .addCore('removeById', ({ buildInput }) => {
-        const input = buildInput();
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                param: z.object({ id: z.string() }),
-            },
-        };
+        return { service: input, query: input, endpoint: { query: filtersSchema } };
     })
     /**
      * Validate a transaction import
      */
-    .addCustom('validateImport', ({ baseSchema }) => {
-        const validateSchema = baseSchema.omit({
+    .addSchema('validateImport', ({ schemas }) => {
+        const validateSchema = schemas.inputData.insert.omit({
             userAmount: true,
             userCurrency: true,
             connectedBankAccountId: true,
             importFileId: true,
             originalTitle: true,
         });
+        return { service: validateSchema };
+    })
+    /**
+     * Create many transactions from import
+     */
+    .addSchema('createManyFromImport', ({ schemas }) => {
+        const s = schemas.inputData.insert.extend({
+            isDuplicate: z.boolean(),
+            existingTransactionId: z.string().optional().nullable(),
+        });
+
+        const input = z.object({
+            userId: z.string(),
+            data: z.object({
+                transactions: z.array(s),
+                importFileId: z.string(),
+            }),
+        });
+
         return {
-            service: validateSchema,
+            service: input,
+            query: input,
+            endpoint: { json: z.array(schemas.inputData.insert) },
         };
-    });
-
-export type TTransactionSchemas = InferSchemas<typeof transactionSchemas>;
-
-// ====================
-// Custom Schemas for backward compatibility
-// ====================
-
-// Legacy types for existing code
-export type TTransactionFilterOptions = z.infer<
-    typeof transactionSchemas.getMany.service
->['filters'];
-export type TTransactionPagination = z.infer<
-    typeof transactionSchemas.getMany.service
->['pagination'];
-
-/**
- * Schema for parsing transactions
- */
-export const transactionParseSchema = transactionSchemas.create.service.shape.data;
-export type TTransactionParseSchema = z.infer<typeof transactionParseSchema>;
-
-/**
- * Schema for checking for duplicates in the transaction parse
- */
-export const transactionParseDuplicateCheckSchema = transactionParseSchema.extend({
-    isDuplicate: z.boolean(),
-    existingTransactionId: z.string().optional().nullable(),
-});
-export type TTransactionParseDuplicateCheck = z.infer<typeof transactionParseDuplicateCheckSchema>;
+    })
+    .addSchema('getFilterOptions', ({ schemas }) => {
+        const input = schemas.userId;
+        return { service: input, query: input };
+    })
+    .build();

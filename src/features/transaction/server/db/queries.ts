@@ -2,13 +2,15 @@ import { connectedBankAccount } from '@/features/bank/server/db/tables';
 import { label } from '@/features/label/server/db/tables';
 import { tag, tagToTransaction } from '@/features/tag/server/db/tables';
 import { transactionSchemas } from '@/features/transaction/schemas';
+import { transactionTableConfig } from '@/features/transaction/server/db/config';
 import { transaction } from '@/features/transaction/server/db/tables';
 import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 
-export const transactionQueries = createFeatureQueries('transaction')
+export const transactionQueries = createFeatureQueries('transaction', transactionTableConfig)
     .registerSchema(transactionSchemas)
+    .registerAllStandard()
     /**
      * Get many transactions with filters and relations
      */
@@ -57,9 +59,7 @@ export const transactionQueries = createFeatureQueries('transaction')
             }
 
             if (filters?.type?.length) {
-                whereConditions.push(
-                    inArray(transaction.type, filters.type as ('transfer' | 'credit' | 'debit')[])
-                );
+                whereConditions.push(inArray(transaction.type, filters.type));
             }
 
             if (filters?.currencies?.length) {
@@ -227,111 +227,64 @@ export const transactionQueries = createFeatureQueries('transaction')
         },
     })
     /**
-     * Update a transaction by ID
+     * Get filter options for transaction table
+     * @param userId - The user ID
+     * @returns The filter options
      */
-    .addQuery('updateById', {
-        operation: 'Update a transaction',
-        fn: async ({ ids, userId, data }) => {
-            const [updatedTransaction] = await db
-                .update(transaction)
-                .set({
-                    ...data,
-                    updatedAt: new Date(),
+    .addQuery('getFilterOptions', {
+        operation: 'Get filter options',
+        fn: async ({ userId }) => {
+            // Get unique accounts
+            const accounts = await db
+                .selectDistinct({
+                    id: connectedBankAccount.id,
+                    name: connectedBankAccount.name,
+                    type: connectedBankAccount.type,
                 })
-                .where(
-                    and(
-                        eq(transaction.id, ids.id),
-                        eq(transaction.userId, userId),
-                        eq(transaction.isActive, true)
-                    )
+                .from(transaction)
+                .innerJoin(
+                    connectedBankAccount,
+                    eq(transaction.connectedBankAccountId, connectedBankAccount.id)
                 )
-                .returning();
+                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
 
-            return updatedTransaction;
+            // Get unique currencies
+            const currencies = await db
+                .select({
+                    currency: sql<string>`DISTINCT UNNEST(ARRAY[${transaction.spendingCurrency}, ${transaction.accountCurrency}])`,
+                })
+                .from(transaction)
+                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
+
+            // Get unique labels
+            const labels = await db
+                .selectDistinct({
+                    id: label.id,
+                    name: label.name,
+                    color: label.color,
+                })
+                .from(transaction)
+                .innerJoin(label, eq(transaction.labelId, label.id))
+                .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
+
+            // Get user's tags
+            const tags = await db.query.tag.findMany({
+                where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
+                orderBy: [tag.name],
+            });
+
+            return {
+                accounts,
+                currencies: currencies.map((c) => c.currency).filter(Boolean),
+                labels,
+                tags,
+                types: ['transfer', 'credit', 'debit'] as const,
+            };
         },
     })
-    /**
-     * Remove a transaction by ID
-     */
-    .addQuery('removeById', {
-        operation: 'Soft delete a transaction',
-        fn: async ({ ids, userId }) => {
-            const [deletedTransaction] = await db
-                .update(transaction)
-                .set({
-                    isActive: false,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(transaction.id, ids.id),
-                        eq(transaction.userId, userId),
-                        eq(transaction.isActive, true)
-                    )
-                )
-                .returning();
-
-            return deletedTransaction;
-        },
-    });
+    .build();
 
 export type TTransaction = InferFeatureType<typeof transactionQueries>;
-
-// Legacy functions that may still be used elsewhere
-
-/**
- * Get filter options for transaction table
- * @param userId - The user ID
- * @returns The filter options
- */
-export const getFilterOptions = async (userId: string) => {
-    // Get unique accounts
-    const accounts = await db
-        .selectDistinct({
-            id: connectedBankAccount.id,
-            name: connectedBankAccount.name,
-            type: connectedBankAccount.type,
-        })
-        .from(transaction)
-        .innerJoin(
-            connectedBankAccount,
-            eq(transaction.connectedBankAccountId, connectedBankAccount.id)
-        )
-        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-    // Get unique currencies
-    const currencies = await db
-        .select({
-            currency: sql<string>`DISTINCT UNNEST(ARRAY[${transaction.spendingCurrency}, ${transaction.accountCurrency}])`,
-        })
-        .from(transaction)
-        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-    // Get unique labels
-    const labels = await db
-        .selectDistinct({
-            id: label.id,
-            name: label.name,
-            color: label.color,
-        })
-        .from(transaction)
-        .innerJoin(label, eq(transaction.labelId, label.id))
-        .where(and(eq(transaction.userId, userId), eq(transaction.isActive, true)));
-
-    // Get user's tags
-    const tags = await db.query.tag.findMany({
-        where: and(eq(tag.userId, userId), eq(tag.isActive, true)),
-        orderBy: [tag.name],
-    });
-
-    return {
-        accounts,
-        currencies: currencies.map((c) => c.currency).filter(Boolean),
-        labels,
-        tags,
-        types: ['transfer', 'credit', 'debit'] as const,
-    };
-};
 
 /**
  * Get transactions by their keys (for duplicate detection)
