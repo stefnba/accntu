@@ -5,7 +5,7 @@
  * It supports both standard CRUD operations and custom queries with full TypeScript inference.
  */
 
-import type { InferQuerySchemas, TOperationSchemaObject } from '@/lib/schemas/types';
+import type { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schemas_new/types';
 import {
     StandardQueryBuilder,
     type TStandardNewQueryConfig,
@@ -16,11 +16,12 @@ import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
+import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 
 export class FeatureQueryBuilder<
     const Q extends Record<string, never>,
-    const S extends Record<string, never>,
+    const S extends TFeatureSchemas,
     const TTable extends Table,
     const TConfig extends TFeatureTableConfig<TTable>,
     const TTableConfig extends FeatureTableConfig<TTable, TConfig> = FeatureTableConfig<
@@ -94,9 +95,7 @@ export class FeatureQueryBuilder<
      * // userSchemas = { getById: {...}, create: {...}, ... }
      * ```
      */
-    registerSchema<const TLocalSchemas extends Record<string, TOperationSchemaObject>>(
-        schemas: TLocalSchemas
-    ) {
+    registerSchema<const TLocalSchemas extends TFeatureSchemas>(schemas: TLocalSchemas) {
         return new FeatureQueryBuilder<Q, S & TLocalSchemas, TTable, TConfig, TTableConfig>({
             queries: this.queries,
             schemas: { ...this.schemas, ...schemas },
@@ -129,7 +128,7 @@ export class FeatureQueryBuilder<
      */
     addQuery<
         const K extends Exclude<keyof S & string, keyof Q> | (string & {}),
-        I = InferQuerySchemas<S>[K],
+        I = InferSchemaByLayerAndOperation<S, 'query', K>,
         O = unknown,
     >(
         key: K,
@@ -271,5 +270,12 @@ export class FeatureQueryBuilder<
             config: this.tableConfig,
             name: this.name,
         });
+    }
+
+    /**
+     * Finalizes the builder and returns the accumulated queries object.
+     */
+    build(): Prettify<Q> {
+        return this.queries;
     }
 }

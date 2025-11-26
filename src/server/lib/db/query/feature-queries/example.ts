@@ -17,12 +17,13 @@ const tagQueries = createFeatureQueries('tag', tagTableConfig)
             });
         },
     }))
-    .registerAllStandard({ defaultFilters: { isActive: true } });
+    .registerAllStandard({ defaultFilters: { isActive: true } })
+    .build();
 
 // ====================
 // customCreate
 // ====================
-const customCreate = tagQueries.queries.customCreate;
+const customCreate = tagQueries.customCreate;
 const customCreateResult = await customCreate({
     name: 'E' + Date.now(),
     userId: USER_ID,
@@ -31,7 +32,7 @@ console.log('customCreateResult', customCreateResult);
 // ====================
 // standard getById
 // ====================
-const getById = tagQueries.queries.getById;
+const getById = tagQueries.getById;
 const getByIdResult = await getById({
     ids: {
         id: customCreateResult.id,
@@ -42,7 +43,7 @@ console.log('getByIdResult', getByIdResult);
 // ====================
 // standard getMany
 // ====================
-const getMany = tagQueries.queries.getMany;
+const getMany = tagQueries.getMany;
 const getManyResult = await getMany({
     userId: USER_ID,
 });
@@ -50,7 +51,7 @@ console.log('getManyResult', getManyResult);
 // ====================
 // standard updateById
 // ====================
-const updateById = tagQueries.queries.updateById;
+const updateById = tagQueries.updateById;
 const updateByIdResult = await updateById({
     data: {
         name: 'Updated ' + Date.now(),
@@ -65,7 +66,7 @@ console.log('updateByIdResult', updateByIdResult);
 // ====================
 // standard createMany
 // ====================
-const createMany = tagQueries.queries.createMany;
+const createMany = tagQueries.createMany;
 const createManyResult = await createMany({
     data: [
         {
@@ -81,7 +82,7 @@ console.log('getManyResult', createManyResult);
 // ====================
 // standard create
 // ====================
-const create = tagQueries.queries.create;
+const create = tagQueries.create;
 const createResult = await create({
     data: {
         name: 'Test create ' + Date.now(),
