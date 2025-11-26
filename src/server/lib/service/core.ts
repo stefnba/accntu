@@ -90,7 +90,7 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw';
@@ -113,7 +113,7 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull: 'return';
@@ -129,7 +129,7 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas }) => {
+        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw' | 'return';
@@ -147,6 +147,7 @@ export class FeatureServiceBuilder<
         } = config({
             queries: this.queries,
             schemas: this.schemas,
+            services: this.services,
         });
 
         const wrappedService =
