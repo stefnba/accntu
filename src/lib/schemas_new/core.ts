@@ -177,7 +177,9 @@ export class FeatureSchemasBuilder<
     /**
      * Finalizes the builder and returns the accumulated schemas object.
      */
-    build(): Prettify<TSchemas> {
+    build(): Prettify<{
+        [K in keyof TSchemas as string extends K ? never : K]: TSchemas[K];
+    }> {
         return this.schemas;
     }
 }
