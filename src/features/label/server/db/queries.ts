@@ -1,17 +1,30 @@
 import { labelSchemas } from '@/features/label/schemas';
+import { labelTableConfig } from '@/features/label/server/db/config';
 import { label } from '@/features/label/server/db/tables';
 import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, asc, eq, ilike, inArray, isNull, max, SQL, sql } from 'drizzle-orm';
-export const labelQueries = createFeatureQueries('label')
+
+export const labelQueries = createFeatureQueries('label', labelTableConfig)
     .registerSchema(labelSchemas)
-    .registerCoreQueries(label, {
-        idFields: ['id'],
-        userIdField: 'userId',
-        queryConfig: {
-            getMany: {
-                filters: (filters, f) => [f.ilike('name', filters?.search)],
-            },
+    .registerAllStandard({
+        defaultFilters: {
+            isActive: true,
+        },
+        getMany: {
+            filters: (filters, f) => [f.ilike('name', filters?.search)],
+        },
+    })
+    /**
+     * Create a new label. We can't use the standard create query because we need to add the index to the data.
+     */
+    .addQuery('create', {
+        operation: 'create a new label',
+        fn: async ({ data, userId }) => {
+            return await db
+                .insert(label)
+                .values({ ...data, userId })
+                .returning();
         },
     })
     /**
@@ -148,7 +161,7 @@ export const labelQueries = createFeatureQueries('label')
     /**
      * Get many labels
      */
-    .overwriteQuery('getMany', {
+    .addQuery('getMany', {
         operation: 'get labels with filters',
         fn: async ({ userId, filters, pagination }) => {
             const conditions = [eq(label.userId, userId), eq(label.isActive, true)];
@@ -222,7 +235,7 @@ export const labelQueries = createFeatureQueries('label')
     /**
      * Get a specific label by ID for a user
      */
-    .overwriteQuery('getById', {
+    .addQuery('getById', {
         operation: 'get label by ID',
         fn: async ({ ids, userId }) => {
             const result = await db.query.label.findFirst({
@@ -257,6 +270,7 @@ export const labelQueries = createFeatureQueries('label')
                 );
             return result;
         },
-    });
+    })
+    .build();
 
 export type TLabel = InferFeatureType<typeof labelQueries>;

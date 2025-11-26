@@ -1,132 +1,13 @@
-import { label } from '@/features/label/server/db/tables';
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { labelTableConfig } from '@/features/label/server/db/config';
+import { createFeatureSchemas } from '@/lib/schema';
 import { z } from 'zod';
 
-const colorSchema = z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format');
-
-export const { schemas: labelSchemas } = createFeatureSchemas
-    .registerTable(label)
-    .omit({
-        createdAt: true,
-        updatedAt: true,
-        isActive: true,
-        id: true,
-        userId: true,
-        index: true,
-    })
-    .transform((base) =>
-        base.extend({
-            color: colorSchema,
-            name: z.string().min(1, 'Name cannot be empty'),
-        })
-    )
-    .setUserIdField('userId')
-    .setIdFields({
-        id: true,
-    })
-    /**
-     * Create a label
-     */
-    .addCore('create', ({ baseSchema, buildInput }) => {
-        const input = buildInput({ data: baseSchema });
-        return {
-            service: input,
-            form: baseSchema,
-            query: input,
-            endpoint: {
-                json: baseSchema,
-            },
-        };
-    })
-    /**
-     * Get many labels
-     */
-    .addCore('getMany', ({ buildInput }) => {
-        const paginationSchema = z.object({
-            page: z.coerce.number().int().default(1),
-            pageSize: z.coerce.number().int().default(20),
-        });
-
-        const filtersSchema = z.object({
-            search: z.string().optional(),
-            parentId: z.string().optional(),
-        });
-
-        const input = buildInput({
-            pagination: paginationSchema,
-            filters: filtersSchema,
-        });
-
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                query: paginationSchema.extend(filtersSchema.shape),
-            },
-        };
-    })
-    /**
-     * Get a label by id
-     */
-    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
-        return {
-            service: buildInput(),
-            query: buildInput(),
-            endpoint: {
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Update a label by id
-     */
-    .addCore('updateById', ({ baseSchema, buildInput, idFieldsSchema }) => {
-        return {
-            service: buildInput({ data: baseSchema.partial() }),
-            query: buildInput({ data: baseSchema.partial() }),
-            endpoint: {
-                json: baseSchema.partial(),
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Remove a label by id
-     */
-    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
-        return {
-            service: buildInput(),
-            query: buildInput(),
-            endpoint: {
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Get flattened labels with hierarchy info
-     */
-    .addCustom('getFlattened', () => {
-        const filtersSchema = z.object({
-            search: z.string().optional(),
-        });
-
-        const schema = z.object({
-            filters: filtersSchema,
-            userId: z.string(),
-        });
-
-        return {
-            service: schema,
-            query: schema,
-            endpoint: {
-                query: filtersSchema,
-            },
-        };
-    })
+export const labelSchemas = createFeatureSchemas(labelTableConfig)
+    .registerAllStandard()
     /**
      * Reorder labels
      */
-    .addCustom('reorder', () => {
+    .addSchema('reorder', () => {
         const itemsSchema = z.array(
             z.object({
                 id: z.string(),
@@ -148,7 +29,10 @@ export const { schemas: labelSchemas } = createFeatureSchemas
             },
         };
     })
-    .addCustom('getMaxIndex', () => {
+    /**
+     * Get the maximum index for a parent label
+     */
+    .addSchema('getMaxIndex', () => {
         const schema = z.object({
             parentId: z.string().optional().nullable(),
             userId: z.string(),
@@ -157,19 +41,39 @@ export const { schemas: labelSchemas } = createFeatureSchemas
             service: schema,
             query: schema,
         };
-    });
+    })
+    /**
+     * Get all labels for a user in flattened order with global index based on hierarchical structure
+     */
+    .addSchema('getFlattened', ({ helpers }) => {
+        const schema = z.object({
+            filters: helpers.buildFiltersSchema(),
+            userId: z.string(),
+        });
+        return {
+            endpoint: {
+                query: schema.omit({ userId: true }),
+            },
+            service: schema,
+            query: schema,
+        };
+    })
+    .addSchema('create', ({ schemas }) => {
+        const publicSchema = schemas.inputData.insert;
 
-// ====================
-// Types
-// ====================
-export type TLabelSchemas = InferSchemas<typeof labelSchemas>;
-
-export { type TLabel } from '@/features/label/server/db/queries';
-
-// ====================
-// Legacy Support
-// ====================
-export const labelServiceSchemas = {
-    insert: labelSchemas.create.form,
-    update: labelSchemas.updateById.endpoint.json,
-};
+        return {
+            endpoint: {
+                json: publicSchema,
+            },
+            service: publicSchema,
+            // in service, we add index to the data
+            // query uses the schema with index
+            query: schemas.input.create.extend({
+                data: publicSchema.extend({
+                    index: z.number().int(),
+                }),
+            }),
+            form: publicSchema,
+        };
+    })
+    .build();

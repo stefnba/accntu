@@ -5,9 +5,9 @@ import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const labelServices = createFeatureServices('label')
-    .registerSchemas(labelSchemas)
+    .registerSchema(labelSchemas)
     .registerQueries(labelQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     /**
      * Create a new label with automatic index assignment
      */
@@ -20,7 +20,7 @@ export const labelServices = createFeatureServices('label')
 
             const nextindex = (maxindexResult[0]?.maxSort ?? -1) + 1;
             return await queries.create({
-                data: { ...input.data, index: nextindex, userId: input.userId },
+                data: { ...input.data, index: nextindex },
                 userId: input.userId,
             });
         },

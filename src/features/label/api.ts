@@ -27,7 +27,7 @@ export const useLabelEndpoints = {
     /**
      * Get root labels with nested children
      */
-    getRoots: createQuery(apiClient.labels.roots.$get, LABEL_QUERY_KEYS.ROOT_LABELS),
+    // getRoots: createQuery(apiClient.labels.roots.$get, LABEL_QUERY_KEYS.ROOT_LABELS),
 
     /**
      * Get label by ID

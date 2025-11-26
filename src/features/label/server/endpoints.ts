@@ -11,7 +11,7 @@ const app = new Hono()
             .handle(async ({ userId, validatedInput }) =>
                 labelServices.getFlattened({
                     userId,
-                    filters: validatedInput.query,
+                    filters: validatedInput.query.filters,
                 })
             )
     )
