@@ -1,6 +1,6 @@
 import { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schema/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
-import { serviceHandler } from '@/server/service/handler';
+import { serviceHandler } from '@/server/lib/service/handler';
 import { Prettify } from '@/types/utils';
 import { StandardServiceBuilder } from './standard';
 import { NonNullableService, ServiceFn, TEmptyServices } from './types';

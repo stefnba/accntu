@@ -2,7 +2,7 @@ import { createFeatureSchemas } from '@/lib/schema';
 import { tag } from '@/server/db/tables';
 import { createFeatureQueries } from '@/server/lib/db/query/feature-queries/factory';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
-import { createFeatureServices } from '@/server/service/factory';
+import { createFeatureServices } from '@/server/lib/service/factory';
 
 const tagTableConfig = createFeatureTableConfig(tag)
     .restrictReturnColumns(['id', 'name', 'userId'])

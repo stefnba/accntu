@@ -1,5 +1,5 @@
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
-import { serviceHandler } from '@/server/service/handler';
+import { serviceHandler } from '@/server/lib/service/handler';
 import { ServiceFn, TEmptyServices } from './types';
 
 /**
