@@ -5,9 +5,9 @@ import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const transactionImportServices = createFeatureServices('transactionImport')
-    .registerSchemas(transactionImportSchemas)
+    .registerSchema(transactionImportSchemas)
     .registerQueries(transactionImportQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     /**
      * Activate a draft import by changing status to pending
      */
@@ -16,11 +16,17 @@ export const transactionImportServices = createFeatureServices('transactionImpor
         fn: async (input) => {
             const existing = await queries.getById({ ids: input.ids, userId: input.userId });
             if (!existing) {
-                throw new Error('Transaction import not found');
+                throw AppErrors.resource('NOT_FOUND', {
+                    message: 'Transaction import not found',
+                });
             }
 
             if (existing.status !== 'draft') {
-                throw new Error('Can only activate draft imports');
+                throw AppErrors.operation('UPDATE_FAILED', {
+                    layer: 'service',
+                    message: 'Can only activate draft imports',
+                    details: { importId: input.ids.id },
+                });
             }
 
             const updated = await queries.updateById({

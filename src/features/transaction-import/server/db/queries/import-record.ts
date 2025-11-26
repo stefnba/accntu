@@ -1,4 +1,5 @@
 import { transactionImportSchemas } from '@/features/transaction-import/schemas/import-record';
+import { transactionImportTableConfig } from '@/features/transaction-import/server/db/config';
 import {
     transactionImport,
     transactionImportFile,
@@ -7,8 +8,22 @@ import { db } from '@/server/db';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const transactionImportQueries = createFeatureQueries('transaction-import')
+export const transactionImportQueries = createFeatureQueries(
+    'transaction-import',
+    transactionImportTableConfig
+)
     .registerSchema(transactionImportSchemas)
+    .registerAllStandard({
+        defaultFilters: {
+            isActive: true,
+        },
+        getMany: {
+            filters: (filters, f) => [
+                f.eq('status', filters?.status),
+                f.eq('connectedBankAccountId', filters?.connectedBankAccountId),
+            ],
+        },
+    })
     /**
      * Get many transaction imports
      */
@@ -86,44 +101,6 @@ export const transactionImportQueries = createFeatureQueries('transaction-import
             return result || null;
         },
     })
-    /**
-     * Create a transaction import
-     */
-    .addQuery('create', {
-        operation: 'create transaction import',
-        fn: async ({ data, userId }) => {
-            const result = await db
-                .insert(transactionImport)
-                .values({ ...data, userId })
-                .returning();
-            return result[0];
-        },
-    })
-    /**
-     * Update a transaction import by id
-     */
-    .addQuery('updateById', {
-        operation: 'update transaction import',
-        fn: async ({ ids, data, userId }) => {
-            const result = await db
-                .update(transactionImport)
-                .set({ ...data, updatedAt: new Date() })
-                .where(and(eq(transactionImport.id, ids.id), eq(transactionImport.userId, userId)))
-                .returning();
-            return result[0];
-        },
-    })
-    /**
-     * Remove a transaction import by id
-     */
-    .addQuery('removeById', {
-        operation: 'remove transaction import',
-        fn: async ({ ids, userId }) => {
-            return await db
-                .update(transactionImport)
-                .set({ isActive: false, updatedAt: new Date() })
-                .where(and(eq(transactionImport.id, ids.id), eq(transactionImport.userId, userId)));
-        },
-    });
+    .build();
 
 export type TTransactionImport = InferFeatureType<typeof transactionImportQueries>;
