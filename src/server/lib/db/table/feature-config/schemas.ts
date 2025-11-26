@@ -1,4 +1,4 @@
-import { TZodShape } from '@/lib/schemas_new/types';
+import { TZodShape } from '@/lib/validation';
 import { getTableColumns, Table } from 'drizzle-orm';
 import z from 'zod';
 
