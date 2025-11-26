@@ -1,5 +1,5 @@
-import { globalBankAccount } from '@/features/bank/server/db/tables';
-import { createFeatureSchemas, InferSchemas } from '@/lib/schemas';
+import { globalBankAccountTableConfig } from '@/features/bank/server/db/config';
+import { createFeatureSchemas } from '@/lib/schema';
 import { z } from 'zod';
 
 export const transformConfigSchema = z.object({
@@ -23,124 +23,110 @@ export const transformConfigSchema = z.object({
 
 export type TTransformConfig = z.infer<typeof transformConfigSchema>;
 
-export const { schemas: globalBankAccountSchemas } = createFeatureSchemas
-    .registerTable(globalBankAccount)
-    .omit({
-        createdAt: true,
-        updatedAt: true,
-        isActive: true,
-        id: true,
-    })
-    .transform((base) =>
-        base.extend({
-            transformConfig: transformConfigSchema,
-        })
-    )
-    .setIdFields({
-        id: true,
-    })
-    /**
-     * Create a global bank account
-     */
-    .addCore('create', ({ baseSchema, buildInput }) => {
-        const input = buildInput({ data: baseSchema });
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                json: baseSchema,
-            },
-        };
-    })
-    /**
-     * Get many global bank accounts
-     */
-    .addCore('getMany', ({ buildInput, baseSchema }) => {
-        const filtersSchema = z.object({
-            globalBankId: z.string().optional(),
-            type: baseSchema.shape.type.optional(),
-        });
+export const globalBankAccountSchemas = createFeatureSchemas(globalBankAccountTableConfig)
+    .registerAllStandard()
+    .build();
 
-        const paginationSchema = z.object({
-            page: z.coerce.number().int().default(1),
-            pageSize: z.coerce.number().int().default(20),
-        });
+// /**
+//  * Create a global bank account
+//  */
+// .addCore('create', ({ baseSchema, buildInput }) => {
+//     const input = buildInput({ data: baseSchema });
+//     return {
+//         service: input,
+//         query: input,
+//         endpoint: {
+//             json: baseSchema,
+//         },
+//     };
+// })
+// /**
+//  * Get many global bank accounts
+//  */
+// .addCore('getMany', ({ buildInput, baseSchema }) => {
+//     const filtersSchema = z.object({
+//         globalBankId: z.string().optional(),
+//         type: baseSchema.shape.type.optional(),
+//     });
 
-        const input = buildInput({
-            pagination: paginationSchema,
-            filters: filtersSchema,
-        });
+//     const paginationSchema = z.object({
+//         page: z.coerce.number().int().default(1),
+//         pageSize: z.coerce.number().int().default(20),
+//     });
 
-        return {
-            service: input,
-            query: input,
-            endpoint: {
-                query: paginationSchema.extend(filtersSchema.shape),
-                // param: idFieldsSchema,
-                // param: filtersSchema.shape,
-            },
-        };
-    })
-    /**
-     * Get a global bank account by ID
-     */
-    .addCore('getById', ({ buildInput, idFieldsSchema }) => {
-        return {
-            service: buildInput(),
-            query: buildInput(),
-            endpoint: {
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Update a global bank account by ID
-     * Only done by admin
-     */
-    .addCore('updateById', ({ baseSchema, rawSchema, buildInput, idFieldsSchema }) => {
-        const adminSchema = baseSchema.extend({
-            isActive: rawSchema.shape.isActive,
-        });
+//     const input = buildInput({
+//         pagination: paginationSchema,
+//         filters: filtersSchema,
+//     });
 
-        return {
-            service: buildInput({ data: adminSchema.partial() }),
-            query: buildInput({ data: adminSchema.partial() }),
-            form: adminSchema.partial(),
-            endpoint: {
-                json: adminSchema.partial(),
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Remove a global bank account by ID
-     */
-    .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
-        return {
-            service: buildInput(),
-            query: buildInput(),
-            endpoint: {
-                param: idFieldsSchema,
-            },
-        };
-    })
-    /**
-     * Test a global bank account transformation query
-     */
-    .addCustom('testTransform', ({ rawSchema }) => {
-        const schema = z.object({
-            globalBankAccountId: rawSchema.shape.id,
-        });
+//     return {
+//         service: input,
+//         query: input,
+//         endpoint: {
+//             query: paginationSchema.extend(filtersSchema.shape),
+//             // param: idFieldsSchema,
+//             // param: filtersSchema.shape,
+//         },
+//     };
+// })
+// /**
+//  * Get a global bank account by ID
+//  */
+// .addCore('getById', ({ buildInput, idFieldsSchema }) => {
+//     return {
+//         service: buildInput(),
+//         query: buildInput(),
+//         endpoint: {
+//             param: idFieldsSchema,
+//         },
+//     };
+// })
+// /**
+//  * Update a global bank account by ID
+//  * Only done by admin
+//  */
+// .addCore('updateById', ({ baseSchema, rawSchema, buildInput, idFieldsSchema }) => {
+//     const adminSchema = baseSchema.extend({
+//         isActive: rawSchema.shape.isActive,
+//     });
 
-        return {
-            service: schema,
-            query: schema,
-            endpoint: {
-                param: schema,
-            },
-        };
-    });
+//     return {
+//         service: buildInput({ data: adminSchema.partial() }),
+//         query: buildInput({ data: adminSchema.partial() }),
+//         form: adminSchema.partial(),
+//         endpoint: {
+//             json: adminSchema.partial(),
+//             param: idFieldsSchema,
+//         },
+//     };
+// })
+// /**
+//  * Remove a global bank account by ID
+//  */
+// .addCore('removeById', ({ buildInput, idFieldsSchema }) => {
+//     return {
+//         service: buildInput(),
+//         query: buildInput(),
+//         endpoint: {
+//             param: idFieldsSchema,
+//         },
+//     };
+// })
+// /**
+//  * Test a global bank account transformation query
+//  */
+// .addCustom('testTransform', ({ rawSchema }) => {
+//     const schema = z.object({
+//         globalBankAccountId: rawSchema.shape.id,
+//     });
 
-export type TGlobalBankAccountSchemas = InferSchemas<typeof globalBankAccountSchemas>;
+//     return {
+//         service: schema,
+//         query: schema,
+//         endpoint: {
+//             param: schema,
+//         },
+//     };
+// });
 
 export type { TGlobalBankAccount } from '@/features/bank/server/db/queries/global-bank-account';

@@ -7,9 +7,9 @@ import { localUploadService } from '@/lib/upload/local/service';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const globalBankAccountServices = createFeatureServices('globalBankAccount')
-    .registerSchemas(globalBankAccountSchemas)
+    .registerSchema(globalBankAccountSchemas)
     .registerQueries(bankQueries.globalBankAccount)
-    .registerCoreServices()
+    .registerAllStandard()
     /**
      * Test a global bank account transformation query
      */

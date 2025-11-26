@@ -34,18 +34,21 @@ const app = new Hono()
     /**
      * Create a new connected bank together with the related bank accounts
      */
-    .post('/', zValidator('json', connectedBankSchemas.create.endpoint.json), async (c) =>
-        routeHandler(c)
-            .withUser()
-            .handleMutation(async ({ validatedInput, userId }) =>
-                connectedBankServices.createWithAccounts({
-                    userId,
-                    data: {
-                        ...validatedInput.json,
-                        connectedBankAccounts: validatedInput.json.connectedBankAccounts,
-                    },
-                })
-            )
+    .post(
+        '/',
+        zValidator('json', connectedBankSchemas.createWithAccounts.endpoint.json),
+        async (c) =>
+            routeHandler(c)
+                .withUser()
+                .handleMutation(async ({ validatedInput, userId }) =>
+                    connectedBankServices.createWithAccounts({
+                        userId,
+                        data: {
+                            ...validatedInput.json,
+                            connectedBankAccounts: validatedInput.json.connectedBankAccounts,
+                        },
+                    })
+                )
     );
 
 export default app;

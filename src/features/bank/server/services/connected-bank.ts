@@ -5,9 +5,9 @@ import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const connectedBankServices = createFeatureServices('connectedBank')
-    .registerSchemas(connectedBankSchemas)
+    .registerSchema(connectedBankSchemas)
     .registerQueries(connectedBankQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     /**
      * Create a new connected bank together with the related bank accounts the users wants to link to the bank.
      * @param userId - The user ID
@@ -32,7 +32,7 @@ export const connectedBankServices = createFeatureServices('connectedBank')
 
             // if no connected bank was created, get the existing one
             if (!newConnectedBank) {
-                const connectedBanks = await connectedBankQueries.queries.getMany({
+                const connectedBanks = await connectedBankQueries.getMany({
                     userId,
                     filters: {
                         globalBankId,
@@ -66,6 +66,7 @@ export const connectedBankServices = createFeatureServices('connectedBank')
                     connectedBankAccountServices.create({
                         userId,
                         data: {
+                            name: `Account Test`,
                             connectedBankId,
                             globalBankAccountId: account.globalBankAccountId,
                         },

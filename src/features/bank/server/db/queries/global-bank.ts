@@ -1,34 +1,18 @@
 import { globalBankSchemas } from '@/features/bank/schemas/global-bank';
-import { globalBank } from '@/features/bank/server/db/tables';
+import { globalBankTableConfig } from '@/features/bank/server/db/config';
 
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
-export const globalBankQueries = createFeatureQueries('global-bank')
+export const globalBankQueries = createFeatureQueries('global-bank', globalBankTableConfig)
     .registerSchema(globalBankSchemas)
-    .registerCoreQueries(globalBank, {
-        idFields: ['id'],
-        defaultIdFilters: {
-            isActive: true,
+    .registerAllStandard({
+        getMany: {
+            filters: (filters, f) => [
+                f.ilike('name', filters?.search),
+                f.eq('country', filters?.country),
+            ],
         },
-        allowedUpsertColumns: [
-            'bic',
-            'color',
-            'country',
-            'currency',
-            'integrationTypes',
-            'logo',
-            'name',
-            'providerSource',
-            'providerId',
-        ],
-        queryConfig: {
-            getMany: {
-                filters: (filters, f) => [
-                    f.ilike('name', filters?.query),
-                    f.eq('country', filters?.country),
-                ],
-            },
-        },
-    });
+    })
+    .build();
 
 export type TGlobalBank = InferFeatureType<typeof globalBankQueries>;

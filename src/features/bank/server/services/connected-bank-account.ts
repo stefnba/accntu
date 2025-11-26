@@ -5,14 +5,21 @@ import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const connectedBankAccountServices = createFeatureServices('connectedBankAccount')
-    .registerSchemas(connectedBankAccountSchemas)
+    .registerSchema(connectedBankAccountSchemas)
     .registerQueries(connectedBankAccountQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     .addService('create', ({ queries }) => ({
         operation: 'create connected bank account',
         throwOnNull: true,
         fn: async ({ data, userId }) => {
             const { name, globalBankAccountId } = data;
+
+            if (!globalBankAccountId) {
+                throw AppErrors.operation('CREATE_FAILED', {
+                    message: 'Global bank account id is required',
+                    layer: 'service',
+                });
+            }
 
             // get the global bank account
             const globalBankAccount = await globalBankAccountServices.getById({
@@ -32,7 +39,6 @@ export const connectedBankAccountServices = createFeatureServices('connectedBank
             const connectedBankAccount = await queries.create({
                 data: {
                     ...data,
-                    userId,
                     name: name || globalBankAccount.name,
                     type: globalBankAccount.type,
                 },

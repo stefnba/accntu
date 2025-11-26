@@ -1,34 +1,21 @@
 import { globalBankAccountSchemas } from '@/features/bank/schemas/global-bank-account';
+import { globalBankAccountTableConfig } from '@/features/bank/server/db/config';
 
-import { globalBankAccount } from '@/features/bank/server/db/tables';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
-export const globalBankAccountQueries = createFeatureQueries('global-bank-account')
+export const globalBankAccountQueries = createFeatureQueries(
+    'global-bank-account',
+    globalBankAccountTableConfig
+)
     .registerSchema(globalBankAccountSchemas)
-    .registerCoreQueries(globalBankAccount, {
-        idFields: ['id'],
-        defaultIdFilters: {
-            isActive: true,
+    .registerAllStandard({
+        getMany: {
+            filters: (filters, f) => [
+                f.eq('globalBankId', filters?.globalBankId),
+                f.eq('type', filters?.type),
+            ],
         },
-        allowedUpsertColumns: [
-            'globalBankId',
-            'type',
-            'name',
-            'description',
-            'transformQuery',
-            'transformConfig',
-            'sampleTransformData',
-        ],
-        queryConfig: {
-            getMany: {
-                filters(filterParams, filterClauses) {
-                    return [
-                        filterClauses.eq('globalBankId', filterParams?.globalBankId),
-                        filterClauses.eq('type', filterParams?.type),
-                    ];
-                },
-            },
-        },
-    });
+    })
+    .build();
 
 export type TGlobalBankAccount = InferFeatureType<typeof globalBankAccountQueries>;

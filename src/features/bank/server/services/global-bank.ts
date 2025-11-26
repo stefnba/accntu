@@ -3,7 +3,7 @@ import { bankQueries } from '@/features/bank/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service';
 
 export const globalBankServices = createFeatureServices('globalBank')
-    .registerSchemas(globalBankSchemas)
+    .registerSchema(globalBankSchemas)
     .registerQueries(bankQueries.globalBank)
-    .registerCoreServices()
+    .registerAllStandard()
     .build();
