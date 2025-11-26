@@ -35,7 +35,7 @@ The Feature Schema Builder automates the creation of Zod schemas for your applic
 ## Quick Start
 
 ```typescript
-import { createFeatureSchemas } from '@/lib/schemas_new/factory';
+import { createFeatureSchemas } from '@/lib/schema';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { tagTable } from '@/server/db/tables';
 
@@ -154,7 +154,7 @@ The builder uses advanced TypeScript features to ensure that the schemas you gen
 Use the provided helper types to extract TypeScript definitions from your built schemas:
 
 ```typescript
-import { InferSchemasByLayer } from '@/lib/schemas_new/types';
+import { InferSchemasByLayer } from '@/lib/schema/types';
 
 // Extract all Service layer types
 type ServiceInputs = InferSchemasByLayer<typeof tagSchemas, 'service'>;
