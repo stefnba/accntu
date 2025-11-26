@@ -40,6 +40,13 @@ export class FeatureSchemasBuilder<
      *
      * @param key - The key for the new schema (e.g., 'customAction')
      * @param config - Callback function that returns the schema definition object
+     *
+     * @example
+     * ```typescript
+     * const schemas = createFeatureSchemas(config).addSchema('customQuery', ({ schemas }) => {
+     *     return schemas.base;
+     * });
+     * ```
      */
     addSchema<const K extends string, const O extends TFeatureSchemaObject>(
         key: K,
