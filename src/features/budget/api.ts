@@ -19,17 +19,17 @@ export const useBudgetEndpoints = {
     /**
      * Calculate budget for a transaction
      */
-    calculate: createMutation(apiClient.budgets.calculate.$post, BUDGET_QUERY_KEYS.ALL),
+    // calculate: createMutation(apiClient.budgets.calculate.$post, BUDGET_QUERY_KEYS.ALL),
 
     /**
      * Recalculate budget for a transaction
      */
-    recalculate: createMutation(apiClient.budgets.recalculate.$post, BUDGET_QUERY_KEYS.ALL),
+    // recalculate: createMutation(apiClient.budgets.recalculate.$post, BUDGET_QUERY_KEYS.ALL),
 
     /**
      * Process all pending recalculations
      */
-    processPending: createMutation(apiClient.budgets['process-pending'].$post, BUDGET_QUERY_KEYS.ALL),
+    // processPending: createMutation(apiClient.budgets['process-pending'].$post, BUDGET_QUERY_KEYS.ALL),
 
     /**
      * Create a new transaction budget

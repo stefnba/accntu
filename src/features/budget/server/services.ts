@@ -17,7 +17,6 @@ import {
 import { transaction } from '@/features/transaction/server/db/tables';
 import { db } from '@/server/db';
 import { withDbQuery } from '@/server/lib/db';
-import { AppErrors } from '@/server/lib/error';
 import { createFeatureServices } from '@/server/lib/service/';
 import { and, eq } from 'drizzle-orm';
 
@@ -264,162 +263,162 @@ const calculateSplitAmount = async ({
 // ====================
 
 export const budgetServices = createFeatureServices('budget')
-    .registerSchemas(transactionBudgetSchemas)
-    .registerSchemas(transactionBudgetToParticipantSchemas)
+    .registerSchema(transactionBudgetSchemas)
+    .registerSchema(transactionBudgetToParticipantSchemas)
     .registerQueries(transactionBudgetQueries)
     .registerQueries(transactionBudgetToParticipantQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     /**
      * Calculate and store budget for a transaction
      */
-    .addService('calculateAndStore', ({ queries }) => ({
-        operation: 'calculate and store budget',
-        throwOnNull: false,
-        fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
-            const calculationResult = await calculateTransactionBudget({ transactionId, userId });
+    // .addService('calculateAndStore', ({ queries }) => ({
+    //     operation: 'calculate and store budget',
+    //     throwOnNull: false,
+    //     fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+    //         const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
-            if (!calculationResult) {
-                throw AppErrors.raise('RESOURCE.NOT_FOUND');
-            }
+    //         if (!calculationResult) {
+    //             throw AppErrors.raise('RESOURCE.NOT_FOUND');
+    //         }
 
-            // Check if budget already exists
-            const existingBudget = await queries.getByTransactionAndUser({
-                transactionId,
-                userId,
-            });
+    //         // Check if budget already exists
+    //         const existingBudget = await queries.getByTransactionAndUser({
+    //             transactionId,
+    //             userId,
+    //         });
 
-            let budgetRecord;
+    //         let budgetRecord;
 
-            if (existingBudget) {
-                // Update existing budget
-                budgetRecord = await queries.updateById({
-                    ids: { id: existingBudget.id },
-                    userId,
-                    data: {
-                        budgetAmount: calculationResult.budgetAmount.toString(),
-                        budgetPercentage: calculationResult.budgetPercentage.toString(),
-                        splitSource: calculationResult.splitSource,
-                        transactionId,
-                        // calculatedAt: new Date(),
-                        // isRecalculationNeeded: false,
-                    },
-                });
+    //         if (existingBudget) {
+    //             // Update existing budget
+    //             budgetRecord = await queries.updateById({
+    //                 ids: { id: existingBudget.id },
+    //                 userId,
+    //                 data: {
+    //                     budgetAmount: calculationResult.budgetAmount.toString(),
+    //                     budgetPercentage: calculationResult.budgetPercentage.toString(),
+    //                     splitSource: calculationResult.splitSource,
+    //                     transactionId,
+    //                     // calculatedAt: new Date(),
+    //                     // isRecalculationNeeded: false,
+    //                 },
+    //             });
 
-                // Remove existing participant records
-                await queries.removeParticipantsByBudgetId({
-                    transactionBudgetId: existingBudget.id,
-                });
-            } else {
-                // Create new budget
-                budgetRecord = await queries.create({
-                    data: {
-                        transactionId,
-                        budgetAmount: calculationResult.budgetAmount.toString(),
-                        budgetPercentage: calculationResult.budgetPercentage.toString(),
-                        splitSource: calculationResult.splitSource,
-                        // isRecalculationNeeded: false,
-                    },
-                    userId,
-                });
-            }
-            if (!budgetRecord) {
-                throw AppErrors.raise('OPERATION.CREATE_FAILED');
-            }
+    //             // Remove existing participant records
+    //             await queries.removeParticipantsByBudgetId({
+    //                 transactionBudgetId: existingBudget.id,
+    //             });
+    //         } else {
+    //             // Create new budget
+    //             budgetRecord = await queries.create({
+    //                 data: {
+    //                     transactionId,
+    //                     budgetAmount: calculationResult.budgetAmount.toString(),
+    //                     budgetPercentage: calculationResult.budgetPercentage.toString(),
+    //                     splitSource: calculationResult.splitSource,
+    //                     // isRecalculationNeeded: false,
+    //                 },
+    //                 userId,
+    //             });
+    //         }
+    //         if (!budgetRecord) {
+    //             throw AppErrors.raise('OPERATION.CREATE_FAILED');
+    //         }
 
-            // Create participant records
-            const participantRecords = calculationResult.participantRecords.map((record) => ({
-                participantId: record.participantId,
-                resolvedAmount: record.resolvedAmount.toString(),
-                resolvedPercentage: record.resolvedPercentage.toString(),
-                splitConfigUsed: record.splitConfig,
-                isUserParticipant: record.isUserParticipant,
-            }));
+    //         // Create participant records
+    //         const participantRecords = calculationResult.participantRecords.map((record) => ({
+    //             participantId: record.participantId,
+    //             resolvedAmount: record.resolvedAmount.toString(),
+    //             resolvedPercentage: record.resolvedPercentage.toString(),
+    //             splitConfigUsed: record.splitConfig,
+    //             isUserParticipant: record.isUserParticipant,
+    //         }));
 
-            await queries.createParticipants({
-                transactionBudgetId: budgetRecord.id,
-                participants: participantRecords,
-            });
+    //         await queries.createParticipants({
+    //             transactionBudgetId: budgetRecord.id,
+    //             participants: participantRecords,
+    //         });
 
-            return budgetRecord;
-        },
-    }))
-    /**
-     * Mark transaction budgets for recalculation
-     */
-    .addService('markForRecalculation', ({ queries }) => ({
-        operation: 'mark for recalculation',
-        throwOnNull: false,
-        fn: async ({ transactionId }: { transactionId: string }) => {
-            return await queries.markForRecalculation({ transactionId });
-        },
-    }))
-    /**
-     * Recalculate transaction budget (combines mark + calculate + store)
-     */
-    .addService('recalculate', ({ queries }) => ({
-        operation: 'recalculate budget',
-        throwOnNull: false,
-        fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
-            await queries.markForRecalculation({ transactionId });
+    //         return budgetRecord;
+    //     },
+    // }))
+    // /**
+    //  * Mark transaction budgets for recalculation
+    //  */
+    // .addService('markForRecalculation', ({ queries }) => ({
+    //     operation: 'mark for recalculation',
+    //     throwOnNull: false,
+    //     fn: async ({ transactionId }: { transactionId: string }) => {
+    //         return await queries.markForRecalculation({ transactionId });
+    //     },
+    // }))
+    // /**
+    //  * Recalculate transaction budget (combines mark + calculate + store)
+    //  */
+    // .addService('recalculate', ({ queries }) => ({
+    //     operation: 'recalculate budget',
+    //     throwOnNull: false,
+    //     fn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+    //         await queries.markForRecalculation({ transactionId });
 
-            const calculationResult = await calculateTransactionBudget({ transactionId, userId });
+    //         const calculationResult = await calculateTransactionBudget({ transactionId, userId });
 
-            if (!calculationResult) {
-                throw AppErrors.raise('RESOURCE.NOT_FOUND');
-            }
+    //         if (!calculationResult) {
+    //             throw AppErrors.raise('RESOURCE.NOT_FOUND');
+    //         }
 
-            const existingBudget = await queries.getByTransactionAndUser({
-                transactionId,
-                userId,
-            });
+    //         const existingBudget = await queries.getByTransactionAndUser({
+    //             transactionId,
+    //             userId,
+    //         });
 
-            let budgetRecord;
+    //         let budgetRecord;
 
-            if (existingBudget) {
-                budgetRecord = await queries.updateById({
-                    ids: { id: existingBudget.id },
-                    userId,
-                    data: {
-                        budgetAmount: calculationResult.budgetAmount.toString(),
-                        budgetPercentage: calculationResult.budgetPercentage.toString(),
-                        splitSource: calculationResult.splitSource,
-                        transactionId,
-                    },
-                });
+    //         if (existingBudget) {
+    //             budgetRecord = await queries.updateById({
+    //                 ids: { id: existingBudget.id },
+    //                 userId,
+    //                 data: {
+    //                     budgetAmount: calculationResult.budgetAmount.toString(),
+    //                     budgetPercentage: calculationResult.budgetPercentage.toString(),
+    //                     splitSource: calculationResult.splitSource,
+    //                     transactionId,
+    //                 },
+    //             });
 
-                await queries.removeParticipantsByBudgetId({
-                    transactionBudgetId: existingBudget.id,
-                });
-            } else {
-                budgetRecord = await queries.create({
-                    data: {
-                        transactionId,
-                        budgetAmount: calculationResult.budgetAmount.toString(),
-                        budgetPercentage: calculationResult.budgetPercentage.toString(),
-                        splitSource: calculationResult.splitSource,
-                    },
-                    userId,
-                });
-            }
+    //             await queries.removeParticipantsByBudgetId({
+    //                 transactionBudgetId: existingBudget.id,
+    //             });
+    //         } else {
+    //             budgetRecord = await queries.create({
+    //                 data: {
+    //                     transactionId,
+    //                     budgetAmount: calculationResult.budgetAmount.toString(),
+    //                     budgetPercentage: calculationResult.budgetPercentage.toString(),
+    //                     splitSource: calculationResult.splitSource,
+    //                 },
+    //                 userId,
+    //             });
+    //         }
 
-            if (!budgetRecord) {
-                throw AppErrors.raise('OPERATION.CREATE_FAILED');
-            }
+    //         if (!budgetRecord) {
+    //             throw AppErrors.raise('OPERATION.CREATE_FAILED');
+    //         }
 
-            const participantRecords = calculationResult.participantRecords.map((record) => ({
-                participantId: record.participantId,
-                resolvedAmount: record.resolvedAmount.toString(),
-                resolvedPercentage: record.resolvedPercentage.toString(),
-                splitConfigUsed: record.splitConfig,
-                isUserParticipant: record.isUserParticipant,
-            }));
+    //         const participantRecords = calculationResult.participantRecords.map((record) => ({
+    //             participantId: record.participantId,
+    //             resolvedAmount: record.resolvedAmount.toString(),
+    //             resolvedPercentage: record.resolvedPercentage.toString(),
+    //             splitConfigUsed: record.splitConfig,
+    //             isUserParticipant: record.isUserParticipant,
+    //         }));
 
-            await queries.createParticipants({
-                transactionBudgetId: budgetRecord.id,
-                participants: participantRecords,
-            });
+    //         await queries.createParticipants({
+    //             transactionBudgetId: budgetRecord.id,
+    //             participants: participantRecords,
+    //         });
 
-            return budgetRecord;
-        },
-    }))
+    //         return budgetRecord;
+    //     },
+    // }))
     .build();

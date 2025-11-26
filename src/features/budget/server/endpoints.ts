@@ -59,35 +59,35 @@ const app = new Hono()
             .handleMutation(async ({ userId, validatedInput }) =>
                 budgetServices.removeById({ ids: { id: validatedInput.param.id }, userId })
             )
-    )
-
-    .post(
-        '/calculate',
-        zValidator('json', transactionBudgetSchemas.calculateAndStore.endpoint.json),
-        (c) =>
-            routeHandler(c)
-                .withUser()
-                .handleMutation(async ({ userId, validatedInput }) =>
-                    budgetServices.calculateAndStore({
-                        transactionId: validatedInput.json.transactionId,
-                        userId,
-                    })
-                )
-    )
-
-    .post(
-        '/recalculate',
-        zValidator('json', transactionBudgetSchemas.markForRecalculation.endpoint.json),
-        (c) =>
-            routeHandler(c)
-                .withUser()
-                .handle(async ({ userId, validatedInput }) =>
-                    budgetServices.recalculate({
-                        transactionId: validatedInput.json.transactionId,
-                        userId,
-                    })
-                )
     );
+
+// .post(
+//     '/calculate',
+//     zValidator('json', transactionBudgetSchemas.calculateAndStore.endpoint.json),
+//     (c) =>
+//         routeHandler(c)
+//             .withUser()
+//             .handleMutation(async ({ userId, validatedInput }) =>
+//                 budgetServices.calculateAndStore({
+//                     transactionId: validatedInput.json.transactionId,
+//                     userId,
+//                 })
+//             )
+// )
+
+// .post(
+//     '/recalculate',
+//     zValidator('json', transactionBudgetSchemas.markForRecalculation.endpoint.json),
+//     (c) =>
+//         routeHandler(c)
+//             .withUser()
+//             .handle(async ({ userId, validatedInput }) =>
+//                 budgetServices.recalculate({
+//                     transactionId: validatedInput.json.transactionId,
+//                     userId,
+//                 })
+//             )
+// );
 
 // Process all pending recalculations
 // .post('/process-pending', async (c) =>
