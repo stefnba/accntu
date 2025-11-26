@@ -19,10 +19,7 @@ const app = new Hono()
                     },
                 }) =>
                     tagServices.getMany({
-                        pagination: {
-                            page,
-                            pageSize,
-                        },
+                        pagination: { page, pageSize },
                         filters: filters,
                         userId: userId,
                     })
@@ -76,13 +73,13 @@ const app = new Hono()
     // Assign tags to a transaction
     .put(
         '/assign/:transactionId',
-        zValidator('param', tagToTransactionSchemas.assignToTransaction.endpoint.param),
-        zValidator('json', tagToTransactionSchemas.assignToTransaction.endpoint.json),
+        zValidator('param', tagToTransactionSchemas.assign.endpoint.param),
+        zValidator('json', tagToTransactionSchemas.assign.endpoint.json),
         async (c) =>
             routeHandler(c)
                 .withUser()
                 .handleMutation(async ({ userId, validatedInput }) =>
-                    tagServices.assignToTransaction({
+                    tagServices.assign({
                         transactionId: validatedInput.param.transactionId,
                         userId: userId,
                         tagIds: validatedInput.json.tagIds,

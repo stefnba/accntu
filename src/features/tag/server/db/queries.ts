@@ -1,37 +1,47 @@
-import { tagTableConfig, tagToTransactionTableConfig } from '@/features/tag/server/db/tables';
+import { tagToTransactionSchemas } from '@/features/tag/schemas';
+import { tagTableConfig, tagToTransactionTableConfig } from '@/features/tag/server/db/config';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
 export const tagQueries = createFeatureQueries('tag', tagTableConfig).registerAllStandard({
     defaultFilters: {
         isActive: true,
     },
+    getMany: {
+        defaultOrdering: ['createdAt', 'name'],
+        filters: (filters, f) => [f.ilike('name', filters?.name)],
+    },
 });
-
-// .registerSchema(tagSchemas).registerCoreQueries(tag, {
-//     queryConfig: {
-//         getMany: {
-//             filters: (filters, f) => [f.ilike('name', filters?.search)],
-//         },
-//     },
-// });
+export type TTag = InferFeatureType<typeof tagQueries>;
 
 export const tagToTransactionQueries = createFeatureQueries(
     'tag-to-transaction',
     tagToTransactionTableConfig
 )
+    .registerSchema(tagToTransactionSchemas)
     /**
      * Assign tags to a transaction
+     * We already verify user owns the transaction in the service layer
      */
     .addQuery('assign', ({ tableOps }) => ({
         operation: 'assign tags to transaction',
-        fn: async () => {
-            return await tableOps.createRecord({
-                data: {
-                    tagId: '',
-                    transactionId: '',
-                },
-                returnColumns: tagToTransactionTableConfig.getReturnColumns(),
+        fn: async (input) => {
+            // important: we already verify user owns the transaction in the service layer
+
+            // Delete existing tags for this transaction
+            tableOps.deleteRecord({
+                identifiers: [{ field: 'transactionId', value: input.transactionId }],
             });
+
+            // Create new tags for this transaction
+            if (input.tagIds && input.tagIds.length > 0) {
+                await tableOps.createManyRecords({
+                    data: input.tagIds.map((tagId) => ({
+                        tagId,
+                        transactionId: input.transactionId,
+                    })),
+                    returnColumns: tagToTransactionTableConfig.getReturnColumns(),
+                });
+            }
         },
     }))
     /**
@@ -49,31 +59,3 @@ export const tagToTransactionQueries = createFeatureQueries(
             });
         },
     }));
-
-// .registerSchema(tagToTransactionSchemas)
-// /**
-//  * Assign tags to a transaction
-//  */
-// .addQuery('assignToTransaction', {
-//     operation: 'assign tags to transaction',
-//     fn: async ({ tagIds, transactionId, userId }) => {
-//         // First, remove existing tags for this transaction
-//         await db
-//             .delete(tagToTransaction)
-//             .where(eq(tagToTransaction.transactionId, transactionId));
-
-//         // Then add new tags if any
-//         if (tagIds && tagIds.length > 0) {
-//             await db.insert(tagToTransaction).values(
-//                 tagIds.map((tagId) => ({
-//                     transactionId,
-//                     tagId,
-//                 }))
-//             );
-//         }
-
-//         return { success: true };
-//     },
-// });
-
-export type TTag = InferFeatureType<typeof tagQueries>;

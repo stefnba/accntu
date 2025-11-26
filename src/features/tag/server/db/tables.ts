@@ -1,6 +1,5 @@
 import { transaction } from '@/features/transaction/server/db/tables';
 import { createSystemTableFields } from '@/server/lib/db/table';
-import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, primaryKey, text, uniqueIndex } from 'drizzle-orm/pg-core';
 
@@ -52,17 +51,3 @@ export const transactionTagRelations = relations(tagToTransaction, ({ one }) => 
         references: [tag.id],
     }),
 }));
-
-// ====================
-// Config
-// ====================
-
-export const tagTableConfig = createFeatureTableConfig(tag)
-    .omitBaseSchema(['transactionCount'])
-    .setIds(['id'])
-    .setUserId('userId')
-    .build();
-
-export const tagToTransactionTableConfig = createFeatureTableConfig(tagToTransaction)
-    .setIds(['tagId', 'transactionId'])
-    .build();
