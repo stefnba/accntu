@@ -1,4 +1,4 @@
-import { TFeatureSchemas } from '@/lib/schemas_new/types';
+import { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schemas_new/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import { serviceHandler } from '@/server/service/handler';
 import { Prettify } from '@/types/utils';
@@ -56,9 +56,9 @@ export class FeatureServiceBuilder<
      * @param queries - Built queries object (result of FeatureQueryBuilder.build())
      */
     registerQueries<const NewQueries extends Record<string, QueryFn>>(queries: NewQueries) {
-        return new FeatureServiceBuilder<NewQueries, TSchemas, TServices>({
+        return new FeatureServiceBuilder<TQueries & NewQueries, TSchemas, TServices>({
             services: this.services,
-            queries,
+            queries: { ...this.queries, ...queries },
             schemas: this.schemas,
             name: this.name,
         });
@@ -70,10 +70,10 @@ export class FeatureServiceBuilder<
      * @param schemas - Feature schemas object
      */
     registerSchema<const NewSchemas extends TFeatureSchemas>(schemas: NewSchemas) {
-        return new FeatureServiceBuilder<TQueries, NewSchemas, TServices>({
+        return new FeatureServiceBuilder<TQueries, TSchemas & NewSchemas, TServices>({
             services: this.services,
             queries: this.queries,
-            schemas,
+            schemas: { ...this.schemas, ...schemas },
             name: this.name,
         });
     }
@@ -86,7 +86,7 @@ export class FeatureServiceBuilder<
      */
     addService<
         const K extends Exclude<string, keyof TServices> | (string & {}),
-        Input = unknown,
+        Input = InferSchemaByLayerAndOperation<TSchemas, 'service', K>,
         Output = unknown,
     >(
         key: K,
@@ -109,7 +109,7 @@ export class FeatureServiceBuilder<
      */
     addService<
         const K extends Exclude<string, keyof TServices> | (string & {}),
-        Input = unknown,
+        Input = InferSchemaByLayerAndOperation<TSchemas, 'service', K>,
         Output = unknown,
     >(
         key: K,
@@ -125,7 +125,7 @@ export class FeatureServiceBuilder<
      */
     addService<
         const K extends Exclude<string, keyof TServices> | (string & {}),
-        Input = unknown,
+        Input = InferSchemaByLayerAndOperation<TSchemas, 'service', K>,
         Output = unknown,
     >(
         key: K,
