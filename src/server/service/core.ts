@@ -123,7 +123,7 @@ export class FeatureServiceBuilder<
         config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
-            throwOnNull?: true;
+            onNull?: 'throw';
         }
     ): FeatureServiceBuilder<
         TTable,
@@ -149,7 +149,7 @@ export class FeatureServiceBuilder<
         config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
-            throwOnNull: false;
+            onNull: 'return';
         }
     ): FeatureServiceBuilder<
         TTable,
@@ -172,7 +172,7 @@ export class FeatureServiceBuilder<
         config: (args: { queries: TQueries; schemas: TSchemas; config: TTableConfig }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
-            throwOnNull?: boolean;
+            onNull?: 'throw' | 'return';
         }
     ): FeatureServiceBuilder<
         TTable,
@@ -186,27 +186,27 @@ export class FeatureServiceBuilder<
         const {
             fn,
             operation,
-            throwOnNull = true,
+            onNull = 'throw',
         } = config({
             queries: this.queries,
             schemas: this.schemas,
             config: this.tableConfig,
         });
 
-        // Wrap the service with error handling
-        const wrappedService = throwOnNull
-            ? serviceHandler<Input, Output, ServiceFn<Input, Output>>({
-                  serviceFn: fn,
-                  throwOnNull: true,
-                  operation: operation || `${String(key)} operation`,
-                  resource: this.name,
-              })
-            : serviceHandler<Input, Output, ServiceFn<Input, Output>>({
-                  serviceFn: fn,
-                  throwOnNull: false,
-                  operation: operation || `${String(key)} operation`,
-                  resource: this.name,
-              });
+        const wrappedService =
+            onNull === 'throw'
+                ? serviceHandler<Input, Output, ServiceFn<Input, Output>>({
+                      serviceFn: fn,
+                      throwOnNull: true,
+                      operation: operation || `${String(key)} operation`,
+                      resource: this.name,
+                  })
+                : serviceHandler<Input, Output, ServiceFn<Input, Output>>({
+                      serviceFn: fn,
+                      throwOnNull: false,
+                      operation: operation || `${String(key)} operation`,
+                      resource: this.name,
+                  });
 
         return new FeatureServiceBuilder({
             services: { ...this.services, [key]: wrappedService },

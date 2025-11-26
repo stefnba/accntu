@@ -34,7 +34,7 @@ const tagServices = createFeatureServices('tag', tagTableConfig)
     // Add a custom service
     .addService('createWithValidation', ({ queries, schemas }) => ({
         operation: 'create tag with validation',
-        throwOnNull: true,
+        onNull: 'throw',
         fn: async (input: { name: string; userId: string }) => {
             // Example of accessing schemas
             console.log(schemas.custom.service);
@@ -73,3 +73,9 @@ const getManyResult = await tagServices.getMany({
     userId: 'user1',
 });
 console.log(getManyResult);
+
+const customResult = await tagServices.createWithValidation({
+    name: 'test',
+    userId: 'user1',
+});
+console.log(customResult);
