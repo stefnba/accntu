@@ -58,16 +58,13 @@ export const adminGlobalBankAccountEndpoints = new Hono()
     )
 
     // Delete a global bank account
-    .delete(
-        '/:id',
-        zValidator('param', globalBankAccountSchemas.removeById.endpoint.param),
-        (c) =>
-            routeHandler(c)
-                .withUser()
-                .withAdmin()
-                .handleMutation(async ({ validatedInput }) =>
-                    globalBankAccountServices.removeById({ ids: { id: validatedInput.param.id } })
-                )
+    .delete('/:id', zValidator('param', globalBankAccountSchemas.removeById.endpoint.param), (c) =>
+        routeHandler(c)
+            .withUser()
+            .withAdmin()
+            .handleMutation(async ({ validatedInput }) =>
+                globalBankAccountServices.removeById({ ids: { id: validatedInput.param.id } })
+            )
     )
 
     // Test global bank account transformation query

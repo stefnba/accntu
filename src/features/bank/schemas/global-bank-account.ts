@@ -25,6 +25,22 @@ export type TTransformConfig = z.infer<typeof transformConfigSchema>;
 
 export const globalBankAccountSchemas = createFeatureSchemas(globalBankAccountTableConfig)
     .registerAllStandard()
+    /**
+     * Test a global bank account transformation query
+     */
+    .addSchema('testTransform', ({ schemas }) => {
+        const schema = z.object({
+            globalBankAccountId: z.string(),
+        });
+
+        return {
+            service: schema,
+            query: schema,
+            endpoint: {
+                param: schema,
+            },
+        };
+    })
     .build();
 
 // /**
@@ -112,21 +128,5 @@ export const globalBankAccountSchemas = createFeatureSchemas(globalBankAccountTa
 //         },
 //     };
 // })
-// /**
-//  * Test a global bank account transformation query
-//  */
-// .addCustom('testTransform', ({ rawSchema }) => {
-//     const schema = z.object({
-//         globalBankAccountId: rawSchema.shape.id,
-//     });
-
-//     return {
-//         service: schema,
-//         query: schema,
-//         endpoint: {
-//             param: schema,
-//         },
-//     };
-// });
 
 export type { TGlobalBankAccount } from '@/features/bank/server/db/queries/global-bank-account';
