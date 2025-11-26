@@ -3,7 +3,7 @@ import { participantQueries } from '@/features/participant/server/db/queries';
 import { createFeatureServices } from '@/server/lib/service/';
 
 export const participantServices = createFeatureServices('participant')
-    .registerSchemas(participantSchemas)
+    .registerSchema(participantSchemas)
     .registerQueries(participantQueries)
-    .registerCoreServices()
+    .registerAllStandard()
     .build();

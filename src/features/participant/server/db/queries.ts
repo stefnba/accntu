@@ -1,21 +1,17 @@
 import { participantSchemas } from '@/features/participant/schemas';
-import { participant } from '@/features/participant/server/db/tables';
+import { participantTableConfig } from '@/features/participant/server/db/config';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db/query';
 
-export const participantQueries = createFeatureQueries('participant')
+export const participantQueries = createFeatureQueries('participant', participantTableConfig)
     .registerSchema(participantSchemas)
-    .registerCoreQueries(participant, {
-        idFields: ['id'],
-        userIdField: 'userId',
-        allowedUpsertColumns: ['name', 'email'],
-        defaultIdFilters: {
+    .registerAllStandard({
+        defaultFilters: {
             isActive: true,
         },
-        queryConfig: {
-            getMany: {
-                filters: (filters, f) => [f.ilike('name', filters?.search)],
-            },
+        getMany: {
+            filters: (filters, f) => [f.ilike('name', filters?.search)],
         },
-    });
+    })
+    .build();
 
 export type TParticipant = InferFeatureType<typeof participantQueries>;
