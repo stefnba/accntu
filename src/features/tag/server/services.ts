@@ -1,6 +1,6 @@
 import { tagSchemas, tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagQueries, tagToTransactionQueries } from '@/features/tag/server/db/queries';
-import { createFeatureServices } from '@/server/service';
+import { createFeatureServices } from '@/server/lib/service';
 
 export const tagServices = createFeatureServices('tag')
     .registerSchema(tagSchemas)
