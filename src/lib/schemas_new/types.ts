@@ -62,3 +62,21 @@ export type InferSchemasByLayer<
 > = Prettify<{
     [K in keyof T as string extends K ? never : K]: InferFeatureSchemaObject<T[K][TLayer]>;
 }>;
+
+/**
+ * Infers the type for a specific layer and operation from the feature schemas.
+ *
+ * @template TSchemaObject - The feature schemas object type
+ * @template TLayer - The layer to infer ('service', 'query', etc.)
+ * @template TOperation - The specific operation key (e.g., 'create', 'getById')
+ *
+ * @example
+ * ```typescript
+ * type CreateInput = InferSchemaByLayerAndOperation<typeof tagSchemas, 'service', 'create'>;
+ * ```
+ */
+export type InferSchemaByLayerAndOperation<
+    TSchemaObject extends TFeatureSchemas,
+    TLayer extends keyof TFeatureSchemaObject,
+    TOperation extends keyof TSchemaObject,
+> = InferFeatureSchemaObject<TSchemaObject[TOperation][TLayer]>;
