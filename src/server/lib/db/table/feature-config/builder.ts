@@ -1,6 +1,7 @@
 import {
     type TEmptySchema,
     type TZodArray,
+    type TZodShape,
     type TZodType,
     omitFields,
     pickFields,
@@ -9,7 +10,11 @@ import {
 
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config/core';
 import { orderByDirectionSchema } from '@/server/lib/db/table/feature-config/schemas';
-import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
+import {
+    InferDefaultSchemaForField,
+    InferTableSchema,
+    TFeatureTableConfig,
+} from '@/server/lib/db/table/feature-config/types';
 import { getSchemaForTableField } from '@/server/lib/db/table/feature-config/utils';
 import { SYSTEM_FIELDS_KEYS } from '@/server/lib/db/table/system-fields';
 import { Prettify } from '@/types/utils';
@@ -95,8 +100,8 @@ export class FeatureTableConfigBuilder<
                 ordering: TZodArray<ZodNever>;
                 updateData: typeof updateSchema.shape;
                 returnCols: typeof selectSchema.shape;
-                id: typeof idSchema.shape;
-                userId: typeof userSchema.shape;
+                id: InferDefaultSchemaForField<TLocal, 'id'>['shape'];
+                userId: InferDefaultSchemaForField<TLocal, 'userId'>['shape'];
             }
         >({
             config: {
