@@ -95,6 +95,8 @@ export class FeatureSchemasBuilder<
                 >;
                 /** Helper to get pagination schema */
                 buildPaginationSchema: () => typeof paginationSchema;
+                /** Helper to build filters schema */
+                buildFiltersSchema: () => z.ZodObject<TConfig['filters']>;
             };
         }) => O
     ) {
@@ -102,6 +104,7 @@ export class FeatureSchemasBuilder<
             helpers: {
                 buildIdentifierSchema: () => this.tableConfig.buildIdentifierSchema(),
                 buildPaginationSchema: () => paginationSchema,
+                buildFiltersSchema: () => this.tableConfig.buildFiltersSchema(),
             },
             schemas: {
                 table: {

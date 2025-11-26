@@ -120,6 +120,17 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
     }
 
     /**
+     * Build the filters schema.
+     *
+     * Returns the Zod schema used to validate filters input.
+     */
+    buildFiltersSchema(): z.ZodObject<C['filters']> {
+        return z.object({
+            filters: this.getFiltersSchema().partial().optional(),
+        });
+    }
+
+    /**
      * Type guard: Check if filters schema is configured (non-empty).
      */
     hasFiltersSchema(): this is FeatureTableConfig<TTable, C & { filters: TZodShape }> {
