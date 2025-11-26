@@ -1,5 +1,5 @@
 import { tagTableConfig, tagToTransactionTableConfig } from '@/features/tag/server/db/config';
-import { createFeatureSchemas } from '@/lib/schemas_new';
+import { createFeatureSchemas } from '@/lib/schema';
 import { z } from 'zod';
 
 export const tagSchemas = createFeatureSchemas(tagTableConfig).registerAllStandard().build();

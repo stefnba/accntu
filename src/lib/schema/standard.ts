@@ -1,4 +1,4 @@
-import type { TFeatureSchemas } from '@/lib/schemas_new/types';
+import type { TFeatureSchemas } from '@/lib/schema/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 import { Table } from 'drizzle-orm';

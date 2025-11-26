@@ -1,4 +1,4 @@
-import { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schemas_new/types';
+import { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schema/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
 import { serviceHandler } from '@/server/service/handler';
 import { Prettify } from '@/types/utils';

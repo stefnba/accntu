@@ -5,7 +5,7 @@
  * It supports both standard CRUD operations and custom queries with full TypeScript inference.
  */
 
-import type { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schemas_new/types';
+import type { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schema/types';
 import {
     StandardQueryBuilder,
     type TStandardNewQueryConfig,

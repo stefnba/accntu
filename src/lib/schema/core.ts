@@ -1,5 +1,5 @@
-import { StandardSchemasBuilder } from '@/lib/schemas_new/standard';
-import type { TFeatureSchemaObject, TFeatureSchemas } from '@/lib/schemas_new/types';
+import { StandardSchemasBuilder } from '@/lib/schema/standard';
+import type { TFeatureSchemaObject, TFeatureSchemas } from '@/lib/schema/types';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
 import { InferTableSchema, TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';

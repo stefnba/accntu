@@ -1,5 +1,5 @@
-import { createFeatureSchemas } from '@/lib/schemas_new/factory';
-import { InferSchemasByLayer } from '@/lib/schemas_new/types';
+import { createFeatureSchemas } from '@/lib/schema/factory';
+import { InferSchemasByLayer } from '@/lib/schema/types';
 import { tag } from '@/server/db/tables';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import z from 'zod';

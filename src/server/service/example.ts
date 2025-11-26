@@ -1,4 +1,4 @@
-import { createFeatureSchemas } from '@/lib/schemas_new';
+import { createFeatureSchemas } from '@/lib/schema';
 import { tag } from '@/server/db/tables';
 import { createFeatureQueries } from '@/server/lib/db/query/feature-queries/factory';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';

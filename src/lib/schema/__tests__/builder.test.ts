@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { createTestUser } from '@/../test/utils/create-user';
 import { tag } from '@/features/tag/server/db/tables';
-import { createFeatureSchemas } from '@/lib/schemas_new/factory';
+import { createFeatureSchemas } from '@/lib/schema/factory';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 
 describe('Feature Schemas Builder', () => {

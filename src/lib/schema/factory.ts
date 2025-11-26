@@ -1,4 +1,4 @@
-import { FeatureSchemasBuilder } from '@/lib/schemas_new/core';
+import { FeatureSchemasBuilder } from '@/lib/schema/core';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
 

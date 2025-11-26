@@ -1,4 +1,4 @@
-import { TFeatureSchemas } from '@/lib/schemas_new/types';
+import { TFeatureSchemas } from '@/lib/schema/types';
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 
 /**

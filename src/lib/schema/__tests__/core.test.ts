@@ -1,4 +1,4 @@
-import { createFeatureSchemas } from '@/lib/schemas_new/factory';
+import { createFeatureSchemas } from '@/lib/schema/factory';
 import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { describe, expect, test } from 'vitest';
