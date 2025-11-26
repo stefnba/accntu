@@ -1,9 +1,11 @@
 import { bucketSchemas } from '@/features/bucket/schemas';
 import { bucketQueries } from '@/features/bucket/server/db/queries';
-import { createFeatureServices } from '@/server/lib/service/';
+import { createFeatureServices } from '@/server/service';
 
 export const bucketServices = createFeatureServices('bucket')
-    .registerSchemas(bucketSchemas)
-    .registerQueries(bucketQueries)
-    .registerCoreServices()
+    .registerSchema(bucketSchemas)
+    .registerQueries(bucketQueries.build())
+    .withStandard((builder) =>
+        builder.create().getById().getMany().updateById().removeById().createMany()
+    )
     .build();

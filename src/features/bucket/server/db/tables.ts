@@ -14,7 +14,6 @@ import {
 import { participantToBucket } from '@/features/participant/server/db/tables';
 import { transaction } from '@/features/transaction/server/db/tables';
 import { user } from '@/lib/auth/server/db/tables';
-import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { createId } from '@paralleldrive/cuid2';
 
 // ====================
@@ -113,15 +112,3 @@ export const bucketTransactionRelations = relations(bucketToTransaction, ({ one 
         references: [bucket.id],
     }),
 }));
-
-// ====================
-// Config
-// ====================
-
-export const bucketTableConfig = createFeatureTableConfig(bucket)
-    .pickBaseSchema(['title', 'type', 'status'])
-    .build();
-
-export const bucketToTransactionTableConfig = createFeatureTableConfig(bucketToTransaction)
-    .pickBaseSchema(['notes'])
-    .build();
