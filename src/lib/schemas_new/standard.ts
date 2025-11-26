@@ -185,19 +185,15 @@ export class StandardSchemasBuilder<
         // We need to build a query schema that excludes userId since it's handled by context/auth
         // but includes filters, pagination, and ordering
         const manyInputSchema = this.tableConfig.buildManyInputSchema();
-        // Extract just the shape to manipulate it
-        const shape = manyInputSchema.shape;
 
-        // Create endpoint query schema without userId
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { userId, ...queryShape } = shape;
-        const endpointQuerySchema = z.object(queryShape);
+        const pagination = this.tableConfig.getPaginationSchema();
+        const filters = this.tableConfig.getFiltersSchema();
 
         const schema = {
             getMany: {
                 service: manyInputSchema,
                 endpoint: {
-                    query: endpointQuerySchema,
+                    query: pagination.extend(filters.shape),
                 },
                 query: manyInputSchema,
             },
