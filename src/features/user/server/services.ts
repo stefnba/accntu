@@ -7,11 +7,11 @@ import { createFeatureServices } from '@/server/lib/service';
 import { eq } from 'drizzle-orm';
 
 export const userServices = createFeatureServices('user')
-    .registerSchemas(userSchemas)
+    .registerSchema(userSchemas)
     .registerQueries(userQueries)
     .addService('updateSettingsById', ({ queries }) => ({
         operation: 'update user settings by id',
-        throwOnNull: true,
+        onNull: 'throw',
         fn: async ({ data, ids }) => {
             if (!data.settings) {
                 throw AppErrors.validation('INVALID_INPUT', {

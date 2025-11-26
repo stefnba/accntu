@@ -1,10 +1,11 @@
 import { userSchemas } from '@/features/user/schemas';
+import { userTableConfig } from '@/features/user/server/db/config';
 import { user } from '@/lib/auth/server/db/tables';
 import { db } from '@/server/db';
 import { createFeatureQueries } from '@/server/lib/db';
 import { and, eq } from 'drizzle-orm';
 
-export const userQueries = createFeatureQueries('user')
+export const userQueries = createFeatureQueries('user', userTableConfig)
     .registerSchema(userSchemas)
     /**
      * Update user settings by ID
@@ -17,4 +18,5 @@ export const userQueries = createFeatureQueries('user')
                 .set(data)
                 .where(and(eq(user.id, ids.id)));
         },
-    });
+    })
+    .build();
