@@ -1,6 +1,27 @@
 import { QueryFn } from '@/server/lib/db/query/feature-queries/types';
 import { serviceHandler } from '@/server/lib/service/handler';
-import { ServiceFn, TEmptyServices } from './types';
+import { NonNullableService, ServiceFn, TEmptyServices } from './types';
+
+export const standardOperations = [
+    'create',
+    'createMany',
+    'getMany',
+    'getById',
+    'updateById',
+    'removeById',
+] as const;
+
+export type TStandardOperations = (typeof standardOperations)[number];
+
+const getStandardOperationKey = <T extends TStandardOperations>(key: T): T => {
+    return key;
+};
+
+export type StandardServices<Q extends Record<string, QueryFn>> = {
+    [K in keyof Q as K extends TStandardOperations ? K : never]: K extends 'getById'
+        ? NonNullableService<Q[K]>
+        : Q[K];
+};
 
 /**
  * StandardServiceBuilder - Builder for standard CRUD service operations.
@@ -10,9 +31,6 @@ import { ServiceFn, TEmptyServices } from './types';
  * - Each method extracts types from TQueries and creates a service
  * - Types flow naturally through method chaining
  *
- * @template TTable - Drizzle table type
- * @template TConfig - Feature table config type
- * @template TTableConfig - Full table config instance type
  * @template TQueries - Exact queries record type (const preserves types)
  * @template TServices - Accumulated services record type
  */
@@ -33,7 +51,6 @@ export class StandardServiceBuilder<
     /**
      * Creates a new standard service builder.
      *
-     * @param tableConfig - The table config.
      * @param queries - The queries.
      * @returns The standard service builder.
      */
@@ -65,7 +82,7 @@ export class StandardServiceBuilder<
      * Returns the exact return type of the create query (not stripped of nulls).
      */
     create() {
-        const operation = 'create';
+        const operation = getStandardOperationKey('create');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -87,7 +104,7 @@ export class StandardServiceBuilder<
      * Returns the exact return type (array).
      */
     createMany() {
-        const operation = 'createMany';
+        const operation = getStandardOperationKey('createMany');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -112,7 +129,7 @@ export class StandardServiceBuilder<
      * Returns the exact return type (array).
      */
     getMany() {
-        const operation = 'getMany';
+        const operation = getStandardOperationKey('getMany');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -136,7 +153,7 @@ export class StandardServiceBuilder<
      * Returns nullable type (returns null if ID not found to update).
      */
     updateById() {
-        const operation = 'updateById';
+        const operation = getStandardOperationKey('updateById');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -161,7 +178,7 @@ export class StandardServiceBuilder<
      * Returns nullable type (returns null if ID not found to remove).
      */
     removeById() {
-        const operation = 'removeById';
+        const operation = getStandardOperationKey('removeById');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -189,7 +206,7 @@ export class StandardServiceBuilder<
      * Throws `RESOURCE.NOT_FOUND` if the query returns null.
      */
     getById() {
-        const operation = 'getById';
+        const operation = getStandardOperationKey('getById');
         const query = this.getQuery(operation);
 
         const wrappedService = serviceHandler({
@@ -208,27 +225,24 @@ export class StandardServiceBuilder<
 
     /**
      * Adds all standard services available in the queries object.
-     * Currently aliases getById() as a starting point.
-     * Ideally should chain all available methods if they exist.
+     *
+     * Dynamically chains the specific methods (create, getById, etc.) for each available query.
+     * This ensures we reuse the exact logic and types defined in those methods.
      */
-    all() {
-        // Chain all standard methods that are available in queries
-        // This implementation is simplified; in a real scenario you might check availability
-        // or assume standard queries are present if called.
-        let builder = this.create();
+    all(): StandardServiceBuilder<TQueries, TServices & StandardServices<TQueries>> {
+        // TypeScript cannot track the evolving type of 'builder' inside a loop.
+        // We use 'any' as an implementation detail to allow dynamic chaining.
+        // The return type ensures strict type safety for the consumer.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-this-alias
+        let builder: any = this;
 
-        // Chain other methods if their queries exist (optional safety check could go here)
-        // For now, we assume if you call all(), you have the standard set.
-        // However, strictly, we should probably use conditional chaining or just rely on the user
-        // to have registered standard queries.
-
-        // Since we can't easily conditionally chain in the type system without more complex types,
-        // we will chain them assuming they exist, which matches registerAllStandard behavior.
-        if (this.queries['createMany']) builder = builder.createMany();
-        if (this.queries['getMany']) builder = builder.getMany();
-        if (this.queries['getById']) builder = builder.getById();
-        if (this.queries['updateById']) builder = builder.updateById();
-        if (this.queries['removeById']) builder = builder.removeById();
+        for (const operation of standardOperations) {
+            if (this.queries[operation]) {
+                // Dynamically call the specific method (e.g., .create(), .getById())
+                // This reuses the exact logic and configuration defined in those methods.
+                builder = builder[operation]();
+            }
+        }
 
         return builder;
     }

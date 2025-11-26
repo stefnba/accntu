@@ -49,7 +49,8 @@ const tagServices = createFeatureServices('tag')
         },
     }))
     // Register standard services
-    .withStandard((builder) => builder.create().getById().getMany().createMany())
+    // .withStandard((builder) => builder.create().getById().getMany().createMany())
+    .registerAllStandard()
     .build();
 
 // Standard service
