@@ -186,14 +186,14 @@ export class StandardSchemasBuilder<
         // but includes filters, pagination, and ordering
         const manyInputSchema = this.tableConfig.buildManyInputSchema();
 
-        const pagination = this.tableConfig.buildPaginationSchema();
-        const filters = this.tableConfig.buildFiltersSchema();
+        const pagination = this.tableConfig.getPaginationSchema().partial();
+        const filters = this.tableConfig.getFiltersSchema().partial();
 
         const schema = {
             getMany: {
                 service: manyInputSchema,
                 endpoint: {
-                    query: pagination.extend(filters.shape).optional(),
+                    query: pagination.extend(filters.shape).partial().optional(),
                 },
                 query: manyInputSchema,
             },
