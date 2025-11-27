@@ -11,12 +11,10 @@ import z from 'zod';
  * // { pagination: { page: 1, pageSize: 10 } }
  * ```
  */
-export const paginationSchema = z
-    .object({
-        page: z.coerce.number().int().positive().optional(),
-        pageSize: z.coerce.number().int().positive().optional(),
-    })
-    .partial();
+export const paginationSchema = z.object({
+    page: z.coerce.number().int().positive(),
+    pageSize: z.coerce.number().int().positive(),
+});
 
 /**
  * Zod schema for allowed ordering directions (`asc` or `desc`).

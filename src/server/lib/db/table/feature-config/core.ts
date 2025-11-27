@@ -1,7 +1,7 @@
 import { type TZodShape, getFieldsAsArray, getFieldsAsArrayConstrained } from '@/lib/validation';
 
 import { TOrderBy } from '@/server/lib/db/query/table-operations';
-import { orderingSchema, paginationSchema } from '@/server/lib/db/table/feature-config/schemas';
+import { orderingSchema } from '@/server/lib/db/table/feature-config/schemas';
 import {
     ConditionalArrayShape,
     ConditionalObjectShape,
@@ -58,7 +58,8 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
     /**
      * Get the pagination schema.
      *
-     * Returns the Zod schema used to validate pagination input (page, pageSize).
+     * This returns the schema as defined, without specifying optional or other modifiers that may be needed for validation.
+     * Use buildPaginationSchema() to get the schema with required modifiers.
      */
     getPaginationSchema(): z.ZodObject<C['pagination']> {
         return z.object(this.config.pagination);
@@ -87,11 +88,8 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         if (!this.hasPaginationSchema()) return undefined;
 
         // create a schema with the pagination schema as a partial
-        const schema = z.object({
-            pagination: paginationSchema.partial(),
-        });
+        const schema = this.buildPaginationSchema();
 
-        console.log('input', input);
         const validated = schema.safeParse(input);
         if (validated.success) {
             return validated.data.pagination;
@@ -106,6 +104,17 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         return Object.keys(this.config.pagination).length > 0;
     }
 
+    /**
+     * Build the pagination schema.
+     *
+     * Returns the Zod schema used to validate pagination input (page, pageSize) with optional and partial modifiers.
+     */
+    buildPaginationSchema() {
+        return z.object({
+            pagination: this.getPaginationSchema().partial().optional(),
+        });
+    }
+
     // ========================================
     // Filters
     // ========================================
@@ -113,7 +122,8 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
     /**
      * Get the filters schema.
      *
-     * Returns the Zod schema configured for filtering query results.
+     * This returns the schema as defined, without specifying optional or other modifiers that may be needed for validation.
+     * Use buildFiltersSchema() to get the schema with required modifiers.
      */
     getFiltersSchema(): z.ZodObject<C['filters']> {
         return z.object(this.config.filters);
@@ -124,7 +134,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      *
      * Returns the Zod schema used to validate filters input.
      */
-    buildFiltersSchema(): z.ZodObject<C['filters']> {
+    buildFiltersSchema() {
         return z.object({
             filters: this.getFiltersSchema().partial().optional(),
         });
@@ -145,14 +155,10 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      */
     validateFiltersInput(
         input: unknown
-    ):
-        | z.infer<z.ZodObject<{ [k in keyof C['filters']]: z.ZodOptional<C['filters'][k]> }>>
-        | undefined {
+    ): z.infer<z.ZodObject<{ filters: z.ZodOptional<z.ZodObject<C['filters']>> }>> | undefined {
         if (!this.hasFiltersSchema()) return undefined;
 
-        const schema = z.object({
-            filters: this.getFiltersSchema().partial(),
-        });
+        const schema = this.buildFiltersSchema();
 
         const validated = schema.safeParse(input);
         if (validated.success) {
@@ -226,9 +232,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         const shape: TZodShape = {};
 
         // filters
-        const filtersSchema = z.object({
-            filters: this.getFiltersSchema().partial().optional(),
-        });
+        const filtersSchema = this.buildFiltersSchema();
         if (this.hasFiltersSchema()) {
             Object.assign(shape, filtersSchema.shape);
         }
@@ -244,16 +248,18 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
         }
 
         // pagination
-        type PaginationShape = C['pagination'];
-        const paginationSchemaForMany: z.ZodObject<{
-            pagination: z.ZodOptional<
-                z.ZodObject<{
-                    [K in keyof PaginationShape]: z.ZodOptional<PaginationShape[K]>;
-                }>
-            >;
-        }> = z.object({
-            pagination: this.getPaginationSchema().partial().optional(),
-        });
+        // somehow required to define the type here, otherwise the type is not inferred correctly
+        const paginationSchemaForMany: z.ZodObject<
+            {
+                pagination: z.ZodOptional<
+                    z.ZodObject<
+                        { [k in keyof C['pagination']]: z.ZodOptional<C['pagination'][k]> },
+                        z.core.$strip
+                    >
+                >;
+            },
+            z.core.$strip
+        > = this.buildPaginationSchema();
         if (this.hasPaginationSchema()) {
             Object.assign(shape, {
                 pagination: paginationSchemaForMany.shape,
