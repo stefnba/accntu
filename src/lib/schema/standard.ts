@@ -41,14 +41,16 @@ export class StandardSchemasBuilder<
      */
     create() {
         const full = this.tableConfig.buildCreateInputSchema();
+        const publicSchema = this.tableConfig.getCreateDataSchema();
 
         const schema = {
             create: {
                 endpoint: {
-                    json: this.tableConfig.getCreateDataSchema(),
+                    json: publicSchema,
                 },
                 service: full,
                 query: full,
+                form: publicSchema,
             },
         };
 
@@ -101,14 +103,17 @@ export class StandardSchemasBuilder<
     updateById() {
         const full = this.tableConfig.buildUpdateInputSchema();
 
+        const publicSchema = this.tableConfig.getUpdateDataSchema().partial();
+
         const schema = {
             updateById: {
                 service: full,
                 query: full,
                 endpoint: {
-                    json: this.tableConfig.getUpdateDataSchema().partial(),
+                    json: publicSchema,
                     param: this.tableConfig.getIdSchema(),
                 },
+                form: publicSchema,
             },
         };
 
