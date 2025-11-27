@@ -515,8 +515,11 @@ export class FeatureTableConfigBuilder<
     }
 
     /**
-     * Transform the current base schema using a custom transformation function.
+     * Transform the current base, createData, and updateData schemas using a custom transformation function.
      * This allows you to extend, modify, or completely reshape the schema.
+     *
+     * **Note:** This overwrites previously specified insert/update schemas.
+     *
      *
      * @param transformer - Function that takes current schema and returns new schema
      * @returns New builder instance with transformed schema
@@ -535,10 +538,24 @@ export class FeatureTableConfigBuilder<
     transformBaseSchema<TOut extends TZodShape>(
         transformer: (schema: z.ZodObject<C['base']>) => z.ZodObject<TOut>
     ) {
-        return new FeatureTableConfigBuilder<TTable, Prettify<Omit<C, 'base'> & { base: TOut }>>({
+        const transformed = transformer(z.object(this.config.base));
+        const transformedPartial = transformed.partial();
+
+        return new FeatureTableConfigBuilder<
+            TTable,
+            Prettify<
+                Omit<C, 'base' | 'createData' | 'updateData'> & {
+                    base: TOut;
+                    createData: TOut;
+                    updateData: typeof transformedPartial.shape;
+                }
+            >
+        >({
             config: {
                 ...this.config,
-                base: transformer(z.object(this.config.base)).shape,
+                base: transformed.shape,
+                createData: transformed.shape,
+                updateData: transformedPartial.shape,
             },
         });
     }

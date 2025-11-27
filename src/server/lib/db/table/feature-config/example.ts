@@ -114,3 +114,22 @@ const tagToTransactionTableConfig = createFeatureTableConfig(tagToTransaction)
 export const tagToTransactionIdsFieldNames = tagToTransactionTableConfig.getIdsFieldNames();
 export const tagToTransactionUserIdFieldName = tagToTransactionTableConfig.getUserIdFieldName();
 console.log('tagToTransactionUserIdFieldName', tagToTransactionUserIdFieldName);
+
+// ================================================================
+// Tag Table Config Example with Transform
+// ================================================================
+
+const tagTableConfigWithTransform = createFeatureTableConfig(tag)
+    .omitBaseSchema(['transactionCount'])
+    .transformBaseSchema(() =>
+        z.object({
+            name: z.string().min(1, 'Name cannot be empty'),
+            color: z.string().min(1, 'Color cannot be empty'),
+            test: z.string().min(1, 'Test cannot be empty'),
+        })
+    )
+    .build();
+
+export const update = tagTableConfigWithTransform.getUpdateDataSchema();
+export const create = tagTableConfigWithTransform.getCreateDataSchema();
+export const base = tagTableConfigWithTransform.getBaseSchema();
