@@ -13,7 +13,7 @@ export function ParticipantUpsertForm() {
     const { mutate: createParticipant } = useParticipantEndpoints.create();
     const { mutate: updateParticipant } = useParticipantEndpoints.update();
 
-    const { form, Input, SubmitButton, Form } = useUpsertForm({
+    const { Input, SubmitButton, Form } = useUpsertForm({
         create: {
             schema: participantSchemas.create.form,
             defaultValues: {
