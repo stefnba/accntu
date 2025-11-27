@@ -1,5 +1,4 @@
-import { apiCredentialsSchema } from '@/features/bank/schemas';
-import { transformConfigSchema } from '@/features/bank/schemas/global-bank-account';
+import { apiCredentialsSchema, transformConfigSchema } from '@/features/bank/schemas/common';
 import {
     connectedBank,
     connectedBankAccount,
