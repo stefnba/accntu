@@ -1,0 +1,39 @@
+@email = "test-randomInst@example.com"
+@password = "password"
+
+## Sign up
+POST http://localhost:3000/api/auth/sign-up/email
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": {{email}},
+  "password": {{password}}
+}
+
+
+### Sign in
+POST http://localhost:3000/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": {{email}},
+  "password": {{password}}
+}
+
+### Get tags
+@auth_token = {{auth_token}}
+GET http://localhost:3000/api/tags
+Content-Type: application/json
+Authorization: Bearer TglFmsnfu4rCOs7rELDeVnx2WVKtrS65.pLPPzNCJJhUKbMBuwQostJLudPIBRJe3Xrrc1JdBsmw%3D
+
+
+### Create tag
+POST http://localhost:3000/api/tags
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "name": "dss",
+  "color": "#6366f1"
+}
