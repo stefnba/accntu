@@ -32,7 +32,7 @@ const tagServices = createFeatureServices('tag')
     .registerQueries(tagQueries)
     .registerSchema(tagSchemas)
     // Add a custom service
-    .addService('createWithValidation', ({ queries, schemas }) => ({
+    .addService('createWithValidation', ({ queries, schemas, error }) => ({
         operation: 'create tag with validation',
         onNull: 'throw',
         fn: async (input: { name: string; userId: string }) => {
@@ -40,7 +40,7 @@ const tagServices = createFeatureServices('tag')
             console.log(schemas.custom.service);
 
             if (input.name === 'bad') {
-                throw new Error('Bad name');
+                throw error.validation('INVALID_INPUT');
             }
             if (input.name === 'spam') {
                 return null;

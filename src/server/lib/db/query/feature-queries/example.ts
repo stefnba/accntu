@@ -9,8 +9,15 @@ const tagTableConfig = createFeatureTableConfig(tag)
     .build();
 
 const tagQueries = createFeatureQueries('tag', tagTableConfig)
-    .addQuery('customCreate', ({ tableOps, tableConfig }) => ({
+    .addQuery('customCreate', ({ tableOps, tableConfig, error }) => ({
         fn: (input: { name: string; userId: string }) => {
+            // Example of throwing an error with AppErrors
+            if (input.name === 'bad') {
+                throw error.validation('INVALID_INPUT', {
+                    message: 'Name is bad',
+                });
+            }
+
             return tableOps.createRecord({
                 data: input,
                 returnColumns: tableConfig.getReturnColumns(),

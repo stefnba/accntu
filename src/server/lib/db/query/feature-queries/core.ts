@@ -16,6 +16,7 @@ import { dbQueryFnHandler } from '@/server/lib/db/query/handler';
 import { TableOperationsBuilder } from '@/server/lib/db/query/table-operations';
 import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
+import { AppErrors } from '@/server/lib/error';
 import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 
@@ -107,21 +108,73 @@ export class FeatureQueryBuilder<
     /**
      * Add a custom query function for operations that don't fit standard CRUD patterns.
      *
-     * @param key - Unique query identifier
-     * @param config - Query configuration object or function receiving tableOps
+     * This method enables you to extend a feature's query API with domain-specific or complex queries that
+     * exceed the capabilities of standard CRUD (create, read, update, delete) builders. Use this to add
+     * queries such as batch operations, specialized lookups, business-logic-laden selections, or actions
+     * involving joins and subqueries.
+     *
+     * If a schema is registered for the query, the input will be strongly typed via the schema and output will be inferred from the schema.
+     * Note: The keys of the schema must match the key of the query.
+     *
+     * The provided config can either be a simple object ({ fn, operation }), or a function that receives
+     * useful helpers including:
+     *   - `tableOps`: TableOperationsBuilder instance for the table (create, update, bulk ops, etc)
+     *   - `tableConfig`: Table configuration (for access to custom config, columns, etc)
+     *   - `schemas`: Schemas registered for this feature (for validation, typing, etc)
+     *   - `error`: AppErrors for throwing consistent application-layer errors
+     *
+     * The query function you register is wrapped with error handling and operation tracking for type safety.
+     *
+     * @param key - Unique query identifier (string, cannot clash with existing queries)
+     * @param config -
+     *    1) Simple: { fn: QueryFn, operation?: string }
+     *    2) Factory: ({ tableOps, tableConfig, schemas, error }) => { fn: QueryFn, operation?: string }
+     *
+     * @returns A new FeatureQueryBuilder with the query registered; chainable.
      *
      * @example
+     * Basic query with inline function:
      * ```typescript
-     * // Simple config
-     * .addQuery('findByEmail', {
-     *   fn: async (input) => { ... },
-     *   operation: 'find user by email'
+     * .addQuery('findByStatus', {
+     *   fn: async (input: { status: string }) => {
+     *     // Custom fetch logic
+     *     return await db.query.table.findMany({ where: { status: input.status } });
+     *   },
+     *   operation: 'find by status',
      * })
+     * ```
      *
-     * // With tableOps, tableConfig, and schemas access
-     * .addQuery('archive', ({ tableOps, tableConfig, schemas }) => ({
+     * @example
+     * Advanced: using helpers:
+     * ```typescript
+     * service.addQuery('bulkArchive', ({ tableOps, tableConfig, error }) => ({
+     *   fn: async (input: { ids: string[], userId: string }) => {
+     *     // Throws if ids empty
+     *     if (!input.ids.length) throw error.validation('NO_IDS');
+     *     // Use TableOperationsBuilder for safe updates
+     *     return await tableOps.updateRecords({
+     *       where: { id: { in: input.ids }, userId: input.userId },
+     *       data: { archived: true }
+     *     });
+     *   },
+     *   operation: 'archive multiple records',
+     * }))
+     * ```
+     *
+     * @example
+     * With schemas and inference:
+     * ```typescript
+     * .registerSchema({
+     *   getActive: {
+     *     input: z.object({ userId: z.string() }),
+     *     output: z.array(tableSchema),
+     *   }
+     * })
+     * .addQuery('getActive', ({ tableOps, schemas }) => ({
      *   fn: async (input) => {
-     *     return await tableOps.updateRecord({ ... });
+     *     // input is strongly typed via registered schema
+     *     schemas.getActive.input.parse(input);
+     *     return tableOps.findMany({ where: { userId: input.userId, isActive: true } });
      *   }
      * }))
      * ```
@@ -141,10 +194,13 @@ export class FeatureQueryBuilder<
                   tableOps,
                   tableConfig,
                   schemas,
+                  error,
               }: {
                   tableOps: TableOperationsBuilder<TTable>;
                   tableConfig: TTableConfig;
                   schemas: S;
+                  /** Direct access to AppErrors factory */
+                  error: typeof AppErrors;
               }) => {
                   fn: QueryFn<I, O>;
                   operation?: string;
@@ -157,6 +213,7 @@ export class FeatureQueryBuilder<
                       tableOps: this.tableOperations,
                       tableConfig: this.tableConfig,
                       schemas: this.schemas,
+                      error: AppErrors,
                   })
                 : config;
 

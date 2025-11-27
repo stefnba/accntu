@@ -1,5 +1,6 @@
 import { InferSchemaByLayerAndOperation, TFeatureSchemas } from '@/lib/schema/types';
 import { QueryFn, TEmptyQueries } from '@/server/lib/db/query/feature-queries/types';
+import { AppErrors } from '@/server/lib/error';
 import { serviceHandler } from '@/server/lib/service/handler';
 import { Prettify } from '@/types/utils';
 import { StandardServiceBuilder } from './standard';
@@ -79,10 +80,42 @@ export class FeatureServiceBuilder<
     }
 
     /**
-     * Add a custom service function (Non-nullable return by default).
+     * Add a custom service function to the feature service builder.
      *
-     * @param key - Unique service identifier
-     * @param config - Service configuration object or function receiving context
+     * By default, services added with this method are expected to return a non-nullable value.
+     * If you want to allow the service to return null, set `onNull: 'return'` in the config object.
+     *
+     * This method lets you encapsulate reusable business logic, make use of registered queries, schemas, and other services, or introduce custom error handling for feature-specific needs.
+     *
+     * If a schema is registered for the service, the input will be strongly typed via the schema and output will be inferred from the schema.
+     * Note: The keys of the schema must match the key of the service.
+     *
+     * @param key - Unique service identifier (must not collide with existing service keys)
+     * @param config - Function that receives a context object ({ queries, schemas, services, error }) and returns an object with:
+     *   - fn: The service function (async or sync) implementing your business logic
+     *   - operation: (optional) Operation name for logging/error context
+     *   - onNull: (optional) If set to 'throw', the service will throw if fn returns null (default); set to 'return' to allow nullable return
+     *
+     * @example
+     * ```typescript
+     * .addService('inviteUser', ({ queries, schemas, error, services }) => ({
+     *   operation: 'invite user to project',
+     *   fn: async (input: { email: string, projectId: string }) => {
+     *     // validate with schemas if needed
+     *     if (!input.email.includes('@')) {
+     *       throw error.validation('INVALID_EMAIL');
+     *     }
+     *
+     *     // access other registered services
+     *     const user = await services.getUserByEmail({ email: input.email });
+     *
+     *     // Use registered queries for data ops
+     *     const user = await queries.findOrCreateUser({ email: input.email });
+     *     await queries.addProjectMember({ projectId: input.projectId, userId: user.id });
+     *     return user;
+     *   }
+     * }))
+     * ```
      */
     addService<
         const K extends Exclude<string, keyof TServices> | (string & {}),
@@ -90,7 +123,16 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
+        config: (args: {
+            /** Queries */
+            queries: TQueries;
+            /** Schemas */
+            schemas: TSchemas;
+            /** Services */
+            services: TServices;
+            /** Direct access to AppErrors factory */
+            error: typeof AppErrors;
+        }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw';
@@ -113,7 +155,12 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
+        config: (args: {
+            queries: TQueries;
+            schemas: TSchemas;
+            services: TServices;
+            error: typeof AppErrors;
+        }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull: 'return';
@@ -129,7 +176,12 @@ export class FeatureServiceBuilder<
         Output = unknown,
     >(
         key: K,
-        config: (args: { queries: TQueries; schemas: TSchemas; services: TServices }) => {
+        config: (args: {
+            queries: TQueries;
+            schemas: TSchemas;
+            services: TServices;
+            error: typeof AppErrors;
+        }) => {
             fn: ServiceFn<Input, Output>;
             operation?: string;
             onNull?: 'throw' | 'return';
@@ -148,6 +200,7 @@ export class FeatureServiceBuilder<
             queries: this.queries,
             schemas: this.schemas,
             services: this.services,
+            error: AppErrors,
         });
 
         const wrappedService =
