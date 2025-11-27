@@ -91,3 +91,11 @@ export const transactionSchemas = createFeatureSchemas(transactionTableConfig)
         return { service: input, query: input };
     })
     .build();
+
+// Schema for transaction duplicate check results from DuckDB queries
+export const transactionParseDuplicateCheckSchema = transactionSchemas.validateImport.service.extend({
+    isDuplicate: z.boolean(),
+    existingTransactionId: z.string().optional().nullable(),
+});
+
+export type TTransactionParseDuplicateCheck = z.infer<typeof transactionParseDuplicateCheckSchema>;

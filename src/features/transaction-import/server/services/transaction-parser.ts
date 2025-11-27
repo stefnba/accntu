@@ -1,3 +1,13 @@
+import { transactionImportFileServices } from '@/features/transaction-import/server/services/import-file';
+
+// Export the parse service as parseTransactionFile
+export const parseTransactionFile = async ({ id, userId }: { id: string; userId: string }) => {
+    return await transactionImportFileServices.parse({
+        fileId: id,
+        userId,
+    });
+};
+
 export const importTransactions = async (
     _fileId: string,
     _userId: string
