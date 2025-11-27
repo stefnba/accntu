@@ -4,6 +4,41 @@ import { z } from 'zod';
 
 export const tagSchemas = createFeatureSchemas(tagTableConfig).registerAllStandard().build();
 
+export const tagToTransactionSchemas = createFeatureSchemas(tagToTransactionTableConfig)
+    .addSchema('assign', ({ schemas }) => {
+        const tagsIdsSchema = z.array(schemas.base.pick({ tagId: true }).shape.tagId);
+
+        const schema = schemas.base.omit({ tagId: true }).extend({
+            tagIds: tagsIdsSchema,
+            transactionId: schemas.base.shape.transactionId,
+            userId: z.string(),
+        });
+
+        return {
+            service: schema,
+            query: schema,
+            endpoint: {
+                param: schema.pick({ transactionId: true }),
+                json: schema.pick({ tagIds: true }),
+            },
+        };
+    })
+    .addSchema('remove', ({ schemas }) => {
+        return {
+            service: schemas.base,
+            query: schemas.base,
+            endpoint: {
+                param: schemas.id,
+            },
+        };
+    })
+    .build();
+
+// ====================
+// Types
+// ====================
+export { type TTag } from '@/features/tag/server/db/queries';
+
 // export const { schemas: tagSchemas } = createFeatureSchemas
 //     .registerTable(tag)
 //     .omit({
@@ -104,38 +139,3 @@ export const tagSchemas = createFeatureSchemas(tagTableConfig).registerAllStanda
 //             },
 //         };
 //     });
-
-export const tagToTransactionSchemas = createFeatureSchemas(tagToTransactionTableConfig)
-    .addSchema('assign', ({ schemas }) => {
-        const tagsIdsSchema = z.array(schemas.base.pick({ tagId: true }).shape.tagId);
-
-        const schema = schemas.base.omit({ tagId: true }).extend({
-            tagIds: tagsIdsSchema,
-            transactionId: schemas.base.shape.transactionId,
-            userId: z.string(),
-        });
-
-        return {
-            service: schema,
-            query: schema,
-            endpoint: {
-                param: schema.pick({ transactionId: true }),
-                json: schema.pick({ tagIds: true }),
-            },
-        };
-    })
-    .addSchema('remove', ({ schemas }) => {
-        return {
-            service: schemas.base,
-            query: schemas.base,
-            endpoint: {
-                param: schemas.id,
-            },
-        };
-    })
-    .build();
-
-// ====================
-// Types
-// ====================
-export { type TTag } from '@/features/tag/server/db/queries';
