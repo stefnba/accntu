@@ -8,11 +8,20 @@ import {
     InferTableTypes,
     TFeatureTableConfig,
 } from '@/server/lib/db/table/feature-config/types';
-import { AppErrors } from '@/server/lib/error';
 import { Prettify } from '@/types/utils';
 import { Table } from 'drizzle-orm';
 import { createInsertSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
+
+export class FeatureConfigValidationError extends Error {
+    constructor(
+        public message: string,
+        public details: { zodErrors?: z.core.$ZodIssue[]; context: string }
+    ) {
+        super(message);
+        this.name = 'FeatureConfigValidationError';
+    }
+}
 
 export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableConfig<TTable>> {
     config: C;
@@ -153,9 +162,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * @param input - Raw input object containing filter fields
      * @returns Validated filters object or undefined if validation fails
      */
-    validateFiltersInput(
-        input: unknown
-    ): z.infer<z.ZodObject<{ filters: z.ZodOptional<z.ZodObject<C['filters']>> }>> | undefined {
+    validateFiltersInput(input: unknown) {
         if (!this.hasFiltersSchema()) return undefined;
 
         const schema = this.buildFiltersSchema();
@@ -347,7 +354,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      *
      * @param input - Raw input data to validate
      * @returns Validated data ready for database insertion
-     * @throws AppErrors.validation if validation fails
+     * @throws FeatureConfigValidationError if validation fails
      *
      * @example
      * ```ts
@@ -403,7 +410,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      *
      * @param input - Raw input containing { data: [...], userId?: ... }
      * @returns Array of validated data ready for database insertion
-     * @throws AppErrors.validation if validation fails
+     * @throws FeatureConfigValidationError if validation fails
      *
      * @example
      * ```ts
@@ -501,7 +508,7 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      *
      * @param input - Raw input containing { data: {...}, ids: {...}, userId?: ... }
      * @returns Validated partial data ready for database update
-     * @throws AppErrors.validation if validation fails
+     * @throws FeatureConfigValidationError if validation fails
      *
      * @example
      * ```ts
@@ -694,18 +701,18 @@ export class FeatureTableConfig<TTable extends Table, C extends TFeatureTableCon
      * @param input - Raw input to validate
      * @param context - Description of what's being validated (for error messages)
      * @returns Validated data
-     * @throws AppErrors.validation with formatted error details
+     * @throws FeatureConfigValidationError with formatted error details
      */
     private validateWithSchema<T>(schema: z.ZodSchema<T>, input: unknown, context: string): T {
         const result = schema.safeParse(input);
 
         if (!result.success) {
-            throw AppErrors.validation('INVALID_INPUT', {
-                message: `Failed to validate ${context}`,
-                details: {
-                    zodErrors: result.error.issues,
-                    context,
-                },
+            // we throw a custom error here to avoid the error handler from the query builder
+            // because importing AppErrors does not work on the client side
+            // FeatureConfigValidationError gets converted to AppErrors on StandardQueryBuilder
+            throw new FeatureConfigValidationError(`Failed to validate ${context}`, {
+                zodErrors: result.error.issues,
+                context,
             });
         }
 

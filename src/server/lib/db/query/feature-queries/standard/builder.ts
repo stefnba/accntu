@@ -5,9 +5,17 @@ import {
     userIdIdentifier,
 } from '@/server/lib/db/query/feature-queries/utils';
 import { withTableFilters } from '@/server/lib/db/query/filters';
-import { TableOperationsBuilder, TBooleanFilter } from '@/server/lib/db/query/table-operations';
-import { FeatureTableConfig } from '@/server/lib/db/table/feature-config';
+import {
+    TableOperationsBuilder,
+    TBooleanFilter,
+    TPagination,
+} from '@/server/lib/db/query/table-operations';
+import {
+    FeatureConfigValidationError,
+    FeatureTableConfig,
+} from '@/server/lib/db/table/feature-config';
 import { TFeatureTableConfig } from '@/server/lib/db/table/feature-config/types';
+import { AppErrors } from '@/server/lib/error';
 import { Table } from 'drizzle-orm';
 import z from 'zod';
 import { TStandardNewQueryConfig } from './types';
@@ -50,6 +58,9 @@ export class StandardQueryBuilder<
         return new StandardQueryBuilder<TTable, TConfig>({ tableConfig, queries: {}, queryConfig });
     }
 
+    /**
+     * Adds all standard operations (create, getById, getMany, updateById, removeById, createMany).
+     */
     all() {
         const b = new StandardQueryBuilder<TTable, TConfig, TQueries>({
             tableConfig: this.tableConfig,
@@ -60,6 +71,30 @@ export class StandardQueryBuilder<
         return b.create().getById().getMany().updateById().removeById().createMany();
     }
 
+    /**
+     * Helper to execute a validation function and translate FeatureConfigValidationError to AppErrors.
+     *
+     * @param fn - The validation function to execute
+     * @returns The result of the validation function
+     * @throws AppErrors.validation if FeatureConfigValidationError occurs
+     */
+    private validate<T>(fn: () => T): T {
+        try {
+            return fn();
+        } catch (error) {
+            if (error instanceof FeatureConfigValidationError) {
+                throw AppErrors.validation('INVALID_INPUT', {
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Adds the `updateById` operation.
+     */
     updateById() {
         type TInput = z.infer<ReturnType<typeof this.tableConfig.buildUpdateInputSchema>>;
 
@@ -67,7 +102,9 @@ export class StandardQueryBuilder<
 
         const query = async (input: TInput) => {
             // Validate the full input and extract/validate the data portion
-            const validatedData = this.tableConfig.validateUpdateDataForTableUpdate(input);
+            const validatedData = this.validate(() =>
+                this.tableConfig.validateUpdateDataForTableUpdate(input)
+            );
 
             const result = await this.tableOps.updateRecord({
                 identifiers: this.buildIdentifiers(input),
@@ -91,6 +128,9 @@ export class StandardQueryBuilder<
         });
     }
 
+    /**
+     * Helper to build filters from input.
+     */
     private buildFilters(input: unknown) {
         const filtersInput = this.tableConfig.validateFiltersInput(input);
 
@@ -99,6 +139,31 @@ export class StandardQueryBuilder<
         return this.queryConfig.getMany?.filters?.(filtersInput, withTableFilters(this.table));
     }
 
+    /**
+     * Helper to build pagination from input.
+     */
+    private buildPagination(input: unknown): TPagination {
+        const paginationInput = this.tableConfig.validatePaginationInput(input);
+
+        const defaultPageSize = this.queryConfig.getMany?.defaultPagination?.pageSize ?? 25;
+
+        if (!paginationInput) return { page: 1, pageSize: defaultPageSize };
+
+        return {
+            page:
+                'page' in paginationInput && typeof paginationInput.page === 'number'
+                    ? paginationInput.page
+                    : 1,
+            pageSize:
+                'pageSize' in paginationInput && typeof paginationInput.pageSize === 'number'
+                    ? paginationInput.pageSize
+                    : defaultPageSize,
+        };
+    }
+
+    /**
+     * Adds the `getMany` operation.
+     */
     getMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
         type TInput = z.infer<
@@ -118,18 +183,14 @@ export class StandardQueryBuilder<
                 this.queryConfig.getMany?.defaultOrdering;
 
             // pagination
-            const paginationInput = this.tableConfig.validatePaginationInput(input);
+            const pagination = this.buildPagination(input);
+
+            // query
             const result = await this.tableOps.getManyRecords({
                 columns: returnColumns,
                 identifiers,
                 filters,
-                pagination: {
-                    page: paginationInput?.page ?? 1,
-                    pageSize:
-                        paginationInput?.pageSize ??
-                        this.queryConfig.getMany?.defaultPagination?.pageSize ??
-                        25,
-                },
+                pagination,
                 orderBy,
             });
 
@@ -148,6 +209,9 @@ export class StandardQueryBuilder<
         });
     }
 
+    /**
+     * Adds the `getById` operation.
+     */
     getById() {
         const returnColumns = this.tableConfig.getReturnColumns();
         type TInput = z.infer<ReturnType<typeof this.tableConfig.buildIdentifierSchema>>;
@@ -175,6 +239,9 @@ export class StandardQueryBuilder<
         });
     }
 
+    /**
+     * Adds the `removeById` operation.
+     */
     removeById() {
         type TInput = z.infer<ReturnType<typeof this.tableConfig.buildIdentifierSchema>>;
 
@@ -236,13 +303,18 @@ export class StandardQueryBuilder<
         return identifiers;
     }
 
+    /**
+     * Adds the `create` operation.
+     */
     create() {
         const returnColumns = this.tableConfig.getReturnColumns();
         type TInput = z.infer<ReturnType<typeof this.tableConfig.buildCreateInputSchema>>;
 
         const query = async (input: TInput) => {
             // Validate the full input (with data wrapper)
-            const validatedData = this.tableConfig.validateDataForTableInsert(input);
+            const validatedData = this.validate(() =>
+                this.tableConfig.validateDataForTableInsert(input)
+            );
 
             return this.tableOps.createRecord({
                 data: validatedData,
@@ -262,13 +334,18 @@ export class StandardQueryBuilder<
         });
     }
 
+    /**
+     * Adds the `createMany` operation.
+     */
     createMany() {
         const returnColumns = this.tableConfig.getReturnColumns();
         type TInput = z.infer<ReturnType<typeof this.tableConfig.buildCreateManyInputSchema>>;
 
         const query = async (input: TInput) => {
             // Validate the full input and extract/merge/validate all records
-            const validatedData = this.tableConfig.validateDataForTableInsertMany(input);
+            const validatedData = this.validate(() =>
+                this.tableConfig.validateDataForTableInsertMany(input)
+            );
 
             return this.tableOps.createManyRecords({
                 data: validatedData,
@@ -288,6 +365,9 @@ export class StandardQueryBuilder<
         });
     }
 
+    /**
+     * Returns the accumulated queries.
+     */
     done() {
         return this.queries;
     }
