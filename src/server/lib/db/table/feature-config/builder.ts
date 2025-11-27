@@ -527,7 +527,7 @@ export class FeatureTableConfigBuilder<
      * @example
      * ```typescript
      * const builder = createFeatureTableConfig(userTable)
-     *   .transformBaseSchema(schema =>
+     *   .transform(schema =>
      *     schema.extend({
      *       fullName: z.string().min(1),
      *     })
@@ -535,7 +535,7 @@ export class FeatureTableConfigBuilder<
      *   .build();
      * ```
      */
-    transformBaseSchema<TOut extends TZodShape>(
+    transform<TOut extends TZodShape>(
         transformer: (schema: z.ZodObject<C['base']>) => z.ZodObject<TOut>
     ) {
         const transformed = transformer(z.object(this.config.base));

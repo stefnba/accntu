@@ -4,7 +4,7 @@ import z from 'zod';
 
 export const bucketTableConfig = createFeatureTableConfig(bucket)
     .pickBaseSchema(['title', 'type', 'status'])
-    .transformBaseSchema((base) =>
+    .transform((base) =>
         base.extend({
             title: z.string().min(1, 'Title cannot be empty'),
         })

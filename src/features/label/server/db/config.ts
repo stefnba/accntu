@@ -4,7 +4,7 @@ import { createFeatureTableConfig } from '@/server/lib/db/table/feature-config';
 import { z } from 'zod';
 
 export const labelTableConfig = createFeatureTableConfig(label)
-    .transformBaseSchema((base) =>
+    .transform((base) =>
         base.extend({
             color: colorSchema,
             name: z.string().min(1, 'Name cannot be empty'),

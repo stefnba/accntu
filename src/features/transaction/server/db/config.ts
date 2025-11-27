@@ -7,7 +7,7 @@ const numericInputSchema = z.coerce.number();
 export const transactionTableConfig = createFeatureTableConfig(transaction)
     .enablePagination()
     .omitBaseSchema(['isHidden', 'isNew'])
-    .transformBaseSchema((base) =>
+    .transform((base) =>
         base.extend({
             userAmount: numericInputSchema,
             accountAmount: numericInputSchema,

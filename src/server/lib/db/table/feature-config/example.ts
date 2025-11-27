@@ -121,7 +121,7 @@ console.log('tagToTransactionUserIdFieldName', tagToTransactionUserIdFieldName);
 
 const tagTableConfigWithTransform = createFeatureTableConfig(tag)
     .omitBaseSchema(['transactionCount'])
-    .transformBaseSchema(() =>
+    .transform(() =>
         z.object({
             name: z.string().min(1, 'Name cannot be empty'),
             color: z.string().min(1, 'Color cannot be empty'),

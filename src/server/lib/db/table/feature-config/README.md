@@ -327,12 +327,12 @@ Restrict base schema to specific fields.
 
 Exclude fields from base schema.
 
-#### `.transformBaseSchema(transformer)`
+#### `.transform(transformer)`
 
 Transform the base schema using a custom function.
 
 ```typescript
-.transformBaseSchema(schema => schema.extend({ extra: z.string() }))
+.transform(schema => schema.extend({ extra: z.string() }))
 ```
 
 ---

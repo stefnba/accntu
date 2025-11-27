@@ -28,7 +28,7 @@ export const globalBankTableConfig = createFeatureTableConfig(globalBank)
     .build();
 
 export const globalBankAccountTableConfig = createFeatureTableConfig(globalBankAccount)
-    .transformBaseSchema((base) =>
+    .transform((base) =>
         base.extend({
             transformConfig: transformConfigSchema,
         })
@@ -50,7 +50,7 @@ export const globalBankAccountTableConfig = createFeatureTableConfig(globalBankA
     .build();
 
 export const connectedBankTableConfig = createFeatureTableConfig(connectedBank)
-    .transformBaseSchema((base) =>
+    .transform((base) =>
         base.extend({
             apiCredentials: apiCredentialsSchema,
         })
