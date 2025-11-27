@@ -207,8 +207,7 @@ describe('Tag API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            // Should return 404 for non-existent transaction or 500 due to foreign key constraint
-            expect([404, 500]).toContain(res.status);
+            expect(res.status).toBe(404);
         });
 
         it('should validate tag assignment request structure', async () => {
