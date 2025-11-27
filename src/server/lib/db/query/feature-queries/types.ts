@@ -32,26 +32,19 @@ export type TEmptyQueries = {};
 export type UnwrapNullable<T> = T extends null | undefined ? never : T;
 
 /**
- * Universal type inference for feature entity types.
- * Works with both FeatureQueryBuilder instances and plain query function records.
- * Automatically handles array unwrapping and null unwrapping at the root level only.
- * Preserves nullable fields within the entity (e.g., optional/nullable columns).
+ * Infers the resource type returned by FeatureQueryBuilder queries after calling .build().
  *
- * @template T - The FeatureQueryBuilder instance or query functions record
- * @template TKey - The query key to infer from (defaults to 'getById')
- * @example InferFeatureType<typeof userQueries> // User (with nullable fields preserved)
- * @example InferFeatureType<typeof userQueries, 'getMany'> // User from getMany query
+ * @example
+ *   type User = InferFeatureType<typeof userQueries>
+ *   type UserFromMany = InferFeatureType<typeof userQueries, 'getMany'>
  */
-export type InferFeatureType<T, TKey extends string = 'getById'> = T extends {
-    queries: infer Q;
-}
-    ? TKey extends keyof Q
-        ? Q[TKey extends keyof Q ? TKey : never] extends (
-              ...args: never[]
-          ) => Promise<infer TReturn>
-            ? TReturn extends (infer U)[]
-                ? UnwrapNullable<U>
-                : UnwrapNullable<TReturn>
-            : never
+export type InferFeatureType<
+    Q extends Record<string, QueryFn>,
+    TKey extends string = 'getById',
+> = TKey extends keyof Q
+    ? Q[TKey extends keyof Q ? TKey : never] extends (...args: never[]) => Promise<infer TReturn>
+        ? TReturn extends (infer U)[]
+            ? UnwrapNullable<U>
+            : UnwrapNullable<TReturn>
         : never
     : never;
