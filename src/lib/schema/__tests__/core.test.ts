@@ -72,15 +72,16 @@ describe('FeatureSchemasBuilder', () => {
         const custom = schemas.customOp;
 
         // Test service schema (identifier: ids + userId)
+        const validUuid = '550e8400-e29b-41d4-a716-446655440000';
         expect(
             custom.service?.safeParse({
-                ids: { id: 'uuid-123' },
+                ids: { id: validUuid },
                 userId: 'user-1',
             }).success
         ).toBe(true);
 
         // Test endpoint param (just id)
-        expect(custom.endpoint?.param?.safeParse({ id: 'uuid-123' }).success).toBe(true);
+        expect(custom.endpoint?.param?.safeParse({ id: validUuid }).success).toBe(true);
 
         // Test endpoint json (update data: name, description)
         expect(custom.endpoint?.json?.safeParse({ name: 'New Name' }).success).toBe(true);
