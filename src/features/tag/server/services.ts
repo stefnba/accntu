@@ -5,8 +5,8 @@ import { createFeatureServices } from '@/server/lib/service';
 export const tagServices = createFeatureServices('tag')
     .registerSchema(tagSchemas)
     .registerSchema(tagToTransactionSchemas)
-    .registerQueries(tagQueries.build())
-    .registerQueries(tagToTransactionQueries.build())
+    .registerQueries(tagQueries)
+    .registerQueries(tagToTransactionQueries)
     .withStandard((builder) =>
         builder.create().getById().getMany().updateById().removeById().createMany()
     )

@@ -2,15 +2,17 @@ import { tagToTransactionSchemas } from '@/features/tag/schemas';
 import { tagTableConfig, tagToTransactionTableConfig } from '@/features/tag/server/db/config';
 import { createFeatureQueries, InferFeatureType } from '@/server/lib/db';
 
-export const tagQueries = createFeatureQueries('tag', tagTableConfig).registerAllStandard({
-    defaultFilters: {
-        isActive: true,
-    },
-    getMany: {
-        defaultOrdering: ['createdAt', 'name'],
-        filters: (filters, f) => [f.ilike('name', filters?.name)],
-    },
-});
+export const tagQueries = createFeatureQueries('tag', tagTableConfig)
+    .registerAllStandard({
+        defaultFilters: {
+            isActive: true,
+        },
+        getMany: {
+            defaultOrdering: ['createdAt', 'name'],
+            filters: (filters, f) => [f.ilike('name', filters?.name)],
+        },
+    })
+    .build();
 export type TTag = InferFeatureType<typeof tagQueries>;
 
 export const tagToTransactionQueries = createFeatureQueries(
@@ -58,4 +60,5 @@ export const tagToTransactionQueries = createFeatureQueries(
                 ],
             });
         },
-    }));
+    }))
+    .build();
