@@ -28,19 +28,33 @@ import { z } from 'zod';
 //         message: 'Invalid email format',
 //     });
 
-//     transformBaseSchema((base) =>
-//         base
-//             .extend({
-//                 email: optionalEmail,
-//                 name: z.string().min(1, 'Name cannot be empty'),
-//             })
-//             .omit({
-//                 linkedUserId: true,
-//             })
-//     )
+const optionalEmail = z
+    .string()
+    .optional()
+    .transform((val) => (val === '' || !val ? undefined : val))
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+        message: 'Invalid email format',
+    });
 
 export const participantSchemas = createFeatureSchemas(participantTableConfig)
     .registerAllStandard()
+    .addSchema('create', ({ schemas }) => {
+        const customCreateSchema = schemas.inputData.insert.extend({
+            email: optionalEmail,
+            name: z.string().min(1, 'Name cannot be empty'),
+        });
+        return {
+            service: z.object({
+                data: customCreateSchema,
+                userId: z.string(),
+            }),
+            query: z.object({
+                data: customCreateSchema,
+                userId: z.string(),
+            }),
+            endpoint: { json: customCreateSchema },
+        };
+    })
     .build();
 
 // ====================

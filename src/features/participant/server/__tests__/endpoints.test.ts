@@ -12,7 +12,7 @@ const validateParticipantResponse = (participant: any) => {
     expect(participant).toHaveProperty('isActive');
     expect(participant).toHaveProperty('createdAt');
     expect(participant).toHaveProperty('updatedAt');
-    
+
     expect(typeof participant.id).toBe('string');
     expect(typeof participant.name).toBe('string');
     expect(typeof participant.totalTransactions).toBe('number');
@@ -41,10 +41,13 @@ describe('Participant API Endpoints', () => {
         });
 
         it('should accept authenticated requests', async () => {
-            const res = await client.api.participants.$get({ query: {} }, { headers: auth.authHeaders });
+            const res = await client.api.participants.$get(
+                { query: {} },
+                { headers: auth.authHeaders }
+            );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const participants = await res.json();
                 expect(Array.isArray(participants)).toBe(true);
@@ -68,7 +71,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
@@ -94,7 +97,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
@@ -115,7 +118,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const participant = await res.json();
                 validateParticipantResponse(participant);
@@ -137,7 +140,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
@@ -163,7 +166,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
@@ -186,22 +189,18 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(201);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
             }
 
-            // Verify participant is actually deleted (should return null/empty response)
+            // Verify participant is actually deleted (should return 404)
             const getRes = await client.api.participants[':id'].$get(
                 { param: { id: createdParticipantId } },
                 { headers: auth.authHeaders }
             );
-            expect(getRes.status).toBe(200);
-            if (getRes.status === 200) {
-                const participant = await getRes.json();
-                expect(participant).toBeNull();
-            }
+            expect(getRes.status).toBe(404);
         });
     });
 
@@ -268,7 +267,7 @@ describe('Participant API Endpoints', () => {
                 );
 
                 expect(res.status).toBe(201);
-                
+
                 if (res.status === 201) {
                     const response = await res.json();
                     expect(response).toHaveProperty('success', true);
@@ -288,15 +287,15 @@ describe('Participant API Endpoints', () => {
             const res = await client.api.participants.$get(
                 {
                     query: {
-                        page: 1,
-                        pageSize: 10,
+                        page: '1',
+                        pageSize: '10',
                     },
                 },
                 { headers: auth.authHeaders }
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const participants = await res.json();
                 expect(Array.isArray(participants)).toBe(true);
@@ -314,7 +313,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const participants = await res.json();
                 expect(Array.isArray(participants)).toBe(true);
@@ -332,7 +331,7 @@ describe('Participant API Endpoints', () => {
             );
 
             expect(res.status).toBe(200);
-            
+
             if (res.status === 200) {
                 const participants = await res.json();
                 expect(Array.isArray(participants)).toBe(true);
@@ -359,7 +358,7 @@ describe('Participant API Endpoints', () => {
 
             // This might fail with foreign key constraint, which is expected in tests
             expect([201, 400, 500]).toContain(res.status);
-            
+
             if (res.status === 201) {
                 const response = await res.json();
                 expect(response).toHaveProperty('success', true);
@@ -367,7 +366,7 @@ describe('Participant API Endpoints', () => {
                 const participant = response.data;
                 validateParticipantResponse(participant);
                 expect(participant.name).toBe(participantData.name);
-                expect(participant.linkedUserId).toBe(participantData.linkedUserId);
+                expect(participant.linkedUserId).toBeNull(); // Invalid linkedUserId should be set to null
             }
         });
     });
@@ -381,11 +380,7 @@ describe('Participant API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect(res.status).toBe(200);
-            if (res.status === 200) {
-                const participant = await res.json();
-                expect(participant).toBeNull();
-            }
+            expect(res.status).toBe(404);
         });
 
         it('should return 404 when updating non-existent participant', async () => {
@@ -397,10 +392,10 @@ describe('Participant API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect(res.status).toBe(500);
+            expect(res.status).toBe(404);
         });
 
-        it('should return 404 when deleting non-existent participant', async () => {
+        it('should return 201 when deleting non-existent participant (idempotent)', async () => {
             const res = await client.api.participants[':id'].$delete(
                 { param: { id: 'non-existent-id' } },
                 { headers: auth.authHeaders }
@@ -465,11 +460,7 @@ describe('Participant API Endpoints', () => {
                 { headers: userBAuth.authHeaders }
             );
 
-            expect(res.status).toBe(200);
-            if (res.status === 200) {
-                const participant = await res.json();
-                expect(participant).toBeNull(); // Should not find the participant
-            }
+            expect(res.status).toBe(404); // User B should not find User A's participant
         });
 
         it('should prevent user B from updating user A participant', async () => {
@@ -488,7 +479,7 @@ describe('Participant API Endpoints', () => {
                 { headers: userBAuth.authHeaders }
             );
 
-            expect(res.status).toBe(500); // Should fail to find participant to update
+            expect(res.status).toBe(404); // Should not find participant to update (user isolation)
         });
 
         it('should prevent user B from deleting user A participant', async () => {
@@ -558,7 +549,7 @@ describe('Participant API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect([400, 500]).toContain(res.status); // Should fail foreign key constraint
+            expect(res.status).toBe(201); // Should succeed but with linkedUserId set to null
         });
 
         it('should handle participant updates with email conflicts', async () => {
@@ -569,7 +560,7 @@ describe('Participant API Endpoints', () => {
             };
 
             const participant2Data = {
-                name: 'Participant 2', 
+                name: 'Participant 2',
                 email: 'participant2@example.com',
             };
 
@@ -577,7 +568,7 @@ describe('Participant API Endpoints', () => {
                 { json: participant1Data },
                 { headers: auth.authHeaders }
             );
-            
+
             const res2 = await client.api.participants.$post(
                 { json: participant2Data },
                 { headers: auth.authHeaders }

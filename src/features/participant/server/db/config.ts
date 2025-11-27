@@ -5,7 +5,8 @@ import z from 'zod';
 export const participantTableConfig = createFeatureTableConfig(participant)
     .restrictUpsertFields(['name', 'email'])
     .enableFiltering({
-        search: z.string(),
+        search: z.string().optional(),
     })
     .enablePagination()
+    .setUserId('userId')
     .build();
