@@ -2,6 +2,8 @@ import { createTestClient, setupTestAuth, type TestAuthSetup } from '@/../test/u
 import { beforeAll, describe, expect, it } from 'vitest';
 
 // Response validation helper functions
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateTagResponse = (tag: any) => {
     expect(tag).toHaveProperty('id');
     expect(tag).toHaveProperty('name');
@@ -12,7 +14,7 @@ const validateTagResponse = (tag: any) => {
     expect(tag).toHaveProperty('updatedAt');
     expect(tag).toHaveProperty('transactionCount');
     expect(tag).toHaveProperty('description');
-    
+
     expect(typeof tag.id).toBe('string');
     expect(typeof tag.name).toBe('string');
     expect(typeof tag.color).toBe('string');
@@ -35,15 +37,13 @@ describe('Tag API Endpoints', () => {
         const client = createTestClient();
 
         it('should reject unauthenticated requests', async () => {
-            const res = await client.api.tags.$get({
-                query: {},
-            });
+            const res = await client.api.tags.$get();
 
             expect(res.status).toBe(401);
         });
 
         it('should accept authenticated requests', async () => {
-            const res = await client.api.tags.$get({ query: {} }, { headers: auth.authHeaders });
+            const res = await client.api.tags.$get({}, { headers: auth.authHeaders });
 
             expect(res.status).toBe(200);
             const tags = await res.json();
@@ -345,7 +345,7 @@ describe('Tag API Endpoints', () => {
                 { headers: auth.authHeaders }
             );
 
-            expect([400, 500]).toContain(secondRes.status); // Should fail
+            expect([400, 409, 500]).toContain(secondRes.status); // Should fail with conflict
         });
 
         it('should handle tag assignment to non-existent transaction gracefully', async () => {
@@ -367,7 +367,7 @@ describe('Tag API Endpoints', () => {
                 const tagId = response.data.id;
 
                 // Try to assign tag to non-existent transaction
-                const assignRes = await client.api.tags.assign['non-existent-transaction-id'].$put(
+                const assignRes = await client.api.tags.assign[':transactionId'].$put(
                     {
                         param: { transactionId: 'non-existent-transaction-id' },
                         json: { tagIds: [tagId] },
@@ -382,8 +382,8 @@ describe('Tag API Endpoints', () => {
         it('should validate tag assignment permissions', async () => {
             // This test would require creating a transaction to properly test tag assignment
             // For now, we test the error handling of invalid requests
-            
-            const res = await client.api.tags.assign['invalid-transaction-id'].$put(
+
+            const res = await client.api.tags.assign[':transactionId'].$put(
                 {
                     param: { transactionId: 'invalid-transaction-id' },
                     json: { tagIds: ['invalid-tag-id'] },

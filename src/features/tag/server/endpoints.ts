@@ -11,18 +11,15 @@ const app = new Hono()
     .get('/', zValidator('query', tagSchemas.getMany.endpoint.query), async (c) =>
         routeHandler(c)
             .withUser()
-            .handle(
-                async ({
-                    userId,
-                    validatedInput: {
-                        query: { page, pageSize, ...filters },
+            .handle(async ({ userId, validatedInput: { query } }) =>
+                tagServices.getMany({
+                    pagination: {
+                        page: query?.pagination?.page,
+                        pageSize: query?.pagination?.pageSize,
                     },
-                }) =>
-                    tagServices.getMany({
-                        pagination: { page, pageSize },
-                        filters: filters,
-                        userId: userId,
-                    })
+                    filters: query?.filters,
+                    userId: userId,
+                })
             )
     )
 
