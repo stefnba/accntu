@@ -21,7 +21,7 @@ export const getExchangeRate = async ({
         return 1;
     }
 
-    const existingRate = await queries.transactionFxQueries.queries.getMany({
+    const existingRate = await queries.transactionFxQueries.getMany({
         filters: {
             baseCurrency,
             targetCurrency,
@@ -29,8 +29,8 @@ export const getExchangeRate = async ({
         },
     });
 
-    if (existingRate) {
-        return parseFloat(existingRate.exchangeRate);
+    if (existingRate && existingRate.length > 0) {
+        return parseFloat(existingRate[0].exchangeRate);
     }
 
     throw new Error(`Exchange rate not found for ${baseCurrency}/${targetCurrency} on ${date}`);
@@ -57,7 +57,7 @@ export const getOrFetchExchangeRate = async ({
     }
 
     // First, check database cache
-    const existingRate = await queries.transactionFxQueries.queries.getMany({
+    const existingRate = await queries.transactionFxQueries.getMany({
         filters: {
             baseCurrency,
             targetCurrency,
@@ -65,8 +65,8 @@ export const getOrFetchExchangeRate = async ({
         },
     });
 
-    if (existingRate) {
-        return parseFloat(existingRate.exchangeRate);
+    if (existingRate && existingRate.length > 0) {
+        return parseFloat(existingRate[0].exchangeRate);
     }
 
     // If not in cache, fetch from API
@@ -144,7 +144,7 @@ export const getOrFetchMultipleExchangeRates = async ({
             continue;
         }
 
-        const existingRate = await queries.transactionFxQueries.queries.getMany({
+        const existingRate = await queries.transactionFxQueries.getMany({
             filters: {
                 baseCurrency,
                 targetCurrency,
@@ -152,8 +152,8 @@ export const getOrFetchMultipleExchangeRates = async ({
             },
         });
 
-        if (existingRate) {
-            const rate = parseFloat(existingRate.exchangeRate);
+        if (existingRate && existingRate.length > 0) {
+            const rate = parseFloat(existingRate[0].exchangeRate);
             cachedRates.set(targetCurrency, rate);
             results.push({
                 baseCurrency,

@@ -19,6 +19,6 @@ export const transactionFxRateTableConfig = createFeatureTableConfig(transaction
     .enableFiltering({
         baseCurrency: z.string(),
         targetCurrency: z.string(),
-        date: z.date(),
+        date: z.string(),
     })
     .build();

@@ -50,7 +50,7 @@ const app = new Hono()
 
     .post('/rate', zValidator('json', StoreRateSchema), (c) =>
         routeHandler(c)
-            .handle(async ({ validatedInput }) => {
+            .handleMutation(async ({ validatedInput }) => {
                 const result = await services.storeExchangeRate(validatedInput.json);
                 return result;
             })
