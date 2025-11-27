@@ -13,12 +13,18 @@ export const standardOperations = [
 
 export type TStandardOperations = (typeof standardOperations)[number];
 
+/**
+ * Operations that throw an error when the result is null.
+ * These will be wrapped with `NonNullableService`.
+ */
+export type TThrowingOperations = 'getById' | 'updateById';
+
 const getStandardOperationKey = <T extends TStandardOperations>(key: T): T => {
     return key;
 };
 
 export type StandardServices<Q extends Record<string, QueryFn>> = {
-    [K in keyof Q as K extends TStandardOperations ? K : never]: K extends 'getById'
+    [K in keyof Q as K extends TStandardOperations ? K : never]: K extends TThrowingOperations
         ? NonNullableService<Q[K]>
         : Q[K];
 };
@@ -149,8 +155,11 @@ export class StandardServiceBuilder<
     /**
      * Adds standard updateById service.
      *
-     * Wraps the 'updateById' query with standard error handling.
-     * Returns nullable type (returns null if ID not found to update).
+     * Wraps the 'updateById' query with standard error handling AND null checking.
+     *
+     * @remarks
+     * Sets `throwOnNull: true`, so the return type is `NonNullable<Result>`.
+     * Throws `RESOURCE.NOT_FOUND` if the query returns null (ID not found).
      */
     updateById() {
         const operation = getStandardOperationKey('updateById');
@@ -158,7 +167,7 @@ export class StandardServiceBuilder<
 
         const wrappedService = serviceHandler({
             serviceFn: query,
-            throwOnNull: false,
+            throwOnNull: true,
             operation,
         });
 
@@ -176,6 +185,11 @@ export class StandardServiceBuilder<
      *
      * Wraps the 'removeById' query with standard error handling.
      * Returns nullable type (returns null if ID not found to remove).
+     *
+     * @remarks
+     * Kept as `throwOnNull: false` because delete operations should be idempotent.
+     * If the resource is already gone, the goal is achieved.
+     * Returning null allows the controller to decide (204 vs 404).
      */
     removeById() {
         const operation = getStandardOperationKey('removeById');
